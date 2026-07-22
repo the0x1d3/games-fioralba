@@ -1089,6 +1089,26 @@ U.menu = function(G){
     };
     wrap.appendChild(bs);
 
+    /* esporta / importa il salvataggio come file */
+    const bkp=document.createElement('div');
+    bkp.style.cssText='display:flex;gap:8px';
+    const bex=document.createElement('button'); bex.className='btn gold'; bex.textContent='⬇ Esporta salvataggio';
+    bex.style.flex='1';
+    bex.onclick=()=>{
+      G.salva();
+      if(G.esporta()) U.toast('Salvataggio esportato.','good');
+      else U.toast('Esportazione non riuscita.','bad');
+    };
+    const bim=document.createElement('button'); bim.className='btn blue'; bim.textContent='⬆ Importa salvataggio';
+    bim.style.flex='1';
+    bim.onclick=()=>{ G.importaDaFile(); };
+    bkp.appendChild(bex); bkp.appendChild(bim);
+    wrap.appendChild(bkp);
+    const nota=document.createElement('div'); nota.className='muted';
+    nota.style.cssText='font-size:12px;margin-top:-2px';
+    nota.textContent='Importare un file sostituisce la partita attuale.';
+    wrap.appendChild(nota);
+
     const bh=document.createElement('button'); bh.className='btn blue'; bh.textContent='Come si gioca';
     bh.onclick=()=>{ U.chiudiModal(); U.comeSiGioca(); };
     wrap.appendChild(bh);

@@ -472,6 +472,16 @@ function collegaTitolo(){
     else nuovaPartita();
   };
   $('#btn-howto').onclick = ()=>{ SND.resume(); UI.comeSiGioca(); };
+  const bImp = $('#btn-import');
+  if(bImp) bImp.onclick = ()=>{ SND.resume(); SND.play('menu'); G.importaDaFile(); };
+
+  // se torniamo qui subito dopo un import, riprendi la partita importata
+  let autoImport = false;
+  try{
+    autoImport = sessionStorage.getItem('fioralba_import')==='1';
+    if(autoImport) sessionStorage.removeItem('fioralba_import');
+  }catch(e){}
+  if(autoImport && salvato && carica()){ avviaGioco(false); }
 }
 
 function nuovaPartita(){
@@ -2401,34 +2411,108 @@ function deserializzaMappa(m, d){
   for(const k in d.suolo) m.suolo[k|0]=d.suolo[k];
 }
 
+function costruisciDati(){
+  return {
+    v:1,
+    nomeGiocatore:G.nomeGiocatore, mappaId:G.mappaId,
+    oro:G.oro, energia:G.energia, energiaMax:G.energiaMax,
+    giorno:G.giorno, stagioneIdx:G.stagioneIdx, anno:G.anno, giornoTot:G.giornoTot,
+    ora:G.ora, meteo:G.meteo, meteoDomani:G.meteoDomani,
+    inv:G.inv, invMax:G.invMax, slotSel:G.slotSel,
+    skills:G.skills, attrezziLiv:G.attrezziLiv,
+    amicizia:G.amicizia, costruzioni:G.costruzioni,
+    santuario:G.santuario, santuarioDato:G.santuarioDato, braci:G.braci,
+    lettere:G.lettere, ricetteNote:G.ricetteNote,
+    cassaConsegna:G.cassaConsegna, stats:G.stats, animali:G.animali,
+    look:G.look, vistoFiammella:G.vistoFiammella, introSerafina:G.introSerafina,
+    tutorialFatto:G.tutorialFatto,
+    px:G.p.px, py:G.p.py,
+    maps:{
+      podere:serializzaMappa(G.maps.podere),
+      fioralba:serializzaMappa(G.maps.fioralba),
+      bosco:serializzaMappa(G.maps.bosco),
+      grotta:serializzaMappa(G.maps.grotta)
+    }
+  };
+}
+
 G.salva = function(){
   try{
-    const dati = {
-      v:1,
-      nomeGiocatore:G.nomeGiocatore, mappaId:G.mappaId,
-      oro:G.oro, energia:G.energia, energiaMax:G.energiaMax,
-      giorno:G.giorno, stagioneIdx:G.stagioneIdx, anno:G.anno, giornoTot:G.giornoTot,
-      ora:G.ora, meteo:G.meteo, meteoDomani:G.meteoDomani,
-      inv:G.inv, invMax:G.invMax, slotSel:G.slotSel,
-      skills:G.skills, attrezziLiv:G.attrezziLiv,
-      amicizia:G.amicizia, costruzioni:G.costruzioni,
-      santuario:G.santuario, santuarioDato:G.santuarioDato, braci:G.braci,
-      lettere:G.lettere, ricetteNote:G.ricetteNote,
-      cassaConsegna:G.cassaConsegna, stats:G.stats, animali:G.animali,
-      look:G.look, vistoFiammella:G.vistoFiammella, introSerafina:G.introSerafina,
-      tutorialFatto:G.tutorialFatto,
-      px:G.p.px, py:G.p.py,
-      maps:{
-        podere:serializzaMappa(G.maps.podere),
-        fioralba:serializzaMappa(G.maps.fioralba),
-        bosco:serializzaMappa(G.maps.bosco),
-        grotta:serializzaMappa(G.maps.grotta)
-      }
-    };
-    localStorage.setItem(CHIAVE, JSON.stringify(dati));
+    localStorage.setItem(CHIAVE, JSON.stringify(costruisciDati()));
     return true;
   }catch(e){ console.warn('Salvataggio non riuscito', e); return false; }
 };
+
+/* ---- Esporta il salvataggio come file .json scaricabile ---- */
+G.esporta = function(){
+  try{
+    const testo = JSON.stringify(costruisciDati());
+    const blob = new Blob([testo], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const nome = (G.nomeGiocatore||'contadino').replace(/[^a-z0-9]/gi,'_');
+    const data = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `fioralba-${nome}-anno${G.anno}-${data}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1500);
+    return true;
+  }catch(e){ console.warn('Export non riuscito', e); return false; }
+};
+
+/* ---- Valida un testo e lo scrive come salvataggio corrente ---- */
+G.importaTesto = function(testo){
+  let d;
+  try{ d = JSON.parse(testo); }
+  catch(e){ return {ok:false, err:'Il file non è leggibile: non è un salvataggio valido.'}; }
+  if(!d || typeof d!=='object' || !d.maps || !d.inv){
+    return {ok:false, err:'Questo file non sembra un salvataggio di Fioralba.'};
+  }
+  try{ localStorage.setItem(CHIAVE, JSON.stringify(d)); }
+  catch(e){ return {ok:false, err:'Impossibile memorizzare il salvataggio (memoria locale bloccata).'}; }
+  return {ok:true};
+};
+
+/* ---- Apre il selettore file e importa; al successo ricarica ---- */
+G.importaDaFile = function(){
+  const inp = document.createElement('input');
+  inp.type='file'; inp.accept='.json,application/json';
+  inp.style.display='none';
+  inp.onchange = ()=>{
+    const file = inp.files && inp.files[0];
+    if(!file){ inp.remove(); return; }
+    const rd = new FileReader();
+    rd.onload = ()=>{
+      const res = G.importaTesto(String(rd.result||''));
+      if(res.ok){
+        flashMessaggio('Salvataggio importato! Riavvio…', true);
+        try{ sessionStorage.setItem('fioralba_import','1'); }catch(e){}
+        setTimeout(()=>location.reload(), 800);
+      }else{
+        flashMessaggio(res.err||'Import non riuscito.', false);
+      }
+      inp.remove();
+    };
+    rd.onerror = ()=>{ flashMessaggio('Non riesco a leggere il file.', false); inp.remove(); };
+    rd.readAsText(file);
+  };
+  document.body.appendChild(inp);
+  inp.click();
+};
+
+/* ---- Messaggio a comparsa indipendente dall'HUD (funziona anche al titolo) ---- */
+function flashMessaggio(testo, ok){
+  const el = document.createElement('div');
+  el.textContent = testo;
+  el.style.cssText =
+    'position:fixed;left:50%;top:22px;transform:translateX(-50%);z-index:100000;'+
+    'background:'+(ok?'rgba(79,122,66,.96)':'rgba(179,72,60,.96)')+';color:#f6e6c8;'+
+    'font-family:Nunito,system-ui,sans-serif;font-weight:800;font-size:15px;'+
+    'padding:12px 20px;border-radius:12px;border:2px solid rgba(0,0,0,.35);'+
+    'box-shadow:0 6px 18px rgba(0,0,0,.45);max-width:90vw;text-align:center;';
+  document.body.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .4s'; el.style.opacity='0'; setTimeout(()=>el.remove(),450); }, 2400);
+}
 
 function caricaGrezzo(){
   try{ return localStorage.getItem(CHIAVE); }catch(e){ return null; }
