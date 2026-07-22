@@ -106,6 +106,25 @@ function albero(kind, stage){
 function sasso(kind){
   return { t:'sasso', kind, hp: kind==='pietra'?2:(kind==='oro'||kind==='ametista'?5:3), solido:true };
 }
+W.setObj = setObj;
+W.albero = albero;
+W.sasso  = sasso;
+
+/* sparge oggetti su caselle libere di un dato terreno — usato dagli eventi notturni.
+   `fabbrica(R)` costruisce l'oggetto da posare; ritorna quanti ne ha piazzati. */
+W.spargiSu = function(m, terreno, quanti, fabbrica, seed){
+  const R = rnd((seed>>>0)||1);
+  let messi=0, tent=0, max=quanti*80+400;
+  while(messi<quanti && tent<max){
+    tent++;
+    const x=1+((R()*(m.w-2))|0), y=1+((R()*(m.h-2))|0);
+    if(!libero(m,x,y)) continue;
+    if(W.terreno(m,x,y)!==terreno) continue;
+    setObj(m,x,y, fabbrica(R));
+    messi++;
+  }
+  return messi;
+};
 
 /* edificio: occupa un rettangolo solido, con porta interattiva */
 function edificio(m, kind, x, y, tw, th, opt){

@@ -38,7 +38,9 @@ function statoIniziale(){
     santuario:{}, santuarioDato:{}, braci:0,
     lettere:{}, ricetteNote:{zuppa_contadina:true, frittata:true},
     cassaConsegna:[],
-    stats:{raccolti:0, pesci:0, alberi:0, sassi:0, guadagno:0, giorniGiocati:0},
+    stats:{raccolti:0, pesci:0, alberi:0, sassi:0, guadagno:0, giorniGiocati:0,
+           piatti:0, regali:0, visitatoBosco:false, visitatoGrotta:false, visitatoPaese:false},
+    mercato:null, gelo:false,
     tutorialFatto:false,
     animali:[],
     look:{ pelle:'#e8bd8f', capelli:'#6b4423', maglia:'#4f8ab0', pant:'#3d5470', cappello:'#c9a44c' }
@@ -500,6 +502,7 @@ function avviaGioco(conIntro){
   if(titoloRaf) cancelAnimationFrame(titoloRaf);
   $('#hud').classList.remove('hidden');
   G.inGioco = true;
+  G.ultimaAzione = performance.now();
   REND.initMeteo();
   aggiornaCamera(true);
   costruisciHotbar();
@@ -597,6 +600,8 @@ G.prezzoVendita = function(id){
   if(c==='foraggio') p = Math.round(p * (1 + G.livello('raccolta')*0.03));
   if(c==='pesce')    p = Math.round(p * (1 + G.livello('pesca')*0.03));
   if(c==='minerale') p = Math.round(p * (1 + G.livello('estrazione')*0.02));
+  // mercato dinamico: oggi un prodotto è più richiesto
+  if(G.mercato && G.mercato.item===id) p = Math.round(p * G.mercato.mult);
   return p;
 };
 
@@ -958,6 +963,7 @@ function usaOggetto(){
     }
 
     if(id==='annaffiatoio'){
+      if(G.gelo){ p.usoT=260; UI.toast('L\'acqua è gelata: oggi non si annaffia.','bad'); return; }
       if(terr==='acqua'){ SND.play('acqua'); p.usoT=280; schizzo(tx,ty); return; }
       if(!suolo || suolo.bagnato) return;
       if(!spendi(2 - liv*0.35)) return;
@@ -1603,6 +1609,7 @@ G.regala = function(npcId, idx){
   G.togliSlot(idx,1);
   G.regalatoOggi[npcId]=true;
   G.amicizia[npcId]=Math.max(0,(G.amicizia[npcId]||0)+punti);
+  if(punti>0) G.stats.regali=(G.stats.regali||0)+1;
 
   const risposte = {
     ama:['Ma è… è proprio quello che speravo. Grazie davvero.','Non ci posso credere. Lo tengo da conto.'],
@@ -1665,6 +1672,7 @@ const pesca = { attiva:false, fase:'', t:0, barra:50, vBarra:0, pesceY:50, vPesc
                 prog:30, target:null, tx:0, ty:0, diff:2, tenuto:false };
 
 function iniziaPesca(tx,ty){
+  if(G.gelo){ UI.toast('L\'acqua è gelata: niente pesca oggi.','bad'); return; }
   if(!spendi(3)) return;
   pesca.attiva=true; pesca.fase='lancio'; pesca.t=0;
   pesca.tx=tx; pesca.ty=ty;
@@ -1839,6 +1847,7 @@ G.crafta = function(r, tipo){
   for(const k in r.ing) G.togli(k, r.ing[k]);
   const n = r.out||1;
   G.aggiungi(r.id, n);
+  if(tipo==='cucina') G.stats.piatti=(G.stats.piatti||0)+n;
   SND.play(tipo==='cucina'?'raccolta':'costruisci');
   UI.toast((n>1?n+'× ':'')+IT.nome(r.id)+(tipo==='cucina'?' pronto!':' creato!'),'good',r.id);
   G.aggiornaHUD();
@@ -2001,6 +2010,9 @@ function cambiaMappa(id, tx, ty){
   if(!dest) return;
   const pos = WORLD.vicinoLibero(dest, tx, ty);
   G.mappaId = id;
+  if(id==='bosco')        G.stats.visitatoBosco=true;
+  else if(id==='grotta')  G.stats.visitatoGrotta=true;
+  else if(id==='fioralba')G.stats.visitatoPaese=true;
   G.p.px = pos.x*T+16;
   G.p.py = pos.y*T+20;
   mouseWorld=null;
@@ -2084,6 +2096,12 @@ function nuovoGiorno(svenuto, multa){
 
   /* --- colture --- */
   const stag = G.stagione().id;
+
+  /* --- gelo invernale: fiume e pozzo gelati per un giorno --- */
+  G.gelo = (stag==='inverno' && G.meteo==='neve' && Math.random()<0.5);
+  /* --- mercato dinamico: oggi un prodotto vale di più --- */
+  G.mercato = scegliMercato();
+
   for(const mid in G.maps){
     const m=G.maps[mid];
     if(!m.coltivabile) continue;
@@ -2109,7 +2127,8 @@ function nuovoGiorno(svenuto, multa){
           } else if(s.crop.stage < C.fasi.length){
             s.crop.gg++;
             const need = C.fasi[Math.min(s.crop.stage, C.fasi.length-1)];
-            const veloce = s.concime==='concime' && Math.random()<0.3;
+            const veloce = (s.concime==='concime' && Math.random()<0.3)
+                         || (G.meteo==='temporale' && Math.random()<0.28); // il temporale spinge la crescita
             if(s.crop.gg >= need || veloce){ s.crop.stage++; s.crop.gg=0; }
           }
         }
@@ -2153,6 +2172,9 @@ function nuovoGiorno(svenuto, multa){
   /* --- mondo --- */
   WORLD.nuovoGiorno(G.maps, stag, (G.giornoTot*7919+13)>>>0);
 
+  /* --- evento notturno casuale (applica subito l'effetto sul mondo) --- */
+  const eventoNotte = tiraEventoNotte(cambioStagione);
+
   /* --- eventi/lore --- */
   const eventi=[];
   if(uova) eventi.push({t:'uova', n:uova});
@@ -2184,6 +2206,13 @@ function nuovoGiorno(svenuto, multa){
         objCacheClear();
       }
       if(uova) UI.toast(uova+' uovo/a dal pollaio.','good','uovo');
+
+      // avviso di gelo
+      if(G.gelo) setTimeout(()=>UI.toast('Gelata forte: fiume e pozzo sono ghiacciati per oggi.','bad'), 700);
+      // evento della notte
+      if(eventoNotte) setTimeout(()=>UI.toast(eventoNotte.msg, eventoNotte.tipo||undefined, eventoNotte.icona), 1000);
+      // mercato del giorno
+      if(G.mercato) setTimeout(()=>UI.toast('Mercato di oggi: la '+IT.nome(G.mercato.item)+' vale ×'+G.mercato.mult+' da Bruno e alla cassa.','gold', G.mercato.item), 1400);
 
       if(voci.length){
         setTimeout(()=>UI.riepilogo(G, voci, tot, dopoRisveglio), 500);
@@ -2239,6 +2268,81 @@ function tiraMeteo(){
   if(r<0.42) return 'vento';
   if(r<0.56) return 'nuvoloso';
   return 'sereno';
+}
+
+/* ===================================================================
+   MERCATO DINAMICO — ogni giorno un prodotto è più richiesto
+   =================================================================== */
+function scegliMercato(){
+  const pool = Object.keys(DATA.ITEMS).filter(k=>{
+    const I=DATA.ITEMS[k];
+    return I && I.prezzo>0 && !I.spazzatura &&
+           (I.cat==='raccolto'||I.cat==='foraggio'||I.cat==='pesce'||I.cat==='animale');
+  });
+  if(!pool.length) return null;
+  const item = pool[(Math.random()*pool.length)|0];
+  const mult = Math.round((1.6 + Math.random()*0.6)*10)/10; // ×1.6–×2.2
+  return { item, mult };
+}
+
+/* ===================================================================
+   EVENTI NOTTURNI — piccole sorprese tra una notte e l'altra.
+   Ogni evento applica subito l'effetto sul mondo e ritorna il messaggio
+   (o null se stanotte non aveva nulla da fare).
+   =================================================================== */
+function eventiNotturniPossibili(){
+  const st = G.stagione().id;
+  const seed = (G.giornoTot*2654435761 + 77)>>>0;
+  return [
+    { icona:'legna', tipo:'', applica(){
+        const n = WORLD.spargiSu(G.maps.bosco,'erba',7,R=>({t:'ramo', v:(R()*3)|0}), seed);
+        return n ? 'Vento forte nella notte: il bosco è disseminato di rami caduti.' : null;
+    }},
+    { icona:'zappa', tipo:'bad', applica(){
+        const m=G.maps.podere, colti=[];
+        for(let i=0;i<m.suolo.length;i++){ const s=m.suolo[i]; if(s && s.crop) colti.push(i); }
+        if(!colti.length) return null;
+        const n = Math.min(colti.length, 1 + ((Math.random()*2)|0));
+        for(let k=0;k<n;k++){
+          const i = colti.splice((Math.random()*colti.length)|0,1)[0];
+          m.suolo[i].crop=null; m.suolo[i].appassita=true;
+        }
+        return 'I cinghiali hanno rovistato l\'orto: '+n+(n===1?' coltura calpestata.':' colture calpestate.');
+    }},
+    { icona:'ametista', tipo:'good', applica(){
+        const n = WORLD.spargiSu(G.maps.grotta,'grotta',8,R=>WORLD.sasso(['ametista','quarzo','oro'][(R()*3)|0]), seed);
+        return n ? 'Luna piena: nella miniera sono affiorate gemme in abbondanza.' : null;
+    }},
+    { icona:'viola', tipo:'good', applica(){
+        const forSt = Object.keys(DATA.ITEMS).filter(k=>DATA.ITEMS[k].cat==='foraggio' && DATA.ITEMS[k].stagione===st);
+        if(!forSt.length) return null;
+        const n = WORLD.spargiSu(G.maps.bosco,'erba',6,R=>({t:'foraggio', item:forSt[(R()*forSt.length)|0]}), seed);
+        return n ? 'Una nidiata di lucciole: il sottobosco è tornato a fiorire.' : null;
+    }},
+    { icona:'carpa', tipo:'good', applica(){
+        if(!G.puoiAggiungere('carpa',1)) return null;
+        G.aggiungi('carpa',1);
+        return 'Il gatto randagio ha lasciato un pesce sulla soglia di casa.';
+    }},
+    { icona:'miele', tipo:'good', applica(){
+        if(!G.puoiAggiungere('miele',1)) return null;
+        G.aggiungi('miele',1);
+        return 'Le api hanno lavorato tutta la notte: un vasetto di miele sul davanzale.';
+    }}
+  ];
+}
+
+function tiraEventoNotte(cambioStagione){
+  if(cambioStagione) return null;          // la notte di cambio stagione ha già il suo annuncio
+  if(Math.random() < 0.40) return null;    // notte tranquilla
+  const L = eventiNotturniPossibili();
+  // pesca a caso finché uno ha davvero un effetto da mostrare
+  while(L.length){
+    const e = L.splice((Math.random()*L.length)|0, 1)[0];
+    const msg = e.applica();
+    if(msg) return { icona:e.icona, tipo:e.tipo, msg };
+  }
+  return null;
 }
 
 /* ===================================================================
@@ -2425,7 +2529,7 @@ function costruisciDati(){
     lettere:G.lettere, ricetteNote:G.ricetteNote,
     cassaConsegna:G.cassaConsegna, stats:G.stats, animali:G.animali,
     look:G.look, vistoFiammella:G.vistoFiammella, introSerafina:G.introSerafina,
-    tutorialFatto:G.tutorialFatto,
+    tutorialFatto:G.tutorialFatto, mercato:G.mercato, gelo:G.gelo,
     px:G.p.px, py:G.p.py,
     maps:{
       podere:serializzaMappa(G.maps.podere),
@@ -2530,7 +2634,7 @@ function carica(){
                     'anno','giornoTot','ora','meteo','meteoDomani','inv','invMax','slotSel',
                     'skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
                     'braci','lettere','ricetteNote','cassaConsegna','stats','animali','look',
-                    'vistoFiammella','introSerafina','tutorialFatto']){
+                    'vistoFiammella','introSerafina','tutorialFatto','mercato','gelo']){
       if(d[k]!==undefined) G[k]=d[k];
     }
     // ricostruisci le costruzioni sbloccate
@@ -2558,6 +2662,7 @@ function collegaInput(){
     if(k==='shift'){ tasti['shift']=true; }
     tasti[k]=true;
     SND.resume();
+    attivita();
 
     if(!G.inGioco) return;
 
@@ -2618,6 +2723,7 @@ function collegaInput(){
   cvs.addEventListener('mousedown', e=>{
     if(!G.inGioco) return;
     SND.resume();
+    attivita();
     if(UI.modalAperta()||UI.dialogoAttivo()) return;
     const r=cvs.getBoundingClientRect();
     mouseWorld = REND.schermoAMondo(e.clientX-r.left, e.clientY-r.top, G.cam);
@@ -2634,6 +2740,7 @@ function collegaInput(){
   cvs.addEventListener('wheel', e=>{
     if(!G.inGioco || UI.modalAperta()) return;
     e.preventDefault();
+    attivita();
     G.slotSel = (G.slotSel + (e.deltaY>0?1:-1) + 9) % 9;
     costruisciHotbar();
   }, {passive:false});
@@ -2649,6 +2756,7 @@ function collegaInput(){
   let touchStart=null;
   cvs.addEventListener('touchstart', e=>{
     SND.resume();
+    attivita();
     if(!G.inGioco) return;
     const t=e.touches[0];
     const r=cvs.getBoundingClientRect();
@@ -2676,6 +2784,60 @@ function collegaInput(){
     touchStart=null;
   }, {passive:true});
 }
+
+/* ===================================================================
+   TOOLTIP D'ESPLORAZIONE
+   Quando il giocatore resta fermo, un piccolo invito a scoprire il mondo.
+   Prima suggerisce le cose che non ha ancora provato, poi consigli vari.
+   =================================================================== */
+let hintPrec = '';
+function attivita(){ G.ultimaAzione = performance.now(); }
+
+function suggerimentiEsplorazione(){
+  const s = G.stats, c = G.costruzioni, nuovi = [];
+  // 1) cose ancora da scoprire (le più utili per chi comincia)
+  if(s.raccolti===0)      nuovi.push('Prova a zappare la terra, pianta un seme e annaffialo: la fattoria nasce così. 🌱');
+  if(s.pesci===0)         nuovi.push('Hai una canna: lanciala nell\'acqua del fiume o del lago e tieni premuto Spazio. 🎣');
+  if(s.alberi===0)        nuovi.push('Con l\'ascia abbatti gli alberi del bosco e fai scorta di legna. 🪓');
+  if(!s.visitatoPaese)    nuovi.push('A ovest c\'è il paese di Fioralba: da Bruno compri semi e vendi il raccolto. 🏘️');
+  if(!s.visitatoBosco)    nuovi.push('A sud si apre il bosco: funghi, foraggio e l\'erborista Serafina ti aspettano. 🌲');
+  if(!s.visitatoGrotta)   nuovi.push('A nord del paese c\'è la miniera: col piccone trovi minerali e gemme. ⛏️');
+  if((s.regali||0)===0)   nuovi.push('Fai un regalo agli abitanti: ognuno ha i suoi gusti e l\'amicizia cresce. 🎁');
+  if(!c.ponte)            nuovi.push('Il fabbro Tobia può costruirti il ponte per la radura del Santuario. 🌉');
+  if((s.piatti||0)===0)   nuovi.push('In cucina combini gli ingredienti in piatti che danno più energia. 🍳');
+  if(nuovi.length) return nuovi;
+
+  // 2) consigli generali per chi ha già girato un po'
+  return [
+    'Parla ogni giorno con gli abitanti: ricordano quello che dici. 💬',
+    'Il Santuario nel bosco chiede i frutti delle quattro stagioni. Porta ciò che matura. 🏮',
+    'La cassa di consegna vicino a casa paga durante la notte: riempila prima di dormire. 📦',
+    'Con una serra coltivi anche fuori stagione. 🪴',
+    'Alla Locanda, Marisol insegna nuove ricette se le porti qualcosa di speciale. 🍲',
+    'Di notte, al molo, abboccano pesci che di giorno non vedrai mai. 🌙',
+    'Guarda il meteo di domani accanto all\'orologio: se pioverà, stanotte non serve annaffiare. ☔',
+    'Concima il terreno per raccolti più ricchi e più veloci. ✨',
+    'Ogni giorno un prodotto vale di più al mercato: vendi quello per guadagnare di più. 🪙'
+  ];
+}
+
+function mostraHintEsplora(){
+  if(!G.inGioco || G.p.dorme || pesca.attiva) return;
+  if(UI.modalAperta() || UI.dialogoAttivo()) return;
+  if(!$('#letter').classList.contains('hidden')) return;
+  if(!$('#tutorial').classList.contains('hidden')) return;         // non disturbare durante la guida
+  if(!G.tutorialFatto && (G.stats.giorniGiocati||0) < 1) return;   // lascia respirare i primi minuti
+  const idle = performance.now() - (G.ultimaAzione || 0);
+  if(idle < 22000) return;                                         // fermo da almeno ~22 secondi
+
+  const pool = suggerimentiEsplorazione();
+  let msg = pool[(Math.random()*pool.length)|0];
+  for(let g=0; msg===hintPrec && pool.length>1 && g<6; g++) msg = pool[(Math.random()*pool.length)|0];
+  hintPrec = msg;
+  UI.toast(msg, 'hint');
+  G.ultimaAzione = performance.now();                              // riparte il conteggio: niente raffiche
+}
+setInterval(mostraHintEsplora, 6000);
 
 function gettaOggetto(){
   const s=G.slot();

@@ -196,6 +196,12 @@ kbd{
 .toast.good{border-color:rgba(127,176,105,.7);}
 .toast.bad{border-color:rgba(217,105,79,.75);}
 .toast.gold{border-color:var(--gold); color:var(--gold);}
+.toast.hint{
+  background:linear-gradient(180deg, rgba(246,230,200,.97), rgba(233,211,171,.97));
+  color:var(--ink); border-color:rgba(201,146,43,.7); border-style:dashed;
+  font-weight:800; max-width:min(360px,86vw);
+}
+.toast.hint::before{ content:'🏮'; font-size:16px; }
 .toast.out{animation:toastout .35s ease-in forwards;}
 @keyframes toastin{from{opacity:0;transform:translateY(16px) scale(.9);}to{opacity:1;transform:none;}}
 @keyframes toastout{to{opacity:0;transform:translateY(-10px) scale(.96);}}
