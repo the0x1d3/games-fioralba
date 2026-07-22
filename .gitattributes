@@ -1,2 +1,11 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Normalizza i fine-riga: nel repository sempre LF, coerente su Windows/Mac/Linux.
+* text=auto eol=lf
+
+# File binari (nessuno per ora, ma nel caso aggiungessi immagini o font)
+*.png binary
+*.jpg binary
+*.gif binary
+*.woff binary
+*.woff2 binary
+*.mp3 binary
+*.ogg binary

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Fioralba — La Lanterna del Solstizio</title>
+<link rel="stylesheet" href="css/style.css?v=8">
+</head>
+<body>
+
+<div id="app">
+  <canvas id="game"></canvas>
+
+  <!-- ============ HUD ============ -->
+  <div id="hud" class="hidden">
+
+    <div id="topbar">
+      <div id="clockbox" class="panel">
+        <div id="dateline"><span id="season-icon"></span><span id="datetext">Primavera 1</span></div>
+        <div id="timetext">6:00</div>
+        <div id="weatherline"><span id="weather-icon"></span><span id="weathertext"></span></div>
+      </div>
+      <div id="goldbox" class="panel">
+        <span class="coin"></span><span id="goldtext">500</span>
+      </div>
+    </div>
+
+    <div id="sidebar">
+      <div id="energybox" class="panel">
+        <div class="statlabel">Energia</div>
+        <div class="vbar"><div id="energyfill"></div><span id="energytext">100</span></div>
+      </div>
+    </div>
+
+    <div id="hotbar-wrap">
+      <div id="hotbar-name" class="hidden"></div>
+      <div id="hotbar"></div>
+    </div>
+
+    <div id="toasts"></div>
+    <div id="prompt" class="hidden"></div>
+
+    <!-- ============ TUTORIAL ============ -->
+    <div id="tutorial" class="hidden">
+      <div class="tut-card">
+        <div class="tut-icon">🏮</div>
+        <div class="tut-body">
+          <div class="tut-title"></div>
+          <div class="tut-text"></div>
+          <div class="tut-foot">
+            <div class="tut-dots"></div>
+            <button class="tut-next hidden">Continua ▸</button>
+            <button class="tut-skip">Salta guida</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="quickbtns">
+      <button id="btn-inv"   title="Inventario (I)">🎒</button>
+      <button id="btn-craft" title="Artigianato (C)">🔨</button>
+      <button id="btn-quest" title="Diario (J)">📖</button>
+      <button id="btn-map"   title="Mappa (M)">🗺️</button>
+      <button id="btn-menu"  title="Menu (Esc)">⚙️</button>
+    </div>
+  </div>
+
+  <!-- ============ DIALOGUE ============ -->
+  <div id="dialogue" class="hidden">
+    <div class="dlg-portrait"><canvas id="dlg-face" width="96" height="96"></canvas></div>
+    <div class="dlg-body">
+      <div class="dlg-name"></div>
+      <div class="dlg-text"></div>
+      <div class="dlg-choices"></div>
+      <div class="dlg-next">▼</div>
+    </div>
+  </div>
+
+  <!-- ============ MODALS ============ -->
+  <div id="modal-wrap" class="hidden">
+    <div id="modal" class="panel">
+      <div id="modal-head">
+        <h2 id="modal-title">Titolo</h2>
+        <button id="modal-close">✕</button>
+      </div>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- ============ TITLE SCREEN ============ -->
+  <div id="title">
+    <canvas id="title-art"></canvas>
+    <div id="title-inner">
+      <div id="logo">
+        <div class="logo-sub">La Lanterna del Solstizio</div>
+        <h1>FIORALBA</h1>
+        <div class="logo-tag">un piccolo podere, una valle da risvegliare</div>
+      </div>
+      <div id="title-menu">
+        <button id="btn-continue" class="bigbtn hidden">Continua</button>
+        <button id="btn-new" class="bigbtn">Nuova Partita</button>
+        <button id="btn-howto" class="bigbtn ghost">Come si gioca</button>
+      </div>
+      <div id="title-foot">v1.0 · fatto con affetto · premi <kbd>F</kbd> per schermo intero</div>
+    </div>
+  </div>
+
+  <!-- ============ INTRO / LETTER ============ -->
+  <div id="letter" class="hidden">
+    <div class="letter-paper">
+      <div class="letter-text"></div>
+      <button class="letter-btn">Chiudi la lettera</button>
+    </div>
+  </div>
+
+  <!-- ============ DAY TRANSITION ============ -->
+  <div id="fade"></div>
+  <div id="daycard" class="hidden">
+    <div class="daycard-inner">
+      <div class="dc-season"></div>
+      <div class="dc-day"></div>
+      <div class="dc-weather"></div>
+    </div>
+  </div>
+
+  <!-- ============ FISHING ============ -->
+  <div id="fishing" class="hidden">
+    <div class="fish-frame">
+      <div class="fish-track">
+        <div class="fish-bar"></div>
+        <div class="fish-target"></div>
+        <div class="fish-icon">🐟</div>
+      </div>
+      <div class="fish-progwrap"><div class="fish-prog"></div></div>
+    </div>
+    <div class="fish-hint">Tieni premuto <kbd>Spazio</kbd> per salire</div>
+  </div>
+
+</div>
+
+<script src="js/data.js?v=8"></script>
+<script src="js/art.js?v=8"></script>
+<script src="js/fx.js?v=8"></script>
+<script src="js/audio.js?v=8"></script>
+<script src="js/world.js?v=8"></script>
+<script src="js/mobs.js?v=8"></script>
+<script src="js/ui.js?v=8"></script>
+<script src="js/tutorial.js?v=8"></script>
+<script src="js/render.js?v=8"></script>
+<script src="js/game.js?v=8"></script>
+</body>
+</html>

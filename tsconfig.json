@@ -1,0 +1,22 @@
+{
+  "//": "Config per il type-checking di Fioralba. NIENTE build: 'noEmit' è true, quindi TypeScript non produce file — controlla soltanto. Il gioco resta 'apri e gioca'. VS Code usa questo file automaticamente per autocompletamento e descrizioni al passaggio del mouse.",
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+
+    "allowJs": true,
+    "checkJs": false,
+
+    "noEmit": true,
+    "skipLibCheck": true,
+
+    "strict": true,
+    "noImplicitAny": false,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["js/**/*.js", "types/**/*.d.ts"],
+  "exclude": ["node_modules"]
+}

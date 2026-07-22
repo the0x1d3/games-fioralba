@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "headers": [
+    {
+      "//": "L'HTML deve rivalidare sempre, così i nuovi ?v=N sui tag <script> vengono visti.",
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    },
+    {
+      "//": "js e css cambiano URL quando bumpi ?v=N, quindi si possono cachare a lungo.",
+      "source": "/(js|css)/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000" }
+      ]
+    }
+  ]
+}

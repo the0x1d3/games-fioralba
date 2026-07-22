@@ -1,0 +1,27 @@
+# --- Dipendenze (il gioco non ne ha, ma nel caso aggiungessi strumenti) ---
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# --- Output di build (non usiamo build: nessuno di questi dovrebbe esistere) ---
+dist/
+build/
+.vercel/
+
+# --- File di sistema ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Editor / IDE ---
+.vscode/
+.idea/
+*.swp
+
+# --- Strumenti locali di Claude Code (config di anteprima, non serve al deploy) ---
+.claude/
+
+# --- Log e temporanei ---
+*.log
+tmp/
