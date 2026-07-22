@@ -39,8 +39,8 @@ function statoIniziale(){
     lettere:{}, ricetteNote:{zuppa_contadina:true, frittata:true},
     cassaConsegna:[],
     stats:{raccolti:0, pesci:0, alberi:0, sassi:0, guadagno:0, giorniGiocati:0,
-           piatti:0, regali:0, visitatoBosco:false, visitatoGrotta:false, visitatoPaese:false},
-    mercato:null, gelo:false,
+           piatti:0, regali:0, richiesteFatte:0, visitatoBosco:false, visitatoGrotta:false, visitatoPaese:false},
+    mercato:null, gelo:false, richieste:[], richiestaSeq:0,
     tutorialFatto:false,
     animali:[],
     look:{ pelle:'#e8bd8f', capelli:'#6b4423', maglia:'#4f8ab0', pant:'#3d5470', cappello:'#c9a44c' }
@@ -493,6 +493,8 @@ function nuovaPartita(){
   G.p.px = 8*T+16; G.p.py = 10*T+16;
   G.animali = [{tipo:'gatto', mappa:'podere', px:10*T, py:9*T, dir:1, tx:10, ty:9, wait:0}];
   WORLD.nuovoGiorno(G.maps, G.stagione().id, 12345);
+  G.richieste = [];
+  aggiornaRichieste();          // qualche richiesta già dal primo giorno
   G.lettere.intro = true;
   avviaGioco(true);
 }
@@ -2101,6 +2103,8 @@ function nuovoGiorno(svenuto, multa){
   G.gelo = (stag==='inverno' && G.meteo==='neve' && Math.random()<0.5);
   /* --- mercato dinamico: oggi un prodotto vale di più --- */
   G.mercato = scegliMercato();
+  /* --- bacheca: aggiorna le richieste degli abitanti --- */
+  const richInfo = aggiornaRichieste();
 
   for(const mid in G.maps){
     const m=G.maps[mid];
@@ -2213,6 +2217,9 @@ function nuovoGiorno(svenuto, multa){
       if(eventoNotte) setTimeout(()=>UI.toast(eventoNotte.msg, eventoNotte.tipo||undefined, eventoNotte.icona), 1000);
       // mercato del giorno
       if(G.mercato) setTimeout(()=>UI.toast('Mercato di oggi: la '+IT.nome(G.mercato.item)+' vale ×'+G.mercato.mult+' da Bruno e alla cassa.','gold', G.mercato.item), 1400);
+      // bacheca delle richieste
+      if(richInfo && richInfo.nuove)   setTimeout(()=>UI.toast('📋 Nuove richieste degli abitanti: guarda il Diario (J).','gold'), 1800);
+      if(richInfo && richInfo.scadute) setTimeout(()=>UI.toast(richInfo.scadute+(richInfo.scadute===1?' richiesta è scaduta.':' richieste sono scadute.'),'bad'), 2100);
 
       if(voci.length){
         setTimeout(()=>UI.riepilogo(G, voci, tot, dopoRisveglio), 500);
@@ -2344,6 +2351,69 @@ function tiraEventoNotte(cambioStagione){
   }
   return null;
 }
+
+/* ===================================================================
+   RICHIESTE DEGLI ABITANTI — piccole missioni a tempo (bacheca).
+   Ogni giorno la bacheca si aggiorna: si tolgono le scadute, si
+   mantengono 2–3 richieste attive. Consegni entro la scadenza per
+   ottenere monete e amicizia.
+   =================================================================== */
+function generaRichiesta(npcId){
+  const N = DATA.NPCS[npcId]; if(!N) return null;
+  const pool = Object.keys(DATA.ITEMS).filter(k=>{
+    const I = DATA.ITEMS[k];
+    return I && I.prezzo>0 && I.prezzo<=140 && !I.spazzatura &&
+           ['raccolto','foraggio','pesce','animale','materiale'].indexOf(I.cat)>=0;
+  });
+  if(!pool.length) return null;
+  const gusti = ((N.regali && N.regali.piace) || []).filter(id=>DATA.ITEMS[id] && !DATA.ITEMS[id].spazzatura);
+  let item = (gusti.length && Math.random()<0.5) ? gusti[(Math.random()*gusti.length)|0]
+                                                 : pool[(Math.random()*pool.length)|0];
+  if(!item) return null;
+  const prezzo = IT.prezzo(item);
+  const qta = Math.max(2, Math.min(12, Math.round(60/Math.max(6,prezzo)) + 1 + ((Math.random()*3)|0)));
+  const premio = Math.round(prezzo*qta*1.5) + 60;             // paga più che venderli
+  const amicizia = 40 + ((Math.random()*4)|0)*15;            // +40..85 amicizia
+  const giorni = 2 + ((Math.random()*3)|0);                  // scade tra 2–4 giorni
+  G.richiestaSeq = (G.richiestaSeq||0)+1;
+  return { id:'rq'+G.richiestaSeq, npc:npcId, item, qta,
+           scadenza:G.giornoTot+giorni, premio, amicizia, fatta:false };
+}
+
+function aggiornaRichieste(){
+  if(!Array.isArray(G.richieste)) G.richieste = [];
+  let scadute=0;
+  G.richieste = G.richieste.filter(r=>{
+    if(r.fatta) return false;
+    if(G.giornoTot > r.scadenza){ scadute++; return false; }
+    return true;
+  });
+  const npcKeys = Object.keys(DATA.NPCS).filter(id=>id!=='fiammella');
+  const target = 2 + ((Math.random()*2)|0);                  // mantieni 2–3 richieste attive
+  let nuove=0, guard=0;
+  while(G.richieste.length < target && guard++ < 30){
+    const usati  = new Set(G.richieste.map(r=>r.npc));        // un solo incarico per abitante alla volta
+    const liberi = npcKeys.filter(id=>!usati.has(id));
+    if(!liberi.length) break;
+    const r = generaRichiesta(liberi[(Math.random()*liberi.length)|0]);
+    if(r){ G.richieste.push(r); nuove++; }
+  }
+  return { scadute, nuove };
+}
+
+/* consegna una richiesta: toglie gli oggetti, dà monete e amicizia */
+G.completaRichiesta = function(r){
+  if(!r || r.fatta) return false;
+  if(G.conta(r.item) < r.qta) return false;
+  G.togli(r.item, r.qta);
+  G.oro += r.premio; G.stats.guadagno += r.premio;
+  G.amicizia[r.npc] = Math.max(0,(G.amicizia[r.npc]||0)+r.amicizia);
+  r.fatta = true;
+  G.richieste = G.richieste.filter(x=>x!==r);
+  G.stats.richiesteFatte = (G.stats.richiesteFatte||0)+1;
+  SND.play('regalo');
+  return true;
+};
 
 /* ===================================================================
    LUCI
@@ -2530,6 +2600,7 @@ function costruisciDati(){
     cassaConsegna:G.cassaConsegna, stats:G.stats, animali:G.animali,
     look:G.look, vistoFiammella:G.vistoFiammella, introSerafina:G.introSerafina,
     tutorialFatto:G.tutorialFatto, mercato:G.mercato, gelo:G.gelo,
+    richieste:G.richieste, richiestaSeq:G.richiestaSeq,
     px:G.p.px, py:G.p.py,
     maps:{
       podere:serializzaMappa(G.maps.podere),
@@ -2634,7 +2705,8 @@ function carica(){
                     'anno','giornoTot','ora','meteo','meteoDomani','inv','invMax','slotSel',
                     'skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
                     'braci','lettere','ricetteNote','cassaConsegna','stats','animali','look',
-                    'vistoFiammella','introSerafina','tutorialFatto','mercato','gelo']){
+                    'vistoFiammella','introSerafina','tutorialFatto','mercato','gelo',
+                    'richieste','richiestaSeq']){
       if(d[k]!==undefined) G[k]=d[k];
     }
     // ricostruisci le costruzioni sbloccate
@@ -2810,6 +2882,7 @@ function suggerimentiEsplorazione(){
   // 2) consigli generali per chi ha già girato un po'
   return [
     'Parla ogni giorno con gli abitanti: ricordano quello che dici. 💬',
+    'Nel Diario, alla scheda Richieste, gli abitanti chiedono aiuto e pagano bene. 📋',
     'Il Santuario nel bosco chiede i frutti delle quattro stagioni. Porta ciò che matura. 🏮',
     'La cassa di consegna vicino a casa paga durante la notte: riempila prima di dormire. 📦',
     'Con una serra coltivi anche fuori stagione. 🪴',

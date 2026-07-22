@@ -734,7 +734,8 @@ U.diario = function(G){
   let tab='obiettivi';
   U.modal('Diario', body=>{
     const tabs=document.createElement('div'); tabs.className='tabs';
-    for(const [k,lab] of [['obiettivi','Obiettivi'],['abitanti','Abitanti'],['lettere','Lettere'],['stats','Podere']]){
+    const nRich=(G.richieste||[]).filter(r=>!r.fatta).length;
+    for(const [k,lab] of [['obiettivi','Obiettivi'],['richieste','Richieste'+(nRich?' ('+nRich+')':'')],['abitanti','Abitanti'],['lettere','Lettere'],['stats','Podere']]){
       const b=document.createElement('button');
       b.className='tab'+(tab===k?' on':'');
       b.textContent=lab; b.onclick=()=>{ tab=k; U.aggiorna(); };
@@ -776,6 +777,50 @@ U.diario = function(G){
                        `<div class="ringr">${o.prog}</div>`;
         r.appendChild(info);
         body.appendChild(r);
+      }
+    }
+    else if(tab==='richieste'){
+      const intro=document.createElement('div'); intro.className='muted'; intro.style.marginBottom='12px';
+      intro.textContent='Gli abitanti chiedono una mano. Consegna in tempo: monete e amicizia in cambio.';
+      body.appendChild(intro);
+
+      const attive=(G.richieste||[]).filter(r=>!r.fatta);
+      if(!attive.length){
+        const n=document.createElement('div'); n.className='muted';
+        n.textContent='Nessuna richiesta al momento. Torna a controllare domani.';
+        body.appendChild(n);
+      }
+      for(const r of attive){
+        const N=DATA.NPCS[r.npc]; if(!N) continue;
+        const row=document.createElement('div'); row.className='row';
+
+        const c=document.createElement('canvas'); c.width=c.height=40;
+        const cx=c.getContext('2d'); cx.imageSmoothingEnabled=false;
+        cx.drawImage(ART.face(r.npc,N.look),0,0,40,40); c.style.borderRadius='7px';
+        row.appendChild(c);
+
+        const info=document.createElement('div'); info.className='rinfo';
+        const restano = r.scadenza - G.giornoTot;
+        const scad = restano<=0 ? '<b style="color:#d9694f">ultimo giorno!</b>'
+                                : 'scade tra '+restano+(restano===1?' giorno':' giorni');
+        const ho = G.conta(r.item);
+        info.innerHTML =
+          `<div class="rname">${N.nome} — ${r.qta}× ${IT.nome(r.item)}</div>`+
+          `<div class="rdesc">Ricompensa: <b>${r.premio}</b> monete · +amicizia · <span style="opacity:.85">${scad}</span></div>`+
+          `<div class="ringr">Ne hai ${ho}/${r.qta}</div>`;
+        row.appendChild(info);
+
+        const b=document.createElement('button'); b.className='btn'; b.textContent='Consegna';
+        b.disabled = ho < r.qta;
+        b.onclick=()=>{
+          const nome=N.nome, premio=r.premio;
+          if(G.completaRichiesta(r)){
+            U.toast(nome+' ringrazia di cuore! +'+premio+' monete','gold');
+            G.aggiornaHUD(); U.aggiorna();
+          } else U.toast('Ti serve ancora qualcosa per completarla.','bad');
+        };
+        row.appendChild(b);
+        body.appendChild(row);
       }
     }
     else if(tab==='abitanti'){
