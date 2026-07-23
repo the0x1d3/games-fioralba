@@ -100,7 +100,9 @@ U.toast = function(msg, tipo, itemId){
   s.textContent = msg;
   el.appendChild(s);
   box.appendChild(el);
-  setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(), 400); }, 2600);
+  // durata proporzionale alla lunghezza: i messaggi lunghi restano di più
+  const dur = Math.min(8500, Math.max(4200, String(msg).length*75));
+  setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(), 400); }, dur);
   while(box.children.length>5) box.firstChild.remove();
 };
 
@@ -946,25 +948,32 @@ U.diario = function(G, tabIniziale){
    =================================================================== */
 U.mappa = function(G){
   U.modal('Valle di Fioralba', body=>{
-    const W=440, H=320;
+    const W=460, H=400;
     const c=document.createElement('canvas');
     c.width=W; c.height=H;
     c.style.cssText='width:100%;border:3px solid #8a6038;border-radius:10px;display:block';
     const x=c.getContext('2d');
 
     /* --- disposizione fedele ai passaggi reali ---
-       Miniera è a nord del paese; il Bosco corre a sud, sotto entrambi. */
+       A nord del paese la Miniera e, ancora sopra, il Passo innevato.
+       A sud-est la Piazza del Porto e la Costa; a sud il Bosco. */
     const zone=[
-      {id:'grotta',   n:'Miniera',  x:250, y:16,  w:128, h:64,  col:'#6d635a', col2:'#544c45', ico:'miniera'},
-      {id:'podere',   n:'Podere',   x:24,  y:104, w:162, h:92,  col:'#7fb85c', col2:'#5f9442', ico:'podere'},
-      {id:'fioralba', n:'Fioralba', x:216, y:104, w:162, h:92,  col:'#c4b26a', col2:'#9c8c4c', ico:'paese'},
-      {id:'bosco',    n:'Bosco',    x:52,  y:222, w:300, h:78,  col:'#4f8a46', col2:'#356030', ico:'bosco'}
+      {id:'montagna', n:'Passo',    x:252, y:8,   w:150, h:48,  col:'#e2e8ee', col2:'#b6c2cc', ico:'montagna'},
+      {id:'grotta',   n:'Miniera',  x:252, y:64,  w:150, h:48,  col:'#6d635a', col2:'#544c45', ico:'miniera'},
+      {id:'podere',   n:'Podere',   x:30,  y:124, w:150, h:86,  col:'#7fb85c', col2:'#5f9442', ico:'podere'},
+      {id:'fioralba', n:'Fioralba', x:252, y:124, w:150, h:86,  col:'#c4b26a', col2:'#9c8c4c', ico:'paese'},
+      {id:'bosco',    n:'Bosco',    x:30,  y:224, w:210, h:100, col:'#4f8a46', col2:'#356030', ico:'bosco'},
+      {id:'piazza',   n:'Piazza',   x:262, y:224, w:130, h:58,  col:'#cdbd93', col2:'#a89568', ico:'piazza'},
+      {id:'spiaggia', n:'Costa',    x:262, y:294, w:130, h:54,  col:'#e8dcac', col2:'#cbb26c', ico:'spiaggia'}
     ];
     const strade=[
-      [186,150, 216,150],   // podere ↔ fioralba
-      [297,104, 297,80 ],   // fioralba ↔ miniera
-      [105,196, 105,222],   // podere ↔ bosco
-      [297,196, 297,222]    // fioralba ↔ bosco
+      [327,64, 327,56 ],    // grotta ↔ montagna
+      [327,124, 327,112],   // fioralba ↔ miniera
+      [180,167, 252,167],   // podere ↔ fioralba
+      [327,224, 327,210],   // fioralba ↔ piazza
+      [327,294, 327,282],   // piazza ↔ costa
+      [105,210, 105,224],   // podere ↔ bosco
+      [255,210, 235,224]    // fioralba ↔ bosco
     ];
 
     /* --- pergamena --- */
@@ -1028,8 +1037,9 @@ U.mappa = function(G){
       x.fillText(z.n, z.x+18, z.y+24);
     }
 
-    /* --- segnalino "sei qui" --- */
-    const z = zone.find(z=>z.id===G.mappaId);
+    /* --- segnalino "sei qui" (le miniere profonde ricadono sulla Miniera) --- */
+    const zid = (G.mappaId==='grotta2'||G.mappaId==='grotta3') ? 'grotta' : G.mappaId;
+    const z = zone.find(z=>z.id===zid);
     if(z){
       const m=G.mappa();
       const pxp = z.x + 10 + (G.p.px/(m.w*32))*(z.w-20);
@@ -1067,8 +1077,9 @@ U.mappa = function(G){
 
     const n=document.createElement('div'); n.className='muted'; n.style.marginTop='12px';
     n.innerHTML = `<b>Sei in:</b> ${G.mappa().nome}. `+
-      `Dal podere: <b>est</b> per il paese, <b>sud</b> per il bosco. `+
-      `Dal paese: <b>nord</b> per la miniera.`;
+      `Dal podere: <b>est</b> il paese, <b>sud</b> il bosco. `+
+      `Dal paese: <b>nord</b> la miniera (e ancora su il passo innevato), <b>sud-est</b> la piazza e la costa. `+
+      `In fondo alla miniera scendi ai livelli profondi.`;
     body.appendChild(n);
   });
 };
@@ -1148,6 +1159,34 @@ function disegnaTrama(x, z){
     // stagno a ovest
     x.fillStyle='rgba(70,130,170,0.5)';
     x.beginPath(); x.ellipse(z.x+46,z.y+z.h-26,24,13,0,0,6.3); x.fill();
+  }
+  if(z.ico==='montagna'){
+    for(let i=0;i<3;i++){
+      const bx=z.x+34+i*42, by=z.y+z.h-8;
+      x.fillStyle='rgba(140,158,176,0.75)';
+      x.beginPath(); x.moveTo(bx,by); x.lineTo(bx-18,z.y+18); x.lineTo(bx+18,by); x.closePath(); x.fill();
+      x.fillStyle='rgba(255,255,255,0.9)';
+      x.beginPath(); x.moveTo(bx-18,z.y+18); x.lineTo(bx-11,z.y+26); x.lineTo(bx-25,z.y+26); x.closePath(); x.fill();
+    }
+  }
+  if(z.ico==='piazza'){
+    const fx=z.x+z.w/2, fy=z.y+z.h/2+2;
+    x.fillStyle='rgba(70,130,170,0.5)'; x.beginPath(); x.arc(fx,fy,9,0,6.3); x.fill();
+    x.strokeStyle='rgba(120,80,44,0.75)'; x.lineWidth=2; x.stroke();
+    for(let i=0;i<3;i++){ const bx=z.x+24+i*34, by=z.y+z.h-16;
+      x.fillStyle='rgba(160,70,50,0.7)'; x.fillRect(bx,by,16,8);
+      x.fillStyle='rgba(120,70,44,0.8)'; x.fillRect(bx,by+8,16,4);
+    }
+  }
+  if(z.ico==='spiaggia'){
+    x.strokeStyle='rgba(70,140,175,0.65)'; x.lineWidth=2.5;
+    for(let r=0;r<3;r++){
+      const yy=z.y+z.h-10-r*8;
+      x.beginPath();
+      for(let bx=z.x+8;bx<z.x+z.w-8;bx+=6) x.lineTo(bx, yy+Math.sin(bx*0.4+r)*2.2);
+      x.stroke();
+    }
+    x.fillStyle='rgba(120,70,44,0.8)'; x.fillRect(z.x+z.w/2-3, z.y+24, 6, z.h-34);
   }
 }
 

@@ -72,7 +72,37 @@ function init(){
   window.addEventListener('resize', ()=>{ REND.resize(); REND.initMeteo(); });
   collegaInput();
   collegaTitolo();
+  collegaLanding();
   disegnaTitolo();
+}
+
+/* ===================================================================
+   LANDING PAGE — front page con "cosa offre" e i pulsanti di avvio.
+   Su mobile la pagina è visibile, ma provare a giocare mostra l'avviso.
+   =================================================================== */
+function collegaLanding(){
+  // la landing usa lo sfondo animato del titolo: nascondi il vecchio menu del titolo
+  const ti = $('#title-inner'); if(ti) ti.style.display='none';
+  const daMobile = ()=> window.matchMedia('(max-width:820px), (pointer:coarse) and (hover:none)').matches;
+  const avviso = ()=> $('#mobile-warn').classList.add('show');
+  const back = $('#mw-back'); if(back) back.onclick = ()=> $('#mobile-warn').classList.remove('show');
+
+  const haSalvato = !!caricaGrezzo();
+  document.querySelectorAll('.lp-continue').forEach(b=>{
+    if(!haSalvato){ b.disabled = true; b.title = 'Nessuna partita salvata'; }
+    b.addEventListener('click', ()=>{
+      if(daMobile()){ avviso(); return; }
+      SND.resume(); SND.play('menu');
+      if(carica()) avviaGioco(false); else nuovaPartita();
+    });
+  });
+  document.querySelectorAll('.lp-new').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      if(daMobile()){ avviso(); return; }
+      SND.resume(); SND.play('menu');
+      nuovaPartita();
+    });
+  });
 }
 
 /* ===================================================================
@@ -505,6 +535,7 @@ function nuovaPartita(){
 
 function avviaGioco(conIntro){
   $('#title').classList.add('hidden');
+  const lp=$('#landing'); if(lp) lp.classList.add('hidden');
   if(titoloRaf) cancelAnimationFrame(titoloRaf);
   $('#hud').classList.remove('hidden');
   G.inGioco = true;
@@ -2340,12 +2371,12 @@ function nuovoGiorno(svenuto, multa){
       // evento della notte
       if(eventoNotte) setTimeout(()=>UI.toast(eventoNotte.msg, eventoNotte.tipo||undefined, eventoNotte.icona), 1000);
       // mercato del giorno
-      if(G.mercato) setTimeout(()=>UI.toast('Mercato di oggi: la '+IT.nome(G.mercato.item)+' vale ×'+G.mercato.mult+' da Bruno e alla cassa.','gold', G.mercato.item), 1400);
+      if(G.mercato) setTimeout(()=>UI.toast('Mercato di oggi: '+IT.nome(G.mercato.item)+' vale ×'+G.mercato.mult+' da Bruno e alla cassa.','gold', G.mercato.item), 1400);
       // bacheca delle richieste
       if(richInfo && richInfo.nuove)   setTimeout(()=>UI.toast('📋 Nuove richieste degli abitanti: guarda il Diario (J).','gold'), 1800);
       if(richInfo && richInfo.scadute) setTimeout(()=>UI.toast(richInfo.scadute+(richInfo.scadute===1?' richiesta è scaduta.':' richieste sono scadute.'),'bad'), 2100);
       // sagra e mercante
-      if(nuovaSagra) setTimeout(()=>UI.toast('🎪 È tempo di '+G.sagra.nome+': consegna prodotti di stagione dal Diario!','gold'), 2400);
+      if(nuovaSagra) setTimeout(()=>UI.toast('🎪 È tempo della '+G.sagra.nome+': consegna i prodotti di stagione dal Diario!','gold'), 2400);
       if(G.mercante && G.mercante.presente) setTimeout(()=>UI.toast('🛒 Il mercante ambulante è in paese, oggi alla Locanda.','gold'), 2700);
 
       if(voci.length){
