@@ -119,6 +119,11 @@ D.ITEMS = {
   pesce_sole: { nome:'Pesce Sole',       cat:'pesce', prezzo:48,  diff:1, stagioni:['primavera','estate'], luogo:'fiume' },
   pesce_luna: { nome:'Pesce Luna',       cat:'pesce', prezzo:300, diff:6, stagioni:['estate','autunno'], luogo:'lago', notte:true, raro:true },
   gambero:    { nome:'Gambero di Fiume', cat:'pesce', prezzo:66,  diff:2, stagioni:['primavera','estate','autunno'], luogo:'fiume' },
+  branzino:   { nome:'Branzino',        cat:'pesce', prezzo:95,  diff:3, stagioni:['primavera','estate','autunno','inverno'], luogo:'mare' },
+  orata:      { nome:'Orata',           cat:'pesce', prezzo:115, diff:3, stagioni:['primavera','estate','autunno'], luogo:'mare' },
+  sgombro:    { nome:'Sgombro',         cat:'pesce', prezzo:70,  diff:2, stagioni:['estate','autunno'], luogo:'mare' },
+  polpo:      { nome:'Polpo',           cat:'pesce', prezzo:155, diff:4, stagioni:['primavera','estate','autunno','inverno'], luogo:'mare' },
+  ricciola:   { nome:'Ricciola',        cat:'pesce', prezzo:240, diff:5, stagioni:['estate','autunno'], luogo:'mare', raro:true },
   scarpa_vecchia:{nome:'Scarpa Vecchia', cat:'pesce', prezzo:2,   diff:1, spazzatura:true },
   alga:       { nome:'Alga',             cat:'pesce', prezzo:8,   diff:1, spazzatura:true },
   lattina:    { nome:'Lattina Arrugginita',cat:'pesce',prezzo:2,  diff:1, spazzatura:true },
@@ -334,6 +339,21 @@ D.NPCS = {
     amico:[ 'Ti ho tenuto il posto buono al molo. Quello dove abbocca sempre.',
             'Sei l\'unico che mi crede sul Pesce Luna. Grazie.' ],
     regali:{ ama:['pesce_luna','storione','luccio','crostata'], piace:['trota','carpa','pane_miele'] }
+  },
+  eremita: {
+    nome:'Oreste', ruolo:'Eremita del Passo',
+    look:{ pelle:'#d8b090', capelli:'#d8d8d8', maglia:'#5a6a7a', pant:'#3a4450', cappello:'#3f4a58', barba:true },
+    casa:'montagna',
+    battute:[
+      'Sono salito quassù per stare solo. Poi è arrivato il silenzio e mi ha tenuto compagnia.',
+      'La neve non nasconde le cose. Le mette a riposo.',
+      'Ilde saliva fin qui ogni inverno, con una fetta di torta. Non parlava. Guardava e basta.',
+      'Il ghiaccio del laghetto regge, se sai dove mettere i piedi. Io lo so. Tu impara.',
+      'Giù in miniera scavano. Io ascolto la montagna: è un altro modo di scavare.'
+    ],
+    amico:[ 'Non offro molto: un fuoco, del silenzio e qualche pietra rara che il gelo spinge in superficie. Ma è tuo, quando vuoi.',
+            'Da quassù vedo la lanterna della valle. Da quando l\'hai riaccesa, dormo meglio.' ],
+    regali:{ ama:['gemma_luna','geode','ametista','tisana'], piace:['carbone','oro','pane_miele'] }
   },
   fiammella: {
     nome:'Fiammella', ruolo:'Spirito del Santuario',

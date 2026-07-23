@@ -745,8 +745,8 @@ U.santuario = function(G){
 /* ===================================================================
    DIARIO
    =================================================================== */
-U.diario = function(G){
-  let tab='obiettivi';
+U.diario = function(G, tabIniziale){
+  let tab=tabIniziale||'obiettivi';
   U.modal('Diario', body=>{
     const tabs=document.createElement('div'); tabs.className='tabs';
     const nRich=(G.richieste||[]).filter(r=>!r.fatta).length;

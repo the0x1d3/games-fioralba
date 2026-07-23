@@ -1277,6 +1277,15 @@ function interagisci(){
 
     if(o.t==='porta'){ apriPorta(o.ed); return; }
     if(o.t==='consegna'){ apriConsegna(); return; }
+    if(o.t==='bancarella' && o.kiosk){
+      SND.play('menu');
+      if(o.kiosk==='bacheca') UI.diario(G, 'richieste');
+      else if(o.kiosk==='mercante'){
+        if(G.mercante && G.mercante.presente) UI.mercante(G);
+        else UI.toast('Il banco è chiuso: il mercante non è in paese oggi.','bad');
+      }
+      return;
+    }
     if(o.t==='macchina'){
       if(o.kind==='cassa'){ UI.cassa(G,o); return; }
       if(o.pronto){ G.ritiraMacchina(o); return; }
@@ -1327,6 +1336,7 @@ function apriPorta(ed){
     case 'fucina': UI.fucina(G); break;
     case 'santuario': apriSantuario(); break;
     case 'serafina': UI.dialogo('serafina', ['La porta è socchiusa, ma Serafina è fuori, nell\'orto.']); break;
+    case 'eremita': UI.dialogo('eremita', ['La porta di legno è chiusa. L\'eremita sarà fuori, da qualche parte sulla neve.']); break;
     case 'pollaio': apriPollaio(); break;
     case 'serra': UI.toast('La serra è calda e umida. Qui puoi coltivare tutto l\'anno.'); break;
     default: UI.toast('È chiuso.'); break;
@@ -1607,8 +1617,9 @@ function consigliPesca(){
   const n = pesci[(Math.random()*pesci.length)|0];
   UI.dialogo('elio',[
     'In questa stagione? Cerca il '+DATA.ITEMS[n].nome+'.',
-    DATA.ITEMS[n].luogo==='lago' ? 'Sta nelle acque ferme: il laghetto del podere o lo stagno del bosco.'
-                                 : 'Sta nella corrente. Prova il fiume del paese, dal molo.',
+    DATA.ITEMS[n].luogo==='mare' ? 'Quello sta al largo: vai alla Costa, oltre la Piazza, e lancia dal molo.'
+      : DATA.ITEMS[n].luogo==='lago' ? 'Sta nelle acque ferme: il laghetto del podere o lo stagno del bosco.'
+                                     : 'Sta nella corrente. Prova il fiume del paese, dal molo.',
     DATA.ITEMS[n].notte ? 'Ah: esce solo dopo il tramonto. Portati una lanterna.' :
                           'Di giorno abbocca senza troppi problemi.'
   ]);
@@ -1785,7 +1796,7 @@ function scegliPesce(){
   const st=G.stagione().id;
   const notte = G.ora>1020 || G.ora<400;
   const m=G.mappa();
-  const luogo = (G.mappaId==='fioralba') ? 'fiume' : 'lago';
+  const luogo = (G.mappaId==='fioralba') ? 'fiume' : (G.mappaId==='spiaggia' ? 'mare' : 'lago');
   // durante la storia del Pesce Luna, di notte al lago abbocca più spesso
   const TL = G.trame && G.trame.pesceluna;
   if(TL && TL.avviata && !TL.preso && luogo==='lago' && notte &&
@@ -2836,12 +2847,7 @@ function costruisciDati(){
     richieste:G.richieste, richiestaSeq:G.richiestaSeq,
     obiettiviRiscossi:G.obiettiviRiscossi, sagra:G.sagra, mercante:G.mercante, trame:G.trame,
     px:G.p.px, py:G.p.py,
-    maps:{
-      podere:serializzaMappa(G.maps.podere),
-      fioralba:serializzaMappa(G.maps.fioralba),
-      bosco:serializzaMappa(G.maps.bosco),
-      grotta:serializzaMappa(G.maps.grotta)
-    }
+    maps:(function(){ const o={}; for(const k in G.maps) o[k]=serializzaMappa(G.maps[k]); return o; })()
   };
 }
 
@@ -2946,10 +2952,7 @@ function carica(){
     // ricostruisci le costruzioni sbloccate
     for(const id in G.costruzioni) if(G.costruzioni[id]) WORLD.costruisci(G.maps, id);
     if(d.maps){
-      deserializzaMappa(G.maps.podere, d.maps.podere);
-      deserializzaMappa(G.maps.fioralba, d.maps.fioralba);
-      deserializzaMappa(G.maps.bosco, d.maps.bosco);
-      deserializzaMappa(G.maps.grotta, d.maps.grotta);
+      for(const k in d.maps) if(G.maps[k]) deserializzaMappa(G.maps[k], d.maps[k]);
     }
     G.p.look = G.look;
     G.p.px = d.px||8*T+16;
@@ -3121,6 +3124,9 @@ function suggerimentiEsplorazione(){
     'Ogni tanto un mercante ambulante passa dalla Locanda con merce rara. 🛒',
     'Riscuoti i Traguardi completati nel Diario: sono monete che aspettano te. 🏆',
     'Fai amicizia con Marisol ed Elio: custodiscono due storie speciali da scoprire. 💛',
+    'A sud del paese apri la Piazza del Porto, e da lì scendi fino alla Costa a pescare. 🏖️',
+    'In fondo alla miniera ci sono scale che scendono: più giù, più gemme rare. 💎',
+    'Oltre la miniera, a nord, un passo innevato nasconde un eremita e minerali preziosi. 🏔️',
     'Il Santuario nel bosco chiede i frutti delle quattro stagioni. Porta ciò che matura. 🏮',
     'La cassa di consegna vicino a casa paga durante la notte: riempila prima di dormire. 📦',
     'Con una serra coltivi anche fuori stagione. 🪴',

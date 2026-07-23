@@ -350,6 +350,12 @@ function buildFioralba(){
   for(let y=m.h-2;y<m.h;y++) for(let x=20;x<24;x++) m.obj[W.idx(m,x,y)]=null;
   warp(m, 20, m.h-1, 4, 1, 'bosco', 22, 2, 'Bosco');
 
+  // uscita a sud-est → Piazza del Porto
+  fill(m, 30,m.h-2, 4,2, 'sentiero');
+  for(let y=m.h-2;y<m.h;y++) for(let x=30;x<34;x++) m.obj[W.idx(m,x,y)]=null;
+  warp(m, 30, m.h-1, 4, 1, 'piazza', 20, 3, 'Piazza');
+  m.deco.push({t:'cartello', x:29, y:m.h-4, testo:'↓ Piazza'});
+
   /* npc */
   m.npc = [
     { id:'bruno',   x:12, y:16, home:[12,16], giro:[[12,16],[10,16],[13,15]] },
@@ -512,11 +518,278 @@ function buildGrotta(){
     if(libero(m,x,y) && W.terreno(m,x,y)==='grotta') setObj(m,x,y,{t:'stalagmite', v:(R()*3)|0, solido:true});
   }
 
-  /* uscita */
+  /* uscita verso il paese */
   fill(m, 16,27, 4,3, 'grotta');
   for(let y=27;y<30;y++) for(let x=16;x<20;x++) m.obj[W.idx(m,x,y)]=null;
   warp(m, 16, m.h-1, 4, 1, 'fioralba', 22, 2, 'Fioralba');
   m.deco.push({t:'cartello', x:15, y:26, testo:'↓ Uscita'});
+
+  /* scala che scende alla Miniera Profonda */
+  blob(m, 6, 23, 2.2, 'grotta', R, 0.3);
+  linea(m, 8,13, 6,23, 3, 'grotta');
+  setObj(m, 6,23, null); fill(m, 6,23, 1,1, 'lastre');
+  warp(m, 6, 23, 1, 1, 'grotta2', 6, 4, 'Miniera Profonda');
+  m.deco.push({t:'cartello', x:5, y:21, testo:'↓ Giù'});
+
+  /* passaggio a nord: sbuca sul Passo innevato */
+  fill(m, 18,0, 3,2, 'grotta');
+  for(let y=0;y<2;y++) for(let x=18;x<21;x++) m.obj[W.idx(m,x,y)]=null;
+  linea(m, 19,1, 20,4, 3, 'grotta');
+  warp(m, 18, 0, 3, 1, 'montagna', 20, 34, 'Passo');
+  m.deco.push({t:'cartello', x:17, y:3, testo:'↑ Passo'});
+
+  // scale, passaggi e atterraggi sgombri e protetti dalla rigenerazione
+  m.scaleClear = [[6,23],[6,24],[7,24],[18,0],[19,0],[20,0],[19,1],[19,2],[19,3],[20,3]];
+  for(const [cx,cy] of m.scaleClear) if(W.dentro(m,cx,cy)) m.g[W.idx(m,cx,cy)]=ti('grotta');
+  W.pulisciScale(m);
+
+  return m;
+}
+
+/* ===================================================================
+   MINIERA PROFONDA — livelli 2 e 3 (roccia + grotta, minerali ricchi)
+   =================================================================== */
+function buildMinieraProfonda(id, nome, seed, profondo){
+  const m = mkMap(id, nome, 40, 32, {
+    esterno:false, musica:'grotta', ambiente:'goccia', sfondo: profondo?'#0f0d0b':'#131110'
+  });
+  const R = rnd(seed);
+
+  fill(m, 0,0, m.w,m.h, 'roccia');
+  const centri = [[6,4],[10,10],[20,7],[30,10],[34,18],[26,22],[16,20],[8,24],[20,27],[12,15]];
+  for(const c of centri) blob(m, c[0], c[1], 4.5+R()*3, 'grotta', R, 0.5);
+  for(let i=0;i<centri.length-1;i++)
+    linea(m, centri[i][0],centri[i][1], centri[i+1][0],centri[i+1][1], 3, 'grotta');
+  // pozze sotterranee
+  blob(m, 33, 24, 3.2, 'acqua', R, 0.3);
+  blob(m, 7, 8, 2.4, 'acqua', R, 0.3);
+  linea(m, 26,22, 33,24, 3, 'grotta');
+
+  W.rigeneraMiniera(m, seed^0x9e37, profondo);
+
+  // stalagmiti e funghi luminosi
+  for(let i=0;i<22;i++){
+    const x=1+((R()*(m.w-2))|0), y=1+((R()*(m.h-2))|0);
+    if(libero(m,x,y) && W.terreno(m,x,y)==='grotta') setObj(m,x,y,{t:'stalagmite', v:(R()*3)|0, solido:true});
+  }
+  for(let i=0;i<26;i++){
+    const x=1+((R()*(m.w-2))|0), y=1+((R()*(m.h-2))|0);
+    if(libero(m,x,y) && W.terreno(m,x,y)==='grotta') m.deco.push({t:'fungo_luce', x, y, v:(R()*3)|0});
+  }
+
+  // zone di scala camminabili e sgombre (protette dalla rigenerazione notturna)
+  m.scaleClear = profondo ? [[6,3],[6,4],[6,5]] : [[6,3],[6,4],[6,5],[20,26],[20,27],[20,28]];
+  for(const [cx,cy] of m.scaleClear) if(W.dentro(m,cx,cy)) m.g[W.idx(m,cx,cy)]=ti('grotta');
+  W.pulisciScale(m);
+
+  /* scala che risale */
+  fill(m, 6,3, 1,1, 'lastre');
+  setObj(m, 6,3, null);
+  warp(m, 6, 3, 1, 1, profondo?'grotta2':'grotta', profondo?20:6, profondo?27:24, 'Su');
+  m.deco.push({t:'cartello', x:5, y:2, testo:'↑ Su'});
+
+  /* scala che scende ancora (solo dal livello 2) */
+  if(!profondo){
+    fill(m, 20,28, 1,1, 'lastre');
+    setObj(m, 20,28, null);
+    warp(m, 20, 28, 1, 1, 'grotta3', 6, 4, 'Cuore della Miniera');
+    m.deco.push({t:'cartello', x:19, y:26, testo:'↓ Ancora giù'});
+  }
+
+  return m;
+}
+
+/* tiene sgombre le caselle di scala/atterraggio dopo ogni rigenerazione */
+W.pulisciScale = function(m){
+  if(!m || !m.scaleClear) return;
+  for(const [x,y] of m.scaleClear) if(W.dentro(m,x,y)) m.obj[W.idx(m,x,y)]=null;
+};
+
+/* rigenera i minerali di una miniera (build + ogni notte) */
+W.rigeneraMiniera = function(m, seed, profondo){
+  const R = rnd((seed>>>0)||1);
+  for(let i=0;i<m.obj.length;i++){ if(m.obj[i] && m.obj[i].t==='sasso') m.obj[i]=null; }
+  const tab = profondo
+    ? [['pietra',0.30],['ferro',0.20],['carbone',0.10],['quarzo',0.10],['ametista',0.12],['oro',0.10],['geode',0.05],['rame',0.03]]
+    : [['pietra',0.38],['rame',0.16],['ferro',0.16],['carbone',0.09],['quarzo',0.09],['ametista',0.06],['oro',0.04],['geode',0.02]];
+  const obiettivo = profondo?70:60;
+  let messi=0, tent=0;
+  while(messi<obiettivo && tent<2500){
+    tent++;
+    const x=1+((R()*(m.w-2))|0), y=1+((R()*(m.h-2))|0);
+    if(!libero(m,x,y) || W.terreno(m,x,y)!=='grotta') continue;
+    const r=R(); let acc=0, kind='pietra';
+    for(const t of tab){ acc+=t[1]; if(r<acc){ kind=t[0]; break; } }
+    if(kind==='carbone') setObj(m,x,y,{t:'sasso', kind:'pietra', carbone:true, hp:2, solido:true});
+    else setObj(m,x,y, sasso(kind));
+    messi++;
+  }
+  W.pulisciScale(m);
+};
+
+/* rigenera il foraggio invernale della montagna */
+W.rigeneraMontagna = function(m, seed){
+  const R = rnd((seed>>>0)||1);
+  for(let i=0;i<m.obj.length;i++){ if(m.obj[i] && m.obj[i].t==='foraggio') m.obj[i]=null; }
+  const inv = ['bacca_inverno','radice_gelata','fiocco_cristallo'];
+  let messi=0, tent=0;
+  while(messi<9 && tent<700){
+    tent++;
+    const x=1+((R()*(m.w-2))|0), y=1+((R()*(m.h-2))|0);
+    if(!libero(m,x,y) || W.terreno(m,x,y)!=='neve') continue;
+    setObj(m,x,y,{t:'foraggio', item:inv[(R()*inv.length)|0]});
+    messi++;
+  }
+};
+
+/* ===================================================================
+   MONTAGNA — il Passo Innevato
+   =================================================================== */
+function buildMontagna(){
+  const m = mkMap('montagna','Passo Innevato', 44, 38, {
+    musica:'primavera', ambiente:'uccelli', sfondo:'#5a6470'
+  });
+  const R = rnd(31337);
+  fill(m, 0,0, m.w,m.h, 'neve');
+  for(let x=0;x<m.w;x++){ setObj(m,x,0,albero('pino')); setObj(m,x,m.h-1,albero('pino')); }
+  for(let y=0;y<m.h;y++){ setObj(m,0,y,albero('pino')); setObj(m,m.w-1,y,albero('pino')); }
+  // apri l'uscita a sud (verso la miniera)
+  for(let x=18;x<23;x++) m.obj[W.idx(m,x,m.h-1)]=null;
+  fill(m, 18,m.h-3, 5,3, 'lastre');
+
+  // pareti rocciose
+  for(const c of [[10,8],[34,10],[22,6],[8,26],[36,28]]) blob(m, c[0],c[1], 3.5+R()*2, 'roccia', R, 0.5);
+  // laghetto ghiacciato con sponda di ghiaccio
+  blob(m, 14, 20, 4, 'acqua', R, 0.35);
+  for(let y=14;y<28;y++) for(let x=6;x<24;x++){
+    if(W.terreno(m,x,y)!=='neve') continue;
+    let vic=false; for(let d=0;d<4;d++) if(W.terreno(m,x+[1,-1,0,0][d],y+[0,0,1,-1][d])==='acqua') vic=true;
+    if(vic) m.g[W.idx(m,x,y)]=ti('lastre');
+  }
+
+  linea(m, 20,m.h-3, 22,20, 3, 'sentiero');
+  linea(m, 22,20, 30,14, 3, 'sentiero');
+
+  // rifugio dell'eremita
+  edificio(m,'cottage', 28,10, 5,4, { porta:{x:30,y:13}, azione:'eremita', nome:'Rifugio dell\'Eremita' });
+
+  // minerali rari sulla neve
+  const tab=[['ferro',0.30],['quarzo',0.20],['ametista',0.20],['oro',0.18],['geode',0.12]];
+  for(let i=0;i<26;i++){
+    const x=2+((R()*(m.w-4))|0), y=2+((R()*(m.h-4))|0);
+    if(!libero(m,x,y) || W.terreno(m,x,y)!=='neve') continue;
+    const r=R(); let acc=0, kind='ferro';
+    for(const q of tab){ acc+=q[1]; if(r<acc){ kind=q[0]; break; } }
+    setObj(m,x,y, sasso(kind));
+  }
+  // foraggio invernale
+  W.rigeneraMontagna(m, 31337^0x55);
+  // vegetazione innevata
+  for(let i=0;i<44;i++){
+    const x=2+((R()*(m.w-4))|0), y=2+((R()*(m.h-4))|0);
+    if(!libero(m,x,y) || W.terreno(m,x,y)!=='neve') continue;
+    const r=R();
+    if(r<0.4) setObj(m,x,y, albero('pino'));
+    else if(r<0.6) setObj(m,x,y, {t:'cespuglio', v:(R()*3)|0, bacche:false});
+    else if(r<0.8) setObj(m,x,y, {t:'ramo', v:(R()*3)|0});
+    else m.deco.push({t:'sassolini', x, y, v:(R()*3)|0});
+  }
+  // pulisci il sentiero
+  for(let y=0;y<m.h;y++) for(let x=0;x<m.w;x++) if(W.terreno(m,x,y)==='sentiero') m.obj[W.idx(m,x,y)]=null;
+  // zona d'ingresso dalla miniera sgombra
+  for(let yy=32;yy<=35;yy++) for(let xx=18;xx<23;xx++) if(W.dentro(m,xx,yy)) m.obj[W.idx(m,xx,yy)]=null;
+
+  warp(m, 18, m.h-1, 5, 1, 'grotta', 19, 3, 'Miniera');
+  m.deco.push({t:'cartello', x:17, y:m.h-4, testo:'↓ Miniera'});
+
+  m.npc = [ { id:'eremita', x:26, y:15, home:[26,15], giro:[[26,15],[24,16],[28,14]] } ];
+  return m;
+}
+
+/* ===================================================================
+   SPIAGGIA — la Costa
+   =================================================================== */
+function buildSpiaggia(){
+  const m = mkMap('spiaggia','La Costa', 46, 34, {
+    musica:'primavera', ambiente:'uccelli', sfondo:'#4a6a78'
+  });
+  const R = rnd(7777);
+  fill(m, 0,0, m.w,m.h, 'sabbia');
+  // mare in basso, con costa ondulata
+  for(let y=0;y<m.h;y++) for(let x=0;x<m.w;x++){
+    const costa = 20 + Math.round(Math.sin(x*0.18)*2.4);
+    if(y > costa) m.g[W.idx(m,x,y)] = ti('acqua');
+  }
+  // alberi in alto e ai lati (parte a terra)
+  for(let x=0;x<m.w;x++) setObj(m,x,0,albero('pino'));
+  for(let y=0;y<10;y++){ setObj(m,0,y,albero('pino')); setObj(m,m.w-1,y,albero('pino')); }
+
+  // molo di legno che entra nel mare
+  fill(m, 22,17, 2,11, 'assi');
+  for(let y=17;y<28;y++) for(let x=22;x<24;x++) m.obj[W.idx(m,x,y)]=null;
+  m.deco.push({t:'cartello', x:25, y:18, testo:'Molo'});
+
+  // legname portato dal mare, sassi e conchiglie
+  for(let i=0;i<40;i++){
+    const x=2+((R()*(m.w-4))|0), y=2+((R()*18)|0);
+    if(!libero(m,x,y) || W.terreno(m,x,y)!=='sabbia') continue;
+    const r=R();
+    if(r<0.35) setObj(m,x,y, {t:'ramo', v:(R()*3)|0});
+    else if(r<0.55) setObj(m,x,y, sasso('pietra'));
+    else m.deco.push({t:'sassolini', x, y, v:(R()*3)|0});
+  }
+
+  // uscita a nord → Piazza
+  for(let x=21;x<26;x++){ m.obj[W.idx(m,x,0)]=null; m.g[W.idx(m,x,0)]=ti('sabbia'); m.obj[W.idx(m,x,1)]=null; }
+  warp(m, 21, 0, 5, 1, 'piazza', 24, 30, 'Piazza');
+  m.deco.push({t:'cartello', x:20, y:2, testo:'↑ Piazza'});
+
+  return m;
+}
+
+/* ===================================================================
+   PIAZZA DEL PORTO — ampliamento del paese
+   =================================================================== */
+function buildPiazza(){
+  const m = mkMap('piazza','Piazza del Porto', 40, 34, {
+    musica:'paese', ambiente:'uccelli', sfondo:'#3a4738'
+  });
+  const R = rnd(2025);
+  fill(m, 0,0, m.w,m.h, 'erba');
+  for(let y=6;y<26;y++) for(let x=6;x<34;x++){
+    if(Math.abs(x-20)*0.8 + Math.abs(y-16) < 15) m.g[W.idx(m,x,y)]=ti('lastre');
+  }
+  for(let x=0;x<m.w;x++){ setObj(m,x,0,albero('pino')); }
+  for(let y=0;y<m.h;y++){ setObj(m,0,y,albero('pino')); setObj(m,m.w-1,y,albero('pino')); }
+
+  // fontana centrale
+  fill(m, 18,14, 4,4, 'acqua');
+  m.deco.push({t:'fontana', x:18, y:14});
+  for(let y=14;y<18;y++) for(let x=18;x<22;x++) m.obj[W.idx(m,x,y)]={t:'fontana', solido:true};
+
+  for(const p of [[10,10],[30,10],[10,22],[30,22],[20,8],[20,24]]) if(libero(m,p[0],p[1])) setObj(m,p[0],p[1],{t:'lampione', solido:false});
+  for(const p of [[14,12,0],[26,12,0],[14,20,1],[26,20,1]]) if(libero(m,p[0],p[1])) setObj(m,p[0],p[1],{t:'panchina', solido:true, dir:p[2]});
+  for(const p of [[16,10],[24,10],[16,22],[24,22]]) if(libero(m,p[0],p[1])) setObj(m,p[0],p[1],{t:'fioriera', solido:true, v:(R()*4)|0});
+
+  // BACHECA delle richieste e BANCO del mercante (bancarelle interattive)
+  setObj(m, 12,15, {t:'bancarella', solido:true, v:0, kiosk:'bacheca'});
+  m.deco.push({t:'cartello', x:11, y:13, testo:'Bacheca'});
+  setObj(m, 28,15, {t:'bancarella', solido:true, v:1, kiosk:'mercante'});
+  m.deco.push({t:'cartello', x:27, y:13, testo:'Banco del mercante'});
+
+  for(const p of [[9,15],[31,15],[13,19],[27,11]]) if(libero(m,p[0],p[1])) setObj(m,p[0],p[1],{t:'casse', solido:true, v:(R()*3)|0});
+
+  // uscita a nord → Fioralba
+  fill(m, 18,0, 4,2, 'sentiero');
+  for(let y=0;y<2;y++) for(let x=18;x<22;x++) m.obj[W.idx(m,x,y)]=null;
+  warp(m, 18, 0, 4, 1, 'fioralba', 31, 33, 'Fioralba');
+  m.deco.push({t:'cartello', x:17, y:3, testo:'↑ Fioralba'});
+
+  // uscita a sud → Spiaggia
+  fill(m, 22,m.h-2, 4,2, 'sentiero');
+  for(let y=m.h-2;y<m.h;y++) for(let x=22;x<26;x++) m.obj[W.idx(m,x,y)]=null;
+  warp(m, 22, m.h-1, 4, 1, 'spiaggia', 23, 2, 'La Costa');
+  m.deco.push({t:'cartello', x:21, y:m.h-4, testo:'↓ Costa'});
 
   return m;
 }
@@ -530,6 +803,11 @@ W.crea = function(){
   maps.fioralba = buildFioralba();
   maps.bosco    = buildBosco();
   maps.grotta   = buildGrotta();
+  maps.grotta2  = buildMinieraProfonda('grotta2','Miniera Profonda', 5150, false);
+  maps.grotta3  = buildMinieraProfonda('grotta3','Cuore della Miniera', 8080, true);
+  maps.montagna = buildMontagna();
+  maps.piazza   = buildPiazza();
+  maps.spiaggia = buildSpiaggia();
   return maps;
 };
 
@@ -631,6 +909,12 @@ W.nuovoGiorno = function(maps, stagione, rngSeed){
   }
 
   /* --- PODERE: qualche erbaccia in più se piove --- */
+
+  /* --- NUOVI LUOGHI: rigenera minerali e foraggio, tieni sgombre le scale --- */
+  W.pulisciScale(maps.grotta);
+  if(maps.grotta2)  W.rigeneraMiniera(maps.grotta2,  (rngSeed^0x0002)>>>0, false);
+  if(maps.grotta3)  W.rigeneraMiniera(maps.grotta3,  (rngSeed^0x0003)>>>0, true);
+  if(maps.montagna) W.rigeneraMontagna(maps.montagna,(rngSeed^0x0004)>>>0);
 };
 
 /* trova una posizione libera vicina */

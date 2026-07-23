@@ -1947,6 +1947,9 @@ function drawFishIcon(x, id){
     anguilla:['#3a4a3a','#5a6a52','#8a9a7a'], storione:['#5a6a7a','#8a9aaa','#c0c8d0'],
     temolo:['#7a8a9a','#a8b8c8','#d8c0e0'], pesce_sole:['#c9a44c','#f0d878','#e08a4a'],
     pesce_luna:['#8a9ad8','#c0d0f8','#f0f4ff'], gambero:['#c05a3c','#e08a6a','#8a3a24'],
+    branzino:['#6a7a8a','#a8b8c4','#d8e0e8'], orata:['#8a8a6a','#c8c49a','#e8b04a'],
+    sgombro:['#3a5a6a','#5a8a9a','#8ab0c0'], polpo:['#a84a5a','#d08090','#f0b0b8'],
+    ricciola:['#5a6a5a','#9ab89a','#e8d060'],
     scarpa_vecchia:['#5a4a3a','#7a6a5a','#3a2e24'], alga:['#4a7a4a','#6a9a5a','#3a5a3a'],
     lattina:['#8a8a92','#b0b0ba','#c05a44']
   }[id] || ['#7a8a9a','#a8b8c8','#d0d8e0'];
