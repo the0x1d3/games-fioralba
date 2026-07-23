@@ -302,11 +302,11 @@ const SPECIE = {
   scoiattolo: { mappe:['bosco'],          terreni:['erba'], notte:false, max:2, vel:0.7,  timido:60 },
   riccio:     { mappe:['bosco','podere'], terreni:['erba'], notte:true,  max:2, vel:0.3,  timido:44 },
   rana:       { mappe:['podere','bosco'], terreni:['sabbia','erba'], vicinoAcqua:true, max:3, vel:0.35, timido:40 },
-  farfalla:   { mappe:['podere','bosco','fioralba'], vola:true, stagioni:['primavera','estate'], notte:false, max:5, vel:0.42 },
+  farfalla:   { mappe:['podere','bosco','fioralba','piazza','spiaggia'], vola:true, stagioni:['primavera','estate'], notte:false, max:5, vel:0.42 },
   libellula:  { mappe:['podere','bosco'], vola:true, stagioni:['estate'], vicinoAcqua:true, notte:false, max:3, vel:0.7 },
-  uccellino:  { mappe:['podere','bosco','fioralba'], vola:true, notte:false, max:4, vel:0.85, timido:70 },
+  uccellino:  { mappe:['podere','bosco','fioralba','piazza','spiaggia','montagna'], vola:true, notte:false, max:4, vel:0.85, timido:70 },
   corvo:      { mappe:['podere'],         vola:true, notte:false, max:2, vel:0.8, timido:80, ladro:true },
-  pipistrello:{ mappe:['grotta'],         vola:true, max:4, vel:1.0 },
+  pipistrello:{ mappe:['grotta','grotta2','grotta3'], vola:true, max:4, vel:1.0 },
   lumaca:     { mappe:['podere','bosco'], terreni:['erba','terra'], pioggia:true, max:3, vel:0.12, timido:0 }
 };
 
