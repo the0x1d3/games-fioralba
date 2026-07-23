@@ -409,6 +409,21 @@ U.negozio = function(G, tipo){
   });
 };
 
+U.mercante = function(G){
+  U.modal('Mercante Ambulante', body=>{
+    const n=document.createElement('div'); n.className='muted'; n.style.marginBottom='10px';
+    n.innerHTML='«Roba che da queste parti non si trova. Domani sono già altrove.» '+
+                `<span style="color:#c9922b;font-weight:800">${G.oro} monete</span>`;
+    body.appendChild(n);
+    const stock=(G.mercante && G.mercante.stock)||[];
+    if(!stock.length){
+      const e=document.createElement('div'); e.className='muted'; e.textContent='Il banco è vuoto oggi.';
+      body.appendChild(e);
+    }
+    for(const it of stock) body.appendChild(rigaCompra(G, it.id, it.prezzo));
+  });
+};
+
 function rigaCompra(G, id, prezzo){
   const r=document.createElement('div'); r.className='row';
   r.appendChild(ico(id));
@@ -766,16 +781,60 @@ U.diario = function(G){
         body.appendChild(r);
       }
 
+      // --- SAGRA DI STAGIONE ---
+      if(G.sagra){
+        const ss=document.createElement('div'); ss.className='sectitle'; ss.textContent='🎪 '+G.sagra.nome;
+        body.appendChild(ss);
+        const r=document.createElement('div'); r.className='row';
+        r.appendChild(ico(G.sagra.icona));
+        const info=document.createElement('div'); info.className='rinfo';
+        const restano=Math.max(0, G.sagra.scadenza - G.giornoTot);
+        const ho=G.sagraDisponibili();
+        info.innerHTML=`<div class="rname">Consegna ${G.sagra.req} prodotti di stagione ${G.sagra.riscossa?'✦':''}</div>`+
+                       `<div class="rdesc">Premio: <b>${G.sagra.premio}</b> monete · +amicizia in paese · scade tra ${restano} ${restano===1?'giorno':'giorni'}</div>`+
+                       `<div class="ringr">${G.sagra.progresso}/${G.sagra.req}${G.sagra.fatta?' — pronta!':' · nello zaino: '+ho}</div>`;
+        r.appendChild(info);
+        if(G.sagra.riscossa){
+          const t=document.createElement('span'); t.className='price'; t.style.opacity='.7'; t.textContent='vinta';
+          r.appendChild(t);
+        } else if(G.sagra.fatta){
+          const b=document.createElement('button'); b.className='btn gold'; b.textContent='Riscuoti premio';
+          b.onclick=()=>{ const nome=G.sagra.nome, pr=G.sagra.premio;
+            if(G.riscuotiSagra()){ U.toast(nome+' vinta! +'+pr+' monete','gold'); G.aggiornaHUD(); U.aggiorna(); } };
+          r.appendChild(b);
+        } else {
+          const b=document.createElement('button'); b.className='btn'; b.textContent='Contribuisci';
+          b.disabled = ho<=0;
+          b.onclick=()=>{
+            const n=G.contribuisciSagra();
+            if(n>0){ U.toast('Hai versato '+n+' prodotti alla sagra.','good'); U.aggiorna(); }
+            else U.toast('Non hai prodotti di stagione da versare.','bad');
+          };
+          r.appendChild(b);
+        }
+        body.appendChild(r);
+      }
+
       const s2=document.createElement('div'); s2.className='sectitle'; s2.textContent='Traguardi';
       body.appendChild(s2);
       for(const o of G.obiettivi()){
         const r=document.createElement('div'); r.className='row';
         r.appendChild(ico(o.icona));
         const info=document.createElement('div'); info.className='rinfo';
+        const riscosso = G.obiettiviRiscossi && G.obiettiviRiscossi[o.id];
         info.innerHTML=`<div class="rname">${o.nome} ${o.fatto?'✔':''}</div>`+
                        `<div class="rdesc">${o.desc}</div>`+
-                       `<div class="ringr">${o.prog}</div>`;
+                       `<div class="ringr">${o.prog}${o.premio?' · premio '+o.premio+' ✦':''}</div>`;
         r.appendChild(info);
+        if(o.fatto && !riscosso){
+          const b=document.createElement('button'); b.className='btn gold'; b.textContent='Riscuoti';
+          b.onclick=()=>{ const pr=o.premio;
+            if(G.riscuotiObiettivo(o)){ U.toast('Traguardo riscosso! +'+pr+' monete','gold'); G.aggiornaHUD(); U.aggiorna(); } };
+          r.appendChild(b);
+        } else if(riscosso){
+          const t=document.createElement('span'); t.className='price'; t.style.opacity='.7'; t.textContent='riscosso';
+          r.appendChild(t);
+        }
         body.appendChild(r);
       }
     }

@@ -427,6 +427,19 @@ Tu sì. Ecco perché ti ho lasciato il podere e non i soldi.
 
 <b>Ilde</b>` },
 
+  ricetta_ilde:{ titolo:'La ricetta di Ilde', testo:
+`<b>Torta del Solstizio — di Nonna Ilde</b>
+
+Zucca cotta e schiacciata. Uova, quelle vere, di gallina contenta. Miele fino a quando smetti di sentirti in colpa. E — non ridere — una presa di <b>lavanda</b>.
+
+Il segreto non si scrive, ma te lo scrivo lo stesso: <b>tempo</b>. Impasta, poi lasciala nel forno spento tutta la notte, a prendersi il calore che resta.
+
+La facevo per il solstizio, dicevo. Bugia. La facevo per avere una scusa buona per vederti seduto al mio tavolo.
+
+Adesso falla tu, per qualcuno. Mi raccomando la lavanda.
+
+<b>Ilde</b>` },
+
   inverno:{ titolo:'L\'ultima lettera', testo:
 `Se sei qui, la valle è accesa.
 

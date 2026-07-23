@@ -39,8 +39,11 @@ function statoIniziale(){
     lettere:{}, ricetteNote:{zuppa_contadina:true, frittata:true},
     cassaConsegna:[],
     stats:{raccolti:0, pesci:0, alberi:0, sassi:0, guadagno:0, giorniGiocati:0,
-           piatti:0, regali:0, richiesteFatte:0, visitatoBosco:false, visitatoGrotta:false, visitatoPaese:false},
+           piatti:0, regali:0, richiesteFatte:0, sagre:0, visitatoBosco:false, visitatoGrotta:false, visitatoPaese:false},
     mercato:null, gelo:false, richieste:[], richiestaSeq:0,
+    obiettiviRiscossi:{}, sagra:null, mercante:{presente:false, giorno:-1, stock:[]},
+    trame:{ torta:{avviata:false, segreto:false, fatta:false},
+            pesceluna:{avviata:false, preso:false, fatta:false} },
     tutorialFatto:false,
     animali:[],
     look:{ pelle:'#e8bd8f', capelli:'#6b4423', maglia:'#4f8ab0', pant:'#3d5470', cappello:'#c9a44c' }
@@ -495,6 +498,7 @@ function nuovaPartita(){
   WORLD.nuovoGiorno(G.maps, G.stagione().id, 12345);
   G.richieste = [];
   aggiornaRichieste();          // qualche richiesta già dal primo giorno
+  G.sagra = creaSagra();        // la sagra di primavera è già in corso
   G.lettere.intro = true;
   avviaGioco(true);
 }
@@ -1319,7 +1323,7 @@ function apriPorta(ed){
   switch(ed.azione){
     case 'casa': apriCasa(); break;
     case 'bottega': UI.negozio(G,'bruno'); break;
-    case 'locanda': UI.negozio(G,'marisol'); break;
+    case 'locanda': apriLocanda(); break;
     case 'fucina': UI.fucina(G); break;
     case 'santuario': apriSantuario(); break;
     case 'serafina': UI.dialogo('serafina', ['La porta è socchiusa, ma Serafina è fuori, nell\'orto.']); break;
@@ -1530,11 +1534,23 @@ function parlaCon(n){
   if(n.id==='bruno') scelte.push({testo:'🛒 Vorrei comprare qualcosa', azione:()=>UI.negozio(G,'bruno')});
   if(n.id==='tobia') scelte.push({testo:'🔨 Parliamo di attrezzi', azione:()=>UI.fucina(G)});
   if(n.id==='marisol'){
+    const t=G.trame.torta;
+    if(t.avviata && !t.fatta) scelte.push({testo:'💛 La torta di Ilde', azione:()=>tortaMarisol()});
+    else if(!t.avviata && cuori>=2) scelte.push({testo:'💛 Mi parli di Nonna Ilde?', azione:()=>avviaTortaIlde()});
     scelte.push({testo:'🍲 Cosa c\'è di buono?', azione:()=>UI.negozio(G,'marisol')});
     scelte.push({testo:'📖 Insegnami una ricetta', azione:()=>insegnaRicetta()});
   }
-  if(n.id==='serafina') scelte.push({testo:'🌿 Parlami della valle', azione:()=>loreSerafina()});
-  if(n.id==='elio') scelte.push({testo:'🎣 Consigli sulla pesca?', azione:()=>consigliPesca()});
+  if(n.id==='serafina'){
+    const t=G.trame.torta;
+    if(t.avviata && !t.segreto && !t.fatta) scelte.push({testo:'💛 Il segreto della torta di Ilde', azione:()=>tortaSerafina()});
+    scelte.push({testo:'🌿 Parlami della valle', azione:()=>loreSerafina()});
+  }
+  if(n.id==='elio'){
+    const t=G.trame.pesceluna;
+    if(t.avviata && !t.fatta) scelte.push({testo:'🌙 Il Pesce Luna', azione:()=>pescelunaElio()});
+    else if(!t.avviata && cuori>=2) scelte.push({testo:'🌙 Parlami del Pesce Luna', azione:()=>avviaPesceLuna()});
+    scelte.push({testo:'🎣 Consigli sulla pesca?', azione:()=>consigliPesca()});
+  }
   if(n.id==='fiammella') scelte.push({testo:'✦ Il santuario', azione:()=>UI.santuario(G)});
 
   if(!G.regalatoOggi[n.id]) scelte.push({testo:'🎁 Ho un regalo per te', azione:()=>UI.regalo(G,n.id)});
@@ -1595,6 +1611,87 @@ function consigliPesca(){
                                  : 'Sta nella corrente. Prova il fiume del paese, dal molo.',
     DATA.ITEMS[n].notte ? 'Ah: esce solo dopo il tramonto. Portati una lanterna.' :
                           'Di giorno abbocca senza troppi problemi.'
+  ]);
+}
+
+/* ===================================================================
+   CATENE NARRATIVE — due storie che si sbloccano con l'amicizia.
+   =================================================================== */
+const TORTA_ING = { zucca:2, uovo:3, miele:2, lavanda:1 };
+function ingLista(ing){ return Object.keys(ing).map(k=>IT.nome(k)+' ×'+ing[k]).join(', '); }
+
+/* --- La torta di Nonna Ilde (Marisol + Serafina) --- */
+function avviaTortaIlde(){
+  G.trame.torta.avviata = true;
+  UI.dialogo('marisol',[
+    'Nonna Ilde... la sua torta era leggendaria. Me la portava a ogni solstizio e non mi ha mai dato la ricetta intera.',
+    'Ho quasi tutti i pezzi. Mi mancano due cose: il suo <b>segreto</b> — quello lo sa Serafina, c\'era sempre — e gli <b>ingredienti</b>.',
+    'Portami '+ingLista(TORTA_ING)+', fatti dire il segreto da Serafina, e la facciamo insieme. Per lei.'
+  ]);
+  UI.toast('Nuova storia: La torta di Nonna Ilde.','gold');
+}
+function tortaSerafina(){
+  G.trame.torta.segreto = true;
+  UI.dialogo('serafina',[
+    'La torta di Ilde? Mezzo paese ha provato a rifarla. Nessuno c\'è riuscito.',
+    'Il segreto non è un ingrediente raro. È il <b>tempo</b>: la lasciava nel forno spento tutta la notte, a prendersi il calore che restava.',
+    'E una presa di <b>lavanda</b> nell\'impasto. Ma non dirlo in giro, o si offende mezza valle.'
+  ]);
+  UI.toast('Hai scoperto il segreto della torta di Ilde.','gold');
+}
+function tortaMarisol(){
+  const t = G.trame.torta;
+  const haIng = Object.keys(TORTA_ING).every(k=>G.conta(k)>=TORTA_ING[k]);
+  if(t.segreto && haIng){
+    for(const k in TORTA_ING) G.togli(k, TORTA_ING[k]);
+    t.fatta = true;
+    G.amicizia.marisol = Math.max(0,(G.amicizia.marisol||0)+150);
+    G.lettere.ricetta_ilde = true;
+    if(G.puoiAggiungere('torta_zucca',2)) G.aggiungi('torta_zucca',2);
+    SND.play('livello');
+    UI.toast('La torta di Nonna Ilde è pronta.','gold','torta_zucca');
+    UI.dialogo('marisol',[
+      'Aspetta... senti l\'odore? È lei. È esattamente lei.',
+      'Ho capito il vero segreto solo adesso: non la faceva per il solstizio. Faceva il solstizio per avere una scusa buona per portartela.',
+      'Tieni: la ricetta, scritta di suo pugno. E la prima fetta è tua.'
+    ], { fine:()=>UI.lettera('ricetta_ilde') });
+    return;
+  }
+  const mancano=[];
+  if(!t.segreto) mancano.push('il segreto (parla con Serafina, nel bosco)');
+  const im = Object.keys(TORTA_ING).filter(k=>G.conta(k)<TORTA_ING[k]).map(k=>IT.nome(k)+' ×'+TORTA_ING[k]);
+  if(im.length) mancano.push('gli ingredienti ('+im.join(', ')+')');
+  UI.dialogo('marisol',['Per la torta di Ilde manca ancora '+mancano.join(', e ')+'.']);
+}
+
+/* --- Il Pesce Luna (Elio) --- */
+function avviaPesceLuna(){
+  G.trame.pesceluna.avviata = true;
+  UI.dialogo('elio',[
+    'Il Pesce Luna. Lo so, fai quella faccia. Ma io l\'ho visto, una volta sola, da ragazzo.',
+    'Grande come un piatto, con gli occhi che sembravano due lune piene. Da allora lo cerco.',
+    'Se ci credi anche tu, provaci: di <b>notte</b>, nelle acque ferme del <b>lago</b>, d\'estate o d\'autunno. Se lo prendi, corri da me.'
+  ]);
+  UI.toast('Nuova storia: Il Pesce Luna. Pescalo di notte, nel lago.','gold');
+}
+function pescelunaElio(){
+  const t = G.trame.pesceluna;
+  if(t.preso || G.conta('pesce_luna')>0){
+    t.fatta = true; t.preso = true;
+    G.amicizia.elio = Math.max(0,(G.amicizia.elio||0)+150);
+    const premio = 2200; G.oro += premio; G.stats.guadagno += premio;
+    SND.play('livello');
+    UI.toast('Elio non ci crede: hai preso il Pesce Luna! +'+premio+' monete','gold','pesce_luna');
+    UI.dialogo('elio',[
+      'Fermo. Fermo lì. Quello è... no. NO. È il Pesce Luna. È vero. È VERO!',
+      'Dodici anni che lo dico e mi ridono dietro. E tu ci sei riuscito.',
+      'Tienilo tu, mi raccomando: a me basta sapere che esiste. Prendi questa — è la colletta che tenevo da parte per chi mi avrebbe creduto. Sei tu.'
+    ]);
+    return;
+  }
+  UI.dialogo('elio',[
+    'L\'hai visto? No? Esce solo di <b>notte</b>, e solo nelle acque ferme del <b>lago</b>.',
+    'D\'estate e d\'autunno è più facile. Porta pazienza e una buona lanterna.'
   ]);
 }
 
@@ -1689,6 +1786,12 @@ function scegliPesce(){
   const notte = G.ora>1020 || G.ora<400;
   const m=G.mappa();
   const luogo = (G.mappaId==='fioralba') ? 'fiume' : 'lago';
+  // durante la storia del Pesce Luna, di notte al lago abbocca più spesso
+  const TL = G.trame && G.trame.pesceluna;
+  if(TL && TL.avviata && !TL.preso && luogo==='lago' && notte &&
+     DATA.ITEMS.pesce_luna.stagioni.indexOf(st)>=0 && Math.random()<0.45){
+    return 'pesce_luna';
+  }
   let pool = Object.keys(DATA.ITEMS).filter(k=>{
     const I=DATA.ITEMS[k];
     if(I.cat!=='pesce') return false;
@@ -1795,6 +1898,10 @@ function finePesca(ok, msg){
         G.xp('pesca', 12 + (I.diff||1)*6);
         G.stats.pesci++;
         particelleTesto(G.p.px, G.p.py-46, I.nome, '#9fd8ee');
+      }
+      if(id==='pesce_luna' && G.trame && G.trame.pesceluna.avviata && !G.trame.pesceluna.preso){
+        G.trame.pesceluna.preso = true;
+        setTimeout(()=>UI.toast('Il Pesce Luna! Corri a mostrarlo a Elio.','gold','pesce_luna'), 600);
       }
     } else UI.toast('Zaino pieno!','bad');
   } else {
@@ -2105,6 +2212,12 @@ function nuovoGiorno(svenuto, multa){
   G.mercato = scegliMercato();
   /* --- bacheca: aggiorna le richieste degli abitanti --- */
   const richInfo = aggiornaRichieste();
+  /* --- sagra di stagione: nuova a ogni cambio stagione --- */
+  let nuovaSagra=false;
+  if(!G.sagra || G.sagra.stagione !== stag){ G.sagra = creaSagra(); nuovaSagra = (G.giornoTot>0); }
+  /* --- mercante ambulante: passa ogni 7 giorni --- */
+  if(G.giornoTot>0 && G.giornoTot % 7 === 0){ G.mercante = { presente:true, giorno:G.giornoTot, stock:stockMercante() }; }
+  else if(G.mercante){ G.mercante.presente=false; }
 
   for(const mid in G.maps){
     const m=G.maps[mid];
@@ -2220,6 +2333,9 @@ function nuovoGiorno(svenuto, multa){
       // bacheca delle richieste
       if(richInfo && richInfo.nuove)   setTimeout(()=>UI.toast('📋 Nuove richieste degli abitanti: guarda il Diario (J).','gold'), 1800);
       if(richInfo && richInfo.scadute) setTimeout(()=>UI.toast(richInfo.scadute+(richInfo.scadute===1?' richiesta è scaduta.':' richieste sono scadute.'),'bad'), 2100);
+      // sagra e mercante
+      if(nuovaSagra) setTimeout(()=>UI.toast('🎪 È tempo di '+G.sagra.nome+': consegna prodotti di stagione dal Diario!','gold'), 2400);
+      if(G.mercante && G.mercante.presente) setTimeout(()=>UI.toast('🛒 Il mercante ambulante è in paese, oggi alla Locanda.','gold'), 2700);
 
       if(voci.length){
         setTimeout(()=>UI.riepilogo(G, voci, tot, dopoRisveglio), 500);
@@ -2416,6 +2532,104 @@ G.completaRichiesta = function(r){
 };
 
 /* ===================================================================
+   SAGRE DI STAGIONE — una sfida a scadenza per ogni stagione.
+   Consegna prodotti della stagione entro il giorno 28 per un grande
+   premio in monete e amicizia con tutto il paese.
+   =================================================================== */
+const SAGRE = {
+  primavera:{ nome:'Sagra dei Germogli',  icona:'fragola',        req:18, premio:2400 },
+  estate:   { nome:'Festa del Sole',       icona:'girasole',       req:20, premio:2800 },
+  autunno:  { nome:'Sagra del Raccolto',   icona:'zucca',          req:24, premio:3600 },
+  inverno:  { nome:'Fiera del Solstizio',  icona:'radice_inverno', req:14, premio:3000 }
+};
+function creaSagra(){
+  const st = G.stagione().id, S = SAGRE[st];
+  return { stagione:st, nome:S.nome, icona:S.icona, req:S.req, progresso:0, premio:S.premio,
+           scadenza: G.giornoTot + (DATA.GIORNI_STAGIONE - G.giorno), // fino a fine stagione
+           fatta:false, riscossa:false };
+}
+function sagraQualifica(id, season){
+  const I = DATA.ITEMS[id]; if(!I) return false;
+  if(I.cat==='raccolto' && I.crop && DATA.CROPS[I.crop]) return DATA.CROPS[I.crop].stagioni.indexOf(season)>=0;
+  if(I.cat==='foraggio') return I.stagione===season;
+  return false;
+}
+/* quante cose di stagione ho nello zaino, buone per la sagra */
+G.sagraDisponibili = function(){
+  if(!G.sagra) return 0;
+  let n=0;
+  for(const s of G.inv) if(s && sagraQualifica(s.id, G.sagra.stagione)) n+=s.n;
+  return n;
+};
+/* versa nella sagra quanti più prodotti di stagione possibile */
+G.contribuisciSagra = function(){
+  if(!G.sagra || G.sagra.fatta) return 0;
+  const st = G.sagra.stagione;
+  let bisogno = G.sagra.req - G.sagra.progresso, messi=0;
+  for(let i=0;i<G.inv.length && messi<bisogno;i++){
+    const s=G.inv[i];
+    if(!s || !sagraQualifica(s.id, st)) continue;
+    const prendi = Math.min(s.n, bisogno-messi);
+    G.togliSlot(i, prendi);
+    messi += prendi;
+  }
+  G.sagra.progresso += messi;
+  if(G.sagra.progresso >= G.sagra.req) G.sagra.fatta = true;
+  if(messi) SND.play('prendi');
+  return messi;
+};
+G.riscuotiSagra = function(){
+  if(!G.sagra || !G.sagra.fatta || G.sagra.riscossa) return false;
+  G.oro += G.sagra.premio; G.stats.guadagno += G.sagra.premio;
+  for(const id in DATA.NPCS){ if(id==='fiammella') continue; G.amicizia[id]=(G.amicizia[id]||0)+30; }
+  G.sagra.riscossa = true;
+  G.stats.sagre = (G.stats.sagre||0)+1;
+  SND.play('livello');
+  return true;
+};
+
+/* ===================================================================
+   MERCANTE AMBULANTE — ogni 7 giorni passa dalla Locanda con roba rara.
+   =================================================================== */
+function stockMercante(){
+  const pool=[];
+  // semi di ogni stagione (utili se hai la serra)
+  for(const st in DATA.SHOP) for(const id of DATA.SHOP[st]){
+    if(DATA.ITEMS[id]) pool.push({ id, prezzo: Math.round((DATA.ITEMS[id].prezzo||20)*2.6) });
+  }
+  // materiali e gemme rare + concimi
+  for(const id of ['gemma_luna','lingotto_oro','ametista','quarzo','cristallia','concime','concime_acqua']){
+    if(DATA.ITEMS[id]) pool.push({ id, prezzo: Math.max(4, Math.round(IT.prezzo(id)*1.7)) });
+  }
+  // dedup per id
+  const visti=new Set(), uniq=[];
+  for(const it of pool){ if(visti.has(it.id)) continue; visti.add(it.id); uniq.push(it); }
+  // mischia e prendi 5–6 pezzi
+  for(let i=uniq.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; const t=uniq[i]; uniq[i]=uniq[j]; uniq[j]=t; }
+  return uniq.slice(0, 5 + ((Math.random()*2)|0));
+}
+
+function apriLocanda(){
+  if(G.mercante && G.mercante.presente){
+    UI.modal('Locanda del Tasso Storto', body=>{
+      const n=document.createElement('div'); n.className='muted'; n.style.marginBottom='12px';
+      n.textContent='C\'è ressa stasera: un mercante ambulante ha messo su banco vicino al camino.';
+      body.appendChild(n);
+      const b1=document.createElement('button'); b1.className='btn'; b1.style.marginBottom='8px';
+      b1.textContent='Bottega di Marisol';
+      b1.onclick=()=>{ UI.chiudiModal(); UI.negozio(G,'marisol'); };
+      body.appendChild(b1);
+      const b2=document.createElement('button'); b2.className='btn gold';
+      b2.textContent='🛒 Mercante ambulante';
+      b2.onclick=()=>{ UI.chiudiModal(); UI.mercante(G); };
+      body.appendChild(b2);
+    });
+  } else {
+    UI.negozio(G,'marisol');
+  }
+}
+
+/* ===================================================================
    LUCI
    =================================================================== */
 G.luci = function(){
@@ -2525,22 +2739,41 @@ function schizzo(tx,ty){
    OBIETTIVI / STATISTICHE
    =================================================================== */
 G.obiettivi = function(){
-  const o=[];
-  o.push({nome:'Mani nella terra', icona:'zappa', desc:'Raccogli 50 prodotti dal campo.',
-          prog:Math.min(50,G.stats.raccolti)+'/50', fatto:G.stats.raccolti>=50});
-  o.push({nome:'Boscaiolo', icona:'legna', desc:'Abbatti 25 alberi.',
-          prog:Math.min(25,G.stats.alberi)+'/25', fatto:G.stats.alberi>=25});
-  o.push({nome:'Cuore di pietra', icona:'piccone', desc:'Frantuma 100 rocce.',
-          prog:Math.min(100,G.stats.sassi)+'/100', fatto:G.stats.sassi>=100});
-  o.push({nome:'Pescatore paziente', icona:'canna', desc:'Pesca 30 pesci.',
-          prog:Math.min(30,G.stats.pesci)+'/30', fatto:G.stats.pesci>=30});
-  o.push({nome:'Il ponte', icona:'legna', desc:'Costruisci il ponte per la radura.',
-          prog:G.costruzioni.ponte?'fatto':'da fare', fatto:!!G.costruzioni.ponte});
-  o.push({nome:'Sotto vetro', icona:'seme_cristallia', desc:'Costruisci la serra.',
-          prog:G.costruzioni.serra?'fatto':'da fare', fatto:!!G.costruzioni.serra});
-  o.push({nome:'Benestante', icona:'lingotto_oro', desc:'Accumula 50.000 monete guadagnate.',
-          prog:Math.min(50000,G.stats.guadagno)+'/50000', fatto:G.stats.guadagno>=50000});
+  const s=G.stats, o=[];
+  // conta (id,nome,icona,desc, valore corrente, traguardo, premio in monete)
+  const cont=(id,nome,icona,desc,cur,tot,premio)=>o.push({
+    id, nome, icona, desc, premio,
+    prog: Math.min(tot,cur)+'/'+tot, fatto: cur>=tot });
+  // traguardo booleano (fatto/da fare)
+  const flag=(id,nome,icona,desc,ok,premio)=>o.push({
+    id, nome, icona, desc, premio,
+    prog: ok?'fatto':'da fare', fatto: !!ok });
+
+  cont('mani_terra','Mani nella terra','zappa','Raccogli 50 prodotti dal campo.', s.raccolti,50,500);
+  cont('boscaiolo','Boscaiolo','legna','Abbatti 25 alberi.', s.alberi,25,500);
+  cont('cuore_pietra','Cuore di pietra','piccone','Frantuma 100 rocce.', s.sassi,100,600);
+  cont('pescatore','Pescatore paziente','canna','Pesca 30 pesci.', s.pesci,30,700);
+  cont('cuoco','Ai fornelli','frittata','Cucina 20 piatti in cucina.', s.piatti||0,20,800);
+  cont('generoso','Cuore generoso','miele','Fai 15 regali graditi agli abitanti.', s.regali||0,15,700);
+  cont('factotum','Persona di fiducia','medaglione','Completa 15 richieste della bacheca.', s.richiesteFatte||0,15,1200);
+  cont('festaiolo','Anima delle sagre','melagrana','Vinci 3 sagre di stagione.', s.sagre||0,3,1500);
+  flag('esploratore','Conosci la valle','viola','Visita bosco, miniera e paese.',
+       s.visitatoBosco && s.visitatoGrotta && s.visitatoPaese, 400);
+  flag('ponte','Il ponte','legna','Costruisci il ponte per la radura.', G.costruzioni.ponte, 400);
+  flag('serra','Sotto vetro','seme_cristallia','Costruisci la serra.', G.costruzioni.serra, 800);
+  cont('benestante','Benestante','lingotto_oro','Accumula 50.000 monete guadagnate.', s.guadagno,50000,3000);
   return o;
+};
+
+/* riscuoti la ricompensa di un traguardo completato */
+G.riscuotiObiettivo = function(o){
+  if(!o || !o.fatto) return false;
+  if(!G.obiettiviRiscossi) G.obiettiviRiscossi={};
+  if(G.obiettiviRiscossi[o.id]) return false;
+  G.obiettiviRiscossi[o.id]=true;
+  if(o.premio){ G.oro += o.premio; }
+  SND.play('livello');
+  return true;
 };
 
 G.statistiche = function(){
@@ -2601,6 +2834,7 @@ function costruisciDati(){
     look:G.look, vistoFiammella:G.vistoFiammella, introSerafina:G.introSerafina,
     tutorialFatto:G.tutorialFatto, mercato:G.mercato, gelo:G.gelo,
     richieste:G.richieste, richiestaSeq:G.richiestaSeq,
+    obiettiviRiscossi:G.obiettiviRiscossi, sagra:G.sagra, mercante:G.mercante, trame:G.trame,
     px:G.p.px, py:G.p.py,
     maps:{
       podere:serializzaMappa(G.maps.podere),
@@ -2706,7 +2940,7 @@ function carica(){
                     'skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
                     'braci','lettere','ricetteNote','cassaConsegna','stats','animali','look',
                     'vistoFiammella','introSerafina','tutorialFatto','mercato','gelo',
-                    'richieste','richiestaSeq']){
+                    'richieste','richiestaSeq','obiettiviRiscossi','sagra','mercante','trame']){
       if(d[k]!==undefined) G[k]=d[k];
     }
     // ricostruisci le costruzioni sbloccate
@@ -2883,6 +3117,10 @@ function suggerimentiEsplorazione(){
   return [
     'Parla ogni giorno con gli abitanti: ricordano quello che dici. 💬',
     'Nel Diario, alla scheda Richieste, gli abitanti chiedono aiuto e pagano bene. 📋',
+    'Ogni stagione ha la sua sagra: consegna i prodotti dal Diario per un gran premio. 🎪',
+    'Ogni tanto un mercante ambulante passa dalla Locanda con merce rara. 🛒',
+    'Riscuoti i Traguardi completati nel Diario: sono monete che aspettano te. 🏆',
+    'Fai amicizia con Marisol ed Elio: custodiscono due storie speciali da scoprire. 💛',
     'Il Santuario nel bosco chiede i frutti delle quattro stagioni. Porta ciò che matura. 🏮',
     'La cassa di consegna vicino a casa paga durante la notte: riempila prima di dormire. 📦',
     'Con una serra coltivi anche fuori stagione. 🪴',
