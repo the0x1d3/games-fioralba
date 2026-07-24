@@ -42,6 +42,7 @@ function statoIniziale(){
            piatti:0, regali:0, richiesteFatte:0, sagre:0, visitatoBosco:false, visitatoGrotta:false, visitatoPaese:false},
     mercato:null, gelo:false, richieste:[], richiestaSeq:0,
     obiettiviRiscossi:{}, sagra:null, mercante:{presente:false, giorno:-1, stock:[]},
+    visitati:{podere:true}, collezione:{},
     trame:{ torta:{avviata:false, segreto:false, fatta:false},
             pesceluna:{avviata:false, preso:false, fatta:false} },
     tutorialFatto:false,
@@ -540,6 +541,7 @@ function avviaGioco(conIntro){
   $('#hud').classList.remove('hidden');
   G.inGioco = true;
   G.ultimaAzione = performance.now();
+  normalizzaStato();
   REND.initMeteo();
   aggiornaCamera(true);
   costruisciHotbar();
@@ -596,8 +598,18 @@ G.puoiAggiungere = function(id, n){
   for(const s of G.inv) if(s && s.id===id) return true;
   return G.inv.findIndex((s,i)=>i<G.invMax && !s) >= 0;
 };
+/* registra un oggetto nella Collezione del Naturalista alla prima volta */
+function registraScoperta(id){
+  if(!id || id.indexOf(':')>0) return;           // niente composti (conserve/vino)
+  if(!G.collezione) G.collezione={};
+  if(G.collezione[id]) return;
+  const I = DATA.ITEMS[id]; if(!I || I.spazzatura) return;
+  if(['pesce','minerale','raccolto','foraggio','cibo'].indexOf(I.cat)>=0) G.collezione[id]=true;
+}
+
 G.aggiungi = function(id, n){
   n=n||1;
+  registraScoperta(id);
   for(let i=0;i<G.invMax;i++){
     const s=G.inv[i];
     if(s && s.id===id){ s.n+=n; return true; }
@@ -715,48 +727,106 @@ G.aggiornaHUD = function(){
    =================================================================== */
 const MS_PER_MIN = 500;
 
+/* esegue un "sistema" del motore isolato: se lancia un errore, non ferma
+   gli altri sistemi né il loop. Logga i primi errori di ogni sistema. */
+const _erroriSistema = {};
+function sistema(nome, fn){
+  try{ fn(); }
+  catch(e){
+    _erroriSistema[nome] = (_erroriSistema[nome]||0) + 1;
+    if(_erroriSistema[nome] <= 3) console.warn('[motore] errore nel sistema «'+nome+'»', e);
+  }
+}
+
 function loop(ts){
-  if(!G.inGioco) return;
-  const dt = Math.min(50, ts-ultimo);
-  ultimo = ts;
-  G.tempoMs += dt;
+  if(!G.inGioco) return;                      // il loop si ferma solo uscendo dal gioco
+  try{
+    const dt = Math.min(50, ts-ultimo);
+    ultimo = ts;
+    G.tempoMs += dt;
 
-  // il pannello può essere stato aperto/ridimensionato senza emettere "resize"
-  if(window.innerWidth > 0 && cvs.width !== window.innerWidth){
-    REND.resize(); REND.initMeteo();
-  }
-
-  const bloccato = UI.modalAperta() || UI.dialogoAttivo() ||
-                   !$('#letter').classList.contains('hidden') ||
-                   !$('#daycard').classList.contains('hidden') ||
-                   G.p.dorme || pesca.attiva;
-
-  // il vento gira sempre: anche a menu aperto l'erba continua a muoversi
-  FX.aggiornaVento(dt, G.meteo==='vento' ? 2.1 :
-                       (G.meteo==='temporale' ? 2.6 :
-                       (G.meteo==='pioggia' ? 1.4 : 1)));
-
-  if(!bloccato){
-    accum += dt;
-    while(accum >= MS_PER_MIN){
-      accum -= MS_PER_MIN;
-      avanzaMinuto();
+    // il pannello può essere stato aperto/ridimensionato senza emettere "resize"
+    if(window.innerWidth > 0 && cvs.width !== window.innerWidth){
+      sistema('resize', ()=>{ REND.resize(); REND.initMeteo(); });
     }
-    aggiornaGiocatore(dt);
-    aggiornaNPC(dt);
-    aggiornaAnimali(dt);
-    MOBS.aggiorna(G, dt);
+
+    const bloccato = UI.modalAperta() || UI.dialogoAttivo() ||
+                     !$('#letter').classList.contains('hidden') ||
+                     !$('#daycard').classList.contains('hidden') ||
+                     G.p.dorme || pesca.attiva;
+
+    // il vento gira sempre: anche a menu aperto l'erba continua a muoversi
+    sistema('vento', ()=>FX.aggiornaVento(dt, G.meteo==='vento' ? 2.1 :
+                         (G.meteo==='temporale' ? 2.6 :
+                         (G.meteo==='pioggia' ? 1.4 : 1))));
+
+    if(!bloccato){
+      accum += dt;
+      let giri=0;
+      while(accum >= MS_PER_MIN && giri++ < 600){   // limite di sicurezza contro salti enormi
+        accum -= MS_PER_MIN;
+        sistema('orologio', avanzaMinuto);
+      }
+      sistema('giocatore', ()=>aggiornaGiocatore(dt));
+      sistema('npc',       ()=>aggiornaNPC(dt));
+      sistema('animali',   ()=>aggiornaAnimali(dt));
+      sistema('fauna',     ()=>MOBS.aggiorna(G, dt));
+      sistema('guardia',   guardiaGiocatore);
+    }
+    if(pesca.attiva) sistema('pesca', ()=>aggiornaPesca(dt));
+
+    if(window.TUT) sistema('tutorial', ()=>TUT.aggiorna());
+
+    sistema('particelle', ()=>aggiornaParticelle(dt));
+    sistema('camera',     ()=>aggiornaCamera(false));
+    sistema('bersaglio',  calcolaBersaglio);
+    sistema('render',     ()=>REND.disegna(G));
+  }catch(e){
+    console.warn('[motore] errore nel loop', e);
   }
-  if(pesca.attiva) aggiornaPesca(dt);
+  requestAnimationFrame(loop);                // rischedulato SEMPRE: nessun errore uccide il motore
+}
 
-  if(window.TUT) TUT.aggiorna();
+/* mantiene il giocatore in uno stato valido (mai coordinate NaN o fuori mappa) */
+function guardiaGiocatore(){
+  const p=G.p, m=G.mappa();
+  if(!p || !m) return;
+  if(!isFinite(p.px) || !isFinite(p.py)){
+    const s=WORLD.vicinoLibero(m, (m.w/2)|0, (m.h/2)|0);
+    p.px=s.x*T+16; p.py=s.y*T+20; p.vx=0; p.vy=0;
+    return;
+  }
+  const maxX=m.w*T-2, maxY=m.h*T-2;
+  if(p.px<2||p.py<2||p.px>maxX||p.py>maxY){
+    p.px=Math.max(2,Math.min(maxX,p.px));
+    p.py=Math.max(2,Math.min(maxY,p.py));
+  }
+}
 
-  aggiornaParticelle(dt);
-  aggiornaCamera(false);
-  calcolaBersaglio();
-  REND.disegna(G);
-
-  requestAnimationFrame(loop);
+/* garantisce che tutte le strutture di stato esistano e siano del tipo giusto:
+   così salvataggi vecchi/parziali non mandano in errore il resto del motore. */
+function normalizzaStato(){
+  const A = k => { if(!Array.isArray(G[k])) G[k]=[]; };
+  const O = k => { if(!G[k] || typeof G[k]!=='object') G[k]={}; };
+  ['inv','richieste','cassaConsegna','animali'].forEach(A);
+  ['skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
+   'lettere','ricetteNote','stats','obiettiviRiscossi','visitati','collezione',
+   'parlatoOggi','regalatoOggi','mercato'].forEach(O);
+  if(!G.trame || typeof G.trame!=='object') G.trame={};
+  if(!G.trame.torta)     G.trame.torta={avviata:false,segreto:false,fatta:false};
+  if(!G.trame.pesceluna) G.trame.pesceluna={avviata:false,preso:false,fatta:false};
+  if(!G.mercante || typeof G.mercante!=='object') G.mercante={presente:false,giorno:-1,stock:[]};
+  if(!Array.isArray(G.mercante.stock)) G.mercante.stock=[];
+  if(!G.visitati.podere) G.visitati.podere=true;
+  if(typeof G.invMax!=='number' || G.invMax<1) G.invMax=24;
+  while(G.inv.length < G.invMax) G.inv.push(null);
+  // giocatore incastrato in un solido dopo il caricamento → sblocca (una tantum)
+  const p=G.p, m=(G.maps && G.maps[G.mappaId]) ? G.maps[G.mappaId] : null;
+  if(p && m){
+    if(!isFinite(p.px)||!isFinite(p.py)){ p.px=8*T+16; p.py=10*T+20; }
+    const tx=(p.px/T)|0, ty=(p.py/T)|0;
+    if(WORLD.solido(m,tx,ty)){ const s=WORLD.vicinoLibero(m,tx,ty); p.px=s.x*T+16; p.py=s.y*T+20; }
+  }
 }
 
 function avanzaMinuto(){
@@ -2164,6 +2234,8 @@ function cambiaMappa(id, tx, ty){
   if(id==='bosco')        G.stats.visitatoBosco=true;
   else if(id==='grotta')  G.stats.visitatoGrotta=true;
   else if(id==='fioralba')G.stats.visitatoPaese=true;
+  if(!G.visitati) G.visitati={};
+  G.visitati[id]=true;   // per il viaggio rapido dalla mappa
   G.p.px = pos.x*T+16;
   G.p.py = pos.y*T+20;
   mouseWorld=null;
@@ -2173,6 +2245,23 @@ function cambiaMappa(id, tx, ty){
   SND.ambiente(ambienteGiusto());
   UI.toast(dest.nome);
 }
+
+/* punti d'arrivo del viaggio rapido (casella camminabile per ogni luogo) */
+const ARRIVO_RAPIDO = {
+  podere:[8,10], fioralba:[4,16], bosco:[21,3], grotta:[17,26],
+  montagna:[20,34], piazza:[20,4], spiaggia:[23,3]
+};
+G.viaggiaRapido = function(id){
+  if(!G.maps[id] || id===G.mappaId) return false;
+  if(!G.visitati || !G.visitati[id]) return false;   // solo luoghi già scoperti
+  const a = ARRIVO_RAPIDO[id] || [8,10];
+  $('#fade').classList.add('on');
+  setTimeout(()=>{
+    cambiaMappa(id, a[0], a[1]);
+    setTimeout(()=>$('#fade').classList.remove('on'), 120);
+  }, 260);
+  return true;
+};
 
 function musicaGiusta(){
   const m=G.mappa();
@@ -2780,8 +2869,32 @@ function schizzo(tx,ty){
 /* ===================================================================
    OBIETTIVI / STATISTICHE
    =================================================================== */
+/* ===================================================================
+   COLLEZIONE DEL NATURALISTA
+   =================================================================== */
+G.categorieCollezione = function(){
+  const F = c => Object.keys(DATA.ITEMS).filter(k=>DATA.ITEMS[k].cat===c && !DATA.ITEMS[k].spazzatura);
+  return [
+    ['Pesci',    'canna',          F('pesce')],
+    ['Minerali', 'gemma_luna',     F('minerale')],
+    ['Colture',  'zappa',          F('raccolto')],
+    ['Foraggio', 'viola',          F('foraggio')],
+    ['Piatti',   'frittata',       DATA.CUCINA.map(r=>r.id)]
+  ];
+};
+G.contaCollezione = function(){
+  const coll = G.collezione||{}, r={}; let totD=0, totT=0;
+  for(const [nome,,ids] of G.categorieCollezione()){
+    const d = ids.filter(id=>coll[id]).length;
+    r[nome]={d, t:ids.length}; totD+=d; totT+=ids.length;
+  }
+  r.tot={d:totD, t:totT};
+  return r;
+};
+
 G.obiettivi = function(){
   const s=G.stats, o=[];
+  const cc=G.contaCollezione();
   // conta (id,nome,icona,desc, valore corrente, traguardo, premio in monete)
   const cont=(id,nome,icona,desc,cur,tot,premio)=>o.push({
     id, nome, icona, desc, premio,
@@ -2804,6 +2917,9 @@ G.obiettivi = function(){
   flag('ponte','Il ponte','legna','Costruisci il ponte per la radura.', G.costruzioni.ponte, 400);
   flag('serra','Sotto vetro','seme_cristallia','Costruisci la serra.', G.costruzioni.serra, 800);
   cont('benestante','Benestante','lingotto_oro','Accumula 50.000 monete guadagnate.', s.guadagno,50000,3000);
+  cont('ittiologo','Ittiologo','storione','Scopri tutti i pesci della valle.', cc.Pesci.d, cc.Pesci.t, 1600);
+  cont('gemmologo','Gemmologo','gemma_luna','Scopri tutti i minerali.', cc.Minerali.d, cc.Minerali.t, 1600);
+  cont('collezionista','Collezionista','medaglione','Completa la Collezione del Naturalista.', cc.tot.d, cc.tot.t, 4000);
   return o;
 };
 
@@ -2835,6 +2951,7 @@ G.statistiche = function(){
    SALVATAGGIO
    =================================================================== */
 const CHIAVE='fioralba_save_v1';
+const CHIAVE_BAK='fioralba_save_bak';
 
 function serializzaMappa(m){
   const obj={}, suolo={};
@@ -2862,7 +2979,7 @@ function deserializzaMappa(m, d){
 
 function costruisciDati(){
   return {
-    v:1,
+    v:2,
     nomeGiocatore:G.nomeGiocatore, mappaId:G.mappaId,
     oro:G.oro, energia:G.energia, energiaMax:G.energiaMax,
     giorno:G.giorno, stagioneIdx:G.stagioneIdx, anno:G.anno, giornoTot:G.giornoTot,
@@ -2876,15 +2993,21 @@ function costruisciDati(){
     look:G.look, vistoFiammella:G.vistoFiammella, introSerafina:G.introSerafina,
     tutorialFatto:G.tutorialFatto, mercato:G.mercato, gelo:G.gelo,
     richieste:G.richieste, richiestaSeq:G.richiestaSeq,
-    obiettiviRiscossi:G.obiettiviRiscossi, sagra:G.sagra, mercante:G.mercante, trame:G.trame,
+    obiettiviRiscossi:G.obiettiviRiscossi, sagra:G.sagra, mercante:G.mercante, trame:G.trame, visitati:G.visitati, collezione:G.collezione,
     px:G.p.px, py:G.p.py,
     maps:(function(){ const o={}; for(const k in G.maps) o[k]=serializzaMappa(G.maps[k]); return o; })()
   };
 }
 
 G.salva = function(){
+  let testo;
+  // serializza a parte: se fallisce, NON tocchiamo il salvataggio esistente
+  try{ testo = JSON.stringify(costruisciDati()); }
+  catch(e){ console.warn('Serializzazione salvataggio fallita', e); return false; }
   try{
-    localStorage.setItem(CHIAVE, JSON.stringify(costruisciDati()));
+    const prec = localStorage.getItem(CHIAVE);
+    if(prec) localStorage.setItem(CHIAVE_BAK, prec);   // backup del precedente buono
+    localStorage.setItem(CHIAVE, testo);
     return true;
   }catch(e){ console.warn('Salvataggio non riuscito', e); return false; }
 };
@@ -2961,35 +3084,50 @@ function flashMessaggio(testo, ok){
 }
 
 function caricaGrezzo(){
-  try{ return localStorage.getItem(CHIAVE); }catch(e){ return null; }
+  try{ return localStorage.getItem(CHIAVE) || localStorage.getItem(CHIAVE_BAK); }catch(e){ return null; }
+}
+
+/* applica un salvataggio (testo JSON) allo stato. Ritorna true se riuscito. */
+function applicaSalvataggio(raw){
+  if(!raw) return false;
+  const d = JSON.parse(raw);                 // può lanciare: gestito dal chiamante
+  if(!d || typeof d!=='object' || !d.maps) return false;
+  Object.assign(G, statoIniziale());
+  G.maps = WORLD.crea();
+  for(const k of ['nomeGiocatore','mappaId','oro','energia','energiaMax','giorno','stagioneIdx',
+                  'anno','giornoTot','ora','meteo','meteoDomani','inv','invMax','slotSel',
+                  'skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
+                  'braci','lettere','ricetteNote','cassaConsegna','stats','animali','look',
+                  'vistoFiammella','introSerafina','tutorialFatto','mercato','gelo',
+                  'richieste','richiestaSeq','obiettiviRiscossi','sagra','mercante','trame','visitati','collezione']){
+    if(d[k]!==undefined) G[k]=d[k];
+  }
+  for(const id in G.costruzioni) if(G.costruzioni[id]) WORLD.costruisci(G.maps, id);
+  if(d.maps){
+    for(const k in d.maps) if(G.maps[k]) deserializzaMappa(G.maps[k], d.maps[k]);
+  }
+  G.p.look = G.look;
+  G.p.px = d.px||8*T+16;
+  G.p.py = d.py||10*T+16;
+  normalizzaStato();                         // salvataggi vecchi/parziali resi validi
+  return true;
 }
 
 function carica(){
-  const raw = caricaGrezzo();
-  if(!raw) return false;
+  let raw=null;
+  try{ raw = localStorage.getItem(CHIAVE); }catch(e){}
+  try{ if(raw && applicaSalvataggio(raw)) return true; }
+  catch(e){ console.warn('Salvataggio principale illeggibile, provo il backup.', e); }
+  // fallback sul backup
+  let bak=null;
+  try{ bak = localStorage.getItem(CHIAVE_BAK); }catch(e){}
   try{
-    const d = JSON.parse(raw);
-    Object.assign(G, statoIniziale());
-    G.maps = WORLD.crea();
-
-    for(const k of ['nomeGiocatore','mappaId','oro','energia','energiaMax','giorno','stagioneIdx',
-                    'anno','giornoTot','ora','meteo','meteoDomani','inv','invMax','slotSel',
-                    'skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
-                    'braci','lettere','ricetteNote','cassaConsegna','stats','animali','look',
-                    'vistoFiammella','introSerafina','tutorialFatto','mercato','gelo',
-                    'richieste','richiestaSeq','obiettiviRiscossi','sagra','mercante','trame']){
-      if(d[k]!==undefined) G[k]=d[k];
+    if(bak && applicaSalvataggio(bak)){
+      if(window.UI) UI.toast('Salvataggio principale corrotto: ripristinato il backup.','bad');
+      return true;
     }
-    // ricostruisci le costruzioni sbloccate
-    for(const id in G.costruzioni) if(G.costruzioni[id]) WORLD.costruisci(G.maps, id);
-    if(d.maps){
-      for(const k in d.maps) if(G.maps[k]) deserializzaMappa(G.maps[k], d.maps[k]);
-    }
-    G.p.look = G.look;
-    G.p.px = d.px||8*T+16;
-    G.p.py = d.py||10*T+16;
-    return true;
-  }catch(e){ console.warn('Caricamento fallito', e); return false; }
+  }catch(e){ console.warn('Anche il backup è illeggibile.', e); }
+  return false;
 }
 
 /* ===================================================================
@@ -3154,6 +3292,9 @@ function suggerimentiEsplorazione(){
     'Ogni stagione ha la sua sagra: consegna i prodotti dal Diario per un gran premio. 🎪',
     'Ogni tanto un mercante ambulante passa dalla Locanda con merce rara. 🛒',
     'Riscuoti i Traguardi completati nel Diario: sono monete che aspettano te. 🏆',
+    'La scheda Collezione del Diario segna tutto ciò che scopri: pesci, minerali, colture, piatti. 📖',
+    'Apri la Mappa (M) e tocca un luogo già visitato per il viaggio rapido. 🧭',
+    'Le abilità migliorano coi livelli: pesca più facile, raccolti doppi, rocce più fragili (Diario → Podere). ⭐',
     'Fai amicizia con Marisol ed Elio: custodiscono due storie speciali da scoprire. 💛',
     'A sud del paese apri la Piazza del Porto, e da lì scendi fino alla Costa a pescare. 🏖️',
     'In fondo alla miniera ci sono scale che scendono: più giù, più gemme rare. 💎',
@@ -3205,8 +3346,12 @@ function schermoIntero(){
    =================================================================== */
 window.addEventListener('load', init);
 
+/* rete di sicurezza: gli errori vengono loggati, non fanno crollare il gioco */
+window.addEventListener('error', e=>{ try{ console.warn('[motore] errore globale:', e.message, (e.filename||'')+':'+(e.lineno||0)); }catch(_){} });
+window.addEventListener('unhandledrejection', e=>{ try{ console.warn('[motore] promise non gestita:', e.reason); }catch(_){} });
+
 /* salvataggio automatico ogni 2 minuti */
-setInterval(()=>{ if(G.inGioco && !G.p.dorme) G.salva(); }, 120000);
+setInterval(()=>{ if(G.inGioco && !G.p.dorme) sistema('autosave', G.salva); }, 120000);
 window.addEventListener('beforeunload', ()=>{ if(G.inGioco) G.salva(); });
 
 })();
