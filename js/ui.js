@@ -752,7 +752,7 @@ U.diario = function(G, tabIniziale){
   U.modal('Diario', body=>{
     const tabs=document.createElement('div'); tabs.className='tabs';
     const nRich=(G.richieste||[]).filter(r=>!r.fatta).length;
-    for(const [k,lab] of [['obiettivi','Obiettivi'],['richieste','Richieste'+(nRich?' ('+nRich+')':'')],['abitanti','Abitanti'],['lettere','Lettere'],['stats','Podere']]){
+    for(const [k,lab] of [['obiettivi','Obiettivi'],['richieste','Richieste'+(nRich?' ('+nRich+')':'')],['collezione','Collezione'],['abitanti','Abitanti'],['lettere','Lettere'],['stats','Podere']]){
       const b=document.createElement('button');
       b.className='tab'+(tab===k?' on':'');
       b.textContent=lab; b.onclick=()=>{ tab=k; U.aggiorna(); };
@@ -884,6 +884,31 @@ U.diario = function(G, tabIniziale){
         body.appendChild(row);
       }
     }
+    else if(tab==='collezione'){
+      const cc=G.contaCollezione();
+      const intro=document.createElement('div'); intro.className='muted'; intro.style.marginBottom='10px';
+      intro.innerHTML=`Tutto ciò che hai scoperto nella valle. Completamento: <b>${cc.tot.d}/${cc.tot.t}</b> (${cc.tot.t?Math.round(cc.tot.d/cc.tot.t*100):0}%).`;
+      body.appendChild(intro);
+      const coll=G.collezione||{};
+      for(const [nome,,ids] of G.categorieCollezione()){
+        const d=ids.filter(id=>coll[id]).length;
+        const s=document.createElement('div'); s.className='sectitle'; s.textContent=nome+' — '+d+'/'+ids.length;
+        body.appendChild(s);
+        const grid=document.createElement('div'); grid.className='invgrid';
+        for(const id of ids){
+          const scoperto=!!coll[id];
+          const cell=document.createElement('div'); cell.className='icell'+(scoperto?'':' empty');
+          if(scoperto){ cell.appendChild(ico(id)); cell.title=IT.nome(id); }
+          else{
+            const q=document.createElement('span'); q.textContent='?';
+            q.style.cssText='font-size:20px;font-weight:800;color:#8a7c66;opacity:.55';
+            cell.appendChild(q); cell.title='Non ancora scoperto';
+          }
+          grid.appendChild(cell);
+        }
+        body.appendChild(grid);
+      }
+    }
     else if(tab==='abitanti'){
       for(const id in DATA.NPCS){
         const N=DATA.NPCS[id];
@@ -928,6 +953,30 @@ U.diario = function(G, tabIniziale){
       }
     }
     else {
+      // --- ABILITÀ ---
+      const sa=document.createElement('div'); sa.className='sectitle'; sa.textContent='Abilità';
+      body.appendChild(sa);
+      const skIco={agricoltura:'zappa', raccolta:'falce', estrazione:'piccone', pesca:'canna'};
+      for(const k of ['agricoltura','raccolta','estrazione','pesca']){
+        const lv=G.livello(k), xp=G.skills[k]||0;
+        const cur=DATA.XP_LIV[lv]||0, next=DATA.XP_LIV[lv+1];
+        const perc = next? Math.max(2,Math.round((xp-cur)/(next-cur)*100)) : 100;
+        const bonus = {
+          agricoltura:'Raccolti +'+(lv*3)+'% di valore · raccolto doppio ~'+(lv*2)+'%',
+          raccolta:'Legna e foraggio extra ~'+(lv*4)+'%',
+          estrazione:'Rocce più fragili · minerali extra ~'+Math.round((0.25+lv*0.03)*100)+'%',
+          pesca:'Barra di pesca +'+(lv*7)+'px · pesci più stanchi'
+        }[k];
+        const row=document.createElement('div'); row.className='row';
+        row.appendChild(ico(skIco[k]));
+        const info=document.createElement('div'); info.className='rinfo';
+        info.innerHTML=`<div class="rname">${DATA.SKILLS[k].nome} — Liv. ${lv}/10</div>`+
+          `<div class="rdesc">${bonus}</div>`+
+          `<div class="skbar"><div class="skfill" style="width:${perc}%"></div><span>${next?perc+'% → Liv. '+(lv+1):'MASSIMO'}</span></div>`;
+        row.appendChild(info);
+        body.appendChild(row);
+      }
+
       const st=G.statistiche();
       const s=document.createElement('div'); s.className='sectitle'; s.textContent='Il podere in numeri';
       body.appendChild(s);
@@ -1035,6 +1084,17 @@ U.mappa = function(G){
       arrotondato(x, z.x+9, z.y+8, tw, 22, 6); x.stroke();
       x.fillStyle='#4a3320';
       x.fillText(z.n, z.x+18, z.y+24);
+
+      // segnalino "viaggio rapido" sui luoghi scoperti (diversi da quello attuale)
+      if(z.id!==G.mappaId && G.visitati && G.visitati[z.id]){
+        x.font='bold 11px Nunito, sans-serif';
+        const chip='▸ vai', cw=x.measureText(chip).width+12;
+        x.fillStyle='rgba(242,193,78,0.94)';
+        arrotondato(x, z.x+z.w-cw-8, z.y+z.h-25, cw, 17, 6); x.fill();
+        x.strokeStyle='#8a6417'; x.lineWidth=1;
+        arrotondato(x, z.x+z.w-cw-8, z.y+z.h-25, cw, 17, 6); x.stroke();
+        x.fillStyle='#3d2a08'; x.fillText(chip, z.x+z.w-cw-2, z.y+z.h-12.5);
+      }
     }
 
     /* --- segnalino "sei qui" (le miniere profonde ricadono sulla Miniera) --- */
@@ -1073,10 +1133,26 @@ U.mappa = function(G){
     x.fillStyle='#5b3a24'; x.font='bold 11px Nunito, sans-serif';
     x.fillText('N', rx-4, ry-24);
 
+    // --- viaggio rapido: clic su un luogo scoperto ---
+    c.style.cursor='pointer';
+    c.onclick = (ev)=>{
+      const r=c.getBoundingClientRect();
+      const cxp=(ev.clientX-r.left)*(W/r.width), cyp=(ev.clientY-r.top)*(H/r.height);
+      for(const zn of zone){
+        if(cxp>=zn.x && cxp<=zn.x+zn.w && cyp>=zn.y && cyp<=zn.y+zn.h){
+          if(zn.id===G.mappaId) return;
+          if(G.visitati && G.visitati[zn.id]){ U.chiudiModal(); SND.play('menu'); G.viaggiaRapido(zn.id); }
+          else U.toast('Non hai ancora scoperto «'+zn.n+'». Arrivaci a piedi la prima volta.','bad');
+          return;
+        }
+      }
+    };
+
     body.appendChild(c);
 
     const n=document.createElement('div'); n.className='muted'; n.style.marginTop='12px';
-    n.innerHTML = `<b>Sei in:</b> ${G.mappa().nome}. `+
+    n.innerHTML = `<b>Tocca un luogo con «▸ vai» per il viaggio rapido.</b> `+
+      `Sei in: ${G.mappa().nome}. `+
       `Dal podere: <b>est</b> il paese, <b>sud</b> il bosco. `+
       `Dal paese: <b>nord</b> la miniera (e ancora su il passo innevato), <b>sud-est</b> la piazza e la costa. `+
       `In fondo alla miniera scendi ai livelli profondi.`;
