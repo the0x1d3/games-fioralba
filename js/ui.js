@@ -122,6 +122,14 @@ U.prompt = function(testo){
 let modalAperta = null;
 
 U.modal = function(titolo, costruisci, onClose){
+  // se una modale era già aperta, il suo onClose va eseguito lo stesso:
+  // altrimenti chi ci aveva agganciato qualcosa da fermare (le demo
+  // animate, per dire) se lo ritrova a girare a vuoto per sempre
+  if(modalAperta && modalAperta.onClose){
+    const cb = modalAperta.onClose;
+    modalAperta = null;
+    try{ cb(); }catch(e){ console.warn('[ui] onClose della modale precedente', e); }
+  }
   $('#modal-title').textContent = titolo;
   const body = $('#modal-body');
   body.innerHTML = '';
@@ -1359,9 +1367,29 @@ U.menu = function(G){
   });
 };
 
+/* pulsanti che aprono le scenette, in cima a "Come si gioca" */
+function scorciatoieDemo(body){
+  if(!window.DEMO) return;
+  const t=document.createElement('div'); t.className='sectitle'; t.style.marginTop='0';
+  t.textContent='Guarda come si fa';
+  body.appendChild(t);
+  const riga=document.createElement('div'); riga.className='demo-scorciatoie';
+  for(const d of DEMO.elenco()){
+    const b=document.createElement('button'); b.className='btn blue';
+    b.appendChild(ico(d.icona));
+    const s=document.createElement('span'); s.textContent=d.nome; b.appendChild(s);
+    b.onclick=()=>U.demo(d.id);
+    riga.appendChild(b);
+  }
+  body.appendChild(riga);
+}
+
 U.comeSiGioca = function(){
   U.modal('Come si gioca', body=>{
-    body.innerHTML = `
+    scorciatoieDemo(body);
+    const testo = document.createElement('div');
+    body.appendChild(testo);
+    testo.innerHTML = `
       <div class="sectitle">Movimento</div>
       <div class="muted">
         <b>WASD</b> o <b>frecce</b> per camminare. <b>Shift</b> per correre (consuma un filo di energia).
@@ -1401,6 +1429,26 @@ U.comeSiGioca = function(){
       </div>
     `;
   });
+};
+
+/* ===================================================================
+   DEMO ANIMATE — "guarda come si fa"
+   Il lettore va fermato alla chiusura, altrimenti resta un
+   requestAnimationFrame che gira a vuoto per tutta la partita.
+   =================================================================== */
+U.demo = function(id){
+  if(!window.DEMO) return;
+  let lettore = null;
+  U.modal('Come si fa', body=>{
+    const n=document.createElement('div'); n.className='muted';
+    n.style.cssText='margin-bottom:10px;font-size:13px';
+    n.textContent='Guarda e rifallo: le scenette girano da sole.';
+    body.appendChild(n);
+    const box=document.createElement('div'); box.className='demo-box';
+    body.appendChild(box);
+    if(lettore) lettore.ferma();
+    lettore = DEMO.monta(box, id);
+  }, ()=>{ if(lettore) lettore.ferma(); lettore=null; });
 };
 
 /* ===================================================================

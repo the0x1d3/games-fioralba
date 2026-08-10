@@ -23,17 +23,17 @@ const $ = s=>document.querySelector(s);
    "attivato", quindi l'ordine in cui il giocatore li compie non conta.
    ------------------------------------------------------------------ */
 const PASSI = [
-  { id:'dormi', icona:'lanterna',
+  { id:'dormi', icona:'lanterna', demo:'coltiva',
     titolo:'Passa la prima notte',
     come:'Le piante crescono mentre dormi. La casa è in alto a sinistra nel podere: mettiti davanti alla porta e premi <kbd>E</kbd>.',
     fatto: G => (G.stats.giorniGiocati||0) >= 1 },
 
-  { id:'raccogli', icona:'rapa',
+  { id:'raccogli', icona:'rapa', demo:'coltiva',
     titolo:'Raccogli il primo prodotto',
     come:'Quando una pianta è matura scintilla. Mettiti accanto e premi <kbd>Spazio</kbd> a mani nude — niente attrezzo.',
     fatto: G => (G.stats.raccolti||0) >= 1 },
 
-  { id:'vendi', icona:'cassa',
+  { id:'vendi', icona:'cassa', demo:'consegna',
     titolo:'Vendi quello che hai raccolto',
     come:'La <b>cassa di consegna</b> è accanto a casa: lasciaci la roba e la ritirano di notte, pagata all\'alba. Oppure vendila a mano da Bruno.',
     fatto: G => (G.stats.venduto||0) >= 1 },
@@ -53,7 +53,7 @@ const PASSI = [
     come:'Parla con qualcuno (<kbd>E</kbd>) e scegli <b>“Ho un regalo per te”</b>. Ognuno ha i suoi gusti: indovinare vale il triplo.',
     fatto: G => (G.stats.regali||0) >= 1 },
 
-  { id:'pesca', icona:'canna',
+  { id:'pesca', icona:'canna', demo:'pesca',
     titolo:'Prendi il primo pesce',
     come:'Scegli la <b>canna</b> e usala rivolto verso l\'acqua. Quando abbocca premi <kbd>Spazio</kbd>, poi tienilo premuto per far salire la barra e mantienila sul pesce.',
     fatto: G => (G.stats.pesci||0) >= 1 },
@@ -177,6 +177,14 @@ function disegna(forza){
     const testo = document.createElement('div'); testo.className='gu-testo';
     testo.innerHTML = '<div class="gu-tit">'+p.titolo+'</div>' +
                       (k===0 ? '<div class="gu-come">'+p.come+'</div>' : '');
+    // per i passi che hanno una scenetta: "guarda come si fa"
+    if(k===0 && p.demo && window.DEMO && DEMO.esiste(p.demo)){
+      const b = document.createElement('button');
+      b.className = 'gu-demo';
+      b.innerHTML = '▶ guarda come si fa';
+      b.onclick = ()=>{ SND.play('menu'); UI.demo(p.demo); };
+      testo.appendChild(b);
+    }
     riga.appendChild(testo);
     corpo.appendChild(riga);
   });

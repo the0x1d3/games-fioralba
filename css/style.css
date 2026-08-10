@@ -223,6 +223,62 @@ kbd{
   background:var(--paper); color:var(--ink); border-radius:4px;
   padding:0 4px; font-size:10.5px; font-weight:800; border:1px solid rgba(0,0,0,.3);
 }
+.gu-demo{
+  display:inline-block; margin-top:7px;
+  background:linear-gradient(180deg, rgba(90,130,170,.95), rgba(60,96,132,.95));
+  border:2px solid var(--wood-edge); border-radius:8px;
+  color:var(--paper); font-family:inherit; font-weight:800; font-size:11px;
+  padding:3px 9px; cursor:pointer;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2), 0 2px 0 rgba(0,0,0,.3);
+}
+.gu-demo:hover{ filter:brightness(1.14); }
+.gu-demo:active{ transform:translateY(2px); box-shadow:inset 0 1px 0 rgba(255,255,255,.15); }
+
+/* ---------- DEMO ANIMATE ---------- */
+.demo-box{ display:flex; flex-direction:column; align-items:center; gap:10px; }
+.demo-tabs{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+.demo-tab{
+  display:flex; align-items:center; gap:6px;
+  background:linear-gradient(180deg,var(--wood-3),var(--wood-2));
+  border:2px solid var(--wood-edge); border-radius:9px;
+  color:var(--paper-2); font-family:inherit; font-weight:800; font-size:12px;
+  padding:4px 10px 4px 6px; cursor:pointer;
+}
+.demo-tab canvas{ width:22px; height:22px; image-rendering:pixelated; }
+.demo-tab:hover{ filter:brightness(1.12); }
+.demo-tab.on{
+  background:linear-gradient(180deg, var(--gold), var(--gold-d));
+  color:#3a2a12; border-color:#8a6524;
+}
+.demo-schermo{
+  display:block; image-rendering:pixelated; border-radius:8px;
+  border:3px solid var(--wood-edge);
+  box-shadow:inset 0 2px 8px rgba(0,0,0,.5), 0 4px 0 rgba(0,0,0,.28);
+  max-width:100%;
+}
+.demo-sotto{ width:100%; text-align:center; }
+.demo-dida{
+  min-height:44px; font-size:13.5px; font-weight:600; line-height:1.5;
+  color:var(--paper); padding:0 4px;
+}
+.demo-dida b{ color:var(--gold); }
+.demo-dida kbd{
+  background:var(--paper); color:var(--ink); border-radius:4px;
+  padding:1px 5px; font-size:11.5px; font-weight:800; border:1px solid rgba(0,0,0,.3);
+}
+.demo-dots{ display:flex; gap:6px; justify-content:center; margin-top:8px; }
+.demo-dot{
+  width:7px; height:7px; border-radius:50%;
+  background:rgba(246,230,200,.25); transition:background .2s, transform .2s;
+}
+.demo-dot.on{ background:var(--gold); transform:scale(1.25); }
+.demo-scorciatoie{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:6px; }
+.demo-scorciatoie .btn{
+  display:flex; align-items:center; gap:7px; flex:1 1 auto; min-width:130px;
+  justify-content:center; padding:7px 10px;
+}
+.demo-scorciatoie .btn canvas{ width:24px; height:24px; image-rendering:pixelated; }
+
 #guida.lampo{ animation:guLampo .7s ease; }
 @keyframes guLampo{
   0%,100%{ box-shadow:inset 0 2px 0 rgba(255,255,255,.18), inset 0 -3px 0 rgba(0,0,0,.25), var(--shadow); }

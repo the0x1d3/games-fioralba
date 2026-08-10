@@ -69,6 +69,12 @@ un'indicazione di cosa fa **E**: *parla con Bruno*, *cassa di consegna*,
 *bacheca delle richieste*, *ritira: Vino di Uva*. Prima bisognava indovinare
 quali oggetti fossero interattivi.
 
+E se una cosa non è chiara a parole, c'è da **guardarla**: in *Come si gioca*
+(e sui passi della guida) quattro **scenette animate** mostrano il ciclo del
+campo, il minigioco della pesca, come si carica una macchina e come funziona la
+cassa di consegna. Non sono video: sono disegnate dal vivo con gli stessi sprite
+del gioco, quindi pesano zero byte e non possono mostrare un'interfaccia vecchia.
+
 ## 📖 La storia
 
 Tua nonna Ilde ti ha lasciato il podere. Sul testamento c'era scritto solo quello.
@@ -194,6 +200,7 @@ js/world.js         le quattro mappe, collisioni, respawn notturno
 js/mobs.js          fauna: sprite, comportamenti, comparsa
 js/tutorial.js      guida interattiva delle prime azioni
 js/guida.js         "Primi passi": gli obiettivi che restano a schermo
+js/demo.js          le scenette animate del "guarda come si fa"
 js/render.js        camera, terreni a blocchi, profondità, luci, meteo
 js/ui.js            menu, negozi, dialoghi, diario
 js/game.js          stato, ciclo di gioco, input, sistemi
