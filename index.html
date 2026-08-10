@@ -4,7 +4,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>Fioralba — La Lanterna del Solstizio</title>
-<link rel="stylesheet" href="css/style.css?v=22">
+
+<meta name="description" content="Un gioco di fattoria cozy in italiano, nel browser e senza installare niente. Eredita il podere di Nonna Ilde, coltiva, pesca, esplora la miniera e riaccendi le quattro braci del Santuario.">
+<meta name="author" content="William">
+<meta name="theme-color" content="#1c140d">
+<meta name="color-scheme" content="dark">
+
+<!-- anteprima quando il link viene condiviso -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Fioralba">
+<meta property="og:title" content="Fioralba — La Lanterna del Solstizio">
+<meta property="og:description" content="Un piccolo podere, una valle da risvegliare. Gioco di fattoria cozy in italiano, si gioca nel browser senza installare niente.">
+<meta property="og:image" content="og-fioralba.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="it_IT">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Fioralba — La Lanterna del Solstizio">
+<meta name="twitter:description" content="Un piccolo podere, una valle da risvegliare. Gioco di fattoria cozy in italiano, direttamente nel browser.">
+<meta name="twitter:image" content="og-fioralba.png">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231c140d'/><rect x='13' y='3' width='6' height='2' fill='%233a3028'/><rect x='10' y='5' width='12' height='3' fill='%233a3028'/><rect x='11' y='8' width='10' height='15' fill='%23f2c14e'/><rect x='13' y='10' width='6' height='11' fill='%23fff0c0'/><rect x='10' y='23' width='12' height='3' fill='%233a3028'/><rect x='14' y='26' width='4' height='3' fill='%233a3028'/></svg>">
+
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -30,6 +52,18 @@
         <div class="statlabel">Energia</div>
         <div class="vbar"><div id="energyfill"></div><span id="energytext">100</span></div>
       </div>
+    </div>
+
+    <!-- ============ PRIMI PASSI (guida sempre a schermo) ============ -->
+    <div id="guida" class="panel hidden">
+      <div class="gu-head">
+        <span class="gu-titolo">Primi passi</span>
+        <span class="gu-prog">0/11</span>
+        <button class="gu-toggle" title="Apri/chiudi">▾</button>
+        <button class="gu-chiudi" title="Nascondi la guida">✕</button>
+      </div>
+      <div class="gu-barra"><div class="gu-barra-fill"></div></div>
+      <div class="gu-corpo"></div>
     </div>
 
     <div id="hotbar-wrap">
@@ -141,6 +175,13 @@
   <div id="landing">
     <div class="lp-scroll">
 
+      <!-- avviso onesto e SUBITO visibile: compare solo su telefono/tablet -->
+      <div class="lp-mobile">
+        <strong>💻 Fioralba si gioca da computer.</strong>
+        Serve tastiera e mouse: da telefono o tablet i comandi non funzionano.
+        Puoi comunque dare un'occhiata a cosa ti aspetta.
+      </div>
+
       <header class="lp-hero">
         <div class="lp-logo">
           <div class="lp-sub">La Lanterna del Solstizio</div>
@@ -221,15 +262,22 @@
 
 </div>
 
-<script src="js/data.js?v=22"></script>
-<script src="js/art.js?v=22"></script>
-<script src="js/fx.js?v=22"></script>
-<script src="js/audio.js?v=22"></script>
-<script src="js/world.js?v=22"></script>
-<script src="js/mobs.js?v=22"></script>
-<script src="js/ui.js?v=22"></script>
-<script src="js/tutorial.js?v=22"></script>
-<script src="js/render.js?v=22"></script>
-<script src="js/game.js?v=22"></script>
+<!-- L'ordine conta: ogni file registra il proprio oggetto globale (DATA, ART,
+     FX, SND, WORLD, MOBS, UI/IT, TUT, REND, G) e i successivi lo usano.
+     Niente ?v=N: le versioni scritte a mano si dimenticano, e con la cache
+     lunga di Vercel un aggiornamento dimenticato restava invisibile per un
+     anno. Ora js e css rivalidano sempre (vedi vercel.json): il browser li
+     tiene comunque in cache e riceve un 304 finché non cambiano davvero. -->
+<script src="js/data.js"></script>
+<script src="js/art.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/world.js"></script>
+<script src="js/mobs.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/tutorial.js"></script>
+<script src="js/guida.js"></script>
+<script src="js/render.js"></script>
+<script src="js/game.js"></script>
 </body>
 </html>

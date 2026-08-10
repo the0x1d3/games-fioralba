@@ -2,17 +2,17 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "headers": [
     {
-      "//": "L'HTML deve rivalidare sempre, così i nuovi ?v=N sui tag <script> vengono visti.",
+      "//": "Tutto rivalida a ogni visita. Il browser tiene comunque i file in cache: finché non cambiano riceve un 304 da poche centinaia di byte. Il gioco pesa ~140 KB gzippati, quindi il costo è trascurabile — e in cambio non esiste più il rischio di pubblicare un aggiornamento che nessuno vede perché il vecchio JS è inchiodato in cache.",
       "source": "/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
       ]
     },
     {
-      "//": "js e css cambiano URL quando bumpi ?v=N, quindi si possono cachare a lungo.",
-      "source": "/(js|css)/(.*)",
+      "//": "L'immagine di anteprima non cambia mai: quella si può cachare a lungo.",
+      "source": "/og-fioralba.png",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000" }
+        { "key": "Cache-Control", "value": "public, max-age=604800" }
       ]
     }
   ]

@@ -13,6 +13,10 @@ let cvs, ctx;
 let scene, sx;
 let light, lx;
 let VW=480, VH=270, SCALE=3;
+/* DPR: quanti pixel fisici vale un pixel CSS (1 di norma, 1.25/1.5/2 sugli
+   schermi in scala e sui Retina). cssW/cssH servono a capire se la finestra
+   è cambiata senza che sia arrivato l'evento "resize". */
+let DPR=1, cssW=0, cssH=0;
 
 R.init = function(canvas){
   cvs = canvas;
@@ -23,25 +27,49 @@ R.init = function(canvas){
   R.resize();
 };
 
+function dprCorrente(){
+  return Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+}
+
 R.resize = function(){
   // un canvas 0×0 farebbe fallire drawImage: ripieghiamo su una misura sensata
-  const dw = Math.max(320, window.innerWidth  || 0);
-  const dh = Math.max(240, window.innerHeight || 0);
-  cvs.width = dw; cvs.height = dh;
-  let s = Math.max(2, Math.min(4, Math.round(dw/(19*T))));
-  if(dw < 760) s = Math.max(2, Math.min(3, Math.round(dw/(13*T))));
-  SCALE = s;
-  VW = Math.max(1, Math.ceil(dw/SCALE)); VH = Math.max(1, Math.ceil(dh/SCALE));
+  cssW = Math.max(320, window.innerWidth  || 0);
+  cssH = Math.max(240, window.innerHeight || 0);
+  DPR  = dprCorrente();
+
+  /* Il canvas lavora in pixel FISICI. Dimensionandolo in pixel CSS, su uno
+     schermo al 125% o su un Retina il browser lo riscalerebbe di un fattore
+     non intero: la griglia della pixel art diventerebbe irregolare (alcuni
+     pixel larghi 2, altri 1) e il disegno "sfarfallerebbe" muovendosi. */
+  const devW = Math.round(cssW*DPR), devH = Math.round(cssH*DPR);
+  cvs.width = devW; cvs.height = devH;
+
+  // quanto zoom vogliamo — cioè quante caselle si vedono — dipende da quanto
+  // è grande la finestra per l'occhio, quindi dalla misura in pixel CSS
+  let zoom = Math.max(2, Math.min(4, Math.round(cssW/(19*T))));
+  if(cssW < 760) zoom = Math.max(2, Math.min(3, Math.round(cssW/(13*T))));
+  // ...ma l'ingrandimento effettivo dev'essere un numero INTERO di pixel fisici
+  SCALE = Math.max(1, Math.round(zoom*DPR));
+
+  VW = Math.max(1, Math.ceil(devW/SCALE)); VH = Math.max(1, Math.ceil(devH/SCALE));
   scene.width=VW; scene.height=VH;
   light.width=VW; light.height=VH;
   sx = scene.getContext('2d'); sx.imageSmoothingEnabled=false;
   lx = light.getContext('2d'); lx.imageSmoothingEnabled=false;
   ctx = cvs.getContext('2d'); ctx.imageSmoothingEnabled=false;
 };
-R.info = ()=>({VW,VH,SCALE});
+R.info = ()=>({VW,VH,SCALE,DPR});
 
+/* la finestra (o lo zoom del browser) è cambiata senza emettere "resize"? */
+R.deveRidimensionare = function(){
+  return Math.max(320, window.innerWidth  || 0) !== cssW
+      || Math.max(240, window.innerHeight || 0) !== cssH
+      || dprCorrente() !== DPR;
+};
+
+/* il mouse arriva in pixel CSS: prima ai pixel fisici, poi al mondo */
 R.schermoAMondo = function(px, py, cam){
-  return { x:(px/SCALE + cam.x), y:(py/SCALE + cam.y) };
+  return { x:(px*DPR/SCALE + cam.x), y:(py*DPR/SCALE + cam.y) };
 };
 
 /* ===================================================================
@@ -50,17 +78,29 @@ R.schermoAMondo = function(px, py, cam){
    volta per blocco di 8×8 caselle e poi lo ricopiamo.
    =================================================================== */
 const CH = 8;
-let chunkCache = {};
+/* Ogni blocco è un canvas 256×256 = 256 KB di memoria video. Una Map tiene
+   l'ordine d'uso, così a essere buttato è il blocco che non guardi da più
+   tempo (e non, come prima, il primo che era entrato — che poteva benissimo
+   essere quello sotto ai piedi del giocatore, ricostruito a ogni frame).
+   120 blocchi = ~30 MB, con sei volte il margine sul campo visivo. */
+const CACHE_MAX = 120;
+let chunkCache = new Map();
+
+/* diagnostica: quanti blocchi di terreno sono in cache e quanti ne ha
+   costruiti da quando è partito il gioco (utile per capire se la cache
+   sta lavorando o se sta ricostruendo sempre le stesse cose) */
+let chunkCostruiti = 0;
+R.statoCache = ()=>({ inCache: chunkCache.size, max: CACHE_MAX, costruitiInTutto: chunkCostruiti });
 
 R.invalidaTerreno = function(mapId){
-  if(!mapId){ chunkCache = {}; return; }
-  for(const k in chunkCache) if(k.indexOf(mapId+'|')===0) delete chunkCache[k];
+  if(!mapId){ chunkCache.clear(); return; }
+  for(const k of [...chunkCache.keys()]) if(k.indexOf(mapId+'|')===0) chunkCache.delete(k);
 };
 R.invalidaCasella = function(mapId, x, y){
   // il raccordo tocca anche i blocchi vicini
   for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
     const cx = ((x+dx)/CH)|0, cy = ((y+dy)/CH)|0;
-    for(const s of DATA.SEASONS) delete chunkCache[mapId+'|'+cx+'|'+cy+'|'+s.id];
+    for(const s of DATA.SEASONS) chunkCache.delete(mapId+'|'+cx+'|'+cy+'|'+s.id);
   }
 };
 
@@ -133,15 +173,18 @@ function costruisciChunk(m, cx, cy, season){
 
 function chunk(m, cx, cy, season){
   const k = m.id+'|'+cx+'|'+cy+'|'+season;
-  let c = chunkCache[k];
-  if(!c){
-    c = costruisciChunk(m, cx, cy, season);
-    chunkCache[k]=c;
-    // non facciamo crescere la cache all'infinito
-    const chiavi = Object.keys(chunkCache);
-    if(chiavi.length > 260) delete chunkCache[chiavi[0]];
+  const c = chunkCache.get(k);
+  if(c){
+    chunkCache.delete(k); chunkCache.set(k, c);   // rimettilo in fondo: è "appena usato"
+    return c;
   }
-  return c;
+  const nuovo = costruisciChunk(m, cx, cy, season);
+  chunkCostruiti++;
+  chunkCache.set(k, nuovo);
+  if(chunkCache.size > CACHE_MAX){
+    chunkCache.delete(chunkCache.keys().next().value);   // sfratta il meno recente
+  }
+  return nuovo;
 }
 
 /* ===================================================================
@@ -224,6 +267,8 @@ R.disegna = function(G){
       if(y<m.h-1 && m.suolo[i+m.w]) vic|=4;
       if(x>0     && m.suolo[i-1])   vic|=8;
       sx.drawImage(ART.arato(vic, m.v[i]%4, !!s.bagnato, stag), px, py);
+      // resti secchi di una coltura morta fuori stagione o calpestata
+      if(s.appassita && !s.crop) sx.drawImage(ART.appassita(m.v[i]%4), px, py);
       if(s.concime){
         sx.globalAlpha=0.30;
         sx.fillStyle = s.concime==='ritenzione' ? '#4f8ab8' : '#5a3a20';

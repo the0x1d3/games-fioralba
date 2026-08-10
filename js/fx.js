@@ -252,26 +252,4 @@ F.raggi = function(ctx, w, h, ora, meteo){
   ctx.restore();
 };
 
-/* ===================================================================
-   7. RIFLESSI SULL'ACQUA
-   Una copia capovolta e ondulata dello sprite, ritagliata sull'acqua.
-   =================================================================== */
-F.riflesso = function(ctx, src, bx, by, w, h, t, alpha){
-  if(!src || !src.width) return;
-  ctx.save();
-  ctx.globalAlpha = alpha===undefined?0.22:alpha;
-  const sw = w||src.width, sh = h||src.height;
-  // a fette orizzontali, ognuna sfalsata: dà l'increspatura
-  const fette = 8;
-  for(let i=0;i<fette;i++){
-    const sy = (sh/fette)*i;
-    const off = Math.sin(t*0.003 + i*0.9)*(1.2+i*0.22);
-    ctx.drawImage(src,
-      0, src.height-(src.height/fette)*(i+1), src.width, src.height/fette,
-      bx-sw/2+off, by+(sh/fette)*i*0.55, sw, (sh/fette)*0.58);
-  }
-  ctx.restore();
-  ctx.globalAlpha=1;
-};
-
 })();

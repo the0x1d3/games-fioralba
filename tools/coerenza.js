@@ -1,0 +1,256 @@
+#!/usr/bin/env node
+/* ===================================================================
+   FIORALBA — tools/coerenza.js
+   Controlli di coerenza sui dati di gioco. Nessuna dipendenza: carica
+   i file del gioco in un finto `window` e verifica che il contenuto
+   stia in piedi da solo.
+
+   Nasce da un bug vero: il `latte` serviva alla ricetta della Polenta
+   ma non lo produceva né lo vendeva nessuno, quindi quella ricetta era
+   impossibile da cucinare. Un controllo del genere lo avrebbe preso
+   il giorno stesso.
+
+       node tools/coerenza.js      (oppure: npm test)
+   =================================================================== */
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+
+const RADICE = path.join(__dirname, '..');
+
+/* --- carica i moduli del gioco che non toccano il DOM --- */
+global.window = {};
+for (const file of ['js/data.js', 'js/world.js']) {
+  const src = fs.readFileSync(path.join(RADICE, file), 'utf8');
+  // eslint-disable-next-line no-eval
+  eval(src);
+}
+const DATA = global.window.DATA;
+const WORLD = global.window.WORLD;
+
+/* --- mini framework --- */
+const errori = [];
+const fatti = [];
+function verifica(nome, fn) {
+  try {
+    const problemi = fn() || [];
+    if (problemi.length) { errori.push([nome, problemi]); }
+    else { fatti.push(nome); }
+  } catch (e) {
+    errori.push([nome, ['il controllo stesso è esploso: ' + e.message]]);
+  }
+}
+
+/* --- da dove può arrivare un oggetto, in gioco --- */
+function fontiOttenibili() {
+  const ok = new Set();
+  for (const id in DATA.ITEMS) {
+    const I = DATA.ITEMS[id];
+    // raccolti dal campo, foraggio dal bosco, pesci, minerali, materiali
+    if (['raccolto', 'foraggio', 'pesce', 'minerale', 'materiale'].indexOf(I.cat) >= 0) ok.add(id);
+  }
+  for (const id of DATA.SHOP_EXTRA) ok.add(id);              // bottega di Bruno
+  for (const st in DATA.SHOP) for (const id of DATA.SHOP[st]) ok.add(id);
+  for (const r of DATA.CRAFT) ok.add(r.id);                  // banco da lavoro
+  for (const r of DATA.CUCINA) ok.add(r.id);                 // fornelli
+  ok.add('uovo'); ok.add('uovo_oro');                        // pollaio
+  ok.add('miele');                                           // arnia
+  for (const b of DATA.SANTUARIO) if (b.premio && b.premio.item) ok.add(b.premio.item);
+  return ok;
+}
+
+/* =================================================================== */
+
+verifica('ogni ingrediente di cucina si può ottenere', () => {
+  const ok = fontiOttenibili();
+  const problemi = [];
+  for (const r of DATA.CUCINA) {
+    for (const ing in r.ing) {
+      if (!ok.has(ing)) problemi.push(`«${ing}» serve a ${r.id} ma non lo produce né lo vende nessuno`);
+    }
+  }
+  return problemi;
+});
+
+verifica('ogni ingrediente di artigianato si può ottenere', () => {
+  const ok = fontiOttenibili();
+  const problemi = [];
+  for (const r of DATA.CRAFT) {
+    for (const ing in r.ing) {
+      if (!ok.has(ing)) problemi.push(`«${ing}» serve a ${r.id} ma non è ottenibile`);
+    }
+  }
+  return problemi;
+});
+
+verifica('ogni costruzione chiede materiali esistenti e ottenibili', () => {
+  const ok = fontiOttenibili();
+  const problemi = [];
+  for (const c of DATA.COSTRUZIONI) {
+    for (const ing in c.ing) {
+      if (!DATA.ITEMS[ing]) problemi.push(`${c.id} chiede «${ing}», che non esiste`);
+      else if (!ok.has(ing)) problemi.push(`${c.id} chiede «${ing}», non ottenibile`);
+    }
+  }
+  return problemi;
+});
+
+verifica('i potenziamenti degli attrezzi chiedono lingotti esistenti', () => {
+  const problemi = [];
+  for (const att in DATA.UPGRADE) {
+    if (!DATA.ITEMS[att]) problemi.push(`potenziamento per «${att}», che non è un oggetto`);
+    for (const u of DATA.UPGRADE[att]) {
+      for (const ing in u.ing) if (!DATA.ITEMS[ing]) problemi.push(`${att} liv.${u.liv} chiede «${ing}», che non esiste`);
+    }
+  }
+  return problemi;
+});
+
+verifica('le offerte del Santuario si possono raccogliere in stagione', () => {
+  const ok = fontiOttenibili();
+  const problemi = [];
+  for (const b of DATA.SANTUARIO) {
+    for (const req of b.req) {
+      if (!DATA.ITEMS[req]) problemi.push(`la ${b.nome} chiede «${req}», che non esiste`);
+      else if (!ok.has(req)) problemi.push(`la ${b.nome} chiede «${req}», non ottenibile`);
+    }
+    if (!DATA.ITEMS[b.premio.item]) problemi.push(`la ${b.nome} premia con «${b.premio.item}», che non esiste`);
+  }
+  return problemi;
+});
+
+verifica('i regali preferiti dagli abitanti esistono', () => {
+  const problemi = [];
+  for (const id in DATA.NPCS) {
+    const N = DATA.NPCS[id];
+    if (!N.regali) continue;
+    for (const gruppo of ['ama', 'piace']) {
+      for (const g of (N.regali[gruppo] || [])) {
+        const base = g.indexOf(':') > 0 ? g.split(':')[1] : g;
+        if (!DATA.ITEMS[base] && !DATA.CROPS[base]) problemi.push(`${N.nome} ${gruppo} «${g}», che non esiste`);
+      }
+    }
+  }
+  return problemi;
+});
+
+verifica('ogni coltura ha semi in vendita nella sua stagione', () => {
+  const problemi = [];
+  for (const id in DATA.CROPS) {
+    const semeId = 'seme_' + id;
+    const stagioni = DATA.CROPS[id].stagioni;
+    const vendutoIn = Object.keys(DATA.SHOP).filter(st => DATA.SHOP[st].indexOf(semeId) >= 0);
+    if (!vendutoIn.length) { problemi.push(`i semi di ${id} non sono in vendita da nessuna parte`); continue; }
+    for (const st of vendutoIn) {
+      if (stagioni.indexOf(st) < 0) problemi.push(`i semi di ${id} sono venduti in ${st}, ma la coltura non cresce in quella stagione`);
+    }
+  }
+  return problemi;
+});
+
+verifica('ogni pesce ha almeno una stagione e un luogo raggiungibile', () => {
+  const luoghi = ['fiume', 'lago', 'mare'];
+  const problemi = [];
+  for (const id in DATA.ITEMS) {
+    const I = DATA.ITEMS[id];
+    if (I.cat !== 'pesce' || I.spazzatura) continue;
+    if (!I.stagioni || !I.stagioni.length) problemi.push(`${id} non ha stagioni: non abboccherà mai`);
+    if (I.luogo && luoghi.indexOf(I.luogo) < 0) problemi.push(`${id} vive in «${I.luogo}», che non esiste`);
+  }
+  return problemi;
+});
+
+verifica('la Collezione del Naturalista è completabile', () => {
+  const ok = fontiOttenibili();
+  const problemi = [];
+  const categorie = ['pesce', 'minerale', 'raccolto', 'foraggio'];
+  for (const id in DATA.ITEMS) {
+    const I = DATA.ITEMS[id];
+    if (categorie.indexOf(I.cat) < 0 || I.spazzatura) continue;
+    if (!ok.has(id)) problemi.push(`«${id}» è nella Collezione ma non è ottenibile`);
+  }
+  for (const r of DATA.CUCINA) if (!ok.has(r.id)) problemi.push(`il piatto «${r.id}» è nella Collezione ma non è ottenibile`);
+  return problemi;
+});
+
+verifica('gli oggetti posabili corrispondono a qualcosa di costruibile', () => {
+  const problemi = [];
+  for (const id in DATA.ITEMS) {
+    const p = DATA.ITEMS[id].posabile;
+    if (!p) continue;
+    const daCraft = DATA.CRAFT.some(r => r.id === id);
+    const daShop = DATA.SHOP_EXTRA.indexOf(id) >= 0;
+    if (!daCraft && !daShop) problemi.push(`«${id}» si può posare ma non si ottiene in nessun modo`);
+  }
+  return problemi;
+});
+
+verifica('le mappe dichiarate esistono davvero', () => {
+  const costruite = Object.keys(WORLD.crea());
+  const dichiarate = WORLD.MAPPE;
+  const problemi = [];
+  for (const k of costruite) if (dichiarate.indexOf(k) < 0) problemi.push(`la mappa «${k}» è costruita ma non è in WORLD.MAPPE`);
+  for (const k of dichiarate) if (costruite.indexOf(k) < 0) problemi.push(`WORLD.MAPPE elenca «${k}», che non viene costruita`);
+  return problemi;
+});
+
+verifica('ogni passaggio fra mappe porta a una mappa esistente', () => {
+  const maps = WORLD.crea();
+  const problemi = [];
+  for (const id in maps) {
+    for (const w of maps[id].warps) {
+      if (!maps[w.to]) { problemi.push(`da «${id}» si esce verso «${w.to}», che non esiste`); continue; }
+      const dest = maps[w.to];
+      if (w.tx < 0 || w.ty < 0 || w.tx >= dest.w || w.ty >= dest.h)
+        problemi.push(`da «${id}» si arriva in «${w.to}» fuori dalla mappa (${w.tx},${w.ty})`);
+    }
+  }
+  return problemi;
+});
+
+verifica('ogni edificio con una porta ha davvero la porta sulla mappa', () => {
+  // Nato da un bug vero: la passata che ripulisce i sentieri cancellava
+  // anche le porte che ci capitavano sopra (Serafina, l'eremita), e al
+  // loro posto restava un buco camminabile nel muro.
+  const maps = WORLD.crea();
+  const problemi = [];
+  for (const id in maps) {
+    const m = maps[id];
+    for (const e of m.edifici) {
+      if (!e.porta) continue;
+      const o = m.obj[WORLD.idx(m, e.porta.x, e.porta.y)];
+      if (!o) problemi.push(`«${e.nome || e.kind}» in ${id}: la porta (${e.porta.x},${e.porta.y}) è stata cancellata`);
+      else if (o.t !== 'porta') problemi.push(`«${e.nome || e.kind}» in ${id}: al posto della porta c'è «${o.t}»`);
+    }
+  }
+  return problemi;
+});
+
+verifica('ogni mappa è raggiungibile dal podere', () => {
+  const maps = WORLD.crea();
+  const visti = new Set(['podere']);
+  const coda = ['podere'];
+  while (coda.length) {
+    const m = maps[coda.shift()];
+    for (const w of m.warps) if (maps[w.to] && !visti.has(w.to)) { visti.add(w.to); coda.push(w.to); }
+  }
+  return Object.keys(maps).filter(k => !visti.has(k)).map(k => `«${k}» non si raggiunge partendo dal podere`);
+});
+
+/* =================================================================== */
+
+const larghezza = 62;
+console.log('\n  Fioralba — coerenza dei dati\n  ' + '─'.repeat(larghezza));
+for (const nome of fatti) console.log('  [32m✓[0m ' + nome);
+for (const [nome, problemi] of errori) {
+  console.log('  [31m✗[0m ' + nome);
+  for (const p of problemi) console.log('      → ' + p);
+}
+console.log('  ' + '─'.repeat(larghezza));
+if (errori.length) {
+  const n = errori.reduce((a, e) => a + e[1].length, 0);
+  console.log(`  [31m${errori.length} controlli falliti, ${n} problemi.[0m\n`);
+  process.exit(1);
+}
+console.log(`  [32mTutti i ${fatti.length} controlli superati.[0m\n`);

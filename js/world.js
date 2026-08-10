@@ -146,6 +146,20 @@ function warp(m, x,y,w,h, to, tx,ty, etichetta){
   m.warps.push({x,y,w,h,to,tx,ty,etichetta});
 }
 
+/* Sgombra un tipo di terreno dagli oggetti di scena — ma NON dalle porte e
+   dai muri. Prima le porte che capitavano su un sentiero (Serafina,
+   l'eremita) venivano cancellate insieme ai cespugli, e restava un buco
+   camminabile nel muro di casa loro. */
+function sgombra(m, tipo){
+  for(let y=0;y<m.h;y++) for(let x=0;x<m.w;x++){
+    if(W.terreno(m,x,y)!==tipo) continue;
+    const i = W.idx(m,x,y);
+    const o = m.obj[i];
+    if(o && (o.t==='porta' || o.t==='muro')) continue;
+    m.obj[i]=null;
+  }
+}
+
 /* ===================================================================
    PODERE — la fattoria
    =================================================================== */
@@ -454,9 +468,7 @@ function buildBosco(){
     else setObj(m,x,y, {t:'ramo', v:(R()*3)|0});
   }
   // pulisci i sentieri
-  for(let y=0;y<m.h;y++) for(let x=0;x<m.w;x++){
-    if(W.terreno(m,x,y)==='sentiero') m.obj[W.idx(m,x,y)]=null;
-  }
+  sgombra(m, 'sentiero');
 
   /* uscite */
   warp(m, 19, 0, 4, 1, 'podere', 20, 41, 'Podere');
@@ -695,7 +707,7 @@ function buildMontagna(){
     else m.deco.push({t:'sassolini', x, y, v:(R()*3)|0});
   }
   // pulisci il sentiero
-  for(let y=0;y<m.h;y++) for(let x=0;x<m.w;x++) if(W.terreno(m,x,y)==='sentiero') m.obj[W.idx(m,x,y)]=null;
+  sgombra(m, 'sentiero');
   // zona d'ingresso dalla miniera sgombra
   for(let yy=32;yy<=35;yy++) for(let xx=18;xx<23;xx++) if(W.dentro(m,xx,yy)) m.obj[W.idx(m,xx,yy)]=null;
 
@@ -797,6 +809,11 @@ function buildPiazza(){
 /* ===================================================================
    API
    =================================================================== */
+/* I luoghi della valle. Serve anche a validare un salvataggio importato senza
+   dover ricostruire tutte le mappe. Il test di coerenza controlla che questa
+   lista e quella davvero costruita da W.crea() restino allineate. */
+W.MAPPE = ['podere','fioralba','bosco','grotta','grotta2','grotta3','montagna','piazza','spiaggia'];
+
 W.crea = function(){
   const maps = {};
   maps.podere   = buildPodere();

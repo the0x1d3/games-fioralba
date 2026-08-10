@@ -1,0 +1,17 @@
+{
+  "name": "fioralba",
+  "version": "1.1.0",
+  "description": "Fioralba — La Lanterna del Solstizio. Gioco di fattoria cozy in italiano, nel browser, senza dipendenze.",
+  "private": true,
+  "license": "CC-BY-NC-SA-4.0",
+  "//": "Il gioco NON ha bisogno di npm per girare: si apre index.html e funziona. Questo file esiste solo per gli strumenti di sviluppo (type-check e test di coerenza dei dati).",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "node tools/coerenza.js",
+    "verifica": "npm run test && npm run check",
+    "serve": "node tools/serve.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}

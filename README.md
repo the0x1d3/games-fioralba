@@ -42,7 +42,9 @@ poi vai su <http://localhost:8123> nel browser.
 | **Esc** | Menu (audio, salvataggio) |
 | **F** | Schermo intero |
 
-Si gioca anche da telefono: trascina per muoverti, tocca per agire.
+**Serve un computer.** Fioralba è pensato per tastiera e mouse: da telefono o
+tablet i comandi non funzionano come dovrebbero, e la pagina lo dice subito
+invece di lasciartelo scoprire al primo clic.
 
 ---
 
@@ -53,6 +55,19 @@ interattiva**: ti prende per mano nelle prime azioni (muoviti, zappa, semina,
 annaffia), illumina il pulsante giusto da premere e avanza quando fai la cosa
 richiesta. Puoi saltarla in qualsiasi momento con *Salta guida*. Appare una volta
 sola: chi ricarica una partita salvata non la rivede.
+
+Finito il tutorial resta a schermo, in alto a sinistra, la lista dei **Primi
+passi**: undici obiettivi che accompagnano dalla prima notte fino alla prima
+brace del Santuario — dormi, raccogli, vendi, vai in paese, taglia un albero,
+fai un regalo, pesca, esplora bosco e miniera, costruisci il ponte. Si spuntano
+da soli guardando cosa hai fatto, quindi non ti obbligano a nessun ordine: se
+peschi prima di dormire, si spunta la pesca. Il pannello si richiude cliccando
+sulla testata e si può nascondere del tutto (poi torna da **Esc → Guida**).
+
+Girando per la valle, quando hai davanti qualcosa di usabile compare in basso
+un'indicazione di cosa fa **E**: *parla con Bruno*, *cassa di consegna*,
+*bacheca delle richieste*, *ritira: Vino di Uva*. Prima bisognava indovinare
+quali oggetti fossero interattivi.
 
 ## 📖 La storia
 
@@ -178,16 +193,32 @@ js/audio.js         musica generata (una traccia per stagione) e suoni
 js/world.js         le quattro mappe, collisioni, respawn notturno
 js/mobs.js          fauna: sprite, comportamenti, comparsa
 js/tutorial.js      guida interattiva delle prime azioni
+js/guida.js         "Primi passi": gli obiettivi che restano a schermo
 js/render.js        camera, terreni a blocchi, profondità, luci, meteo
 js/ui.js            menu, negozi, dialoghi, diario
 js/game.js          stato, ciclo di gioco, input, sistemi
 
-tsconfig.json       type-checking (solo editor, nessuna build)
+tsconfig.json       type-checking (solo editor e riga di comando, nessuna build)
 types/fioralba.d.ts descrizione dei tipi dei dati e dello stato
+tools/coerenza.js   test di coerenza dei dati (ricette, mappe, missioni)
+tools/serve.js      server locale di sviluppo, senza cache
+package.json        solo strumenti di sviluppo: il gioco non ne ha bisogno
 vercel.json         configurazione per il deploy statico su Vercel
 ```
 
 Niente build, niente `npm install`: si aprono i file e funziona.
+
+**Se ci metti mano**, prima di pubblicare conviene lanciare:
+
+```
+npm run verifica
+```
+
+Fa due cose: controlla i tipi (`tsc`) e verifica che i dati di gioco stiano in
+piedi — che ogni ingrediente di ogni ricetta sia davvero ottenibile, che i semi
+siano in vendita nella stagione giusta, che ogni mappa sia raggiungibile e che
+nessun passaggio porti fuori dal mondo. Serve `npm install` una volta sola, e
+riguarda solo chi sviluppa: per giocare non cambia niente.
 
 **Perché nessuna libreria grafica.** Phaser o PixiJS avrebbero sostituito il
 disegno su canvas, ma qui il collo di bottiglia non era *come* si disegna: era
@@ -240,6 +271,14 @@ I moduli grafici (ART, FX, REND, WORLD, MOBS…) sono lasciati volutamente "libe
 tiparli in dettaglio darebbe poco valore rispetto al lavoro. I tipi si concentrano
 dove gli errori costano di più — i **dati di gioco** e lo **stato**.
 
-> Il controllo completo con `tsc` richiede Node installato (`npx tsc --noEmit`); non
+> Il controllo completo con `tsc` richiede Node installato (`npm run check`); non
 > è necessario per giocare né per pubblicare, ma è utile se vuoi validare tutto in
 > un colpo solo.
+
+---
+
+## 📜 Licenza
+
+Fioralba è distribuito con licenza **[CC BY-NC-SA 4.0](LICENSE)**: puoi giocarci,
+studiarlo, modificarlo e ridistribuirlo citando l'autore, ma **non venderlo**, e
+le versioni derivate vanno rilasciate con la stessa licenza.

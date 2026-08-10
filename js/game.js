@@ -39,7 +39,9 @@ function statoIniziale(){
     lettere:{}, ricetteNote:{zuppa_contadina:true, frittata:true},
     cassaConsegna:[],
     stats:{raccolti:0, pesci:0, alberi:0, sassi:0, guadagno:0, giorniGiocati:0,
-           piatti:0, regali:0, richiesteFatte:0, sagre:0, visitatoBosco:false, visitatoGrotta:false, visitatoPaese:false},
+           piatti:0, regali:0, richiesteFatte:0, sagre:0, venduto:0,
+           visitatoBosco:false, visitatoGrotta:false, visitatoPaese:false},
+    guidaAperta:true, guidaNascosta:false,
     mercato:null, gelo:false, richieste:[], richiestaSeq:0,
     obiettiviRiscossi:{}, sagra:null, mercante:{presente:false, giorno:-1, stock:[]},
     visitati:{podere:true}, collezione:{},
@@ -87,6 +89,18 @@ function collegaLanding(){
   const daMobile = ()=> window.matchMedia('(max-width:820px), (pointer:coarse) and (hover:none)').matches;
   const avviso = ()=> $('#mobile-warn').classList.add('show');
   const back = $('#mw-back'); if(back) back.onclick = ()=> $('#mobile-warn').classList.remove('show');
+
+  /* Su telefono l'avviso va dato SUBITO, in cima alla pagina: far leggere
+     tutta la presentazione per poi rifiutare il clic è la peggiore delle
+     accoglienze. I pulsanti restano lì ma dicono già come andrà a finire. */
+  if(daMobile()){
+    const lp = $('#landing');
+    if(lp) lp.classList.add('solo-desktop');
+    document.querySelectorAll('.lp-new').forEach(b=>{
+      b.textContent = 'Solo da computer';
+      b.title = 'Fioralba richiede tastiera e mouse';
+    });
+  }
 
   const haSalvato = !!caricaGrezzo();
   document.querySelectorAll('.lp-continue').forEach(b=>{
@@ -183,9 +197,13 @@ function disegnaTitolo(){
     if(!titolo || titolo.classList.contains('hidden')) return;
     t += 16;
 
-    const dw = Math.max(320, window.innerWidth  || 0);
-    const dh = Math.max(240, window.innerHeight || 0);
-    const SC = dw < 700 ? 2 : 3;
+    // come il canvas di gioco: si lavora in pixel fisici con ingrandimento intero,
+    // altrimenti su schermi in scala i pixel del disegno risultano irregolari
+    const cw = Math.max(320, window.innerWidth  || 0);
+    const ch = Math.max(240, window.innerHeight || 0);
+    const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    const dw = Math.round(cw*dpr), dh = Math.round(ch*dpr);
+    const SC = Math.max(1, Math.round((cw < 700 ? 2 : 3)*dpr));
     const W = Math.ceil(dw/SC), H = Math.ceil(dh/SC);
     if(off.width!==W || off.height!==H){
       off.width=W; off.height=H;
@@ -487,7 +505,7 @@ function disegnaTitolo(){
     /* ---------- INGRANDIMENTO A PIXEL ---------- */
     if(c.width!==dw || c.height!==dh){ c.width=dw; c.height=dh; }
     cx.imageSmoothingEnabled=false;
-    cx.drawImage(off, 0, 0, dw, dh);
+    cx.drawImage(off, 0, 0, W*SC, H*SC);
 
     titoloRaf = requestAnimationFrame(frame);
   }
@@ -546,6 +564,8 @@ function avviaGioco(conIntro){
   aggiornaCamera(true);
   costruisciHotbar();
   G.aggiornaHUD();
+  G.progresso();
+  if(window.GUIDA) GUIDA.init();
   musicaGiusta();
   SND.ambiente(ambienteGiusto());
   if(conIntro){
@@ -571,7 +591,15 @@ G.livello = function(k){
   return l;
 };
 
+/* "sto andando da qualche parte": segnato quando succede qualcosa di
+   davvero utile (esperienza, una vendita, un luogo nuovo, un giorno che
+   passa). I suggerimenti guardano questo, non se stai toccando i tasti:
+   chi è perso continua a cliccare, ed è proprio lui che va aiutato. */
+G.ultimoProgresso = 0;
+G.progresso = function(){ G.ultimoProgresso = performance.now(); };
+
 G.xp = function(k, n){
+  G.progresso();
   const prima = G.livello(k);
   G.skills[k] = (G.skills[k]||0) + n;
   const dopo = G.livello(k);
@@ -642,6 +670,15 @@ G.togliSlot = function(i, n){
 };
 G.slot = ()=> G.inv[G.slotSel];
 
+/* Registra una vendita, da qualunque parte arrivi (bottega o cassa di
+   consegna). Prima le vendite in bottega non finivano in `guadagno`:
+   chi vendeva solo da Bruno non avanzava mai nel traguardo «Benestante». */
+G.registraVendita = function(monete){
+  G.stats.venduto = (G.stats.venduto||0) + 1;
+  G.stats.guadagno = (G.stats.guadagno||0) + (monete||0);
+  G.progresso();
+};
+
 G.prezzoVendita = function(id){
   let p = IT.prezzo(id);
   const c = IT.cat(id);
@@ -671,11 +708,24 @@ function costruisciHotbar(){
     }
     const k=document.createElement('span'); k.className='key'; k.textContent=i+1;
     d.appendChild(k);
-    d.onclick=()=>{ G.slotSel=i; costruisciHotbar(); SND.play('menu'); };
+    d.onclick=()=>{ G.slotSel=i; evidenziaSlot(); SND.play('menu'); };
     hb.appendChild(d);
   }
   aggiornaNomeHotbar();
 }
+
+/* Cambiare casella selezionata NON richiede di ricostruire la barra:
+   spostare una classe costa nulla, ricreare 9 nodi e 9 canvas a ogni
+   scatto di rotellina no. */
+function evidenziaSlot(){
+  const slots = $('#hotbar').children;
+  for(let i=0;i<slots.length;i++) slots[i].classList.toggle('sel', i===G.slotSel);
+  aggiornaNomeHotbar();
+}
+
+/* chi tocca G.inv da fuori (negozi, casse) deve poter ridisegnare la barra:
+   senza questo la hotbar continua a mostrare oggetti che non hai più */
+G.rinfrescaHotbar = costruisciHotbar;
 
 /* etichetta col nome dell'oggetto selezionato, sopra la barra */
 function aggiornaNomeHotbar(){
@@ -746,7 +796,7 @@ function loop(ts){
     G.tempoMs += dt;
 
     // il pannello può essere stato aperto/ridimensionato senza emettere "resize"
-    if(window.innerWidth > 0 && cvs.width !== window.innerWidth){
+    if(REND.deveRidimensionare()){
       sistema('resize', ()=>{ REND.resize(); REND.initMeteo(); });
     }
 
@@ -775,11 +825,13 @@ function loop(ts){
     }
     if(pesca.attiva) sistema('pesca', ()=>aggiornaPesca(dt));
 
-    if(window.TUT) sistema('tutorial', ()=>TUT.aggiorna());
+    if(window.TUT)   sistema('tutorial', ()=>TUT.aggiorna());
+    if(window.GUIDA) sistema('guida',    ()=>GUIDA.aggiorna());
 
     sistema('particelle', ()=>aggiornaParticelle(dt));
     sistema('camera',     ()=>aggiornaCamera(false));
     sistema('bersaglio',  calcolaBersaglio);
+    if(!bloccato) sistema('prompt', promptContestuale);
     sistema('render',     ()=>REND.disegna(G));
   }catch(e){
     console.warn('[motore] errore nel loop', e);
@@ -1227,6 +1279,7 @@ function usaOggetto(){
       return;
     }
     suolo.crop = { id:cropId, stage:0, gg:0 };
+    suolo.appassita = false;        // la nuova semina ripulisce i resti secchi
     G.togli(id,1);
     SND.play('semina'); p.usoT=220;
     for(let k=0;k<5;k++) G.particelle.push({t:'terra',
@@ -1420,6 +1473,67 @@ function interagisci(){
       UI.toast(d.testo); return;
     }
   }
+}
+
+/* ===================================================================
+   PROMPT CONTESTUALE
+   Dice cosa fa E su quello che hai davanti. Prima bisognava indovinare
+   che porte, casse, macchine e bacheche fossero interattive.
+   =================================================================== */
+const NOMI_PORTA = {
+  casa:'entra in casa', bottega:'entra in bottega', locanda:'entra nella locanda',
+  fucina:'entra nella fucina', santuario:'entra nel Santuario',
+  pollaio:'entra nel pollaio', serra:'entra nella serra',
+  // qui dentro non si entra: meglio non prometterlo
+  serafina:'bussa da Serafina', eremita:'bussa dall\'eremita'
+};
+
+function etichettaInterazione(o){
+  if(!o) return null;
+  if(o.t==='porta' || (o.t==='muro' && o.ed)){
+    const ed = o.ed;
+    if(!ed) return null;
+    if(NOMI_PORTA[ed.azione]) return NOMI_PORTA[ed.azione];
+    return ed.nome || null;            // porte chiuse: solo il nome, senza promesse
+  }
+  if(o.t==='consegna')  return 'cassa di consegna';
+  if(o.t==='bancarella' && o.kiosk)
+    return o.kiosk==='bacheca' ? 'bacheca delle richieste' : 'banco del mercante';
+  if(o.t==='macchina'){
+    if(o.kind==='cassa')  return 'apri la cassa';
+    if(o.pronto && o.out) return 'ritira: '+IT.nome(o.out);
+    if(o.dentro)          return 'in lavorazione…';
+    return 'usa: '+IT.nome(idDaKind(o.kind));
+  }
+  if(o.t==='mobile') return o.kind==='spaventapasseri' ? null : 'raccogli';
+  if(o.t==='pietra_rituale') return 'esamina le rune';
+  return null;
+}
+
+function promptContestuale(){
+  // la pesca usa già il prompt per conto suo
+  if(pesca.attiva || G.p.dorme) return;
+  if(UI.modalAperta() || UI.dialogoAttivo()){ UI.prompt(null); return; }
+
+  const p=G.p, m=G.mappa();
+  if(!m) return;
+
+  for(const n of G.npcVivi()){
+    if(Math.hypot(n.px-p.px, n.py-p.py) < 46){
+      const N = DATA.NPCS[n.id];
+      UI.prompt('<kbd>E</kbd> parla con '+(N ? N.nome : 'qualcuno'));
+      return;
+    }
+  }
+
+  const px=(p.px/T)|0, py=(p.py/T)|0;
+  const off=[[0,1],[-1,0],[1,0],[0,-1]][p.dir];
+  for(const [tx,ty] of [[px+off[0],py+off[1]],[px,py]]){
+    if(!WORLD.dentro(m,tx,ty)) continue;
+    const et = etichettaInterazione(m.obj[WORLD.idx(m,tx,ty)]);
+    if(et){ UI.prompt('<kbd>E</kbd> '+et); return; }
+  }
+  UI.prompt(null);
 }
 
 function idDaKind(kind){
@@ -1882,6 +1996,20 @@ function aggiornaAnimali(dt){
 const pesca = { attiva:false, fase:'', t:0, barra:50, vBarra:0, pesceY:50, vPesce:0,
                 prog:30, target:null, tx:0, ty:0, diff:2, tenuto:false };
 
+/* i nodi del minigioco non cambiano mai: cercarli a ogni frame era inutile */
+let pescaEls = null;
+function elementiPesca(){
+  if(!pescaEls){
+    const el = $('#fishing');
+    pescaEls = { root:el,
+                 barra:  el.querySelector('.fish-bar'),
+                 pesce:  el.querySelector('.fish-target'),
+                 icona:  el.querySelector('.fish-icon'),
+                 prog:   el.querySelector('.fish-prog') };
+  }
+  return pescaEls;
+}
+
 function iniziaPesca(tx,ty){
   if(G.gelo){ UI.toast('L\'acqua è gelata: niente pesca oggi.','bad'); return; }
   if(!spendi(3)) return;
@@ -1890,7 +2018,7 @@ function iniziaPesca(tx,ty){
   G.p.usoT=400;
   SND.play('lancio');
   schizzo(tx,ty);
-  $('#fishing').classList.add('hidden');
+  elementiPesca().root.classList.add('hidden');
 }
 
 function scegliPesce(){
@@ -1923,7 +2051,6 @@ function scegliPesce(){
 
 function aggiornaPesca(dt){
   pesca.t += dt;
-  const el=$('#fishing');
 
   if(pesca.fase==='lancio'){
     if(pesca.t>600){ pesca.fase='attesa'; pesca.t=0; pesca.attesa=900+Math.random()*4200; }
@@ -1966,14 +2093,13 @@ function aggiornaPesca(dt){
     pesca.prog = Math.max(0, Math.min(100, pesca.prog));
 
     // DOM
-    const bar=el.querySelector('.fish-bar');
-    bar.style.height = altezzaBarra+'px';
-    bar.style.top = pesca.barra+'px';
-    bar.style.borderColor = dentro? 'rgba(190,240,160,.95)':'rgba(230,180,140,.7)';
-    el.querySelector('.fish-target').style.top = pesca.pesceY+'px';
-    el.querySelector('.fish-icon').style.top = (pesca.pesceY+11)+'px';
-    el.querySelector('.fish-icon').style.left = '22px';
-    el.querySelector('.fish-prog').style.height = pesca.prog+'%';
+    const E = elementiPesca();
+    E.barra.style.height = altezzaBarra+'px';
+    E.barra.style.top = pesca.barra+'px';
+    E.barra.style.borderColor = dentro? 'rgba(190,240,160,.95)':'rgba(230,180,140,.7)';
+    E.pesce.style.top = pesca.pesceY+'px';
+    E.icona.style.top = (pesca.pesceY+11)+'px';
+    E.prog.style.height = pesca.prog+'%';
 
     if(pesca.prog>=100) finePesca(true);
     else if(pesca.prog<=0) finePesca(false,'Ti è scappato.');
@@ -1989,14 +2115,14 @@ function iniziaLotta(){
   pesca.pesceY=140; pesca.vPesce=0;
   pesca.prog=32;
   UI.prompt(null);
-  const el=$('#fishing');
-  el.classList.remove('hidden');
-  el.querySelector('.fish-icon').textContent = DATA.ITEMS[id].spazzatura ? '🥾' : '🐟';
+  const E = elementiPesca();
+  E.root.classList.remove('hidden');
+  E.icona.textContent = DATA.ITEMS[id].spazzatura ? '🥾' : '🐟';
+  E.icona.style.left = '22px';
 }
 
 function finePesca(ok, msg){
-  const el=$('#fishing');
-  el.classList.add('hidden');
+  elementiPesca().root.classList.add('hidden');
   UI.prompt(null);
   const id=pesca.target;
   pesca.attiva=false; pesca.fase=''; pesca.target=null; pesca.tenuto=false;
@@ -2238,6 +2364,7 @@ function cambiaMappa(id, tx, ty){
   G.visitati[id]=true;   // per il viaggio rapido dalla mappa
   G.p.px = pos.x*T+16;
   G.p.py = pos.y*T+20;
+  G.progresso();
   mouseWorld=null;
   MOBS.reset();          // la fauna di una mappa non segue nell'altra
   aggiornaCamera(true);
@@ -2314,7 +2441,7 @@ function nuovoGiorno(svenuto, multa){
     tot += p;
   }
   G.oro += tot;
-  G.stats.guadagno += tot;
+  if(tot > 0) G.registraVendita(tot);
   G.cassaConsegna = [];
 
   /* --- avanzamento data --- */
@@ -2381,10 +2508,9 @@ function nuovoGiorno(svenuto, multa){
           }
         }
       }
-      // asciugatura
+      // asciugatura — la Terra Umida trattiene l'acqua tre volte su quattro
       if(piove || inSerra) s.bagnato = true;
-      else if(s.concime==='ritenzione' && Math.random()<0.75) s.bagnato = s.bagnato;
-      else s.bagnato = false;
+      else if(!(s.concime==='ritenzione' && Math.random()<0.75)) s.bagnato = false;
     }
   }
 
@@ -2451,7 +2577,6 @@ function nuovoGiorno(svenuto, multa){
       }
       if(cambioStagione){
         UI.toast('È arrivata la '+G.stagione().nome+'.','gold');
-        objCacheClear();
       }
       if(uova) UI.toast(uova+' uovo/a dal pollaio.','good','uovo');
 
@@ -2489,10 +2614,6 @@ function dopoRisveglio(){
       'Ilde ti ha lasciato più di un podere, sai. Quando vorrai saperne di più, passa.'
     ]), 900);
   }
-}
-
-function objCacheClear(){
-  // la grafica stagionale viene rigenerata alla prima richiesta
 }
 
 function tiraMeteo(){
@@ -2991,7 +3112,8 @@ function costruisciDati(){
     lettere:G.lettere, ricetteNote:G.ricetteNote,
     cassaConsegna:G.cassaConsegna, stats:G.stats, animali:G.animali,
     look:G.look, vistoFiammella:G.vistoFiammella, introSerafina:G.introSerafina,
-    tutorialFatto:G.tutorialFatto, mercato:G.mercato, gelo:G.gelo,
+    tutorialFatto:G.tutorialFatto, guidaAperta:G.guidaAperta, guidaNascosta:G.guidaNascosta,
+    mercato:G.mercato, gelo:G.gelo,
     richieste:G.richieste, richiestaSeq:G.richiestaSeq,
     obiettiviRiscossi:G.obiettiviRiscossi, sagra:G.sagra, mercante:G.mercante, trame:G.trame, visitati:G.visitati, collezione:G.collezione,
     px:G.p.px, py:G.p.py,
@@ -3029,14 +3151,40 @@ G.esporta = function(){
   }catch(e){ console.warn('Export non riuscito', e); return false; }
 };
 
-/* ---- Valida un testo e lo scrive come salvataggio corrente ---- */
+/* ---- Valida un testo e lo scrive come salvataggio corrente ----
+   Meglio rifiutare un file storto qui che ritrovarsi una partita che si apre
+   ma è rotta: il renderer sopravvive agli errori, il giocatore no. ---- */
+function validaSalvataggio(d){
+  if(!d || typeof d!=='object' || Array.isArray(d)) return 'Questo file non sembra un salvataggio di Fioralba.';
+  if(!Array.isArray(d.inv)) return 'Il salvataggio non contiene uno zaino valido.';
+  for(const s of d.inv){
+    if(s===null || s===undefined) continue;
+    if(typeof s!=='object' || typeof s.id!=='string' || typeof s.n!=='number' || !(s.n>0))
+      return 'Lo zaino nel salvataggio contiene voci non valide.';
+  }
+  if(!d.maps || typeof d.maps!=='object') return 'Il salvataggio non contiene le mappe della valle.';
+  const trovate = Object.keys(d.maps).filter(k=>WORLD.MAPPE.indexOf(k)>=0);
+  if(!trovate.length) return 'Le mappe del salvataggio non corrispondono a quelle del gioco.';
+  for(const k of trovate){
+    const m = d.maps[k];
+    if(!m || typeof m!=='object') return 'La mappa «'+k+'» nel salvataggio è illeggibile.';
+    if(m.g!==undefined && !Array.isArray(m.g)) return 'La mappa «'+k+'» ha un terreno non valido.';
+    if(m.obj!==undefined && (typeof m.obj!=='object' || Array.isArray(m.obj))) return 'La mappa «'+k+'» ha oggetti non validi.';
+    if(m.suolo!==undefined && (typeof m.suolo!=='object' || Array.isArray(m.suolo))) return 'La mappa «'+k+'» ha un terreno coltivato non valido.';
+  }
+  for(const [k,tipo] of [['oro','number'],['giorno','number'],['stagioneIdx','number'],['anno','number']]){
+    if(d[k]!==undefined && typeof d[k]!==tipo) return 'Il campo «'+k+'» nel salvataggio non è valido.';
+  }
+  if(d.stagioneIdx!==undefined && (d.stagioneIdx<0 || d.stagioneIdx>3)) return 'La stagione nel salvataggio non esiste.';
+  return null;
+}
+
 G.importaTesto = function(testo){
   let d;
   try{ d = JSON.parse(testo); }
   catch(e){ return {ok:false, err:'Il file non è leggibile: non è un salvataggio valido.'}; }
-  if(!d || typeof d!=='object' || !d.maps || !d.inv){
-    return {ok:false, err:'Questo file non sembra un salvataggio di Fioralba.'};
-  }
+  const err = validaSalvataggio(d);
+  if(err) return {ok:false, err};
   try{ localStorage.setItem(CHIAVE, JSON.stringify(d)); }
   catch(e){ return {ok:false, err:'Impossibile memorizzare il salvataggio (memoria locale bloccata).'}; }
   return {ok:true};
@@ -3098,7 +3246,8 @@ function applicaSalvataggio(raw){
                   'anno','giornoTot','ora','meteo','meteoDomani','inv','invMax','slotSel',
                   'skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
                   'braci','lettere','ricetteNote','cassaConsegna','stats','animali','look',
-                  'vistoFiammella','introSerafina','tutorialFatto','mercato','gelo',
+                  'vistoFiammella','introSerafina','tutorialFatto','guidaAperta','guidaNascosta',
+                  'mercato','gelo',
                   'richieste','richiestaSeq','obiettiviRiscossi','sagra','mercante','trame','visitati','collezione']){
     if(d[k]!==undefined) G[k]=d[k];
   }
@@ -3170,7 +3319,7 @@ function collegaInput(){
       return;
     }
 
-    if(k>='1'&&k<='9'){ G.slotSel=parseInt(k)-1; costruisciHotbar(); return; }
+    if(k>='1'&&k<='9'){ G.slotSel=parseInt(k)-1; evidenziaSlot(); return; }
     switch(k){
       case ' ': usaOggetto(); break;
       case 'e': case 'enter': interagisci(); break;
@@ -3220,7 +3369,7 @@ function collegaInput(){
     e.preventDefault();
     attivita();
     G.slotSel = (G.slotSel + (e.deltaY>0?1:-1) + 9) % 9;
-    costruisciHotbar();
+    evidenziaSlot();
   }, {passive:false});
 
   // pulsanti HUD
@@ -3310,23 +3459,34 @@ function suggerimentiEsplorazione(){
   ];
 }
 
+let ultimoHint = 0;
 function mostraHintEsplora(){
   if(!G.inGioco || G.p.dorme || pesca.attiva) return;
   if(UI.modalAperta() || UI.dialogoAttivo()) return;
   if(!$('#letter').classList.contains('hidden')) return;
   if(!$('#tutorial').classList.contains('hidden')) return;         // non disturbare durante la guida
   if(!G.tutorialFatto && (G.stats.giorniGiocati||0) < 1) return;   // lascia respirare i primi minuti
-  const idle = performance.now() - (G.ultimaAzione || 0);
-  if(idle < 22000) return;                                         // fermo da almeno ~22 secondi
+
+  /* Finché i "Primi passi" hanno ancora qualcosa da dire, il consiglio a
+     caso tace: due voci che parlano insieme confondono e basta. */
+  if(window.GUIDA && !GUIDA.nascosta() && !GUIDA.completata()) return;
+
+  /* Il vecchio criterio era "fermo da 22 secondi", ma qualunque tasto
+     azzerava il conteggio: chi girava a vuoto senza capire — cioè
+     esattamente chi aveva bisogno di un consiglio — non ne vedeva mai
+     uno. Ora conta da quanto non succede qualcosa di utile. */
+  const ora = performance.now();
+  if(ora - (G.ultimoProgresso || 0) < 45000) return;               // sta ancora combinando qualcosa
+  if(ora - ultimoHint < 60000) return;                             // niente raffiche
 
   const pool = suggerimentiEsplorazione();
   let msg = pool[(Math.random()*pool.length)|0];
   for(let g=0; msg===hintPrec && pool.length>1 && g<6; g++) msg = pool[(Math.random()*pool.length)|0];
   hintPrec = msg;
   UI.toast(msg, 'hint');
-  G.ultimaAzione = performance.now();                              // riparte il conteggio: niente raffiche
+  ultimoHint = ora;
 }
-setInterval(mostraHintEsplora, 6000);
+setInterval(mostraHintEsplora, 5000);
 
 function gettaOggetto(){
   const s=G.slot();
@@ -3352,6 +3512,13 @@ window.addEventListener('unhandledrejection', e=>{ try{ console.warn('[motore] p
 
 /* salvataggio automatico ogni 2 minuti */
 setInterval(()=>{ if(G.inGioco && !G.p.dorme) sistema('autosave', G.salva); }, 120000);
-window.addEventListener('beforeunload', ()=>{ if(G.inGioco) G.salva(); });
+
+/* Salvataggio all'uscita. "beforeunload" non è affidabile (i telefoni chiudono
+   le schede senza emetterlo) e per di più impedisce alla pagina di entrare
+   nella cache avanti/indietro del browser. "visibilitychange" scatta anche
+   quando cambi scheda o minimizzi, "pagehide" è la rete di sicurezza. */
+function salvaSeInGioco(){ if(G.inGioco && !G.p.dorme) sistema('autosave', G.salva); }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') salvaSeInGioco(); });
+window.addEventListener('pagehide', salvaSeInGioco);
 
 })();

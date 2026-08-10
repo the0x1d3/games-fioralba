@@ -1,11 +1,20 @@
+// @ts-check
 /* ===================================================================
    FIORALBA — data.js
    Tutti i dati di gioco: colture, oggetti, ricette, personaggi, lore.
+
+   Questo file è controllato dai tipi: `npm run check` segnala id
+   inesistenti, campi mancanti e valori del tipo sbagliato. È il file in
+   cui un refuso costa di più, perché non fa rumore finché non rompe una
+   ricetta o una missione.
    =================================================================== */
 (function(){
 'use strict';
 
-const D = {};
+/* Dichiarare subito il tipo di D fa sì che ogni assegnazione qui sotto venga
+   controllata contro la sua forma attesa (e che i letterali come 'primavera'
+   restino tali invece di allargarsi a string). */
+const D = /** @type {FioData} */ ({});
 window.DATA = D;
 
 /* ------------------------------------------------------------------
@@ -80,7 +89,7 @@ D.ITEMS = {
   uovo:       { nome:'Uovo',       cat:'animale',   prezzo:32, desc:'Ancora tiepido.' },
   uovo_oro:   { nome:'Uovo d\'Oro',cat:'animale',   prezzo:340,desc:'Le galline felici fanno miracoli.' },
   miele:      { nome:'Miele',      cat:'materiale', prezzo:75, desc:'Denso, profumato di fiori.' },
-  latte:      { nome:'Latte',      cat:'animale',   prezzo:65, desc:'Cremoso e fresco.' },
+  latte:      { nome:'Latte',      cat:'animale',   prezzo:65, desc:'Cremoso e fresco. Bruno lo prende dalla cascina di là dal colle.' },
 
   /* --- minerali --- */
   rame:       { nome:'Minerale di Rame',  cat:'minerale', prezzo:18,  desc:'Rossastro.' },
@@ -217,7 +226,7 @@ D.SHOP = {
   autunno:  ['seme_zucca','seme_uva','seme_cavolo','seme_melanzana','seme_mirtillo','seme_mais'],
   inverno:  ['seme_radice_inverno','seme_cristallia']
 };
-D.SHOP_EXTRA = ['fibra','legna','pietra','concime','sentiero','gallina'];
+D.SHOP_EXTRA = ['fibra','legna','pietra','concime','sentiero','latte','gallina'];
 
 /* costruzioni dal fabbro / carpentiere */
 D.COSTRUZIONI = [

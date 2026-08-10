@@ -1,6 +1,8 @@
-# --- Dipendenze (il gioco non ne ha, ma nel caso aggiungessi strumenti) ---
+# --- Dipendenze ---
+# Il gioco non ne ha: gira senza npm. package.json serve solo agli strumenti
+# di sviluppo (type-check e test), e il suo lock file va invece versionato
+# perché il controllo dia gli stessi risultati su qualunque macchina.
 node_modules/
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
 

@@ -564,38 +564,8 @@ function rubaRaccolto(G, b){
 /* ===================================================================
    DISEGNO
    =================================================================== */
-M.disegna = function(sx, G, ox, oy, sole){
-  for(const b of mobs){
-    const S = SPECIE[b.tipo];
-    const px0 = b.x+ox, py0 = b.y+oy;
-    const img = M.sprite(b.tipo, b.frame, b.volo, b.col);
-    const w=img.width, h=img.height;
-
-    // ombra: più piccola e sfocata quanto più è alto
-    const scala = Math.max(0.25, 1 - b.z/60);
-    FX.ombraTerra(sx, px0, py0, (w*0.28)*scala, (h*0.16)*scala, 0.22*scala);
-
-    const dy = py0 - b.z;
-    // contorno sottile per staccare dallo sfondo
-    const cont = FX.contorno(img);
-    sx.drawImage(cont, (px0-w/2-1)|0, (dy-h+1)|0);
-
-    sx.save();
-    if(b.dir<0){ sx.translate(px0, 0); sx.scale(-1,1); sx.translate(-px0, 0); }
-    sx.drawImage(img, (px0-w/2)|0, (dy-h+2)|0);
-    sx.restore();
-  }
-};
-
-/* i mob visibili, come oggetti ordinabili in profondità */
-M.perProfondita = function(sx, G, ox, oy){
-  const out=[];
-  for(const b of mobs){
-    out.push({ y: b.y, mob:b });
-  }
-  return out;
-};
-
+/* Una bestiola per volta: il renderer le mescola agli altri sprite e le
+   ordina per profondità, quindi non esiste un "disegna tutte in blocco". */
 M.disegnaUno = function(sx, b, ox, oy){
   const px0 = b.x+ox, py0 = b.y+oy;
   const img = M.sprite(b.tipo, b.frame, b.volo, b.col);

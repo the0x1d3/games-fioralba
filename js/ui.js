@@ -365,6 +365,9 @@ U.negozio = function(G, tipo){
           let p;
           if(I.seme) p = DATA.CROPS[I.seme].seme;
           else if(id==='gallina') p = 800;
+          // il latte non si produce al podere: Bruno lo rivende quasi a costo,
+          // altrimenti cucinare la polenta costerebbe più di quanto rende
+          else if(id==='latte') p = 90;
           else p = Math.max(2, Math.round((I.prezzo||10)*2.2));
           return {id, prezzo:p};
         });
@@ -402,7 +405,8 @@ U.negozio = function(G, tipo){
               G.inv[i]=null;
             }
           }
-          if(tot){ G.oro+=tot; SND.play('moneta'); U.toast('Venduto per '+tot+' monete','gold'); }
+          if(tot){ G.oro+=tot; G.registraVendita(tot); SND.play('moneta'); U.toast('Venduto per '+tot+' monete','gold'); }
+          G.rinfrescaHotbar();
           U.aggiorna(); G.aggiornaHUD();
         };
         body.appendChild(b);
@@ -476,6 +480,7 @@ function rigaVendi(G, idx){
       const n=Math.min(q, G.inv[idx]?G.inv[idx].n:0);
       if(!n) return;
       G.oro += pu*n;
+      G.registraVendita(pu*n);
       G.togliSlot(idx,n);
       SND.play('moneta');
       U.aggiorna(); G.aggiornaHUD();
@@ -485,7 +490,7 @@ function rigaVendi(G, idx){
   if(s.n===1){
     const b=document.createElement('button'); b.className='btn gold';
     b.textContent='Vendi ('+pu+')';
-    b.onclick=()=>{ G.oro+=pu; G.togliSlot(idx,1); SND.play('moneta'); U.aggiorna(); G.aggiornaHUD(); };
+    b.onclick=()=>{ G.oro+=pu; G.registraVendita(pu); G.togliSlot(idx,1); SND.play('moneta'); U.aggiorna(); G.aggiornaHUD(); };
     r.appendChild(b);
   }
   return r;
@@ -1298,6 +1303,20 @@ U.menu = function(G){
     }
     wrap.appendChild(vol);
 
+    /* guida "Primi passi": si può nascondere e riaccendere quando si vuole */
+    if(window.GUIDA && !GUIDA.completata()){
+      const gt=document.createElement('div'); gt.className='sectitle'; gt.textContent='Guida';
+      wrap.appendChild(gt);
+      const bg=document.createElement('button'); bg.className='btn blue';
+      bg.textContent = GUIDA.nascosta() ? '🧭 Mostra i Primi passi' : '🧭 Nascondi i Primi passi';
+      bg.onclick=()=>{
+        if(GUIDA.nascosta()){ GUIDA.mostra(); U.toast('Guida di nuovo a schermo.','good'); }
+        else { GUIDA.nascondi(); U.toast('Guida nascosta.'); }
+        U.aggiorna();
+      };
+      wrap.appendChild(bg);
+    }
+
     const t=document.createElement('div'); t.className='sectitle'; t.textContent='Partita';
     wrap.appendChild(t);
 
@@ -1431,6 +1450,7 @@ U.cassa = function(G, obj){
           if(k<0){ U.toast('La cassa è piena.','bad'); return; }
           if(obj.slots[k]) obj.slots[k].n += s.n; else obj.slots[k]={id:s.id,n:s.n};
           G.inv[i]=null;
+          G.rinfrescaHotbar();
           SND.play('prendi'); U.aggiorna();
         };
       }

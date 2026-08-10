@@ -2267,6 +2267,32 @@ A.arato = function(vic, v, bagnato, season){
   return c;
 };
 
+/* Pianta seccata: quello che resta sull'aiuola quando una coltura muore
+   fuori stagione o viene calpestata dai cinghiali. Sparisce rizappando
+   o riseminando: serve a far vedere che è successo qualcosa, invece di
+   trovare la mattina dopo un buco al posto della pianta. */
+A.appassita = function(v){
+  const key = 'app|'+v;
+  if(objCache[key]) return objCache[key];
+  const c = cv(T,T), x = c.getContext('2d');
+  x.imageSmoothingEnabled=false;
+  const steli = 2 + (v%2);
+  for(let i=0;i<steli;i++){
+    const bx = 12 + i*5 + ((hsh(i,v,861)*3)|0);
+    const h  = 5 + ((hsh(i,v,862)*4)|0);
+    const pend = (hsh(i,v,863)>0.5 ? 1 : -1);
+    for(let k=0;k<h;k++){
+      const t = k/h;
+      px(x, bx + Math.round(pend*t*t*2.4), 24-k, 1, 1, k>h-3 ? '#6b5334' : '#8a7048');
+    }
+    // foglia secca accasciata a terra
+    px(x, bx + pend*2, 24, 2, 1, '#7a6038');
+  }
+  px(x, 13, 25, 7, 1, 'rgba(58,42,26,0.45)');
+  objCache[key]=c;
+  return c;
+};
+
 /* ===================================================================
    12. ERBA ANIMATA
    Ciuffi disegnati sopra il terreno, che si piegano col vento e

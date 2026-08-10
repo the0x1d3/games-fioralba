@@ -164,6 +164,76 @@ kbd{
 }
 
 /* ---------- bottoni rapidi ---------- */
+/* ---------- PRIMI PASSI ----------
+   Sta sotto la barra dell'energia, a sinistra: l'unico angolo dello
+   schermo che non era già occupato dall'HUD. */
+#guida{
+  position:absolute; left:12px; top:238px;
+  width:236px; padding:0; overflow:hidden;
+  font-family:'Nunito',system-ui,sans-serif;
+}
+#guida.hidden{ display:none; }
+.gu-head{
+  display:flex; align-items:center; gap:8px;
+  padding:8px 8px 8px 12px; cursor:pointer;
+  background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,.12));
+  border-bottom:2px solid rgba(0,0,0,.25);
+  user-select:none;
+}
+.gu-head:hover{ filter:brightness(1.08); }
+.gu-titolo{ font-weight:800; font-size:14px; color:var(--gold); letter-spacing:.3px; flex:1; }
+.gu-prog{ font-weight:800; font-size:12px; color:var(--paper-2); opacity:.9; }
+.gu-toggle, .gu-chiudi{
+  background:none; border:none; cursor:pointer; padding:0 2px;
+  color:var(--paper-2); font-size:13px; font-weight:800; line-height:1;
+}
+.gu-toggle:hover, .gu-chiudi:hover{ color:var(--gold); }
+.gu-chiudi{ opacity:.55; font-size:12px; }
+
+.gu-barra{ height:4px; background:rgba(0,0,0,.35); }
+.gu-barra-fill{
+  height:100%; width:0%;
+  background:linear-gradient(90deg, var(--gold-d), var(--gold));
+  transition:width .45s ease;
+}
+#guida.chiuso .gu-barra{ display:none; }
+
+.gu-corpo{ padding:8px 10px 10px; }
+.gu-passo{
+  display:flex; align-items:flex-start; gap:8px;
+  padding:5px 2px; font-size:12.5px; color:var(--paper-2);
+  opacity:.55; font-weight:700;
+}
+.gu-passo.ora{
+  opacity:1; padding-bottom:8px;
+  border-bottom:1px dashed rgba(242,193,78,.22); margin-bottom:3px;
+}
+.gu-passo.ora + .gu-passo{ padding-top:7px; }
+.gu-ico{ flex:none; width:26px; height:26px; }
+.gu-ico canvas{ width:26px; height:26px; image-rendering:pixelated; }
+.gu-testo{ flex:1; min-width:0; }
+.gu-tit{ font-weight:800; color:var(--paper); font-size:13px; line-height:1.3; }
+.gu-passo.ora .gu-tit{ color:var(--gold); }
+.gu-come{
+  margin-top:4px; font-size:11.5px; font-weight:600; line-height:1.45;
+  color:var(--paper-2); opacity:.92;
+}
+.gu-come b{ color:var(--gold-d); }
+.gu-come kbd{
+  background:var(--paper); color:var(--ink); border-radius:4px;
+  padding:0 4px; font-size:10.5px; font-weight:800; border:1px solid rgba(0,0,0,.3);
+}
+#guida.lampo{ animation:guLampo .7s ease; }
+@keyframes guLampo{
+  0%,100%{ box-shadow:inset 0 2px 0 rgba(255,255,255,.18), inset 0 -3px 0 rgba(0,0,0,.25), var(--shadow); }
+  35%    { box-shadow:0 0 0 3px rgba(242,193,78,.55), 0 0 22px rgba(242,193,78,.5); }
+}
+/* su schermi bassi la guida si accorcia invece di uscire dallo schermo */
+@media (max-height:660px){
+  #guida{ top:214px; width:218px; }
+  .gu-passo:not(.ora){ display:none; }
+}
+
 #quickbtns{
   position:absolute; right:12px; top:50%; transform:translateY(-50%);
   display:flex; flex-direction:column; gap:8px;
@@ -705,6 +775,26 @@ kbd{
 .lp-bar-title{ font-weight:800; color:var(--gold); font-size:16px; }
 .lp-bar-btns{ display:flex; gap:10px; }
 .lp-continue:disabled{ opacity:.45; cursor:not-allowed; filter:grayscale(.6); }
+
+/* ---------- avviso "solo da computer" ----------
+   Nascosto di default. La classe .solo-desktop la mette il JS quando
+   riconosce un telefono: così l'avviso si vede PRIMA di leggere tutta la
+   presentazione, invece di arrivare come una porta in faccia al clic. */
+.lp-mobile{ display:none; }
+#landing.solo-desktop .lp-mobile{
+  display:block;
+  max-width:760px; margin:0 auto; margin-top:14px;
+  background:linear-gradient(180deg, rgba(90,58,36,.96), rgba(58,36,22,.96));
+  border:2px solid var(--wood-edge); border-radius:14px;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.14), 0 5px 0 rgba(0,0,0,.25);
+  padding:14px 16px; text-align:center;
+  font-size:14px; font-weight:600; line-height:1.5; color:var(--paper);
+}
+#landing.solo-desktop .lp-mobile strong{ display:block; color:var(--gold); font-size:16px; margin-bottom:4px; }
+#landing.solo-desktop .lp-hero{ min-height:0; padding-top:26px; }
+/* i pulsanti restano visibili ma dichiarano che non porteranno da nessuna parte */
+#landing.solo-desktop .lp-new,
+#landing.solo-desktop .lp-continue{ opacity:.5; filter:grayscale(.55); }
 @media (max-width:520px){
   .lp-bar-title{ display:none; }
   .lp-bar{ justify-content:center; }

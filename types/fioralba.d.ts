@@ -88,8 +88,8 @@ interface FioItem {
 
 interface FioRecipe {
   id: string;
-  /** Quante unità produce. */
-  out: number;
+  /** Quante unità produce. Assente = 1 (le ricette di cucina lo omettono). */
+  out?: number;
   /** Ingredienti: id → quantità. */
   ing: Record<string, number>;
   /** Livello minimo richiesto. */
