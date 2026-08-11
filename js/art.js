@@ -45,13 +45,31 @@ A.rumore = function(x, y, scala){
   return (a*(1-u)+b*u)*(1-v) + (c*(1-u)+d*u)*v;
 };
 
-/* schiarisci / scurisci un colore hex */
+/* Schiarisci / scurisci: ma di gradini, non di percentuali.
+
+   Ottantotto punti del disegno costruiscono le loro sfumature da qui —
+   il volume di una chioma, la faccia in ombra di una cassa, il piano di
+   un tavolo. Finché i colori erano liberi bastava schiarire "del 16%";
+   con una palette chiusa non basta più, perché quel 16% può ricadere
+   sullo stesso gradino di partenza. Quando succede la forma si appiattisce
+   e sparisce: il cespuglio di primavera era diventato una macchia dello
+   stesso verde del prato, con dentro nient'altro.
+
+   Camminando sulla rampa invece, due toni chiesti diversi *sono* diversi,
+   e per giunta prendono la rotazione di tinta che la rampa porta con sé:
+   l'ombra della chioma si raffredda da sola.
+
+   Sotto, mai meno di un gradino: nel disegno «poco più chiaro» vuol dire
+   sempre «distinguibile», e comunque sotto il gradino non c'è niente.
+   Sopra, un gradino ogni 20% e non ogni 12%, che era il primo tentativo
+   e picchiava troppo forte: l'ombra sotto il mento è chiesta al 20% e
+   scendeva di due gradini, cioè un terracotta acceso in mezzo alla
+   faccia. Con questa scala quasi tutte le richieste valgono un gradino
+   e solo le più decise ne valgono due, che è come sono scritte. */
 function shade(hex, amt){
-  const n = parseInt(hex.slice(1),16);
-  let r=(n>>16)&255, g=(n>>8)&255, b=n&255;
-  if(amt>0){ r+=(255-r)*amt; g+=(255-g)*amt; b+=(255-b)*amt; }
-  else { r*=(1+amt); g*=(1+amt); b*=(1+amt); }
-  return '#'+((1<<24)+((r|0)<<16)+((g|0)<<8)+(b|0)).toString(16).slice(1);
+  if(!amt) return hex;
+  const passi = Math.sign(amt) * Math.max(1, Math.min(3, Math.round(Math.abs(amt)/0.20)));
+  return PAL.passo(hex, passi);
 }
 A.shade = shade;
 
@@ -105,13 +123,18 @@ A.pozza = function(rx, ry, alpha, colore, livelli){
   ry = Math.max(1, Math.round(ry));
   const L = livelli || 5;
   const aq = Math.round(alpha*50)/50;                 // per non cuocere mille varianti
-  const key = rx+'|'+ry+'|'+aq+'|'+colore+'|'+L;
+  // qui i pixel si scrivono a mano, quindi il filtro della palette sui
+  // contesti non passa: l'aggancio va chiesto di persona, e prima della
+  // chiave, così due tinte che finiscono sullo stesso gradino non
+  // cuociono due pozze identiche
+  const col = PAL.snap(colore);
+  const key = rx+'|'+ry+'|'+aq+'|'+col+'|'+L;
   if(pozzaCache[key]) return pozzaCache[key];
 
   const w = rx*2+1, h = ry*2+1;
   const c = cv(w,h), x = c.getContext('2d');
   const img = x.createImageData(w,h), d = img.data;
-  const n = parseInt(colore.slice(1),16);
+  const n = parseInt(col.slice(1),16);
   const cr=(n>>16)&255, cg=(n>>8)&255, cb=n&255;
   for(let py=0; py<h; py++){
     const dy = (py-ry)/ry;

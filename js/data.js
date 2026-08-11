@@ -20,9 +20,15 @@ window.DATA = D;
 /* ------------------------------------------------------------------
    STAGIONI
    ------------------------------------------------------------------ */
+/* Fra chioma ed erba ci vuole un salto vero, non un'ombra di salto. In
+   primavera i due verdi distavano diciannove punti di luminosità su
+   255: bastavano finché ogni colore era libero, ma su una palette
+   chiusa cadono sullo stesso gradino e il cespuglio sparisce nel prato.
+   La chioma di primavera adesso scende di un gradino, come già faceva
+   in tutte le altre stagioni. Il controllo di coerenza lo verifica. */
 D.SEASONS = [
-  { id:'primavera', nome:'Primavera', grass:'#6fa84f', grass2:'#5d9442', tree:'#5c9440', accent:'#f5a6c0' },
-  { id:'estate',    nome:'Estate',    grass:'#5f9c3c', grass2:'#4f8a32', tree:'#3f8232', accent:'#f7d154' },
+  { id:'primavera', nome:'Primavera', grass:'#6fa84f', grass2:'#5d9442', tree:'#4e8036', accent:'#f5a6c0' },
+  { id:'estate',    nome:'Estate',    grass:'#5f9c3c', grass2:'#4f8a32', tree:'#356e2b', accent:'#f7d154' },
   { id:'autunno',   nome:'Autunno',   grass:'#93924a', grass2:'#807f3e', tree:'#c47a2c', accent:'#d9713c' },
   { id:'inverno',   nome:'Inverno',   grass:'#c9d6dd', grass2:'#b4c4cd', tree:'#8fa5ae', accent:'#a8d0e6' }
 ];

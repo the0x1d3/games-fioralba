@@ -80,6 +80,93 @@ function fontiOttenibili() {
 
 verifica('ogni file .js è sintatticamente valido', controllaSintassi);
 
+/* La palette è la sola cosa che tiene insieme l'immagine: se una rampa
+   si sfalda — due gradini uguali, il valore che torna indietro a metà
+   scala, un materiale senza ombra — non se ne accorge nessuno finché
+   non si guarda una schermata e sembra sporca. */
+verifica('le rampe della palette salgono senza buchi né gemelli', () => {
+  const vm = require('vm');
+  const sandbox = { window:{}, console };
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(RADICE,'js/palette.js'),'utf8'), sandbox, {filename:'palette.js'});
+  const PAL = sandbox.window.PAL;
+  const problemi = [];
+  const luminosita = h => {
+    const n = parseInt(h.slice(1),16);
+    return 0.299*((n>>16)&255) + 0.587*((n>>8)&255) + 0.114*(n&255);
+  };
+  const visti = new Map();
+  for (const nome in PAL.r) {
+    const r = PAL.r[nome];
+    if (r.length < 5) problemi.push(`la rampa «${nome}» ha solo ${r.length} gradini`);
+    for (let i = 1; i < r.length; i++) {
+      if (luminosita(r[i]) <= luminosita(r[i-1]))
+        problemi.push(`la rampa «${nome}» non sale fra il gradino ${i-1} e il ${i} (${r[i-1]} → ${r[i]})`);
+    }
+    for (const c of r) {
+      if (visti.has(c) && visti.get(c) !== nome)
+        problemi.push(`${c} sta sia in «${visti.get(c)}» che in «${nome}»`);
+      visti.set(c, nome);
+    }
+  }
+  // deve esserci davvero un nero che ancora e una luce pulita in cima
+  const tutte = [...visti.keys()].map(luminosita);
+  if (Math.min(...tutte) > 26) problemi.push('nessun gradino abbastanza scuro da ancorare l\'immagine');
+  if (Math.max(...tutte) < 240) problemi.push('nessun gradino abbastanza chiaro da fare da luce');
+  // e l'aggancio deve essere totale e stabile
+  for (const prova of ['#000000','#ffffff','#7f3ab2','#0d0b07','#ff9a3c']) {
+    const a = PAL.snap(prova);
+    if (!visti.has(a)) problemi.push(`${prova} si aggancia a ${a}, che non è un gradino di nessuna rampa`);
+    if (PAL.snap(a) !== a) problemi.push(`l'aggancio non è stabile: ${a} → ${PAL.snap(a)}`);
+  }
+  return problemi;
+});
+
+/* Nato da un difetto vero: agganciate alla palette, la chioma e l'erba
+   di primavera finivano sullo stesso gradino e i cespugli sparivano nel
+   prato. Due cose che devono leggersi separate non possono stare sullo
+   stesso colore, e nessuno se ne accorge finché non ci si passa davanti
+   nella stagione giusta. */
+verifica('in ogni stagione la chioma si stacca dall\'erba', () => {
+  const vm = require('vm');
+  const sandbox = { window:{}, console };
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(RADICE,'js/palette.js'),'utf8'), sandbox, {filename:'palette.js'});
+  const PAL = sandbox.window.PAL;
+  const problemi = [];
+  for (const S of DATA.SEASONS) {
+    const chioma = PAL.snap(S.tree);
+    for (const [nome, erba] of [['erba', S.grass], ['erba2', S.grass2]]) {
+      if (PAL.snap(erba) === chioma)
+        problemi.push(`in ${S.id} la chioma e la ${nome} si agganciano entrambe a ${chioma}`);
+    }
+  }
+  return problemi;
+});
+
+/* I colori con un nome devono venire dalle rampe, altrimenti la
+   disciplina vale per i sorgenti sparsi e non per il posto che
+   dovrebbe darne l'esempio. */
+verifica('ogni colore di PAL.c è un gradino di una rampa', () => {
+  const vm = require('vm');
+  const sandbox = { window:{}, console };
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(RADICE,'js/palette.js'),'utf8'), sandbox, {filename:'palette.js'});
+  const PAL = sandbox.window.PAL;
+  const ammessi = new Set();
+  for (const nome in PAL.r) for (const c of PAL.r[nome]) ammessi.add(c);
+  const problemi = [];
+  (function cammina(o, via){
+    for (const k in o) {
+      const v = o[k], q = via ? via+'.'+k : k;
+      if (Array.isArray(v)) v.forEach((x,i) => { if(!ammessi.has(x)) problemi.push(`${q}[${i}] = ${x}`); });
+      else if (v && typeof v === 'object') cammina(v, q);
+      else if (!ammessi.has(v)) problemi.push(`${q} = ${v}`);
+    }
+  })(PAL.c, '');
+  return problemi;
+});
+
 verifica('ogni ingrediente di cucina si può ottenere', () => {
   const ok = fontiOttenibili();
   const problemi = [];
