@@ -171,91 +171,179 @@ function buildPodere(){
 
   fill(m, 0,0, m.w,m.h, 'erba');
 
-  /* --- bordo di alberi fitti --- */
+  /* ------------------------------------------------------------------
+     BOSCO DI CONFINE
+     Prima era una cornice rettangolare spessa esattamente due caselle e
+     si leggeva come un bordo. Ora il margine ondeggia.
+     ------------------------------------------------------------------ */
   for(let x=0;x<m.w;x++){
-    for(let y=0;y<2;y++) setObj(m,x,y, albero(R()>0.6?'pino':'quercia'));
-    setObj(m,x,m.h-1, albero('pino'));
+    for(let y=0; y<2+((R()*2)|0); y++) setObj(m,x,y, albero(R()>0.6?'pino':'quercia'));
+    for(let y=m.h-1-((R()*2)|0); y<m.h; y++) setObj(m,x,y, albero('pino'));
   }
   for(let y=0;y<m.h;y++){
-    for(let x=0;x<2;x++) setObj(m,x,y, albero(R()>0.5?'pino':'quercia'));
-    setObj(m,m.w-1,y, albero('pino'));
+    for(let x=0; x<2+((R()*2)|0); x++) setObj(m,x,y, albero(R()>0.5?'pino':'quercia'));
+    for(let x=m.w-1-((R()*2)|0); x<m.w; x++) setObj(m,x,y, albero('pino'));
   }
 
-  /* --- laghetto in basso a destra --- */
-  blob(m, 41, 33, 8, 'acqua', R, 0.4);
-  // riva sabbiosa
-  for(let y=22;y<m.h;y++) for(let x=30;x<m.w;x++){
-    if(W.terreno(m,x,y)!=='erba') continue;
-    let vicino=false;
-    for(let d=0;d<4;d++){
-      const nx=x+[1,-1,0,0][d], ny=y+[0,0,1,-1][d];
-      if(W.terreno(m,nx,ny)==='acqua') vicino=true;
-    }
-    if(vicino) m.g[W.idx(m,x,y)] = ti('sabbia');
+  /* ------------------------------------------------------------------
+     L'AIA — la corte di terra battuta davanti a casa
+     ------------------------------------------------------------------ */
+  fill(m, 3,3, 13,9, 'terra');
+  // l'aia va sgomberata PRIMA di arredarla: il bosco di confine può
+  // averci lasciato dentro un albero
+  for(let y=3;y<12;y++) for(let x=3;x<16;x++) if(W.dentro(m,x,y)) m.obj[W.idx(m,x,y)]=null;
+  edificio(m,'casa', 4,3, 7,5, { porta:{x:7,y:7}, azione:'casa', nome:'Casa', scala:1 });
+
+  // l'abbeveratoio in pietra: il pezzo forte dell'aia
+  fill(m, 12,3, 4,3, 'acqua');
+  m.deco.push({t:'fontana', x:12, y:3});
+  for(let y=3;y<6;y++) for(let x=12;x<16;x++) m.obj[W.idx(m,x,y)] = {t:'fontana', solido:true};
+
+  setObj(m, 11,10, {t:'panchina', solido:true, dir:0});
+  for(const [fx,fy] of [[4,9],[5,9],[9,9],[10,9]])
+    setObj(m, fx,fy, {t:'fioriera', solido:true, v:(R()*4)|0});
+  m.deco.push({t:'bucato', x:3, y:10, w:3});
+  setObj(m, 13,8, {t:'consegna', solido:true});
+  m.deco.push({t:'cartello', x:12, y:9, testo:'Cassa di consegna — la ritirano di notte'});
+
+  /* ------------------------------------------------------------------
+     I SENTIERI — l'occhio deve capire dove si va
+     ------------------------------------------------------------------ */
+  linea(m,  7,8,  7,15,  2, 'sentiero');    // dalla porta al campo
+  linea(m,  7,15, 23,15, 2, 'sentiero');    // il viale lungo il campo
+  linea(m,  8,8,  12,8,  2, 'sentiero');    // fino alla cassa di consegna
+  linea(m, 23,15, 23,30, 2, 'sentiero');    // giù a est del campo
+  linea(m, 23,30, 20,41, 2, 'sentiero');    // fino all'uscita per il bosco
+  linea(m, 23,16, 49,19, 2, 'sentiero');    // e a est, verso il paese
+
+  /* ------------------------------------------------------------------
+     IL CAMPO GRANDE — recintato e sgombro: si riconosce a colpo d'occhio
+     ------------------------------------------------------------------ */
+  const CX0=5, CY0=17, CX1=21, CY1=27;
+  for(let y=CY0;y<=CY1;y++) for(let x=CX0;x<=CX1;x++){
+    const i=W.idx(m,x,y);
+    if(TIPI[m.g[i]]==='sentiero') continue;
+    m.obj[i]=null;
+    m.g[i]=ti('erba');
   }
-  // ninfee
-  for(let i=0;i<7;i++){
-    const x=36+((R()*10)|0), y=29+((R()*8)|0);
-    if(W.terreno(m,x,y)==='acqua') m.deco.push({t:'ninfea',x,y,v:(R()*3)|0});
+  const recinta=(x,y)=>{
+    if(!W.dentro(m,x,y)) return;
+    if(TIPI[m.g[W.idx(m,x,y)]]==='sentiero') return;     // il varco dove passa il viale
+    m.deco.push({t:'recinto', x, y});
+  };
+  for(let x=CX0-1;x<=CX1+1;x++){ recinta(x,CY0-1); recinta(x,CY1+1); }
+  for(let y=CY0;y<=CY1;y++){ recinta(CX0-1,y); recinta(CX1+1,y); }
+  m.deco.push({t:'cartello', x:CX0, y:CY0-2, testo:'Campo grande'});
+
+  /* ------------------------------------------------------------------
+     IL FRUTTETO — alberi in filare: si vede che è coltivato
+     ------------------------------------------------------------------ */
+  for(let fy=0; fy<3; fy++) for(let fx=0; fx<4; fx++){
+    const x = 26+fx*3, y = 21+fy*3;
+    if(libero(m,x,y)) setObj(m,x,y, albero(fy%2 ? 'betulla' : 'quercia'));
+  }
+  for(let i=0;i<12;i++){
+    const x=25+((R()*12)|0), y=20+((R()*10)|0);
+    if(libero(m,x,y) && W.terreno(m,x,y)==='erba') m.deco.push({t:'petali_terra',x,y,v:(R()*4)|0});
   }
 
-  /* --- ruscello dal bordo nord --- */
+  /* ------------------------------------------------------------------
+     IL RUSCELLO, COL PONTICELLO SUL VIALE
+     ------------------------------------------------------------------ */
   linea(m, 24,0, 26,10, 2, 'acqua');
   linea(m, 26,10, 32,20, 2, 'acqua');
   linea(m, 32,20, 36,27, 2, 'acqua');
-  // ponticello
-  fill(m, 30,17, 3,2, 'assi');
-  m.deco.push({t:'ponte', x:30, y:17, w:3});
+  fill(m, 30,16, 3,3, 'assi');
+  m.deco.push({t:'ponte', x:30, y:16, w:3});
 
-  /* --- casa e aia --- */
-  fill(m, 3,3, 12,8, 'terra');
-  linea(m, 8,10, 8,20, 3, 'sentiero');
-  linea(m, 8,12, 22,12, 3, 'sentiero');
-  edificio(m,'casa', 4,3, 7,5, { porta:{x:7,y:7}, azione:'casa', nome:'Casa', scala:1 });
-  // cassa di consegna
-  setObj(m, 13,8, {t:'consegna', solido:true});
-  m.deco.push({t:'cartello', x:12, y:9, testo:'Cassa di consegna'});
+  /* ------------------------------------------------------------------
+     LO STAGNO — riva curata, canneti, un pontile per pescare
+     ------------------------------------------------------------------ */
+  blob(m, 41, 34, 8, 'acqua', R, 0.4);
+  for(let y=24;y<m.h;y++) for(let x=30;x<m.w;x++){
+    if(W.terreno(m,x,y)!=='erba') continue;
+    let vicino=false;
+    for(let d=0;d<4;d++) if(W.terreno(m,x+[1,-1,0,0][d], y+[0,0,1,-1][d])==='acqua') vicino=true;
+    if(vicino) m.g[W.idx(m,x,y)] = ti('sabbia');
+  }
+  for(let i=0;i<9;i++){
+    const x=37+((R()*9)|0), y=31+((R()*7)|0);
+    if(W.terreno(m,x,y)==='acqua') m.deco.push({t:'ninfea',x,y,v:(R()*3)|0});
+  }
+  for(let i=0;i<18;i++){
+    const x=31+((R()*17)|0), y=25+((R()*15)|0);
+    if(libero(m,x,y) && W.terreno(m,x,y)==='sabbia') m.deco.push({t:'erbe',x,y,v:(R()*4)|0});
+  }
+  for(let k=0;k<3;k++){
+    const px2=36, py2=30+k;
+    if(!W.dentro(m,px2,py2)) continue;
+    m.g[W.idx(m,px2,py2)] = ti('assi');
+    m.obj[W.idx(m,px2,py2)] = null;
+  }
+  m.deco.push({t:'molo', x:36, y:30, w:1});
+  m.deco.push({t:'cartello', x:35, y:29, testo:'Il laghetto di Ilde'});
 
-  /* --- campo principale: terra già dissodabile --- */
-  fill(m, 5,14, 18,14, 'erba');
-
-  /* --- spazi riservati alle costruzioni --- */
+  /* ------------------------------------------------------------------
+     SPAZI PER LE COSTRUZIONI — vanno tenuti sgombri
+     ------------------------------------------------------------------ */
   m.spazi = {
-    pollaio:{x:16,y:4,w:5,h:4, kind:'pollaio', porta:{x:18,y:7}},
-    serra:  {x:26,y:5,w:6,h:5, kind:'serra',   porta:{x:29,y:9}},
-    silo:   {x:23,y:4,w:2,h:2, kind:'silo'}
+    pollaio:{x:17,y:4,w:5,h:4, kind:'pollaio', porta:{x:19,y:7}},
+    serra:  {x:34,y:4,w:6,h:5, kind:'serra',   porta:{x:37,y:8}},
+    silo:   {x:41,y:5,w:2,h:2, kind:'silo'}
   };
+  for(const k in m.spazi){
+    const sp=m.spazi[k];
+    for(let y=sp.y-1;y<sp.y+sp.h+1;y++) for(let x=sp.x-1;x<sp.x+sp.w+1;x++){
+      if(!W.dentro(m,x,y)) continue;
+      m.obj[W.idx(m,x,y)]=null;
+      if(TIPI[m.g[W.idx(m,x,y)]]==='acqua') m.g[W.idx(m,x,y)]=ti('erba');
+    }
+  }
 
-  /* --- vegetazione sparsa --- */
-  for(let i=0;i<70;i++){
-    const x=3+((R()*(m.w-6))|0), y=3+((R()*(m.h-6))|0);
-    if(!libero(m,x,y)) continue;
-    if(x>4 && x<24 && y>13 && y<28 && R()<0.55) continue; // campo più pulito
+  /* ------------------------------------------------------------------
+     L'ANGOLO SELVATICO — a sud-ovest: legna, fibra, pietra
+     ------------------------------------------------------------------ */
+  for(let i=0;i<140;i++){
+    const x=3+((R()*13)|0), y=29+((R()*13)|0);
+    if(!libero(m,x,y) || W.terreno(m,x,y)!=='erba') continue;
     const r=R();
-    if(r<0.34) setObj(m,x,y, albero(R()>0.7?'pino':(R()>0.5?'betulla':'quercia')));
-    else if(r<0.52) setObj(m,x,y, sasso('pietra'));
-    else if(r<0.86) setObj(m,x,y, {t:'erbaccia', v:(R()*4)|0});
+    if(r<0.30) setObj(m,x,y, albero(R()>0.6?'pino':'quercia'));
+    else if(r<0.42) setObj(m,x,y, sasso('pietra'));
+    else if(r<0.52) setObj(m,x,y, {t:'ceppo', hp:4, solido:true});
+    else if(r<0.80) setObj(m,x,y, {t:'erbaccia', v:(R()*4)|0});
     else setObj(m,x,y, {t:'ramo', v:(R()*3)|0});
   }
-  // qualche ceppo da abbattere
-  for(let i=0;i<5;i++){
-    const x=6+((R()*16)|0), y=14+((R()*12)|0);
-    if(libero(m,x,y)) setObj(m,x,y,{t:'ceppo', hp:4, solido:true});
+
+  /* --- verde sparso sul resto del prato, senza soffocarlo --- */
+  for(let i=0;i<90;i++){
+    const x=3+((R()*(m.w-8))|0), y=3+((R()*(m.h-8))|0);
+    if(!libero(m,x,y) || W.terreno(m,x,y)!=='erba') continue;
+    if(x>=CX0-1 && x<=CX1+1 && y>=CY0-1 && y<=CY1+1) continue;   // il campo resta pulito
+    const r=R();
+    if(r<0.26) setObj(m,x,y,{t:'cespuglio', v:(R()*3)|0, bacche:R()>0.6});
+    else if(r<0.48) setObj(m,x,y,{t:'fiori', v:(R()*4)|0});
+    else if(r<0.78) m.deco.push({t:'ciuffo',x,y,v:(R()*4)|0});
+    else m.deco.push({t:'sassolini',x,y,v:(R()*3)|0});
   }
 
-  /* --- staccionata decorativa a est della casa --- */
-  for(let x=3;x<15;x++) if(libero(m,x,11)) m.deco.push({t:'recinto',x,y:11});
-
-  /* --- uscite --- */
+  /* ------------------------------------------------------------------
+     USCITE
+     ------------------------------------------------------------------ */
   fill(m, m.w-2, 18, 2, 4, 'sentiero');
-  for(let y=18;y<22;y++) for(let x=m.w-2;x<m.w;x++) m.obj[W.idx(m,x,y)]=null;
   warp(m, m.w-1, 18, 1, 4, 'fioralba', 2, 16, 'Fioralba');
-  m.deco.push({t:'cartello', x:m.w-4, y:19, testo:'→ Fioralba'});
+  m.deco.push({t:'cartello', x:m.w-5, y:21, testo:'→ Fioralba, il paese'});
 
   fill(m, 18, m.h-2, 4, 2, 'sentiero');
-  for(let y=m.h-2;y<m.h;y++) for(let x=18;x<22;x++) m.obj[W.idx(m,x,y)]=null;
   warp(m, 18, m.h-1, 4, 1, 'bosco', 20, 2, 'Bosco');
-  m.deco.push({t:'cartello', x:17, y:m.h-3, testo:'↓ Bosco'});
+  m.deco.push({t:'cartello', x:17, y:m.h-4, testo:'↓ Bosco di Fioralba'});
+
+  /* i camminamenti restano sgombri (porte e muri esclusi) */
+  sgombra(m, 'sentiero');
+  sgombra(m, 'assi');
+
+  /* le lanterne vanno DOPO lo sgombero, o le porterebbe via */
+  for(const [lx,ly] of [[8,13],[16,14],[24,14],[23,24],[21,38],[12,7]])
+    if(libero(m,lx,ly)) setObj(m,lx,ly,{t:'lampione', solido:false});
 
   return m;
 }

@@ -311,6 +311,77 @@ verifica('ogni abitante ha battute contestuali per ogni stagione', () => {
   return problemi;
 });
 
+verifica('il podere è giocabile: partenza, uscite, spazi da costruire', () => {
+  const maps = WORLD.crea();
+  const m = maps.podere;
+  const problemi = [];
+
+  // dove nasce il giocatore e dove si sveglia ogni mattina
+  for (const [x, y, che] of [[8, 10, 'punto di partenza'], [8, 9, 'risveglio del mattino']])
+    if (WORLD.solido(m, x, y)) problemi.push(`${che} (${x},${y}) è dentro un ostacolo`);
+
+  // gli spazi delle costruzioni devono essere liberi, o il pollaio non ci sta
+  for (const k in m.spazi) {
+    const sp = m.spazi[k];
+    for (let y = sp.y; y < sp.y + sp.h; y++) for (let x = sp.x; x < sp.x + sp.w; x++) {
+      if (!WORLD.dentro(m, x, y)) { problemi.push(`lo spazio «${k}» esce dalla mappa`); continue; }
+      if (m.obj[WORLD.idx(m, x, y)]) problemi.push(`lo spazio «${k}» ha un ostacolo in (${x},${y})`);
+      const t = WORLD.terreno(m, x, y);
+      if (t === 'acqua') problemi.push(`lo spazio «${k}» è sull'acqua in (${x},${y})`);
+    }
+  }
+
+  // le uscite devono essere raggiungibili a piedi
+  for (const w of m.warps) {
+    let libera = false;
+    for (let dy = 0; dy < w.h; dy++) for (let dx = 0; dx < w.w; dx++)
+      if (!WORLD.solido(m, w.x + dx, w.y + dy)) libera = true;
+    if (!libera) problemi.push(`l'uscita verso «${w.to}» è murata`);
+  }
+
+  // deve restare erba libera da zappare vicino a casa, o il tutorial si blocca
+  let zappabili = 0;
+  for (let y = 12; y < 30; y++) for (let x = 4; x < 24; x++)
+    if (WORLD.libero(m, x, y) && WORLD.terreno(m, x, y) === 'erba') zappabili++;
+  if (zappabili < 60) problemi.push(`solo ${zappabili} caselle da zappare vicino a casa: il tutorial rischia`);
+
+  return problemi;
+});
+
+verifica('dal podere si raggiunge a piedi ogni uscita', () => {
+  // Una zona bella ma murata è peggio di una brutta: qui si cammina
+  // davvero dalla porta di casa fino a ogni uscita.
+  const m = WORLD.crea().podere;
+  const visto = new Set();
+  const coda = [[8, 10]];
+  visto.add('8,10');
+  while (coda.length) {
+    const [x, y] = coda.shift();
+    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nx = x+dx, ny = y+dy, k = nx+','+ny;
+      if (visto.has(k) || WORLD.solido(m, nx, ny)) continue;
+      visto.add(k); coda.push([nx, ny]);
+    }
+  }
+  const problemi = [];
+  for (const w of m.warps) {
+    let ok = false;
+    for (let dy = 0; dy < w.h; dy++) for (let dx = 0; dx < w.w; dx++)
+      if (visto.has((w.x+dx)+','+(w.y+dy))) ok = true;
+    if (!ok) problemi.push(`l'uscita verso «${w.to}» non si raggiunge camminando`);
+  }
+  // e la cassa di consegna? deve essere avvicinabile
+  let cassa = null;
+  for (let i = 0; i < m.obj.length; i++) if (m.obj[i] && m.obj[i].t === 'consegna') cassa = [i % m.w, (i / m.w) | 0];
+  if (!cassa) problemi.push('la cassa di consegna non esiste più');
+  else {
+    const [cx, cy] = cassa;
+    const accanto = [[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy]) => visto.has((cx+dx)+','+(cy+dy)));
+    if (!accanto) problemi.push('alla cassa di consegna non ci si arriva');
+  }
+  return problemi;
+});
+
 verifica('ogni mappa è raggiungibile dal podere', () => {
   const maps = WORLD.crea();
   const visti = new Set(['podere']);
