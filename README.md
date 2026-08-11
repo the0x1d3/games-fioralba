@@ -202,6 +202,7 @@ js/mobs.js          fauna: sprite, comportamenti, comparsa
 js/tutorial.js      guida interattiva delle prime azioni
 js/guida.js         "Primi passi": gli obiettivi che restano a schermo
 js/demo.js          le scenette animate del "guarda come si fa"
+js/landing.js       la pagina di presentazione, popolata con la grafica del gioco
 js/render.js        camera, terreni a blocchi, profondità, luci, meteo
 js/ui.js            menu, negozi, dialoghi, diario
 js/game.js          stato, ciclo di gioco, input, sistemi

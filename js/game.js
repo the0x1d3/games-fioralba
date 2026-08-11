@@ -102,6 +102,8 @@ function collegaLanding(){
     });
   }
 
+  if(window.LANDING) LANDING.init();
+
   const haSalvato = !!caricaGrezzo();
   document.querySelectorAll('.lp-continue').forEach(b=>{
     if(!haSalvato){ b.disabled = true; b.title = 'Nessuna partita salvata'; }
@@ -555,6 +557,7 @@ function nuovaPartita(){
 function avviaGioco(conIntro){
   $('#title').classList.add('hidden');
   const lp=$('#landing'); if(lp) lp.classList.add('hidden');
+  if(window.LANDING) LANDING.ferma();     // niente animazioni a vuoto sotto la partita
   if(titoloRaf) cancelAnimationFrame(titoloRaf);
   $('#hud').classList.remove('hidden');
   G.inGioco = true;

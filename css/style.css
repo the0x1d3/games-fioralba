@@ -769,59 +769,174 @@ kbd{
 #mobile-warn.show{ display:flex; }
 #mw-back{ margin-top:24px; }
 
-/* =================== LANDING PAGE =================== */
+/* =================== LANDING PAGE ===================
+   La pagina di presentazione sta sopra all'animazione del titolo, che
+   fa da cielo. Sotto la piega il fondo diventa opaco, così il testo si
+   legge senza combattere col tramonto animato.
+   ==================================================== */
 #landing{
   position:fixed; inset:0; z-index:9000; overflow:hidden;
-  background:transparent;               /* lascia vedere l'animazione del titolo dietro */
+  background:transparent;
   color:var(--paper); font-family:'Nunito',system-ui,sans-serif;
 }
 #landing.hidden{ display:none !important; }
-.lp-scroll{ height:100%; overflow-y:auto; overflow-x:hidden; padding:0 20px 96px; -webkit-overflow-scrolling:touch; }
+.lp-scroll{
+  height:100%; overflow-y:auto; overflow-x:hidden;
+  padding:0 20px 96px; -webkit-overflow-scrolling:touch;
+  touch-action:pan-y; scroll-behavior:smooth;
+}
 
+/* ---------- sopra la piega ---------- */
 .lp-hero{
   position:relative;
-  min-height:92vh; display:flex; flex-direction:column;
+  min-height:94vh; display:flex; flex-direction:column;
   align-items:center; justify-content:center; text-align:center;
-  max-width:760px; margin:0 auto; padding:44px 0 20px;
+  max-width:780px; margin:0 auto; padding:44px 0 20px;
 }
-.lp-hero::before{                       /* leggera velatura per leggere il testo sull'animazione */
+.lp-hero::before{
   content:''; position:absolute; inset:-20px -40vw;
-  background:radial-gradient(58% 52% at 50% 44%, rgba(13,11,9,.5), rgba(13,11,9,0) 76%);
+  background:radial-gradient(58% 54% at 50% 46%, rgba(13,11,9,.62), rgba(13,11,9,0) 78%);
   z-index:-1; pointer-events:none;
 }
-.lp-belowfold{
-  margin:0 -20px; padding:34px 20px 0;
-  background:linear-gradient(180deg, rgba(23,17,12,.75), #1c140d 70px, #17110c);
-}
-.lp-sub{ color:var(--gold-d); font-weight:800; letter-spacing:3px; font-size:13px; text-transform:uppercase; }
+.lp-sub{ color:var(--gold-d); font-weight:800; letter-spacing:3.5px; font-size:13px; text-transform:uppercase; }
 .lp-logo h1{
-  font-size:clamp(52px,12vw,104px); font-weight:800; letter-spacing:8px; line-height:1;
-  color:var(--gold); margin:4px 0;
-  text-shadow:0 3px 0 rgba(0,0,0,.5), 0 0 44px rgba(242,193,78,.25);
+  font-size:clamp(54px,12vw,108px); font-weight:800; letter-spacing:9px; line-height:1;
+  color:var(--gold); margin:6px 0 2px;
+  text-shadow:0 3px 0 rgba(0,0,0,.5), 0 0 52px rgba(242,193,78,.28);
 }
-.lp-tag{ color:var(--paper-2); font-style:italic; font-size:16px; opacity:.9; }
-.lp-intro{ font-size:clamp(15px,2.4vw,19px); line-height:1.6; font-weight:600; max-width:560px; margin:22px auto 0; }
+.lp-tag{ color:var(--paper-2); font-style:italic; font-size:clamp(14px,2vw,17px); opacity:.92; }
+.lp-intro{
+  font-size:clamp(15px,2.3vw,19px); line-height:1.72; font-weight:600;
+  max-width:600px; margin:26px auto 0; color:#f0e2c6;
+}
 .lp-intro strong{ color:var(--gold); }
-.lp-cta{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:26px; }
-.lp-cta .bigbtn{ min-width:200px; }
-.lp-note{ margin-top:18px; font-size:13px; font-weight:700; color:var(--paper-2); opacity:.85; }
-.lp-scrolldown{ margin-top:32px; font-size:12px; letter-spacing:2px; color:var(--gold-d); opacity:.75; animation:lpbob 1.8s ease-in-out infinite; }
-@keyframes lpbob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(5px);} }
+.lp-cta{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:30px; }
+.lp-cta .bigbtn{ min-width:210px; }
 
-.lp-features{ max-width:960px; margin:16px auto 0; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+.lp-fatti{
+  list-style:none; display:flex; flex-wrap:wrap; gap:8px 10px;
+  justify-content:center; margin-top:24px; padding:0;
+}
+.lp-fatti li{
+  font-size:12px; font-weight:800; letter-spacing:.3px;
+  color:var(--paper-2); background:rgba(0,0,0,.34);
+  border:1px solid rgba(242,193,78,.28); border-radius:999px;
+  padding:4px 12px;
+}
+.lp-scrolldown{
+  margin-top:38px; display:flex; flex-direction:column; align-items:center; gap:2px;
+  font-size:11px; letter-spacing:2.4px; text-transform:uppercase;
+  color:var(--gold-d); opacity:.8;
+}
+.lp-scrolldown i{ font-style:normal; font-size:18px; animation:lpbob 1.8s ease-in-out infinite; }
+@keyframes lpbob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(6px);} }
+
+/* ---------- sotto la piega ---------- */
+.lp-belowfold{
+  margin:0 -20px; padding:10px 20px 0;
+  background:linear-gradient(180deg, rgba(23,17,12,.82), #1c140d 90px, #17110c);
+}
+.lp-sez{ max-width:1000px; margin:0 auto; padding:56px 0 8px; }
+.lp-h2{
+  font-size:clamp(24px,3.4vw,34px); font-weight:800; color:var(--gold);
+  text-align:center; letter-spacing:.4px; line-height:1.2;
+}
+.lp-h2::after{
+  content:''; display:block; width:54px; height:3px; margin:14px auto 0;
+  background:linear-gradient(90deg, transparent, var(--gold-d), transparent);
+}
+.lp-occhiello{
+  max-width:620px; margin:16px auto 0; text-align:center;
+  font-size:15px; line-height:1.65; font-weight:600; color:var(--paper-2); opacity:.9;
+}
+
+/* comparsa dolce a scorrimento */
+.lp-riv{ opacity:0; transform:translateY(22px); transition:opacity .7s ease, transform .7s cubic-bezier(.2,.8,.3,1); }
+.lp-riv.visto{ opacity:1; transform:none; }
+@media (prefers-reduced-motion:reduce){
+  .lp-riv{ opacity:1; transform:none; transition:none; }
+  .lp-scrolldown i{ animation:none; }
+}
+
+/* ---------- le scenette animate ---------- */
+.lp-demo{ margin-top:26px; display:flex; justify-content:center; }
+.lp-demo-host{
+  width:min(620px,100%);
+  background:linear-gradient(180deg, rgba(90,58,36,.55), rgba(40,26,16,.7));
+  border:3px solid var(--wood-edge); border-radius:18px;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.10), 0 10px 0 rgba(0,0,0,.24);
+  padding:16px 16px 12px;
+}
+#landing .demo-tabs{ margin-bottom:14px; }
+#landing .demo-tab{ font-size:12.5px; padding:5px 11px 5px 7px; }
+#landing .demo-dida{ color:var(--paper-2); font-size:13.5px; min-height:52px; }
+#landing .demo-dida b{ color:var(--gold); }
+
+/* ---------- cosa si fa ---------- */
+.lp-features{
+  max-width:1000px; margin:30px auto 0; display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(228px,1fr)); gap:16px;
+}
 .lp-card{
   background:linear-gradient(180deg, rgba(246,230,200,.98), rgba(233,211,171,.98));
   color:var(--ink); border:2px solid var(--wood-edge); border-radius:14px;
   padding:20px 18px; box-shadow:0 6px 0 rgba(0,0,0,.22);
+  transition:transform .18s ease, box-shadow .18s ease;
 }
-.lp-ico{ font-size:34px; line-height:1; margin-bottom:8px; }
-.lp-card h3{ font-size:18px; font-weight:800; color:var(--wood-1); margin-bottom:6px; }
-.lp-card p{ font-size:14px; line-height:1.5; font-weight:600; color:var(--ink-soft); }
+.lp-card:hover{ transform:translateY(-3px); box-shadow:0 9px 0 rgba(0,0,0,.24); }
+.lp-ico{ line-height:0; margin-bottom:10px; }
+.lp-ico canvas{ image-rendering:pixelated; filter:drop-shadow(0 2px 2px rgba(0,0,0,.28)); }
+.lp-card h3{ font-size:17.5px; font-weight:800; color:var(--wood-1); margin-bottom:6px; }
+/* un filo più scuro di --ink-soft: sono i paragrafi che si leggono davvero */
+.lp-card p{ font-size:14px; line-height:1.55; font-weight:600; color:#6a4e30; }
 
-.lp-foot{ text-align:center; max-width:600px; margin:46px auto 6px; }
-.lp-foot p{ font-size:22px; font-weight:800; color:var(--paper); margin-bottom:18px; }
-.lp-credit{ margin-top:22px; font-size:12px; color:var(--paper-2); opacity:.6; }
+/* ---------- gli abitanti ---------- */
+.lp-gente{
+  max-width:1000px; margin:30px auto 0; display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:14px;
+}
+.lp-tizio{
+  display:flex; gap:12px; align-items:flex-start;
+  background:linear-gradient(180deg, rgba(58,36,22,.72), rgba(34,22,14,.85));
+  border:2px solid var(--wood-edge); border-radius:14px;
+  padding:14px 16px 14px 10px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09), 0 5px 0 rgba(0,0,0,.22);
+}
+.lp-tizio-sprite{
+  width:60px; height:80px; flex:none; image-rendering:pixelated;
+  filter:drop-shadow(0 3px 3px rgba(0,0,0,.45));
+}
+.lp-tizio-info{ min-width:0; padding-top:6px; }
+.lp-tizio-nome{ font-size:17px; font-weight:800; color:var(--gold); line-height:1.2; }
+.lp-tizio-ruolo{ font-size:11.5px; font-weight:800; letter-spacing:1.4px; text-transform:uppercase; color:var(--gold-d); opacity:.85; margin-bottom:7px; }
+.lp-tizio-battuta{ font-size:13.5px; line-height:1.55; font-weight:600; font-style:italic; color:var(--paper-2); opacity:.92; }
 
+/* ---------- la storia ---------- */
+.lp-storia{ padding-top:60px; }
+.lp-storia-in{
+  max-width:680px; margin:0 auto; text-align:center;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 27px, rgba(122,79,48,.06) 27px 28px),
+    linear-gradient(160deg, rgba(253,243,221,.96), rgba(239,220,180,.96));
+  color:#5a4128; border:1px solid #c9ab7f; border-radius:5px;
+  padding:34px 32px; margin-top:28px;
+  box-shadow:0 14px 34px rgba(0,0,0,.45), inset 0 0 50px rgba(180,140,90,.2);
+  transform:rotate(-.35deg);
+}
+.lp-storia-in .lp-h2{ color:var(--wood-1); }
+.lp-storia-in .lp-h2::after{ background:linear-gradient(90deg, transparent, #b08a52, transparent); }
+.lp-storia-in p{ font-size:15.5px; line-height:1.85; font-weight:600; font-style:italic; margin-top:18px; }
+.lp-storia-in strong{ font-style:normal; color:var(--wood-1); }
+.lp-storia-firma{ opacity:.8; font-size:14.5px !important; }
+
+/* ---------- chiusura ---------- */
+.lp-foot{ text-align:center; max-width:640px; margin:66px auto 6px; }
+.lp-foot-tit{ font-size:clamp(22px,3vw,28px); font-weight:800; color:var(--paper); margin-bottom:20px; }
+.lp-foot-nota{ margin-top:20px; font-size:13px; line-height:1.6; font-weight:600; color:var(--paper-2); opacity:.75; }
+.lp-credit{ margin-top:20px; font-size:12px; color:var(--paper-2); opacity:.6; }
+.lp-credit a{ color:var(--gold-d); }
+
+/* ---------- barra sempre visibile ---------- */
 .lp-bar{
   position:absolute; left:0; right:0; bottom:0; z-index:2;
   display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 16px;
@@ -839,7 +954,7 @@ kbd{
 .lp-mobile{ display:none; }
 #landing.solo-desktop .lp-mobile{
   display:block;
-  max-width:760px; margin:0 auto; margin-top:14px;
+  max-width:760px; margin:14px auto 0;
   background:linear-gradient(180deg, rgba(90,58,36,.96), rgba(58,36,22,.96));
   border:2px solid var(--wood-edge); border-radius:14px;
   box-shadow:inset 0 2px 0 rgba(255,255,255,.14), 0 5px 0 rgba(0,0,0,.25);
@@ -851,10 +966,14 @@ kbd{
 /* i pulsanti restano visibili ma dichiarano che non porteranno da nessuna parte */
 #landing.solo-desktop .lp-new,
 #landing.solo-desktop .lp-continue{ opacity:.5; filter:grayscale(.55); }
+
 @media (max-width:520px){
   .lp-bar-title{ display:none; }
   .lp-bar{ justify-content:center; }
-  .lp-cta .bigbtn{ min-width:160px; }
+  .lp-cta .bigbtn{ min-width:150px; }
+  .lp-sez{ padding-top:44px; }
+  .lp-storia-in{ padding:26px 20px; }
+  .lp-tizio{ padding-left:8px; }
 }
 
 /* =================== BARRA ABILITÀ =================== */
