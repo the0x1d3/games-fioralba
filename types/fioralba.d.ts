@@ -115,6 +115,12 @@ interface FioLook {
   pelle?: string; capelli?: string; maglia?: string; pant?: string;
   grembiule?: string | null; cappello?: string | null;
   barba?: boolean; spirito?: boolean;
+  /** Corporatura: cambia la larghezza del busto. Assente = 'normale'. */
+  corpo?: 'esile' | 'normale' | 'robusto';
+  /** Statura in pixel rispetto alla media, da -2 a +3. Assente = 0. */
+  altezza?: number;
+  /** Taglio di capelli. Assente = 'corti'. */
+  chioma?: 'corti' | 'lunghi' | 'crespi' | 'raccolti' | 'rado';
 }
 
 interface FioNPC {

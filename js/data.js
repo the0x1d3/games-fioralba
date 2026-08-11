@@ -276,7 +276,8 @@ D.XP_LIV = [0,100,260,500,850,1350,2000,2850,3900,5200,6800];
 D.NPCS = {
   bruno: {
     nome:'Bruno', ruolo:'Bottegaio',
-    look:{ pelle:'#e0aa78', capelli:'#5a4030', maglia:'#b8543f', pant:'#4a3b5c', grembiule:'#e3d3aa', barba:true, cappello:null },
+    look:{ pelle:'#e0aa78', capelli:'#5a4030', maglia:'#b8543f', pant:'#4a3b5c', grembiule:'#e3d3aa', barba:true, cappello:null,
+           corpo:'robusto', altezza:1, chioma:'rado' },
     casa:'fioralba',
     battute:[
       'La bottega apre all\'alba e chiude quando ho fame. Quindi presto.',
@@ -291,7 +292,8 @@ D.NPCS = {
   },
   serafina: {
     nome:'Serafina', ruolo:'Erborista',
-    look:{ pelle:'#d8a882', capelli:'#8a4f6a', maglia:'#6a4f8a', pant:'#3f3050', grembiule:null, cappello:'#4a3560' },
+    look:{ pelle:'#d8a882', capelli:'#8a4f6a', maglia:'#6a4f8a', pant:'#3f3050', grembiule:null, cappello:'#4a3560',
+           corpo:'esile', altezza:2, chioma:'lunghi' },
     casa:'bosco',
     battute:[
       'Il bosco ti ha già annusato. Ora deve decidere.',
@@ -306,7 +308,8 @@ D.NPCS = {
   },
   tobia: {
     nome:'Tobia', ruolo:'Fabbro e Carpentiere',
-    look:{ pelle:'#b8804f', capelli:'#2f2820', maglia:'#4a5a6a', pant:'#3a3028', grembiule:'#6a4030', barba:true },
+    look:{ pelle:'#b8804f', capelli:'#2f2820', maglia:'#4a5a6a', pant:'#3a3028', grembiule:'#6a4030', barba:true,
+           corpo:'robusto', altezza:2, chioma:'corti' },
     casa:'fioralba',
     battute:[
       'Portami lingotti e ti restituisco attrezzi che non ti tradiscono.',
@@ -321,7 +324,8 @@ D.NPCS = {
   },
   marisol: {
     nome:'Marisol', ruolo:'Locandiera',
-    look:{ pelle:'#8a5a3a', capelli:'#241a14', maglia:'#c47a2c', pant:'#7a4f30', grembiule:'#f0e0c0' },
+    look:{ pelle:'#8a5a3a', capelli:'#241a14', maglia:'#c47a2c', pant:'#7a4f30', grembiule:'#f0e0c0',
+           corpo:'normale', altezza:0, chioma:'raccolti' },
     casa:'fioralba',
     battute:[
       'Alla Locanda del Tasso Storto si mangia e si ascolta. In quest\'ordine.',
@@ -336,7 +340,8 @@ D.NPCS = {
   },
   elio: {
     nome:'Elio', ruolo:'Pescatore',
-    look:{ pelle:'#e8c090', capelli:'#c9a044', maglia:'#5f9c8a', pant:'#4a5a6a', cappello:'#7a6a4a' },
+    look:{ pelle:'#e8c090', capelli:'#c9a044', maglia:'#5f9c8a', pant:'#4a5a6a', cappello:'#7a6a4a',
+           corpo:'esile', altezza:-1, chioma:'corti' },
     casa:'fioralba',
     battute:[
       'Oggi ho preso una scarpa. Ieri due. Sto costruendo un paio.',
@@ -351,7 +356,8 @@ D.NPCS = {
   },
   eremita: {
     nome:'Oreste', ruolo:'Eremita del Passo',
-    look:{ pelle:'#d8b090', capelli:'#d8d8d8', maglia:'#5a6a7a', pant:'#3a4450', cappello:'#3f4a58', barba:true },
+    look:{ pelle:'#d8b090', capelli:'#d8d8d8', maglia:'#5a6a7a', pant:'#3a4450', cappello:'#3f4a58', barba:true,
+           corpo:'normale', altezza:-2, chioma:'lunghi' },
     casa:'montagna',
     battute:[
       'Sono salito quassù per stare solo. Poi è arrivato il silenzio e mi ha tenuto compagnia.',

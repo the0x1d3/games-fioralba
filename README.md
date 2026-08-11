@@ -216,6 +216,14 @@ vercel.json         configurazione per il deploy statico su Vercel
 
 Niente build, niente `npm install`: si aprono i file e funziona.
 
+### Gli abitanti
+
+Ogni personaggio, oltre ai colori, ha una **corporatura** (`esile`, `normale`,
+`robusto`), una **statura** (da −2 a +3 pixel) e un **taglio di capelli**
+(`corti`, `lunghi`, `crespi`, `raccolti`, `rado`). Sono in `js/data.js`, dentro
+il `look` di ciascuno. Servono a distinguerli **dalla sagoma**: prima erano lo
+stesso corpo ricolorato sei volte, e da lontano non si capiva chi fosse chi.
+
 ### Ritoccare i colori
 
 Le tinte che definiscono l'aspetto della valle — terreni, acqua, corteccia,

@@ -340,6 +340,79 @@ A.water = function(season, frame){
 /* look = {pelle,capelli,maglia,pant,grembiule,cappello,barba,spirito} */
 A.CHAR_W = 26; A.CHAR_H = 36;
 
+/* ------------------------------------------------------------------
+   ACCONCIATURE
+   Il colore da solo non basta a distinguere una persona da lontano: la
+   sagoma sì. Cinque tagli, ognuno disegnato anche di spalle.
+   ------------------------------------------------------------------ */
+function chioma(x, bx, hy, dir, stile, cap, capS, capL){
+  const dietro = dir===3;
+
+  if(stile==='rado'){                     // stempiato
+    px(x, bx+3, hy+1, 12, 2, cap);
+    px(x, bx+1, hy+3, 2, 6, cap);
+    px(x, bx+15,hy+3, 2, 6, cap);
+    px(x, bx+4, hy+1, 10, 1, capL);
+    if(dietro){ px(x, bx+2, hy+1, 14, 10, cap); px(x, bx+2, hy+10, 14, 2, capS); }
+    return;
+  }
+  if(stile==='crespi'){                   // voluminosi, bordo mosso
+    px(x, bx+1, hy-2, 16, 6, cap);
+    px(x, bx-1, hy+1, 3, 8, cap);
+    px(x, bx+16,hy+1, 3, 8, cap);
+    px(x, bx+2, hy-4, 4, 3, cap);
+    px(x, bx+8, hy-5, 4, 3, cap);
+    px(x, bx+12,hy-4, 4, 3, cap);
+    px(x, bx+3, hy-2, 12, 1, capL);
+    if(dietro){ px(x, bx+1, hy-2, 16, 14, cap); px(x, bx+1, hy+11, 16, 2, capS); }
+    return;
+  }
+  if(stile==='lunghi'){                   // ciocche che scendono sulle spalle
+    px(x, bx+2, hy, 14, 4, cap);
+    px(x, bx+3, hy, 12, 1, capL);
+    // ciocche sottili e affusolate: larghe le trasformerebbero in un blocco
+    px(x, bx+1, hy+2, 2, 11, cap);
+    px(x, bx+15,hy+2, 2, 11, cap);
+    px(x, bx+1, hy+12, 2, 2, capS);
+    px(x, bx+15,hy+12, 2, 2, capS);
+    px(x, bx+2, hy+13, 1, 2, cap);        // punta interna, appena accennata
+    px(x, bx+15,hy+13, 1, 2, cap);
+    if(dietro){
+      px(x, bx+2, hy, 14, 13, cap);
+      px(x, bx+3, hy, 12, 1, capL);
+      px(x, bx+3, hy+12, 12, 2, capS);
+    }
+    return;
+  }
+  if(stile==='raccolti'){                 // crocchia sulla nuca
+    px(x, bx+6, hy-4, 6, 5, cap);         // la crocchia spunta sopra la testa
+    px(x, bx+7, hy-4, 4, 1, capL);
+    px(x, bx+6, hy-1, 6, 1, capS);
+    px(x, bx+2, hy, 14, 4, cap);
+    px(x, bx+1, hy+2, 2, 6, cap);
+    px(x, bx+15,hy+2, 2, 6, cap);
+    px(x, bx+3, hy, 12, 1, capL);
+    if(dietro){ px(x, bx+2, hy, 14, 11, cap); px(x, bx+2, hy+10, 14, 2, capS); }
+    return;
+  }
+
+  /* 'corti' — il taglio di sempre */
+  px(x, bx+2, hy, 14, 4, cap);
+  px(x, bx+1, hy+2, 2, 7, cap);
+  px(x, bx+15,hy+2, 2, 7, cap);
+  px(x, bx+3, hy, 12, 1, capL);
+  if(dietro){
+    px(x, bx+2, hy, 14, 12, cap);
+    px(x, bx+3, hy, 12, 1, capL);
+    px(x, bx+2, hy+11, 14, 2, capS);
+  } else {
+    px(x, bx+2, hy+4, 3, 3, cap);
+    px(x, bx+13,hy+4, 3, 3, cap);
+    px(x, bx+4, hy+4, 3, 1, capS);
+    px(x, bx+11,hy+4, 3, 1, capS);
+  }
+}
+
 A.drawChar = function(x, cx, cy, look, dir, frame, opt){
   opt = opt || {};
   const bob = (frame===1||frame===3) ? -1 : 0;
@@ -361,6 +434,16 @@ A.drawChar = function(x, cx, cy, look, dir, frame, opt){
 
   const bx = cx-9, by = cy-32+bob;   // origine sprite (18 largo, 32 alto)
 
+  /* --- corporatura e statura ---
+     Prima esisteva un corpo solo, ricolorato sei volte: da lontano gli
+     abitanti erano indistinguibili. Ora il torso cambia larghezza e il
+     busto si allunga, tenendo i piedi per terra. */
+  const LARG = { esile:10, normale:12, robusto:14 };
+  const tw = LARG[look.corpo] || 12;
+  const tx = bx + ((18-tw)>>1);
+  const alt = Math.max(-2, Math.min(3, look.altezza|0));
+  const ty = by+15-alt, th = 10+alt;   // busto: parte più in alto e si allunga
+
   // ombra (saltata quando la disegna il renderer)
   if(!opt.senzaOmbra){
     x.globalAlpha = 0.24;
@@ -379,38 +462,39 @@ A.drawChar = function(x, cx, cy, look, dir, frame, opt){
   px(x, bx+9, l2+6, 6, 2, scarpa);
 
   /* --- corpo --- */
-  px(x, bx+3, by+15, 12, 10, mag);
-  px(x, bx+3, by+15, 12, 1, magL);
-  px(x, bx+3, by+24, 12, 1, magS);
-  px(x, bx+2, by+17, 1, 7, magS);
-  px(x, bx+15,by+17, 1, 7, magS);
+  px(x, tx, ty, tw, th, mag);
+  px(x, tx, ty, tw, 1, magL);
+  px(x, tx, ty+th-1, tw, 1, magS);
+  px(x, tx-1, ty+2, 1, th-3, magS);
+  px(x, tx+tw,ty+2, 1, th-3, magS);
 
   // grembiule
   if(look.grembiule){
     const g=look.grembiule;
-    px(x, bx+5, by+19, 8, 7, g);
-    px(x, bx+5, by+19, 8, 1, shade(g,0.2));
-    px(x, bx+6, by+25, 6, 1, shade(g,-0.2));
-    px(x, bx+7, by+21, 4, 3, shade(g,-0.08));
+    px(x, tx+2, ty+4, tw-4, th-3, g);
+    px(x, tx+2, ty+4, tw-4, 1, shade(g,0.2));
+    px(x, tx+3, ty+th, tw-6, 1, shade(g,-0.2));
+    px(x, tx+4, ty+6, tw-8, 3, shade(g,-0.08));
   }
 
   /* --- braccia --- */
   const arm = opt.uso ? -2 : (dir<3 ? step : 0);
+  const ay = ty+1;
   if(dir===1){ // sinistra
-    px(x, bx+2, by+16+arm, 3, 8, mag);
-    px(x, bx+2, by+23+arm, 3, 3, pelle);
+    px(x, tx-1, ay+arm, 3, 8, mag);
+    px(x, tx-1, ay+7+arm, 3, 3, pelle);
   } else if(dir===2){ // destra
-    px(x, bx+13, by+16+arm, 3, 8, mag);
-    px(x, bx+13, by+23+arm, 3, 3, pelle);
+    px(x, tx+tw-2, ay+arm, 3, 8, mag);
+    px(x, tx+tw-2, ay+7+arm, 3, 3, pelle);
   } else {
-    px(x, bx+1, by+16+arm, 3, 8, mag);
-    px(x, bx+14,by+16-arm, 3, 8, mag);
-    px(x, bx+1, by+23+arm, 3, 3, pelle);
-    px(x, bx+14,by+23-arm, 3, 3, pelle);
+    px(x, tx-2, ay+arm, 3, 8, mag);
+    px(x, tx+tw-1, ay-arm, 3, 8, mag);
+    px(x, tx-2, ay+7+arm, 3, 3, pelle);
+    px(x, tx+tw-1, ay+7-arm, 3, 3, pelle);
   }
 
   /* --- testa --- */
-  const hy = by+2;
+  const hy = by+2-alt;
   px(x, bx+3, hy+2, 12, 12, pelle);
   px(x, bx+2, hy+4, 1, 8, pelle);
   px(x, bx+15,hy+4, 1, 8, pelle);
@@ -420,20 +504,7 @@ A.drawChar = function(x, cx, cy, look, dir, frame, opt){
   px(x, bx+7, hy+14, 4, 2, pelleS);
 
   /* --- capelli --- */
-  px(x, bx+2, hy, 14, 4, cap);
-  px(x, bx+1, hy+2, 2, 7, cap);
-  px(x, bx+15,hy+2, 2, 7, cap);
-  px(x, bx+3, hy, 12, 1, capL);
-  if(dir===3){ // di spalle: tutta la nuca
-    px(x, bx+2, hy, 14, 12, cap);
-    px(x, bx+3, hy, 12, 1, capL);
-    px(x, bx+2, hy+11, 14, 2, capS);
-  } else {
-    px(x, bx+2, hy+4, 3, 3, cap);
-    px(x, bx+13,hy+4, 3, 3, cap);
-    px(x, bx+4, hy+4, 3, 1, capS);
-    px(x, bx+11,hy+4, 3, 1, capS);
-  }
+  chioma(x, bx, hy, dir, look.chioma, cap, capS, capL);
 
   /* --- viso --- */
   if(dir!==3){
@@ -518,8 +589,11 @@ function drawSpirit(x,cx,cy,frame,opt){
    serve al renderer per ricavarne contorno e ombra */
 const charCache = {};
 function chiaveLook(l){
+  // corporatura, statura e taglio di capelli fanno parte dell'identità:
+  // senza di loro due abitanti diversi si scambierebbero lo sprite in cache
   return (l.pelle||'')+(l.capelli||'')+(l.maglia||'')+(l.pant||'')+
-         (l.grembiule||'')+(l.cappello||'')+(l.barba?'b':'');
+         (l.grembiule||'')+(l.cappello||'')+(l.barba?'b':'')+
+         '|'+(l.corpo||'')+(l.altezza|0)+(l.chioma||'');
 }
 A.CH_W = 30; A.CH_H = 40;
 A.charSprite = function(look, dir, frame){
