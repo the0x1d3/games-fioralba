@@ -688,27 +688,29 @@ D.AUGURI = {
    ------------------------------------------------------------------ */
 D.AGENDE = {
   bruno: [
-    { fino:480,  dentro:true },                                   // dorme fino alle 8
-    { fino:1140, giro:[[12,16],[10,16],[12,15],[11,17]] },         // bottega, tutto il giorno
-    { fino:1320, giro:[[19,9],[20,10],[18,10]] },                  // sera alla locanda
+    { fino:480,  dentro:true },                                   // dorme
+    { fino:600,  giro:[[12,16],[10,16],[11,17]] },                 // apre e sistema fuori
+    { fino:1140, interno:'int_bottega' },                          // dietro al bancone
+    { fino:1320, interno:'int_locanda' },                          // la sera alla locanda
     { fino:9999, dentro:true }
   ],
   tobia: [
     { fino:540,  dentro:true },
-    { fino:1170, giro:[[29,15],[31,16],[27,16],[30,16]] },         // fucina
-    { fino:1350, giro:[[20,10],[21,11],[19,11]] },                 // locanda fino a tardi
+    { fino:720,  giro:[[29,15],[31,16],[27,16]] },                 // scarica il ferro
+    { fino:1170, interno:'int_fucina' },                           // alla forgia
+    { fino:1350, interno:'int_locanda' },
     { fino:9999, dentro:true }
   ],
   marisol: [
     { fino:420,  dentro:true },
-    { fino:1380, giro:[[19,10],[21,11],[17,11],[20,12]], coperto:true }, // la locanda è al chiuso
+    { fino:1380, interno:'int_locanda' },                          // la locanda è casa sua
     { fino:9999, dentro:true }
   ],
   elio: [
     { fino:330,  dentro:true },
     { fino:780,  giro:[[34,19],[35,18],[33,19]] },                 // all'alba al molo
     { fino:1020, giro:[[24,20],[22,21],[26,20]] },                 // pomeriggio in piazza
-    { fino:1290, giro:[[18,10],[19,11]] },                         // sera alla locanda
+    { fino:1290, interno:'int_locanda' },
     { fino:9999, dentro:true }
   ],
   serafina: [

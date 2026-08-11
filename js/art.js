@@ -250,6 +250,34 @@ function stoneFloorTile(v){
   return c;
 }
 
+/* pavimento in cotto: mattonelle quadrate posate a corsi sfalsati, con
+   la fuliggine che si accumula nei giunti. È il pavimento degli interni
+   di pietra — la fucina — dove le lastre della piazza stonavano. */
+function terracottaTile(v){
+  const c=cv(T,T), x=c.getContext('2d');
+  px(x,0,0,T,T,C().cotto.malta);
+  const cols=C().cotto.pietre;
+  for(let gy=0;gy<3;gy++){
+    const off = (gy+v)%2 ? 5 : 0;
+    for(let gx=-1;gx<4;gx++){
+      const bx=gx*11+off, by=gy*11;
+      const col = cols[(hsh(gx+2,gy+v,161)*4)|0];
+      x.fillStyle=col;             x.fillRect(bx+1,by+1,9,9);
+      x.fillStyle=shade(col,0.14); x.fillRect(bx+1,by+1,9,1);
+      x.fillStyle=shade(col,-0.18);x.fillRect(bx+1,by+9,9,1);
+      // qualche mattonella scheggiata: il cotto si consuma agli angoli
+      if(hsh(gx,gy+v,162)>0.78) px(x,bx+8,by+8,2,2,shade(col,-0.3));
+    }
+  }
+  // fuliggine sparsa, più fitta dove capita
+  for(let i=0;i<7;i++){
+    if(hsh(i,v,163)<0.45) continue;
+    const mx=(hsh(i,v,164)*T)|0, my=(hsh(i,v,165)*T)|0;
+    x.globalAlpha=0.35; px(x,mx,my,3,2,C().cotto.fuliggine); x.globalAlpha=1;
+  }
+  return c;
+}
+
 function snowTile(v){
   const c=cv(T,T), x=c.getContext('2d');
   px(x,0,0,T,T,C().neve.base);
@@ -318,6 +346,7 @@ A.ground = function(type, v, season){
     case 'sabbia': c = sandTile(v); break;
     case 'assi':   c = woodTile(v); break;
     case 'lastre': c = stoneFloorTile(v); break;
+    case 'cotto':  c = terracottaTile(v); break;
     case 'neve':   c = snowTile(v); break;
     case 'grotta': c = caveTile(v); break;
     case 'arato':  c = tilledTile(v,false); break;
@@ -2255,7 +2284,7 @@ A.emote = function(kind){
    irregolare, così non si vedono più i quadrati.
    =================================================================== */
 A.PRIORITA = {
-  acqua:0, grotta:1, sabbia:2, lastre:3, assi:3, sentiero:4,
+  acqua:0, grotta:1, sabbia:2, lastre:3, assi:3, cotto:3, sentiero:4,
   terra:5, erba:6, neve:6, roccia:7, vuoto:-1
 };
 

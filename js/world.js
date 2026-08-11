@@ -37,7 +37,9 @@ function mkMap(id, nome, w, h, opt){
   return m;
 }
 
-const TIPI = ['erba','terra','sentiero','sabbia','acqua','assi','lastre','grotta','roccia','vuoto','neve'];
+/* Solo in coda: gli indici finiscono nei salvataggi, e spostarli
+   trasformerebbe l'erba di una vecchia partita in acqua. */
+const TIPI = ['erba','terra','sentiero','sabbia','acqua','assi','lastre','grotta','roccia','vuoto','neve','cotto'];
 W.TIPI = TIPI;
 function ti(name){ return TIPI.indexOf(name); }
 W.ti = ti;
@@ -895,12 +897,129 @@ function buildPiazza(){
 }
 
 /* ===================================================================
+   INTERNI — le stanze in cui si entra davvero
+
+   Prima ogni porta apriva un menu: la bottega era una finestra bianca,
+   la locanda un elenco di piatti, casa tua un pulsante "vai a dormire".
+   Adesso si entra, e dentro c'è qualcuno.
+
+   Sono mappe come le altre, solo piccole e al chiuso (`esterno:false`,
+   quindi la luce ambientale è quella delle grotte e servono lumi).
+   =================================================================== */
+function stanza(id, nome, w, h, opt){
+  const m = mkMap(id, nome, w, h, {
+    esterno:false, musica:opt.musica||'paese', ambiente:null,
+    sfondo: opt.sfondo || '#231a12'
+  });
+  // il pavimento occupa tutto tranne la cornice, che resta vuota (solida)
+  fill(m, 0,0, w,h, 'vuoto');
+  fill(m, 1,1, w-2,h-2, opt.pavimento || 'assi');
+  // la parete di fondo, disegnata sopra la prima riga di pavimento
+  m.deco.push({t:'parete', x:1, y:1, w:w-2, stile:opt.parete||'legno'});
+  m.interno = true;
+  return m;
+}
+
+/* porta di uscita: una casella su cui si torna fuori */
+function uscita(m, x, y, verso, tx, ty){
+  m.g[W.idx(m,x,y)] = ti('lastre');
+  m.obj[W.idx(m,x,y)] = null;
+  warp(m, x, y, 1, 1, verso, tx, ty, 'Fuori');
+  m.deco.push({t:'zerbino', x, y});
+}
+
+/* ---------- LA BOTTEGA DI BRUNO ---------- */
+function buildBottega(){
+  const m = stanza('int_bottega','Bottega di Bruno', 15, 11, { pavimento:'assi', sfondo:'#2a1d12' });
+  // bancone lungo, con Bruno dietro
+  for(let x=4;x<11;x++) setObj(m, x, 6, {t:'bancone', solido:true, uso:'bottega', v:x%3});
+  // scaffali e casse addossati alle pareti
+  for(const [x,y] of [[2,2],[3,2],[5,2],[6,2],[9,2],[10,2],[12,2],[12,4],[12,6],[2,4]])
+    setObj(m, x, y, {t:'casse', solido:true, v:(x+y)%3});
+  setObj(m, 12, 8, {t:'casse', solido:true, v:1});
+  setObj(m, 2, 8, {t:'fioriera', solido:true, v:2});
+  setObj(m, 7, 2, {t:'lume', solido:false});
+  setObj(m, 3, 4, {t:'lume', solido:false});
+  setObj(m, 11, 4, {t:'lume', solido:false});
+  m.deco.push({t:'cartello', x:3, y:8, testo:'«Se non ce l\'ho, probabilmente non ti serviva.»'});
+  uscita(m, 7, 9, 'fioralba', 11, 15);
+  m.npcInterno = ['bruno'];
+  m.postiInterni = { bruno:[[6,4],[8,4],[7,5]] };
+  return m;
+}
+
+/* ---------- LA FUCINA DI TOBIA ---------- */
+function buildFucina(){
+  const m = stanza('int_fucina','Fucina di Tobia', 15, 11, { pavimento:'cotto', parete:'pietra', sfondo:'#1e1712' });
+  setObj(m, 4, 3, {t:'camino', solido:true});           // la forgia
+  setObj(m, 7, 5, {t:'incudine', solido:true, uso:'fucina'});
+  for(const [x,y] of [[10,2],[11,2],[12,3],[12,5],[2,6],[2,7]])
+    setObj(m, x, y, {t:'casse', solido:true, v:(x*2+y)%3});
+  setObj(m, 11, 7, {t:'tavolo', solido:true});
+  setObj(m, 3, 6, {t:'lume', solido:false});
+  setObj(m, 12, 7, {t:'lume', solido:false});
+  m.deco.push({t:'cartello', x:9, y:8, testo:'«Il ferro va scaldato, non convinto.»'});
+  uscita(m, 7, 9, 'fioralba', 29, 14);
+  m.npcInterno = ['tobia'];
+  m.postiInterni = { tobia:[[6,4],[8,4],[5,5]] };
+  return m;
+}
+
+/* ---------- LA LOCANDA DEL TASSO STORTO ---------- */
+function buildLocanda(){
+  const m = stanza('int_locanda','Locanda del Tasso Storto', 17, 12, { pavimento:'assi', sfondo:'#2b1c10' });
+  setObj(m, 2, 3, {t:'camino', solido:true});           // il camino, e la sua luce
+  for(let x=8;x<14;x++) setObj(m, x, 3, {t:'bancone', solido:true, uso:'locanda', v:x%3});
+  // tavoli e panche in sala
+  for(const [x,y] of [[4,6],[8,6],[12,6],[4,9],[8,9],[12,9]]) setObj(m, x, y, {t:'tavolo', solido:true});
+  for(const [x,y,d] of [[3,7,0],[9,7,0],[13,7,0],[3,10,0],[9,10,0],[13,10,0]])
+    setObj(m, x, y, {t:'panchina', solido:true, dir:d});
+  setObj(m, 5, 3, {t:'casse', solido:true, v:0});
+  setObj(m, 15, 5, {t:'casse', solido:true, v:2});
+  for(const [x,y] of [[6,2],[11,2],[3,8],[14,8]]) setObj(m, x, y, {t:'lume', solido:false});
+  m.deco.push({t:'cartello', x:15, y:9, testo:'«Qui si mangia e si ascolta. In quest\'ordine.»'});
+  uscita(m, 8, 10, 'fioralba', 18, 9);
+  m.npcInterno = ['marisol','bruno','tobia','elio'];
+  m.postiInterni = {
+    marisol:[[10,4],[12,4],[9,4]],
+    bruno:  [[4,7],[5,7]],
+    tobia:  [[9,8],[10,8]],
+    elio:   [[13,8],[12,8]]
+  };
+  return m;
+}
+
+/* ---------- CASA DEL GIOCATORE ---------- */
+function buildCasa(){
+  const m = stanza('int_casa','Casa', 13, 10, { pavimento:'assi', sfondo:'#2a1e14', musica:'notte' });
+  setObj(m, 2, 2, {t:'letto', solido:true});
+  setObj(m, 10, 2, {t:'camino', solido:true});
+  setObj(m, 6, 3, {t:'cucina', solido:true});
+  setObj(m, 4, 6, {t:'tavolo', solido:true});
+  setObj(m, 3, 7, {t:'panchina', solido:true, dir:0});
+  setObj(m, 9, 6, {t:'scrivania', solido:true});
+  setObj(m, 8, 2, {t:'lume', solido:false});
+  setObj(m, 3, 5, {t:'lume', solido:false});
+  setObj(m, 11, 6, {t:'casse', solido:true, v:1});
+  m.deco.push({t:'cartello', x:11, y:8, testo:'La teiera di Nonna Ilde è ancora sul tavolo.'});
+  uscita(m, 6, 8, 'podere', 7, 8);
+  return m;
+}
+
+/* ===================================================================
    API
    =================================================================== */
 /* I luoghi della valle. Serve anche a validare un salvataggio importato senza
    dover ricostruire tutte le mappe. Il test di coerenza controlla che questa
    lista e quella davvero costruita da W.crea() restino allineate. */
-W.MAPPE = ['podere','fioralba','bosco','grotta','grotta2','grotta3','montagna','piazza','spiaggia'];
+W.MAPPE = ['podere','fioralba','bosco','grotta','grotta2','grotta3','montagna','piazza','spiaggia',
+           'int_casa','int_bottega','int_fucina','int_locanda'];
+
+/* Quali porte portano dentro una stanza vera. Sta qui, e non in game.js,
+   perché serve anche ai controlli di coerenza: la mappa dei collegamenti
+   dev'essere una sola. */
+W.INTERNI = { casa:'int_casa', bottega:'int_bottega',
+              fucina:'int_fucina', locanda:'int_locanda' };
 
 W.crea = function(){
   const maps = {};
@@ -913,6 +1032,10 @@ W.crea = function(){
   maps.montagna = buildMontagna();
   maps.piazza   = buildPiazza();
   maps.spiaggia = buildSpiaggia();
+  maps.int_casa    = buildCasa();
+  maps.int_bottega = buildBottega();
+  maps.int_fucina  = buildFucina();
+  maps.int_locanda = buildLocanda();
   return maps;
 };
 

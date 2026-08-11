@@ -383,14 +383,75 @@ verifica('dal podere si raggiunge a piedi ogni uscita', () => {
 });
 
 verifica('ogni mappa è raggiungibile dal podere', () => {
+  // I collegamenti sono di due tipi: i passaggi fra mappe (warps) e le
+  // porte degli edifici che aprono un interno.
   const maps = WORLD.crea();
   const visti = new Set(['podere']);
   const coda = ['podere'];
   while (coda.length) {
     const m = maps[coda.shift()];
-    for (const w of m.warps) if (maps[w.to] && !visti.has(w.to)) { visti.add(w.to); coda.push(w.to); }
+    const vicini = m.warps.map(w => w.to);
+    for (const e of (m.edifici || [])) {
+      const dentro = WORLD.INTERNI[e.azione];
+      if (dentro) vicini.push(dentro);
+    }
+    for (const v of vicini) if (maps[v] && !visti.has(v)) { visti.add(v); coda.push(v); }
   }
   return Object.keys(maps).filter(k => !visti.has(k)).map(k => `«${k}» non si raggiunge partendo dal podere`);
+});
+
+verifica('ogni interno è una stanza vivibile', () => {
+  // Una stanza sbagliata si nota solo entrandoci: qui si controlla che
+  // ci sia il pavimento, l'uscita, e che l'uscita riporti dove si è
+  // entrati invece che dall'altra parte della valle.
+  const maps = WORLD.crea();
+  const problemi = [];
+  for (const azione in WORLD.INTERNI) {
+    const id = WORLD.INTERNI[azione];
+    const m = maps[id];
+    if (!m) { problemi.push(`la stanza «${id}» non esiste`); continue; }
+    if (m.esterno) problemi.push(`«${id}» è segnata come esterno`);
+
+    // deve esserci un'uscita, e deve tornare su una mappa vera
+    if (!m.warps.length) { problemi.push(`«${id}» non ha una via d'uscita`); continue; }
+    for (const w of m.warps) {
+      if (!maps[w.to]) { problemi.push(`da «${id}» si esce verso «${w.to}», che non esiste`); continue; }
+      if (WORLD.solido(maps[w.to], w.tx, w.ty))
+        problemi.push(`uscendo da «${id}» si finisce dentro un ostacolo (${w.tx},${w.ty})`);
+      if (!WORLD.solido(m, w.x, w.y) === false)
+        problemi.push(`la porta di «${id}» è murata`);
+    }
+    // e dev'esserci spazio per camminarci
+    let calpestabili = 0;
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++)
+      if (!WORLD.solido(m, x, y)) calpestabili++;
+    if (calpestabili < 20) problemi.push(`«${id}» ha solo ${calpestabili} caselle calpestabili`);
+
+    // gli abitanti previsti dentro devono avere un posto dove stare
+    for (const npc of (m.npcInterno || [])) {
+      if (!DATA.NPCS[npc]) { problemi.push(`«${id}» ospita «${npc}», che non è un abitante`); continue; }
+      const posti = (m.postiInterni || {})[npc];
+      if (!posti || !posti.length) { problemi.push(`«${npc}» non ha un posto dentro «${id}»`); continue; }
+      for (const [x, y] of posti)
+        if (WORLD.solido(m, x, y)) problemi.push(`il posto di «${npc}» in «${id}» (${x},${y}) è occupato`);
+    }
+  }
+  return problemi;
+});
+
+verifica('chi lavora al chiuso ha una stanza che lo ospita', () => {
+  const maps = WORLD.crea();
+  const problemi = [];
+  for (const id in DATA.AGENDE) {
+    for (const f of DATA.AGENDE[id]) {
+      if (!f.interno) continue;
+      const m = maps[f.interno];
+      if (!m) { problemi.push(`${id} lavora in «${f.interno}», che non esiste`); continue; }
+      if ((m.npcInterno || []).indexOf(id) < 0)
+        problemi.push(`${id} sta in «${f.interno}» ma la stanza non lo elenca fra i suoi`);
+    }
+  }
+  return problemi;
 });
 
 /* =================================================================== */

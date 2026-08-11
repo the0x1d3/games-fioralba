@@ -146,6 +146,7 @@ function varianteDi(gx, gy){ return (gx*7 + gy*13) & 3; }
 const DETTAGLIO = {
   sabbia:  { chiazza:'#c9ab72', forza:0.16, scala:9,  detriti:['#cfc0a2','#b89b6a'], quanti:2 },
   lastre:  { chiazza:'#8f8672', forza:0.13, scala:7,  detriti:['#9aa07e','#b0a58c'], quanti:1 },
+  cotto:   { chiazza:'#3d2a1c', forza:0.20, scala:6,  detriti:['#5a3f2a','#2e2018'], quanti:1 },
   grotta:  { chiazza:'#3e372f', forza:0.22, scala:6,  detriti:['#544c42','#7a6f60'], quanti:2 },
   neve:    { chiazza:'#b9c6d2', forza:0.13, scala:8,  detriti:['#ffffff','#cdd8e2'], quanti:1 },
   sentiero:{ chiazza:'#7d7364', forza:0.11, scala:6,  detriti:['#8f8371','#b5a894'], quanti:1 },
@@ -1067,6 +1068,95 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
       sx.globalAlpha=1;
       break;
     }
+    /* ---------- ARREDI DEGLI INTERNI ---------- */
+    case 'bancone': {
+      const I = PAL.c.interno;
+      ART.px(sx,px,py+10,T,4,I.legnoLuce);              // piano
+      ART.px(sx,px,py+14,T,12,I.legno);                 // fronte
+      ART.px(sx,px,py+25,T,3,I.legnoOmbra);
+      ART.px(sx,px,py+18,T,1,I.legnoOmbra);             // fascia
+      if(o.v===0){ ART.px(sx,px+6,py+4,8,6,I.legnoOmbra); ART.circ(sx,px+10,py+5,2.4,'#d8452c'); }
+      if(o.v===1){ ART.px(sx,px+4,py+5,10,5,'#c9b48c'); ART.px(sx,px+4,py+5,10,1,'#e8dcc0'); }
+      break;
+    }
+    case 'incudine': {
+      const I = PAL.c.interno;
+      ART.px(sx,px+8,py+20,16,8,I.legnoOmbra);          // ceppo
+      ART.px(sx,px+8,py+20,16,2,I.legno);
+      ART.px(sx,px+6,py+12,20,7,I.metallo);             // corpo
+      ART.px(sx,px+6,py+12,20,2,I.metalloLuce);
+      ART.px(sx,px+10,py+18,12,3,I.metalloOmbra);
+      ART.px(sx,px+2,py+13,6,4,I.metallo);              // corno
+      ART.px(sx,px+2,py+13,6,1,I.metalloLuce);
+      break;
+    }
+    case 'camino': {
+      const I = PAL.c.interno;
+      ART.px(sx,px-2,py-6,36,34,I.pareteOmbra);         // cappa
+      ART.px(sx,px-2,py-6,36,3,I.zoccoloLuce);
+      ART.px(sx,px+4,py+8,24,20,'#1a120b');             // bocca
+      const b = 0.55 + Math.sin(t*0.006)*0.28;
+      sx.globalAlpha = b;
+      ART.ellip(sx,px+16,py+24,10,6,I.brace);
+      sx.globalAlpha = Math.min(1,b+0.25);
+      ART.ellip(sx,px+16,py+25,6,3.5,I.braceCuore);
+      sx.globalAlpha = 1;
+      for(let k=0;k<3;k++){                              // legna
+        ART.px(sx,px+6+k*6,py+22,6,3,I.legnoOmbra);
+      }
+      break;
+    }
+    case 'letto': {
+      const I = PAL.c.interno;
+      ART.px(sx,px+2,py+2,28,30,I.legno);               // struttura
+      ART.px(sx,px+2,py+2,28,3,I.legnoLuce);
+      ART.px(sx,px+2,py+29,28,3,I.legnoOmbra);
+      ART.px(sx,px+4,py+6,24,24,I.stoffa);              // coperta
+      ART.px(sx,px+4,py+6,24,2,I.stoffaLuce);
+      ART.px(sx,px+5,py+6,22,7,I.lenzuolo);             // cuscino e risvolto
+      ART.px(sx,px+5,py+6,22,2,'#fff8e8');
+      break;
+    }
+    case 'cucina': {
+      const img = ART.placeable('forno',{attivo:true});
+      sx.drawImage(img, px-8, py+T-img.height+2);
+      break;
+    }
+    case 'scrivania': {
+      const I = PAL.c.interno;
+      ART.px(sx,px+1,py+12,30,6,I.legnoLuce);           // piano
+      ART.px(sx,px+1,py+18,30,4,I.legno);
+      ART.px(sx,px+3,py+22,4,8,I.legnoOmbra);
+      ART.px(sx,px+25,py+22,4,8,I.legnoOmbra);
+      ART.px(sx,px+8,py+7,10,6,'#f6e6c8');              // lettere di Ilde
+      ART.px(sx,px+8,py+7,10,1,'#fff8e8');
+      ART.px(sx,px+10,py+9,6,1,'#b8a27c');
+      ART.px(sx,px+20,py+8,4,5,'#7a5432');              // calamaio
+      break;
+    }
+    case 'tavolo': {
+      const I = PAL.c.interno;
+      ART.px(sx,px+2,py+10,28,6,I.legnoLuce);
+      ART.px(sx,px+2,py+16,28,3,I.legno);
+      ART.px(sx,px+5,py+19,4,9,I.legnoOmbra);
+      ART.px(sx,px+23,py+19,4,9,I.legnoOmbra);
+      if(((gx+gy)&1)===0){ ART.ellip(sx,px+16,py+11,5,3,'#c9b48c'); ART.circ(sx,px+16,py+10,2,'#e8dcc0'); }
+      break;
+    }
+    case 'lume': {
+      const I = PAL.c.interno;
+      ART.px(sx,px+13,py+2,6,3,I.lumeMetallo);          // braccio a muro
+      ART.px(sx,px+15,py+5,2,4,I.lumeMetallo);
+      const b = 0.7 + Math.sin(t*0.004 + gx)*0.18;
+      sx.globalAlpha = 0.22*b;
+      ART.circ(sx,px+16,py+12,13,I.lume);
+      sx.globalAlpha = 1;
+      ART.px(sx,px+12,py+8,8,8,I.lumeMetallo);
+      ART.px(sx,px+13,py+9,6,6,I.lume);
+      ART.px(sx,px+14,py+10,4,4,'#fff8d0');
+      break;
+    }
+
     case 'silo': {
       ART.px(sx,px+4,py-14,24,42,'#a8a29a');
       ART.px(sx,px+4,py-14,6,42,'#c0bab0');
@@ -1309,6 +1399,45 @@ function disegnaDecoPiatta(d, ox, oy, t, stag){
         ART.px(sx,-6,h-2,12,2,ART.shade(cols[i%cols.length],-0.18));
         sx.restore();
       }
+      break;
+    }
+    /* la parete di fondo di un interno: senza, la stanza è un tappeto
+       di assi che galleggia nel nero e non si legge come stanza */
+    case 'parete': {
+      const I = PAL.c.interno;
+      const w = d.w*T, H = 26;
+      const y0 = py - H;
+      /* la fucina ha muri di pietra: il legno caldo, lì, sembrava una
+         stalla e non un posto dove si batte il ferro */
+      const pietra = d.stile==='pietra';
+      const cor  = pietra ? ART.shade(I.parete,-0.42) : I.parete;
+      const alto = pietra ? ART.shade(I.pareteAlta,-0.38) : I.pareteAlta;
+      const scuro= pietra ? ART.shade(I.pareteOmbra,-0.30) : I.pareteOmbra;
+      ART.px(sx, px, y0, w, H, cor);                            // intonaco
+      ART.px(sx, px, y0, w, 3, alto);                           // cornice in luce
+      ART.px(sx, px, y0+H-9, w, 6, I.zoccolo);                  // zoccolatura
+      ART.px(sx, px, y0+H-9, w, 1, I.zoccoloLuce);
+      ART.px(sx, px, y0+H-3, w, 3, I.battiscopa);               // battiscopa
+      for(let k=0;k<d.w;k++){                                    // fughe verticali
+        sx.globalAlpha = 0.25;
+        ART.px(sx, px+k*T, y0+3, 1, H-12, scuro);
+        sx.globalAlpha = 1;
+      }
+      // una finestrella ogni tanto, per non avere una parete cieca
+      for(let k=2;k<d.w-2;k+=5){
+        const wx = px + k*T + 6;
+        ART.px(sx, wx-2, y0+4, 20, 14, I.battiscopa);
+        ART.px(sx, wx,   y0+6, 16, 10, '#4a6478');
+        ART.px(sx, wx,   y0+6, 16, 3,  '#6f8ea4');
+        ART.px(sx, wx+7, y0+6, 2, 10, I.battiscopa);
+      }
+      break;
+    }
+    case 'zerbino': {
+      const I = PAL.c.interno;
+      ART.ellip(sx, px+16, py+22, 12, 6, I.legnoOmbra);
+      ART.ellip(sx, px+16, py+21, 10, 5, I.legno);
+      for(let k=0;k<4;k++) ART.px(sx, px+9+k*4, py+18, 2, 6, I.legnoLuce);
       break;
     }
     case 'lucciola': break;

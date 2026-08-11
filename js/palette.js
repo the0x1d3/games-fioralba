@@ -51,6 +51,14 @@ P.c = {
     pietre:['#cfc1a6','#c6b79c','#bcac90','#d4c7ad'],
     muschio:'#7f9455'
   },
+  /* il cotto sta dentro: stesso disegno delle lastre, ma caldo e
+     spento, perché una stanza illuminata a lume non può avere per terra
+     la stessa pietra chiara della piazza a mezzogiorno */
+  cotto: {
+    malta:'#33251a',
+    pietre:['#70402a','#623725','#7b4b31','#563121'],
+    fuliggine:'#241a12'
+  },
   neve:   { base:'#e8eef2', chiaro:'#ffffff', scuro:'#d6e0e8' },
   grotta: {
     base:'#6b6155', chiaro:'#7a6f60', medio:'#5f564c', scuro:'#544c44',
@@ -92,6 +100,18 @@ P.c = {
     giunto:'#7d7466', internoOmbra:'#6f7d84',
     acquaFondo:'#2a6f92', acquaAlta:'#3f95c0', acquaLuce:'#7ec4e0',
     schiuma:'#dff2fa', zampillo:'#eaf7fc'
+  },
+
+  /* --- gli interni: pareti, arredi, fuoco --- */
+  interno: {
+    pareteAlta:'#8a6a4a', parete:'#6f5238', pareteOmbra:'#4c3826',
+    zoccolo:'#5a4028', zoccoloLuce:'#8a6038', battiscopa:'#3a2a1c',
+    intonaco:'#c9ab84', intonacoOmbra:'#a88a66',
+    legno:'#a8763c', legnoLuce:'#c99a5e', legnoOmbra:'#7a5432',
+    metallo:'#6a6a74', metalloLuce:'#9a9aa6', metalloOmbra:'#3f3f48',
+    stoffa:'#c05a44', stoffaLuce:'#d87a60', lenzuolo:'#efe0c4',
+    brace:'#ff9a3c', braceCuore:'#ffe08a',
+    lume:'#ffe9a8', lumeMetallo:'#4a4038'
   },
 
   /* --- cielo e atmosfera --- */

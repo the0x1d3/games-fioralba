@@ -923,7 +923,8 @@ function aggiornaGiocatore(dt){
     const len = Math.hypot(dx,dy)||1;
     // velocità: sentiero più veloce
     const tSotto = WORLD.terreno(m, (p.px/T)|0, (p.py/T)|0);
-    let vel = (correndo?1.9:1.18) * (tSotto==='sentiero'||tSotto==='assi'||tSotto==='lastre'?1.14:1);
+    const duro = tSotto==='sentiero'||tSotto==='assi'||tSotto==='lastre'||tSotto==='cotto';
+    let vel = (correndo?1.9:1.18) * (duro?1.14:1);
     if(p.usoT>0) vel*=0.35;
     const spd = vel * dt/16;
 
@@ -1019,6 +1020,11 @@ function aggiornaCamera(subito){
   const maxY = Math.max(0, m.h*T - VH);
   tx = Math.max(0, Math.min(maxX, tx));
   ty = Math.max(0, Math.min(maxY, ty));
+  /* Una stanza è più piccola dello schermo. Con il solo aggancio a zero
+     finiva incollata in alto a sinistra, con due bande nere sugli altri
+     due lati: va centrata, e la camera esce dai bordi della mappa. */
+  if(m.w*T < VW) tx = (m.w*T - VW)/2;
+  if(m.h*T < VH) ty = (m.h*T - VH)/2;
   if(subito){ G.cam.x=tx; G.cam.y=ty; }
   else {
     G.cam.x += (tx-G.cam.x)*0.14;
@@ -1470,6 +1476,32 @@ function interagisci(){
 
     if(o.t==='porta'){ apriPorta(o.ed); return; }
     if(o.t==='consegna'){ apriConsegna(); return; }
+
+    /* --- arredi degli interni --- */
+    if(o.t==='bancone'){
+      if(o.uso==='bottega'){ SND.play('menu'); UI.negozio(G,'bruno'); }
+      else { SND.play('menu'); apriLocanda(); }
+      return;
+    }
+    if(o.t==='incudine'){ SND.play('menu'); UI.fucina(G); return; }
+    if(o.t==='letto'){ UI.modal('Il letto', body=>{
+        const n=document.createElement('div'); n.className='muted'; n.style.marginBottom='14px';
+        n.innerHTML='Le lenzuola sanno di lavanda. Fuori è '+
+          (G.ora>1080?'quasi notte':'ancora presto')+'.';
+        body.appendChild(n);
+        const b=document.createElement('button'); b.className='btn';
+        b.textContent='Dormi (fine giornata)';
+        b.onclick=()=>{ UI.chiudiModal(); dormi(); };
+        body.appendChild(b);
+      }); return; }
+    if(o.t==='cucina'){
+      if(G.costruzioni.casa2) UI.cucina(G);
+      else UI.toast('Il focolare c\'è, ma serve una cucina vera: chiedi a Tobia l\'ampliamento.','bad');
+      return;
+    }
+    if(o.t==='scrivania'){ SND.play('menu'); UI.diario(G,'lettere'); return; }
+    if(o.t==='camino'){ UI.toast('Il fuoco scoppietta piano. Fa un bell\'effetto, stare qui.'); return; }
+    if(o.t==='tavolo'){ UI.toast('Un tavolo di legno, segnato da anni di piatti.'); return; }
     if(o.t==='bancarella' && o.kiosk){
       SND.play('menu');
       if(o.kiosk==='bacheca') UI.diario(G, 'richieste');
@@ -1580,9 +1612,25 @@ function idDaKind(kind){
   return 'legna';
 }
 
+/* Le porte che hanno una stanza vera ci fanno entrare. Le altre
+   continuano a rispondere come prima. */
+const RIENTRO = { int_casa:[6,7], int_bottega:[7,8], int_fucina:[7,8], int_locanda:[8,9] };
+
 function apriPorta(ed){
   if(!ed) return;
   SND.play('porta');
+
+  const interno = WORLD.INTERNI[ed.azione];
+  if(interno && G.maps[interno]){
+    const p = RIENTRO[interno];
+    $('#fade').classList.add('on');
+    setTimeout(()=>{
+      cambiaMappa(interno, p[0], p[1]);
+      setTimeout(()=>$('#fade').classList.remove('on'), 120);
+    }, 220);
+    return;
+  }
+
   switch(ed.azione){
     case 'casa': apriCasa(); break;
     case 'bottega': UI.negozio(G,'bruno'); break;
@@ -1771,14 +1819,46 @@ G.fasciaAgenda = function(id){
 /* è in casa (o al riparo) e quindi non si vede in giro? */
 G.npcAlChiuso = function(id){
   const f = G.fasciaAgenda(id);
-  return !!(f && f.dentro);
+  return !!(f && (f.dentro || f.interno));
 };
+
+/* Quando la fascia dice `interno`, l'abitante non sparisce: è dentro
+   quella stanza, e chi ci entra lo trova lì. È la differenza fra un
+   paese che chiude e un paese che si sposta.
+   Lo facciamo entrando e uscendo dall'elenco `npc` della stanza, così
+   tutto quello che già c'era — camminata, animazione, dialogo — continua
+   a funzionare senza sapere niente degli interni. */
+function sincronizzaInterni(m){
+  if(!m || !m.interno) return;
+  if(!m.npc) m.npc = [];
+  for(const id of (m.npcInterno||[])){
+    const f = G.fasciaAgenda(id);
+    const ciSta = !!(f && f.interno === m.id);
+    const i = m.npc.findIndex(n=>n.id===id);
+    if(ciSta && i<0){
+      const posti = (m.postiInterni && m.postiInterni[id]) || [[m.w>>1, m.h>>1]];
+      const x = posti[0][0], y = posti[0][1];
+      // px/py subito: chi entra nella stanza dev'essere già in piedi al
+      // primo fotogramma, non al secondo
+      m.npc.push({ id, x, y, giro:posti,
+                   px:x*T+16, py:y*T+24, dir:0, frame:0, animT:0,
+                   wait:Math.random()*2000 });
+    } else if(!ciSta && i>=0){
+      m.npc.splice(i,1);
+    }
+  }
+}
 
 G.npcVivi = function(){
   const m=G.mappa();
+  if(!m) return [];
+  if(m.interno){
+    sincronizzaInterni(m);
+    return m.npc || [];          // se sono nell'elenco, è perché ci devono stare
+  }
   return (m.npc||[]).filter(n=>{
     if(n.richiedePonte && !G.costruzioni.ponte) return false;
-    if(G.npcAlChiuso(n.id)) return false;      // dorme, lavora al chiuso o si ripara
+    if(G.npcAlChiuso(n.id)) return false;      // dorme, o è dentro da qualche parte
     return true;
   });
 };
@@ -1795,6 +1875,7 @@ G.festeggiatoOggi = function(){
 
 function aggiornaNPC(dt){
   const m=G.mappa();
+  sincronizzaInterni(m);
   for(const n of (m.npc||[])){
     if(n.px===undefined){ n.px = n.x*T+16; n.py = n.y*T+24; n.dir=0; n.frame=0; n.animT=0; n.wait=Math.random()*3000; }
 
@@ -1805,8 +1886,9 @@ function aggiornaNPC(dt){
       continue;
     }
     /* Al chiuso continua a esistere, ma lo teniamo davanti a casa sua:
-       quando riesce non deve comparire dall'altra parte del paese. */
-    if(fascia && fascia.dentro){
+       quando riesce non deve comparire dall'altra parte del paese.
+       Se però la stanza è proprio questa, allora è a casa sua: cammina. */
+    if(fascia && (fascia.dentro || (fascia.interno && fascia.interno !== m.id))){
       const posto = (fascia.giro && fascia.giro[0]) || [n.x, n.y];
       n.px = posto[0]*T+16; n.py = posto[1]*T+24;
       n.dest = null; n.frame = 0; n.emote = null;
@@ -3111,6 +3193,8 @@ G.luci = function(){
     const o=m.obj[WORLD.idx(m,x,y)];
     if(!o) continue;
     if(o.t==='lampione') out.push({x:x*T+16, y:y*T+2, r:96, i:0.85, caldo:true, f:x*0.7});
+    else if(o.t==='lume')   out.push({x:x*T+16, y:y*T+12, r:82, i:0.72, caldo:true, f:x*1.3});
+    else if(o.t==='camino') out.push({x:x*T+16, y:y*T+22, r:120, i:0.9, caldo:true, f:y*0.6});
     else if(o.t==='mobile' && o.kind==='lanterna') out.push({x:x*T+16, y:y*T+8, r:88, i:0.8, caldo:true, f:x});
     else if(o.t==='macchina' && (o.kind==='forno'||o.kind==='fornace') && o.dentro)
       out.push({x:x*T+16, y:y*T+18, r:64, i:0.7, caldo:true, f:y});
