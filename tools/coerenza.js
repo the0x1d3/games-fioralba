@@ -32,6 +32,22 @@ const WORLD = global.window.WORLD;
 /* --- mini framework --- */
 const errori = [];
 const fatti = [];
+
+/* Il primo controllo di tutti: i file devono almeno essere JavaScript
+   valido. Sembra ovvio, ma un apostrofo non protetto dentro una stringa
+   fa fallire il caricamento in silenzio — nel browser resta una pagina
+   che non parte, e il motivo si scopre solo aprendo la console. */
+function controllaSintassi(){
+  const vm = require('vm');
+  const dir = path.join(RADICE, 'js');
+  const problemi = [];
+  for (const f of fs.readdirSync(dir).filter(n => n.endsWith('.js'))) {
+    const src = fs.readFileSync(path.join(dir, f), 'utf8');
+    try { new vm.Script(src, { filename: f }); }
+    catch (e) { problemi.push(`js/${f}: ${e.message}`); }
+  }
+  return problemi;
+}
 function verifica(nome, fn) {
   try {
     const problemi = fn() || [];
@@ -61,6 +77,8 @@ function fontiOttenibili() {
 }
 
 /* =================================================================== */
+
+verifica('ogni file .js è sintatticamente valido', controllaSintassi);
 
 verifica('ogni ingrediente di cucina si può ottenere', () => {
   const ok = fontiOttenibili();

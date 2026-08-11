@@ -72,9 +72,13 @@ F.silhouette = silhouette;
 F.soleOmbra = function(ora, esterno){
   if(!esterno) return { sk:-0.5, sc:0.42, a:0.20 };
   if(ora < 400 || ora > 1180) return { sk:0, sc:0.30, a:0.10 };   // notte: ombra minima
-  // il sole va da est a ovest: skew da +1.3 a -1.3
+  /* Il sole attraversa il cielo da destra (mattino) a sinistra (sera):
+     è dove FX.raggi mette i fasci di luce. L'ombra però cade dalla parte
+     OPPOSTA al sole, non verso di lui — e qui stava l'errore: l'angolo
+     del sole veniva usato tale e quale come inclinazione dell'ombra,
+     così al mattino l'ombra puntava a destra, verso il sole. */
   const p = Math.max(0, Math.min(1, (ora-400)/(1180-400)));
-  const sk = 1.25 - p*2.5;
+  const sk = p*2.5 - 1.25;
   // più lunga all'alba e al tramonto
   const lung = 0.34 + Math.pow(Math.abs(p-0.5)*2, 2)*0.55;
   const a = 0.30 - Math.pow(Math.abs(p-0.5)*2, 2)*0.12;

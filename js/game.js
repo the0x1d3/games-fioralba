@@ -1072,6 +1072,33 @@ function azionePossibile(id, tx, ty){
 /* ===================================================================
    AZIONE PRINCIPALE (spazio / clic sinistro)
    =================================================================== */
+/* ===================================================================
+   PERCHÉ NON SUCCEDE NIENTE
+   Quasi tutte le azioni impossibili uscivano con un `return` muto: il
+   giocatore premeva Spazio e il gioco non faceva niente e non diceva
+   niente. Per chi comincia è indistinguibile da un gioco rotto, ed è la
+   ragione principale per cui i primi minuti sembrano ostici.
+   Qui l'azione impossibile spiega sempre il motivo, senza ripetersi.
+   =================================================================== */
+let rifiutoT = 0, rifiutoTesto = '';
+function nonSiPuo(msg){
+  const ora = performance.now();
+  if(msg === rifiutoTesto && ora - rifiutoT < 2600) return;   // niente raffiche
+  rifiutoTesto = msg; rifiutoT = ora;
+  UI.toast(msg, 'hint');
+}
+
+/* perché la zappa non morde questa casella? */
+function perchePuoiZappare(m, tx, ty){
+  if(!m.coltivabile) return 'Qui non si coltiva: la terra buona è al podere.';
+  const i = WORLD.idx(m,tx,ty);
+  if(m.suolo[i]) return 'Questa terra è già dissodata: prendi i semi.';
+  if(m.obj[i])   return 'C\'è qualcosa sopra: prima libera la casella.';
+  const t = WORLD.terreno(m,tx,ty);
+  if(t!=='erba' && t!=='terra') return 'La zappa lavora l\'erba e la terra, non questo.';
+  return null;
+}
+
 function usaOggetto(){
   const p=G.p, m=G.mappa();
   if(p.usoT>0) return;
@@ -1099,7 +1126,10 @@ function usaOggetto(){
     if(suolo.crop.stage >= C.fasi.length){ raccogliColtura(tx,ty,suolo); return; }
   }
 
-  if(!s){ return; }
+  if(!s){
+    nonSiPuo('Non hai niente in mano: scegli un oggetto dalla barra in basso (tasti 1-9).');
+    return;
+  }
   const id=s.id;
   const cat=IT.cat(id);
 
@@ -1108,7 +1138,8 @@ function usaOggetto(){
     const liv = G.attrezziLiv[id]||0;
 
     if(id==='zappa'){
-      if(!azionePossibile(id,tx,ty)){ return; }
+      const perche = perchePuoiZappare(m,tx,ty);
+      if(perche){ nonSiPuo(perche); return; }
       if(!spendi(2 - liv*0.35)) return;
       p.usoT=280; SND.play('zappa');
       m.suolo[i]={arato:true, bagnato:false, crop:null, concime:null};
@@ -1127,7 +1158,8 @@ function usaOggetto(){
     if(id==='annaffiatoio'){
       if(G.gelo){ p.usoT=260; UI.toast('L\'acqua è gelata: oggi non si annaffia.','bad'); return; }
       if(terr==='acqua'){ SND.play('acqua'); p.usoT=280; schizzo(tx,ty); return; }
-      if(!suolo || suolo.bagnato) return;
+      if(!suolo){ nonSiPuo("L'annaffiatoio serve sulla terra dissodata: prima passa la zappa."); return; }
+      if(suolo.bagnato){ nonSiPuo('Questa terra è già bagnata. Domani avrà di nuovo sete.'); return; }
       if(!spendi(2 - liv*0.35)) return;
       p.usoT=300; SND.play('acqua');
       // area a seconda del livello
@@ -1147,14 +1179,14 @@ function usaOggetto(){
     }
 
     if(id==='ascia'){
-      if(!o) return;
+      if(!o){ nonSiPuo("L'ascia serve su alberi, ceppi e rami caduti."); return; }
       if(o.t==='ramo'){
         m.obj[i]=null; G.aggiungi('legna', 1+((Math.random()*2)|0));
         SND.play('ascia'); G.xp('raccolta',3); p.usoT=260;
         UI.toast('Legna','good','legna');
         return;
       }
-      if(o.t!=='albero' && o.t!=='ceppo') return;
+      if(o.t!=='albero' && o.t!=='ceppo'){ nonSiPuo("Con l'ascia si abbattono alberi e ceppi, non questo."); return; }
       if(!spendi(4 - liv*0.7)) return;
       p.usoT=320; SND.play('ascia');
       o.shake = 2.5;
@@ -1197,7 +1229,7 @@ function usaOggetto(){
       if(suolo && !suolo.crop && !o){
         m.suolo[i]=null; SND.play('zappa'); p.usoT=240; return;
       }
-      if(!o || (o.t!=='sasso' && o.t!=='stalagmite')) return;
+      if(!o || (o.t!=='sasso' && o.t!=='stalagmite')){ nonSiPuo('Il piccone rompe sassi e rocce. Sul terreno arato invece lo ripulisce.'); return; }
       if(!spendi(4 - liv*0.7)) return;
       p.usoT=320; SND.play('piccone');
       if(o.t==='stalagmite'){ m.obj[i]=null; G.aggiungi('pietra',2); G.xp('estrazione',4); return; }
@@ -1233,7 +1265,7 @@ function usaOggetto(){
     }
 
     if(id==='falce'){
-      if(!o) return;
+      if(!o){ nonSiPuo('La falce taglia erbacce, fiori e cespugli.'); return; }
       if(o.t==='erbaccia'||o.t==='fiori'){
         m.obj[i]=null; SND.play('zappa'); p.usoT=200;
         const n = 1 + (Math.random()< (0.25+G.livello('raccolta')*0.04) ? 1:0);
@@ -1263,7 +1295,7 @@ function usaOggetto(){
     }
 
     if(id==='canna'){
-      if(terr!=='acqua') return;
+      if(terr!=='acqua'){ nonSiPuo("Devi essere rivolto verso l'acqua per lanciare la lenza."); return; }
       iniziaPesca(tx,ty);
       return;
     }
@@ -1272,7 +1304,8 @@ function usaOggetto(){
 
   /* --- SEMI --- */
   if(cat==='seme'){
-    if(!suolo || suolo.crop) return;
+    if(!suolo){ nonSiPuo('I semi vanno sulla terra dissodata: prima passa la zappa.'); return; }
+    if(suolo.crop){ nonSiPuo('Qui sta già crescendo qualcosa.'); return; }
     const cropId = DATA.ITEMS[id].seme;
     const C = DATA.CROPS[cropId];
     const inSerra = G.mappaId==='podere' && dentroSerra(tx,ty);
@@ -1294,7 +1327,8 @@ function usaOggetto(){
 
   /* --- CONCIME --- */
   if(DATA.ITEMS[id] && DATA.ITEMS[id].uso){
-    if(!suolo || suolo.concime) return;
+    if(!suolo){ nonSiPuo('Il concime va sulla terra dissodata.'); return; }
+    if(suolo.concime){ nonSiPuo('Questa terra è già stata concimata.'); return; }
     suolo.concime = DATA.ITEMS[id].uso;
     G.togli(id,1);
     SND.play('semina'); p.usoT=200;
@@ -1304,7 +1338,7 @@ function usaOggetto(){
 
   /* --- POSABILI --- */
   if(DATA.ITEMS[id] && DATA.ITEMS[id].posabile){
-    if(!azionePossibile(id,tx,ty)) return;
+    if(!azionePossibile(id,tx,ty)){ nonSiPuo("Qui non ci sta: serve una casella libera, all'asciutto."); return; }
     posa(id, tx, ty);
     return;
   }
@@ -1314,6 +1348,7 @@ function usaOggetto(){
     G.mangia(G.slotSel);
     return;
   }
+  nonSiPuo(IT.nome(id)+' non si usa così. Prova con <b>E</b>, o aprilo dallo zaino.');
 }
 
 function dentroSerra(tx,ty){
