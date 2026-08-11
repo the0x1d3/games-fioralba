@@ -192,6 +192,7 @@ dati del sito. Per ricominciare da zero basta **Nuova Partita**.
 index.html          impalcatura e livelli dell'interfaccia
 css/style.css       interfaccia in legno e carta
 js/data.js          colture, oggetti, ricette, personaggi, lore
+js/palette.js       i colori strutturali della valle, ritoccabili a caldo
 js/art.js           motore di pixel-art: ogni sprite disegnato in codice,
                     raccordi fra terreni, erba animata, aiuole
 js/fx.js            vento globale, ombre proiettate, bloom, gradazione colore
@@ -214,6 +215,20 @@ vercel.json         configurazione per il deploy statico su Vercel
 ```
 
 Niente build, niente `npm install`: si aprono i file e funziona.
+
+### Ritoccare i colori
+
+Le tinte che definiscono l'aspetto della valle — terreni, acqua, corteccia,
+ombre delle nuvole — stanno tutte in `js/palette.js`. Si possono provare dal
+vivo, con la console del browser aperta sul gioco:
+
+```js
+PAL.applica({ sabbia: { base:'#c8a86a' } })
+```
+
+Le cache grafiche si svuotano da sole e la valle si ridisegna subito, senza
+ricaricare la pagina. `PAL.esporta()` restituisce la tavolozza completa, da
+incollare nel file quando una variante convince.
 
 **Se ci metti mano**, prima di pubblicare conviene lanciare:
 

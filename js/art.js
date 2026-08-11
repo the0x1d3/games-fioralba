@@ -81,6 +81,9 @@ A.circ = circ;
 /* ===================================================================
    1. TERRENI
    =================================================================== */
+/* scorciatoia ai colori della palette (js/palette.js) */
+function C(){ return PAL.c; }
+
 const groundCache = {};
 
 function grassTile(v, season){
@@ -114,7 +117,7 @@ function grassTile(v, season){
     for(let i=0;i<n;i++){
       if(hsh(i,v,21)>0.55){
         const bx=2+((hsh(i,v,22)*(T-5))|0), by=2+((hsh(i,v,23)*(T-5))|0);
-        const col = season==='autunno' ? '#d9a03c' : (hsh(i,v,24)>0.5? S.accent : '#fff4d8');
+        const col = season==='autunno' ? C().erba.fioreAutunno : (hsh(i,v,24)>0.5? S.accent : C().erba.fiore);
         px(x,bx,by,2,2,col);
         px(x,bx,by-1,1,1,shade(col,0.3));
       }
@@ -123,7 +126,7 @@ function grassTile(v, season){
     // brina
     for(let i=0;i<10;i++){
       const bx=(hsh(i,v,31)*T)|0, by=(hsh(i,v,32)*T)|0;
-      px(x,bx,by,1,1,'#ffffff');
+      px(x,bx,by,1,1,C().erba.brina);
     }
   }
   return c;
@@ -131,25 +134,24 @@ function grassTile(v, season){
 
 function dirtTile(v){
   const c=cv(T,T), x=c.getContext('2d');
-  px(x,0,0,T,T,'#8a6647');
+  px(x,0,0,T,T,C().terra.base);
   for(let i=0;i<40;i++){
     const bx=(hsh(i,v,41)*T)|0, by=(hsh(i,v,42)*T)|0, r=hsh(i,v,43);
-    x.fillStyle = r>0.6?'#9a7452':(r>0.3?'#7a5840':'#6d4d38');
+    x.fillStyle = r>0.6?C().terra.chiaro:(r>0.3?C().terra.medio:C().terra.scuro);
     x.fillRect(bx,by,1+((r*2)|0),1);
   }
   for(let i=0;i<5;i++){
     const bx=(hsh(i,v,44)*T)|0, by=(hsh(i,v,45)*T)|0;
-    px(x,bx,by,2,2,'#6b4b36');
-    px(x,bx,by,1,1,'#a07a56');
+    px(x,bx,by,2,2,C().terra.zolla);
+    px(x,bx,by,1,1,C().terra.zollaLuce);
   }
   return c;
 }
 
 function tilledTile(v, wet){
   const c=cv(T,T), x=c.getContext('2d');
-  const base = wet? '#6b4c36' : '#9a7150';
-  const ridge= wet? '#7d5a41' : '#b08a62';
-  const dark = wet? '#513828' : '#7d5940';
+  const A = wet ? C().arato.bagnato : C().arato.asciutto;
+  const base = A.base, ridge = A.cresta, dark = A.scuro;
   px(x,0,0,T,T,base);
   // solchi orizzontali
   for(let r=0;r<4;r++){
@@ -166,7 +168,7 @@ function tilledTile(v, wet){
     // riflessi d'acqua
     for(let i=0;i<7;i++){
       const bx=(hsh(i,v,61)*T)|0, by=(hsh(i,v,62)*T)|0;
-      x.globalAlpha=0.35; px(x,bx,by,2,1,'#8fb8d0'); x.globalAlpha=1;
+      x.globalAlpha=0.35; px(x,bx,by,2,1,C().arato.riflesso); x.globalAlpha=1;
     }
   }
   return c;
@@ -174,9 +176,9 @@ function tilledTile(v, wet){
 
 function pathTile(v){
   const c=cv(T,T), x=c.getContext('2d');
-  px(x,0,0,T,T,'#9b8f7d');
+  px(x,0,0,T,T,C().sentiero.malta);
   // ciottoli
-  const cols=['#b5a894','#a89b86','#c2b6a2','#8f8371'];
+  const cols=C().sentiero.ciottoli;
   for(let gy=0; gy<4; gy++) for(let gx=0; gx<4; gx++){
     const r=hsh(gx,gy*7+v,71);
     const bx=gx*8+((hsh(gx,gy+v,72)*2)|0), by=gy*8+((hsh(gx,gy+v,73)*2)|0);
@@ -191,10 +193,10 @@ function pathTile(v){
 
 function sandTile(v){
   const c=cv(T,T), x=c.getContext('2d');
-  px(x,0,0,T,T,'#e0cb96');
+  px(x,0,0,T,T,C().sabbia.base);
   for(let i=0;i<34;i++){
     const bx=(hsh(i,v,81)*T)|0, by=(hsh(i,v,82)*T)|0;
-    x.fillStyle = hsh(i,v,83)>0.5?'#d4bd85':'#eedaab';
+    x.fillStyle = hsh(i,v,83)>0.5?C().sabbia.scuro:C().sabbia.chiaro;
     x.fillRect(bx,by,1,1);
   }
   return c;
@@ -202,17 +204,17 @@ function sandTile(v){
 
 function woodTile(v){
   const c=cv(T,T), x=c.getContext('2d');
-  px(x,0,0,T,T,'#a87a4a');
+  px(x,0,0,T,T,C().assi.base);
   for(let r=0;r<4;r++){
     const y=r*8;
-    px(x,0,y,T,1,'#7a5432');
-    px(x,0,y+1,T,7, r%2? '#b0824f':'#a87a4a');
+    px(x,0,y,T,1,C().assi.giunto);
+    px(x,0,y+1,T,7, r%2? C().assi.alterna:C().assi.base);
     for(let i=0;i<6;i++){
       const bx=(hsh(i,r+v,91)*T)|0;
-      x.globalAlpha=0.35; px(x,bx,y+2+((hsh(i,r,92)*4)|0),3+((hsh(i,r,93)*4)|0),1,'#8a6038'); x.globalAlpha=1;
+      x.globalAlpha=0.35; px(x,bx,y+2+((hsh(i,r,92)*4)|0),3+((hsh(i,r,93)*4)|0),1,C().assi.venatura); x.globalAlpha=1;
     }
     const jx = (r%2? 16:0);
-    px(x,jx,y,1,8,'#7a5432');
+    px(x,jx,y,1,8,C().assi.giunto);
   }
   return c;
 }
@@ -220,8 +222,8 @@ function woodTile(v){
 function stoneFloorTile(v){
   const c=cv(T,T), x=c.getContext('2d');
   // lastre calde, sabbiose, con giunti di malta chiara
-  px(x,0,0,T,T,'#c2b49a');
-  const cols=['#cfc1a6','#c6b79c','#bcac90','#d4c7ad'];
+  px(x,0,0,T,T,C().lastre.malta);
+  const cols=C().lastre.pietre;
   // sfalsate: due file da due lastre, con offset alternato
   for(let gy=0;gy<2;gy++){
     const off = (gy+v)%2 ? 8 : 0;
@@ -243,17 +245,17 @@ function stoneFloorTile(v){
   for(let i=0;i<4;i++){
     if(hsh(i,v,105)<0.55) continue;
     const mx=(hsh(i,v,106)*T)|0, my=(hsh(i,v,107)*T)|0;
-    x.globalAlpha=0.4; px(x,mx,my,2,2,'#7f9455'); x.globalAlpha=1;
+    x.globalAlpha=0.4; px(x,mx,my,2,2,C().lastre.muschio); x.globalAlpha=1;
   }
   return c;
 }
 
 function snowTile(v){
   const c=cv(T,T), x=c.getContext('2d');
-  px(x,0,0,T,T,'#e8eef2');
+  px(x,0,0,T,T,C().neve.base);
   for(let i=0;i<24;i++){
     const bx=(hsh(i,v,111)*T)|0, by=(hsh(i,v,112)*T)|0;
-    x.fillStyle=hsh(i,v,113)>0.5?'#ffffff':'#d6e0e8';
+    x.fillStyle=hsh(i,v,113)>0.5?C().neve.chiaro:C().neve.scuro;
     x.fillRect(bx,by,2,1);
   }
   return c;
@@ -262,17 +264,17 @@ function snowTile(v){
 function caveTile(v){
   const c=cv(T,T), x=c.getContext('2d');
   // pavimento della grotta: sabbioso, più chiaro delle pareti
-  px(x,0,0,T,T,'#6b6155');
+  px(x,0,0,T,T,C().grotta.base);
   for(let i=0;i<34;i++){
     const bx=(hsh(i,v,121)*T)|0, by=(hsh(i,v,122)*T)|0, r=hsh(i,v,123);
-    x.fillStyle=r>0.6?'#7a6f60':(r>0.3?'#5f564c':'#544c44');
+    x.fillStyle=r>0.6?C().grotta.chiaro:(r>0.3?C().grotta.medio:C().grotta.scuro);
     x.fillRect(bx,by,1+((r*2)|0),1);
   }
   // ghiaia
   for(let i=0;i<6;i++){
     const bx=(hsh(i,v,124)*T)|0, by=(hsh(i,v,125)*T)|0;
-    px(x,bx,by,2,2,'#82776a');
-    px(x,bx,by,1,1,'#948877');
+    px(x,bx,by,2,2,C().grotta.ghiaia);
+    px(x,bx,by,1,1,C().grotta.ghiaiaLuce);
   }
   return c;
 }
@@ -280,9 +282,8 @@ function caveTile(v){
 /* acqua animata: 6 frame */
 function waterFrames(season){
   const frames=[];
-  const deep = season==='inverno' ? '#3f5f78' : '#2f6f96';
-  const mid  = season==='inverno' ? '#547a94' : '#3f8ab0';
-  const top  = season==='inverno' ? '#7ea2b8' : '#63b0cc';
+  const A = season==='inverno' ? C().acqua.gelida : C().acqua.tiepida;
+  const deep = A.fondo, mid = A.medio, top = A.cresta;
   for(let f=0;f<6;f++){
     const c=cv(T,T), x=c.getContext('2d');
     px(x,0,0,T,T,deep);
@@ -728,18 +729,19 @@ A.drawFruit = function(x, cx, by, C, h, s, iconMode){
    =================================================================== */
 const objCache = {};
 
-function foliageBlob(x, cx, cy, r, base, season){
+function foliageBlob(x, cx, cy, r, base, season, seme){
+  seme = seme|0;
   const dark = shade(base,-0.22), light = shade(base,0.16), light2=shade(base,0.3);
   circ(x, cx, cy, r, dark);
   circ(x, cx, cy-1, r-1, base);
   circ(x, cx-r*0.32, cy-r*0.34, r*0.55, light);
   circ(x, cx-r*0.4, cy-r*0.45, r*0.28, light2);
-  // bordo frastagliato
+  // bordo frastagliato — il seme lo rende diverso da chioma a chioma
   for(let i=0;i<18;i++){
     const a=i/18*6.283;
-    const rr=r*(0.86+hsh(i,cx|0,151)*0.28);
+    const rr=r*(0.86+hsh(i,(cx|0)+seme*37,151)*0.28);
     const bx=cx+Math.cos(a)*rr, byy=cy+Math.sin(a)*rr;
-    px(x,bx|0,byy|0,3,3, hsh(i,cy|0,152)>0.5? base:dark);
+    px(x,bx|0,byy|0,3,3, hsh(i,(cy|0)+seme*53,152)>0.5? base:dark);
   }
   if(season==='inverno'){
     x.globalAlpha=0.75;
@@ -752,34 +754,43 @@ function foliageBlob(x, cx, cy, r, base, season){
   }
 }
 
-A.tree = function(kind, season, stage){
-  const key = 'tree|'+kind+'|'+season+'|'+stage;
+/* `v` è la variante (0..3): due alberi vicini non devono essere lo stesso
+   timbro battuto due volte. Il chiamante la ricava dalle coordinate della
+   casella, così non serve salvare niente nel mondo. */
+A.tree = function(kind, season, stage, v){
+  v = (((v|0) % 4) + 4) % 4;
+  const key = 'tree|'+kind+'|'+season+'|'+stage+'|'+v;
   if(objCache[key]) return objCache[key];
   const W=96, H=112;
   const c=cv(W,H), x=c.getContext('2d');
   const S = DATA.SEASONS.find(s=>s.id===season);
   const cxx=W/2, base=H-6;
+  const R = i => hsh(i, v*101+7, 181);      // numeri stabili per questa variante
+  const sp = v>=2 ? -1 : 1;                  // metà delle varianti crescono specchiate
 
   if(stage===0){ // germoglio
-    px(x,cxx-1,base-10,2,10,'#6a4a2c');
-    foliageBlob(x,cxx,base-14,7, S.tree, season);
+    const h = 9 + ((R(1)*4)|0);
+    px(x,cxx-1,base-h-1,2,h+1,C().legno.ramo);
+    foliageBlob(x, cxx + sp*((R(2)*3)|0), base-h-4, 6+R(3)*3, S.tree, season, v);
     objCache[key]=c; return c;
   }
   if(stage===1){ // alberello
-    px(x,cxx-2,base-24,4,24,'#6a4a2c');
-    foliageBlob(x,cxx,base-30,14, S.tree, season);
+    const h = 21 + ((R(4)*7)|0);
+    px(x,cxx-2,base-h,4,h,C().legno.ramo);
+    foliageBlob(x, cxx + sp*((R(5)*5)|0), base-h-6, 12+R(6)*5, S.tree, season, v);
     objCache[key]=c; return c;
   }
 
   // la betulla è crema calda, non bianco gesso: isolata non deve
   // sembrare una colonna di pietra
-  const trunkCol = kind==='betulla' ? '#cfc6b0' : '#6b4a2e';
-  const trunkD   = kind==='betulla' ? '#9d9483' : '#4e3520';
-  const trunkL   = kind==='betulla' ? '#e2dcc9' : '#84603f';
+  const L = C().legno;
+  const trunkCol = kind==='betulla' ? L.betulla      : L.corteccia;
+  const trunkD   = kind==='betulla' ? L.betullaOmbra : L.cortecciaOmbra;
+  const trunkL   = kind==='betulla' ? L.betullaLuce  : L.cortecciaLuce;
 
-  // tronco
-  const th = kind==='pino'? 56 : 44;
-  const tw = kind==='betulla'? 9 : 12;
+  // tronco — altezza e spessore variano un po' da esemplare a esemplare
+  const th = (kind==='pino'? 56 : 44) + ((R(10)*9)|0) - 4;
+  const tw = (kind==='betulla'? 9 : 12) + (R(11)>0.6 ? 1 : 0);
   const t0 = cxx - (tw>>1);
   px(x, t0, base-th, tw, th, trunkCol);
   px(x, t0, base-th, 3, th, trunkL);
@@ -793,7 +804,7 @@ A.tree = function(kind, season, stage){
   if(kind==='betulla'){
     for(let i=0;i<7;i++){
       const bw = 3+((hsh(i,2,163)*3)|0);
-      px(x, t0+1+((hsh(i,1,162)*(tw-bw-1))|0), base-th+7+i*6, bw, 2, '#4a463e');
+      px(x, t0+1+((hsh(i,1,162)*(tw-bw-1))|0), base-th+7+i*6, bw, 2, C().legno.betullaMacchia);
     }
   }
   // radici
@@ -803,10 +814,12 @@ A.tree = function(kind, season, stage){
 
   // chioma
   if(kind==='pino'){
-    const col = season==='inverno' ? '#3d6b52' : '#2f6b45';
-    for(let i=0;i<4;i++){
-      const yy = base-th-4 + i*14;
-      const w  = 16+i*10;
+    const col = season==='inverno' ? C().pino.invernale : C().pino.estivo;
+    const piani = 4 + (R(12)>0.55 ? 1 : 0);       // pini più o meno folti
+    const passo = 13 + ((R(13)*3)|0);
+    for(let i=0;i<piani;i++){
+      const yy = base-th-4 + i*passo;
+      const w  = 15+i*10 + ((R(14+i)*4)|0);
       const dark=shade(col,-0.2), light=shade(col,0.16);
       x.fillStyle=dark;
       for(let k=0;k<=w;k+=2){
@@ -835,25 +848,28 @@ A.tree = function(kind, season, stage){
     // un "collo" nudo che di lontano sembra un palo
     x.strokeStyle = trunkD; x.lineWidth = 3;
     x.beginPath();
-    x.moveTo(cxx-1, base-th+16); x.lineTo(cxx-13, base-th+6);
-    x.moveTo(cxx+1, base-th+18); x.lineTo(cxx+12, base-th+8);
-    x.moveTo(cxx,   base-th+10); x.lineTo(cxx-6,  base-th-2);
+    x.moveTo(cxx-1, base-th+16); x.lineTo(cxx-13*sp, base-th+6);
+    x.moveTo(cxx+1, base-th+18); x.lineTo(cxx+12*sp, base-th+8);
+    x.moveTo(cxx,   base-th+10); x.lineTo(cxx-6*sp,  base-th-2);
     x.stroke();
     x.lineWidth = 1;
 
-    // chioma abbassata: il tronco resta corto e l'albero legge come albero
-    foliageBlob(x, cxx-16, base-th+7, 20, col, season);
-    foliageBlob(x, cxx+16, base-th+9, 19, col, season);
-    foliageBlob(x, cxx,    base-th+12, 15, col, season);   // ciuffo basso sul tronco
-    foliageBlob(x, cxx,    base-th-10, 24, col, season);
-    foliageBlob(x, cxx-9,  base-th-1, 18, col, season);
-    foliageBlob(x, cxx+10, base-th-5, 17, col, season);
+    /* Chioma: sei masse. Posizione e raggio si spostano di qualche pixel a
+       seconda della variante, e metà delle varianti sono specchiate: da
+       lontano è quanto basta perché il bosco smetta di sembrare stampato. */
+    const M = [[-16, 7, 20], [16, 9, 19], [0, 12, 15], [0, -10, 24], [-9, -1, 18], [10, -5, 17]];
+    M.forEach(([dx, dy, r], i)=>{
+      const jx = ((R(20+i)*7)|0) - 3;
+      const jy = ((R(30+i)*5)|0) - 2;
+      const jr = 1 + (R(40+i)-0.5)*0.16;
+      foliageBlob(x, cxx + (dx+jx)*sp, base-th + dy+jy, r*jr, col, season, v*6+i);
+    });
     // frutti autunnali
     if(season==='autunno'){
       for(let i=0;i<7;i++){
-        const bx=cxx-24+((hsh(i,0,171)*48)|0), byy=base-th-18+((hsh(i,1,172)*34)|0);
-        px(x,bx,byy,3,3,'#d8452c');
-        px(x,bx,byy,1,1,'#f08a6a');
+        const bx=cxx-24+((hsh(i,v*13,171)*48)|0), byy=base-th-18+((hsh(i,v*13+1,172)*34)|0);
+        px(x,bx,byy,3,3,C().frutto.base);
+        px(x,bx,byy,1,1,C().frutto.luce);
       }
     }
   }
@@ -861,15 +877,41 @@ A.tree = function(kind, season, stage){
   return c;
 };
 
-A.stump = function(){
-  const key='stump';
+/* Il ceppo aveva un disegno solo per tutta la valle, ed era piatto: si
+   leggeva come una ciambella vista dall'alto, in disaccordo con la
+   prospettiva a tre quarti di tutto il resto. Ora ha quattro varianti e
+   una parete laterale con la corteccia. */
+A.stump = function(v){
+  v = (((v|0) % 4) + 4) % 4;
+  const key='stump|'+v;
   if(objCache[key]) return objCache[key];
   const c=cv(40,32), x=c.getContext('2d');
-  ellip(x,20,26,13,5,'#4e3520');
-  ellip(x,20,22,13,6,'#7a5636');
-  ellip(x,20,21,11,5,'#a67c4e');
-  ellip(x,20,21,7,3,'#8a6440');
-  ellip(x,20,21,3,1.5,'#6b4a2e');
+  const P = C().ceppo;
+  const R = i => hsh(i, v*67+3, 191);
+  // permutazioni invece di numeri a caso: garantiscono quattro sagome
+  // diverse, mentre due tiri di dado possono benissimo coincidere
+  const rx = 11 + [0,3,1,2][v];            // larghezza del taglio
+  const h  = 5  + [2,0,3,1][v];            // quanto sporge da terra
+  const cy = 22;
+
+  ellip(x, 20, cy+h-1, rx+1, 4.5, P.terra);            // ombra al piede
+  x.fillStyle = P.fianco;                               // parete di corteccia
+  x.fillRect(20-rx, cy-2, rx*2, h);
+  ellip(x, 20, cy+h-2, rx, 4, P.fianco);
+  for(let i=0;i<5;i++){                                 // scanalature verticali
+    const bx = 20-rx+2 + ((R(3+i)*(rx*2-4))|0);
+    x.globalAlpha = 0.45;
+    px(x, bx, cy, 1, h-1, P.terra);
+    x.globalAlpha = 1;
+  }
+  ellip(x, 20, cy-2, rx, 5, P.taglio);                  // faccia tagliata
+  ellip(x, 20, cy-2, rx-3, 3.4, P.anelli);              // anelli
+  ellip(x, 20, cy-2, rx-6, 2.1, P.taglio);
+  ellip(x, 20, cy-2, 2.4, 1.2, P.cuore);
+  if(R(9) > 0.5){                                       // qualche scheggia
+    px(x, 20-rx+1, cy-4, 3, 2, P.taglio);
+    px(x, 20+rx-4, cy-3, 3, 2, P.fianco);
+  }
   objCache[key]=c; return c;
 };
 
@@ -2361,5 +2403,18 @@ A.schiuma = function(dir, v, frame){
   objCache[key]=c;
   return c;
 };
+
+/* ===================================================================
+   SVUOTAMENTO DELLE CACHE
+   Tutto qui dentro è disegnato una volta e conservato. Se cambiano i
+   colori della palette, i disegni conservati sono vecchi: vanno buttati
+   e rifatti alla prima richiesta.
+   =================================================================== */
+const TUTTE_LE_CACHE = [groundCache, waterCache, charCache, faceCache, objCache,
+                        iconCache, bordoCache, ombraBordoCache, aratoCache, ciuffoCache];
+A.svuotaCache = function(){
+  for(const dep of TUTTE_LE_CACHE) for(const k in dep) delete dep[k];
+};
+if(window.PAL) PAL.suCambio(A.svuotaCache);
 
 })();

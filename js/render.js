@@ -96,6 +96,10 @@ R.invalidaTerreno = function(mapId){
   if(!mapId){ chunkCache.clear(); return; }
   for(const k of [...chunkCache.keys()]) if(k.indexOf(mapId+'|')===0) chunkCache.delete(k);
 };
+/* i blocchi di terreno sono precotti coi colori della palette:
+   se la palette cambia, vanno rifatti */
+if(window.PAL) PAL.suCambio(()=>{ chunkCache.clear(); });
+
 R.invalidaCasella = function(mapId, x, y){
   // il raccordo tocca anche i blocchi vicini
   for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
@@ -105,6 +109,11 @@ R.invalidaCasella = function(mapId, x, y){
 };
 
 function texTerreno(tipo){ return tipo==='roccia' ? 'grotta' : tipo; }
+
+/* Variante di un oggetto ricavata dalla sua casella: due alberi vicini
+   prendono disegni diversi senza che il mondo debba ricordarsi niente,
+   quindi i salvataggi vecchi funzionano identici. */
+function varianteDi(gx, gy){ return (gx*7 + gy*13) & 3; }
 
 function costruisciChunk(m, cx, cy, season){
   const c = ART.cv(CH*T, CH*T);
@@ -285,16 +294,48 @@ R.disegna = function(G){
   /* ---------- 5. ERBA ANIMATA ---------- */
   if(m.esterno) stratoErba(m, x0,y0,x1,y1, ox,oy, stag, t, G);
 
-  /* ---------- 6. OMBRE DELLE NUVOLE ---------- */
+  /* ---------- 6. OMBRE DELLE NUVOLE ----------
+     Stavano in coordinate schermo: scivolavano sul monitor invece di
+     restare per terra, e camminando non si muovevano col mondo. Sulle
+     superfici piatte (la sabbia della Costa) si leggevano come due ovali
+     grigi incollati allo schermo. Ora vivono nel mondo, su un reticolo
+     che deriva col vento, e hanno il bordo sfumato invece che netto. */
   if(m.esterno && (G.meteo==='sereno'||G.meteo==='nuvoloso')){
-    sx.globalAlpha = G.meteo==='nuvoloso'?0.16:0.08;
-    sx.fillStyle='#1a2838';
-    for(let i=0;i<4;i++){
-      const cxp = ((t*0.012 + i*430) % (VW+400)) - 200;
-      const cyp = ((i*167)%VH);
-      sx.beginPath(); sx.ellipse(cxp, cyp, 120, 46, 0, 0, 6.3); sx.fill();
+    const forza = G.meteo==='nuvoloso' ? 0.20 : 0.10;
+    const PASSO = 460;                       // distanza media fra una nuvola e l'altra
+    const deriva = t*0.010;                  // il banco di nuvole scorre verso est
+    const RX = 150, RY = 62;
+    /* Il margine deve coprire il raggio MASSIMO (la scala arriva a 1.4) più
+       lo scarto del reticolo: se una nuvola di bordo entra con una camera e
+       non con l'altra, la stessa zolla di terra risulta illuminata in due
+       modi diversi a seconda di dove guardi — che è esattamente il difetto
+       che stiamo togliendo. */
+    const MX = RX*1.4 + PASSO*0.7, MY = RY*1.4 + PASSO*0.7;
+    const gx0 = Math.floor((cam.x - deriva - MX) / PASSO);
+    const gx1 = Math.floor((cam.x - deriva + VW + MX) / PASSO);
+    const gy0 = Math.floor((cam.y - MY) / PASSO);
+    const gy1 = Math.floor((cam.y + VH + MY) / PASSO);
+    for(let gy=gy0; gy<=gy1; gy++) for(let gx=gx0; gx<=gx1; gx++){
+      // ogni cella del reticolo sposta la sua nuvola di un po', così non
+      // si vede la griglia
+      const wx = gx*PASSO + ART.hsh(gx,gy,211)*PASSO*0.7 + deriva;
+      const wy = gy*PASSO + ART.hsh(gx,gy,212)*PASSO*0.7;
+      const pxc = wx - cam.x, pyc = wy - cam.y;
+      const scala = 0.7 + ART.hsh(gx,gy,213)*0.7;
+      const rx = RX*scala, ry = RY*scala;
+      if(pxc < -rx || pxc > VW+rx || pyc < -ry || pyc > VH+ry) continue;
+      const g = sx.createRadialGradient(pxc, pyc, 0, pxc, pyc, rx);
+      const a = forza * (0.75 + ART.hsh(gx,gy,214)*0.5);
+      const col = PAL.c.nuvole.ombra;
+      g.addColorStop(0,    PAL.rgba(col, a));
+      g.addColorStop(0.55, PAL.rgba(col, a*0.72));
+      g.addColorStop(1,    PAL.rgba(col, 0));
+      sx.save();
+      sx.translate(pxc, pyc); sx.scale(1, ry/rx); sx.translate(-pxc, -pyc);
+      sx.fillStyle = g;
+      sx.beginPath(); sx.arc(pxc, pyc, rx, 0, 6.3); sx.fill();
+      sx.restore();
     }
-    sx.globalAlpha=1;
   }
 
   /* ---------- 7. RACCOLTA DEGLI SPRITE ---------- */
@@ -536,7 +577,8 @@ function ombraOggetto(o, px, py, gx, gy, t, stag, sole){
   }
   switch(o.t){
     case 'albero': {
-      const img = ART.tree(o.kind, stag, o.stage);
+      // stessa variante del disegno, altrimenti l'ombra non è la sua
+      const img = ART.tree(o.kind, stag, o.stage, varianteDi(gx,gy));
       const sway = FX.vento(gx*T, gy*T) * (o.stage===2?2.2:0.9);
       FX.ombraSprite(sx, img, px+16, py+T, sole, img.width, img.height, sway);
       break;
@@ -599,7 +641,7 @@ function disegnaEdificio(e, ox, oy, G, stag){
 function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
   switch(o.t){
     case 'albero': {
-      const img = ART.tree(o.kind, stag, o.stage);
+      const img = ART.tree(o.kind, stag, o.stage, varianteDi(gx,gy));
       const vento = FX.vento(gx*T, gy*T);
       const sway = vento * (o.stage===2?2.6:1.1) + Math.sin(t*0.0011 + gx*0.7 + gy*0.3)*0.5;
       const shake = o.shake ? Math.sin(t*0.05)*o.shake : 0;
@@ -611,7 +653,7 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
       sx.restore();
       break;
     }
-    case 'ceppo': sx.drawImage(ART.stump(), px-4, py+2); break;
+    case 'ceppo': sx.drawImage(ART.stump(varianteDi(gx,gy)), px-4, py+2); break;
     case 'sasso': {
       const img = ART.rock(o.carbone?'geode':o.kind, (gx*3+gy)%4);
       const shake = o.shake? Math.sin(t*0.06)*o.shake : 0;
