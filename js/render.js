@@ -1159,53 +1159,91 @@ function disegnaDecoPiatta(d, ox, oy, t, stag){
       }
       break;
     }
+    /* La fontana era l'unico oggetto della valle disegnato dall'alto: un
+       disco piatto in mezzo a botti, forni e panchine viste di tre quarti.
+       Ora la vasca è un cilindro — parete esterna con spessore, bordo in
+       luce, parete interna di fondo in ombra e acqua incassata. */
     case 'fontana': {
-      const cxp = px + T*2, cyp = py + T*1.5;
-      const RX = T*2 - 2, RY = T*1.4;
-      sx.globalAlpha=0.20; ART.ellip(sx, cxp, cyp+RY-4, RX+4, 9, '#000'); sx.globalAlpha=1;
-      ART.ellip(sx, cxp, cyp+4, RX+5, RY+4, '#8e8578');
-      ART.ellip(sx, cxp, cyp,   RX+5, RY+4, '#b8ae9c');
-      ART.ellip(sx, cxp, cyp-2, RX+5, RY+4, '#cabfa9');
-      for(let i=0;i<20;i++){
-        const a=i/20*6.283;
-        const bx=cxp+Math.cos(a)*(RX+2), by=cyp-2+Math.sin(a)*(RY+1.6);
-        ART.px(sx, bx-2, by-2, 5, 4, i%2?'#c2b7a1':'#b3a893');
+      const F = PAL.c.fontana;
+      const cxp = px + T*2, cyp = py + T*1.35;
+      const RX = T*2 - 3, RY = T*1.05;      // più schiacciata: sta in piedi, non sdraiata
+      const MURO = 11;                       // spessore visibile della parete
+
+      // ombra a terra, sotto il piede della vasca
+      sx.globalAlpha = 0.24;
+      ART.ellip(sx, cxp, cyp + MURO + 2, RX + 3, RY*0.42, '#000');
+      sx.globalAlpha = 1;
+
+      // parete esterna: ellissi impilate dal basso all'alto
+      for(let i=MURO; i>=1; i--){
+        const q = i/MURO;
+        ART.ellip(sx, cxp, cyp+i, RX, RY, ART.mix(F.pietra, F.pietraScura, q));
       }
-      ART.ellip(sx, cxp, cyp-1, RX-2, RY-2, '#2f7fa8');
-      ART.ellip(sx, cxp, cyp-2, RX-4, RY-4, '#3f95c0');
+      // bordo superiore in luce
+      ART.ellip(sx, cxp, cyp, RX, RY, F.pietraChiara);
+      // conci del bordo
+      for(let i=0;i<24;i++){
+        const a = i/24*6.283;
+        const bx = cxp + Math.cos(a)*(RX-2.5), by = cyp + Math.sin(a)*(RY-1.6);
+        ART.px(sx, bx-2, by-2, 4, 3, i%2 ? F.pietra : F.giunto);
+      }
+
+      // conca: parete interna, con il fondo (in alto) in ombra
+      ART.ellip(sx, cxp, cyp+1, RX-7, RY-3.5, F.internoOmbra);
+      ART.ellip(sx, cxp, cyp+3, RX-8, RY-4.5, ART.shade(F.internoOmbra,-0.18));
+
+      // acqua incassata e spostata in basso: della parete di fondo se ne
+      // vede una fetta, ed è quella che dà la profondità
+      ART.ellip(sx, cxp, cyp+4, RX-9, RY-5, F.acquaFondo);
+      ART.ellip(sx, cxp, cyp+5, RX-11, RY-6, F.acquaAlta);
+      // ombra portata dal bordo di fondo sull'acqua
+      sx.globalAlpha = 0.30;
+      ART.ellip(sx, cxp, cyp+1.5, RX-11, (RY-6)*0.5, '#12303f');
+      sx.globalAlpha = 1;
+
+      // increspature concentriche
       for(let i=0;i<3;i++){
         const ph=((t*0.0008+i/3)%1);
-        sx.globalAlpha=(1-ph)*0.35;
-        sx.strokeStyle='#a8dcf0'; sx.lineWidth=1;
-        sx.beginPath(); sx.ellipse(cxp, cyp-2, (RX-6)*ph+4, (RY-6)*ph+3, 0, 0, 6.3); sx.stroke();
+        sx.globalAlpha=(1-ph)*0.32;
+        sx.strokeStyle=F.acquaLuce; sx.lineWidth=1;
+        sx.beginPath(); sx.ellipse(cxp, cyp+5, (RX-13)*ph+4, (RY-8)*ph+2, 0, 0, 6.3); sx.stroke();
         sx.globalAlpha=1;
       }
-      sx.globalAlpha=0.30;
-      ART.ellip(sx, cxp-RX*0.35, cyp-RY*0.4, RX*0.34, RY*0.24, '#ffffff');
+      // luce sull'acqua, verso di noi
+      sx.globalAlpha=0.22;
+      ART.ellip(sx, cxp-RX*0.30, cyp+7, RX*0.26, RY*0.16, '#ffffff');
       sx.globalAlpha=1;
-      ART.ellip(sx, cxp, cyp-4, 13, 6, '#a89e8c');
-      ART.px(sx, cxp-5, cyp-26, 10, 24, '#c2b7a1');
-      ART.px(sx, cxp-5, cyp-26, 3, 24, '#d8cdb6');
-      ART.px(sx, cxp+3, cyp-26, 2, 24, '#948a78');
-      ART.ellip(sx, cxp, cyp-27, 14, 5, '#cabfa9');
-      ART.ellip(sx, cxp, cyp-28, 11, 3.4, '#3f95c0');
-      ART.px(sx, cxp-2, cyp-38, 4, 11, '#c2b7a1');
-      ART.ellip(sx, cxp, cyp-39, 6, 2.6, '#cabfa9');
-      sx.globalAlpha=0.6; sx.fillStyle='#dff2fa';
+
+      // colonna centrale: base immersa, fusto, coppa
+      ART.ellip(sx, cxp, cyp+2, 12, 5, ART.shade(F.pietraOmbra,-0.10));
+      ART.ellip(sx, cxp, cyp+0.5, 11, 4.4, F.pietraOmbra);
+      ART.px(sx, cxp-5, cyp-24, 10, 25, F.pietra);
+      ART.px(sx, cxp-5, cyp-24, 3, 25, F.pietraChiara);
+      ART.px(sx, cxp+3, cyp-24, 2, 25, F.pietraOmbra);
+      ART.ellip(sx, cxp, cyp-25, 14, 5, F.pietraChiara);
+      ART.ellip(sx, cxp, cyp-24, 14, 4.6, F.pietraOmbra);
+      ART.ellip(sx, cxp, cyp-26, 11, 3.4, F.acquaAlta);
+      ART.px(sx, cxp-2, cyp-36, 4, 11, F.pietra);
+      ART.px(sx, cxp-2, cyp-36, 1, 11, F.pietraChiara);
+      ART.ellip(sx, cxp, cyp-37, 6, 2.6, F.pietraChiara);
+
+      // zampilli
+      sx.globalAlpha=0.6; sx.fillStyle=F.schiuma;
       for(let i=0;i<14;i++){
         const ph = ((t*0.0022 + i*0.19) % 1);
         const side = (i%2)?1:-1;
-        sx.fillRect((cxp + side*ph*15)|0, (cyp-41 + ph*ph*30)|0, 2, 3);
+        sx.fillRect((cxp + side*ph*15)|0, (cyp-39 + ph*ph*32)|0, 2, 3);
       }
       for(let i=0;i<5;i++){
         const ph=((t*0.004+i*0.2)%1);
-        sx.fillRect(cxp-1, (cyp-44-ph*7)|0, 2, 4);
+        sx.fillRect(cxp-1, (cyp-42-ph*7)|0, 2, 4);
       }
       sx.globalAlpha=1;
+      // spruzzi che ricadono nella vasca
       for(let i=0;i<5;i++){
         const ph=((t*0.003+i*0.23)%1);
         sx.globalAlpha=(1-ph)*0.5;
-        ART.px(sx, (cxp-14+i*7)|0, (cyp-6-ph*4)|0, 2,2, '#cfeaf8');
+        ART.px(sx, (cxp-14+i*7)|0, (cyp+2-ph*4)|0, 2,2, F.zampillo);
         sx.globalAlpha=1;
       }
       break;

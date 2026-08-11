@@ -86,6 +86,14 @@ P.c = {
   pino:   { estivo:'#2f6b45', invernale:'#3d6b52' },
   frutto: { base:'#d8452c', luce:'#f08a6a' },
 
+  /* --- la fontana della piazza --- */
+  fontana: {
+    pietraChiara:'#cfc4ae', pietra:'#b8ae9c', pietraOmbra:'#8e8578', pietraScura:'#655d51',
+    giunto:'#7d7466', internoOmbra:'#6f7d84',
+    acquaFondo:'#2a6f92', acquaAlta:'#3f95c0', acquaLuce:'#7ec4e0',
+    schiuma:'#dff2fa', zampillo:'#eaf7fc'
+  },
+
   /* --- cielo e atmosfera --- */
   nuvole: { ombra:'#1a2838' }
 };
