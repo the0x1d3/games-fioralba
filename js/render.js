@@ -69,7 +69,9 @@ R.deveRidimensionare = function(){
 
 /* il mouse arriva in pixel CSS: prima ai pixel fisici, poi al mondo */
 R.schermoAMondo = function(px, py, cam){
-  return { x:(px*DPR/SCALE + cam.x), y:(py*DPR/SCALE + cam.y) };
+  // stesso aggancio al pixel che usa il disegno, altrimenti si clicca
+  // mezzo pixel a fianco di quello che si vede
+  return { x:(px*DPR/SCALE + Math.round(cam.x)), y:(py*DPR/SCALE + Math.round(cam.y)) };
 };
 
 /* ===================================================================
@@ -390,7 +392,16 @@ R.luceAmbiente = luceAmbiente;
    =================================================================== */
 R.disegna = function(G){
   const m = G.mappa();
-  const cam = G.cam;
+  /* La camera insegue il giocatore per interpolazione, quindi porta con
+     sé una parte frazionaria. Va agganciata al pixel virtuale una volta
+     per fotogramma, qui: `|0` tronca verso lo zero, e con lo scostamento
+     negativo le caselle a sinistra e a destra dello schermo finivano per
+     arrotondare in direzioni opposte — è la cucitura da un pixel che si
+     apriva fra i tasselli, e lo sfarfallio quando ci si muove.
+     G.cam resta in virgola mobile: se arrotondassimo lì, l'inseguimento
+     non convergerebbe più e la camera resterebbe indietro di mezzo pixel
+     per sempre. */
+  const cam = { x: Math.round(G.cam.x), y: Math.round(G.cam.y) };
   const stag = G.stagione().id;
   const t = G.tempoMs;
   const sole = FX.soleOmbra(G.ora, m.esterno);
@@ -497,21 +508,20 @@ R.disegna = function(G){
       // si vede la griglia
       const wx = gx*PASSO + ART.hsh(gx,gy,211)*PASSO*0.7 + deriva;
       const wy = gy*PASSO + ART.hsh(gx,gy,212)*PASSO*0.7;
-      const pxc = wx - cam.x, pyc = wy - cam.y;
-      const scala = 0.7 + ART.hsh(gx,gy,213)*0.7;
+      const pxc = Math.round(wx - cam.x), pyc = Math.round(wy - cam.y);
+      /* la scala è a quattro gradini, non continua: ogni misura diversa
+         è una pozza da cuocere, e con la scala continua la cache
+         crescerebbe per sempre */
+      const scala = 0.7 + (Math.round(ART.hsh(gx,gy,213)*3)/3)*0.7;
       const rx = RX*scala, ry = RY*scala;
       if(pxc < -rx || pxc > VW+rx || pyc < -ry || pyc > VH+ry) continue;
-      const g = sx.createRadialGradient(pxc, pyc, 0, pxc, pyc, rx);
       const a = forza * (0.75 + ART.hsh(gx,gy,214)*0.5);
-      const col = PAL.c.nuvole.ombra;
-      g.addColorStop(0,    PAL.rgba(col, a));
-      g.addColorStop(0.55, PAL.rgba(col, a*0.72));
-      g.addColorStop(1,    PAL.rgba(col, 0));
-      sx.save();
-      sx.translate(pxc, pyc); sx.scale(1, ry/rx); sx.translate(-pxc, -pyc);
-      sx.fillStyle = g;
-      sx.beginPath(); sx.arc(pxc, pyc, rx, 0, 6.3); sx.fill();
-      sx.restore();
+      /* cotta a piena opacità e schiarita qui: così la stessa pozza
+         serve a tutte le intensità, e il retino non si sfalda */
+      const pz = ART.pozza(rx, ry, 1, PAL.c.nuvole.ombra, 4);
+      sx.globalAlpha = a;
+      sx.drawImage(pz, pxc - ((pz.width-1)>>1), pyc - ((pz.height-1)>>1));
+      sx.globalAlpha = 1;
     }
   }
 
@@ -560,8 +570,11 @@ R.disegna = function(G){
     }
   }
 
+  /* Anche chi cammina va agganciato al pixel: le posizioni sono in
+     virgola mobile, e uno sprite che sta a metà casella si ridisegna
+     ogni fotogramma con i pezzi arrotondati in modo diverso. */
   for(const n of G.npcVivi()){
-    const px = n.px+ox, py = n.py+oy;
+    const px = Math.round(n.px)+ox, py = Math.round(n.py)+oy;
     if(px<-60||px>VW+60||py<-90||py>VH+60) continue;
     lista.push({ y:n.py,
       s:()=>{ FX.ombraTerra(sx, px, py-1, 8, 3, 0.24); },
@@ -575,7 +588,7 @@ R.disegna = function(G){
 
   for(const a of G.animali){
     if(a.mappa!==m.id) continue;
-    const px=a.px+ox, py=a.py+oy;
+    const px=Math.round(a.px)+ox, py=Math.round(a.py)+oy;
     if(px<-60||px>VW+60||py<-70||py>VH+60) continue;
     lista.push({ y:a.py,
       s:()=>{ FX.ombraTerra(sx, px, py-1, 7, 2.6, 0.22); },
@@ -589,7 +602,7 @@ R.disegna = function(G){
   /* fauna */
   if(window.MOBS){
     for(const b of MOBS.lista()){
-      const px=b.x+ox, py=b.y+oy;
+      const px=Math.round(b.x)+ox, py=Math.round(b.y)+oy;
       if(px<-80||px>VW+80||py<-90||py>VH+80) continue;
       lista.push({ y:b.y, d:()=>MOBS.disegnaUno(sx, b, ox, oy) });
     }
@@ -597,7 +610,7 @@ R.disegna = function(G){
 
   /* giocatore */
   {
-    const px=G.p.px+ox, py=G.p.py+oy;
+    const px=Math.round(G.p.px)+ox, py=Math.round(G.p.py)+oy;
     lista.push({ y:G.p.py,
       s:()=>{ if(!G.p.dorme) FX.ombraTerra(sx, px, py-1, 8.5, 3.2, 0.26); },
       d:()=>{
@@ -642,15 +655,17 @@ R.disegna = function(G){
     lx.fillRect(0,0,VW,VH);
     lx.globalCompositeOperation='destination-out';
     for(const L of luci){
-      const px=L.x+ox, py=L.y+oy;
+      const px=Math.round(L.x)+ox, py=Math.round(L.y)+oy;
       if(px<-160||px>VW+160||py<-160||py>VH+160) continue;
-      const r = L.r * (1 + Math.sin(t*0.004 + (L.f||0))*0.035);
-      const g = lx.createRadialGradient(px,py,0,px,py,r);
-      g.addColorStop(0,`rgba(0,0,0,${L.i})`);
-      g.addColorStop(0.55,`rgba(0,0,0,${L.i*0.5})`);
-      g.addColorStop(1,'rgba(0,0,0,0)');
-      lx.fillStyle=g;
-      lx.beginPath(); lx.arc(px,py,r,0,6.3); lx.fill();
+      /* Il tremolio della fiamma sta sull'intensità e non più sul
+         raggio: un raggio che respira vuol dire una pozza diversa a ogni
+         fotogramma, e con il retino i puntini striscerebbero verso fuori
+         come formiche. */
+      const puls = 1 + Math.sin(t*0.004 + (L.f||0))*0.07;
+      const pz = ART.pozza(L.r, L.r, 1, '#000000', 5);
+      lx.globalAlpha = Math.max(0, Math.min(1, L.i*puls));
+      lx.drawImage(pz, px - ((pz.width-1)>>1), py - ((pz.height-1)>>1));
+      lx.globalAlpha = 1;
     }
     lx.globalCompositeOperation='source-over';
     sx.drawImage(light,0,0);
@@ -661,7 +676,7 @@ R.disegna = function(G){
     const bx = FX.iniziaBloom(VW, VH);
     for(const L of luci){
       if(!L.caldo) continue;
-      const px=L.x+ox, py=L.y+oy;
+      const px=Math.round(L.x)+ox, py=Math.round(L.y)+oy;
       if(px<-200||px>VW+200||py<-200||py>VH+200) continue;
       const r = L.r*0.55;              // alone stretto: il bloom deve
       const g = bx.createRadialGradient(px,py,0,px,py,r);   // accennare, non annebbiare
@@ -675,7 +690,7 @@ R.disegna = function(G){
     // le lucciole brillano
     for(const p of G.particelle){
       if(p.t!=='lucciola') continue;
-      const px=p.x+ox, py=p.y+oy;
+      const px=Math.round(p.x)+ox, py=Math.round(p.y)+oy;
       const g = bx.createRadialGradient(px,py,0,px,py,7);
       g.addColorStop(0,'rgba(230,250,150,0.42)');
       g.addColorStop(1,'rgba(200,240,120,0)');
@@ -684,19 +699,18 @@ R.disegna = function(G){
     FX.applicaBloom(sx, VW, VH, 0.42);
   }
 
-  /* ---------- 14. GRADAZIONE E RAGGI ---------- */
+  /* ---------- 14. GRADAZIONE, RAGGI E VIGNETTATURA ---------- */
   FX.gradazione(sx, VW, VH, G.ora, G.meteo, m.esterno);
   if(m.esterno) FX.raggi(sx, VW, VH, G.ora, G.meteo);
+  /* La vignettatura era un gradiente steso sulla tela finale, cioè alla
+     risoluzione vera del monitor: sfumava attraverso i pixel del gioco
+     invece che insieme a loro, ed era la cosa più morbida sullo schermo.
+     Ora è retinata a misura virtuale e ingrandisce con tutto il resto. */
+  sx.drawImage(ART.vignetta(VW, VH, 0.32), 0, 0);
 
   /* ---------- BLIT ---------- */
   ctx.clearRect(0,0,cvs.width,cvs.height);
   ctx.drawImage(scene, 0,0, VW*SCALE, VH*SCALE);
-
-  const vg = ctx.createRadialGradient(cvs.width/2,cvs.height/2, Math.min(cvs.width,cvs.height)*0.36,
-                                      cvs.width/2,cvs.height/2, Math.max(cvs.width,cvs.height)*0.74);
-  vg.addColorStop(0,'rgba(0,0,0,0)');
-  vg.addColorStop(1,'rgba(0,0,0,0.32)');
-  ctx.fillStyle=vg; ctx.fillRect(0,0,cvs.width,cvs.height);
 };
 
 /* ===================================================================

@@ -79,6 +79,102 @@ function circ(c,cx,cy,r,col){ ellip(c,cx,cy,r,r,col); }
 A.circ = circ;
 
 /* ===================================================================
+   RETINO ORDINATO (matrice di Bayer 4×4)
+   Una sfumatura vera, in mezzo a un mondo di pixel netti, si nota
+   subito: è l'unica cosa morbida sullo schermo, e tradisce che sotto
+   c'è una tela e non una griglia. Il retino la scompone in pochi
+   gradini distribuiti su una matrice — è come si sfumava quando i
+   colori erano sedici, ed è per questo che si legge come pixel art.
+   =================================================================== */
+const BAYER4 = [ 0, 8, 2,10,
+                12, 4,14, 6,
+                 3,11, 1, 9,
+                15, 7,13, 5 ];
+/* soglia 0..1 per il pixel (x,y) */
+function retino(x,y){ return (BAYER4[((y&3)<<2)|(x&3)] + 0.5) / 16; }
+A.retino = retino;
+
+/* Pozza sfumata e retinata: la sostituzione dei gradienti radiali per
+   luci, ombre di nuvole e simili. Si cuoce una volta per ogni misura e
+   poi è un drawImage, quindi a schermo non costa niente.
+   `livelli` sono gli anelli di trasparenza: pochi, altrimenti il retino
+   non si vede e tanto valeva la sfumatura. */
+const pozzaCache = {};
+A.pozza = function(rx, ry, alpha, colore, livelli){
+  rx = Math.max(1, Math.round(rx));
+  ry = Math.max(1, Math.round(ry));
+  const L = livelli || 5;
+  const aq = Math.round(alpha*50)/50;                 // per non cuocere mille varianti
+  const key = rx+'|'+ry+'|'+aq+'|'+colore+'|'+L;
+  if(pozzaCache[key]) return pozzaCache[key];
+
+  const w = rx*2+1, h = ry*2+1;
+  const c = cv(w,h), x = c.getContext('2d');
+  const img = x.createImageData(w,h), d = img.data;
+  const n = parseInt(colore.slice(1),16);
+  const cr=(n>>16)&255, cg=(n>>8)&255, cb=n&255;
+  for(let py=0; py<h; py++){
+    const dy = (py-ry)/ry;
+    for(let pxx=0; pxx<w; pxx++){
+      const dx = (pxx-rx)/rx;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if(dist >= 1) continue;
+      // stessa curva dei gradienti che sostituisce: nucleo pieno, bordo ripido
+      const f = 1 - dist*dist*(3-2*dist);
+      const lv = Math.floor(f*L + retino(pxx,py));
+      if(lv <= 0) continue;
+      const i = (py*w + pxx)*4;
+      d[i]=cr; d[i+1]=cg; d[i+2]=cb;
+      d[i+3] = Math.round(Math.min(L,lv)/L * aq * 255);
+    }
+  }
+  x.putImageData(img,0,0);
+  pozzaCache[key] = c;
+  return c;
+};
+
+/* Vignettatura retinata a misura di schermo virtuale. Prima era un
+   gradiente disegnato sulla tela finale, cioè alla risoluzione vera del
+   monitor: sfumava attraverso i pixel del gioco invece che insieme a
+   loro. */
+const vignCache = {};
+A.vignetta = function(w, h, forza){
+  const fq = Math.round((forza||0.32)*50)/50;
+  const key = w+'|'+h+'|'+fq;
+  if(vignCache[key]) return vignCache[key];
+  const c = cv(w,h), x = c.getContext('2d');
+  const img = x.createImageData(w,h), d = img.data;
+  const cx = w/2, cy = h/2;
+  const r0 = Math.min(w,h)*0.36, r1 = Math.max(w,h)*0.74;
+  /* Qui i gradini sono fitti, al contrario delle pozze di luce. La
+     vignettatura copre due terzi dello schermo, e su una distesa chiara
+     e piatta — la sabbia della Costa — un retino a gradini larghi si
+     legge come sporco sull'obiettivo invece che come penombra ai bordi.
+     Quello che dovevamo togliere era la sfumatura stesa sui pixel veri
+     del monitor: quello è risolto dal disegnare qui, a misura virtuale. */
+  const L = 10;
+  for(let py=0; py<h; py++) for(let pxx=0; pxx<w; pxx++){
+    const dist = Math.hypot(pxx-cx, py-cy);
+    if(dist <= r0) continue;
+    const t = Math.min(1, (dist-r0)/(r1-r0));
+    const lv = Math.floor(t*L + retino(pxx,py));
+    if(lv <= 0) continue;
+    const i = (py*w + pxx)*4;
+    d[i+3] = Math.round(Math.min(L,lv)/L * fq * 255);   // nero, quindi RGB resta 0
+  }
+  x.putImageData(img,0,0);
+  vignCache[key] = c;
+  return c;
+};
+
+/* quante pozze e quante vignette sono state cotte: serve a controllare
+   che la quantizzazione tenga la cache limitata invece di farla crescere
+   a ogni nuvola che passa */
+A.statoRetino = function(){
+  return { pozze:Object.keys(pozzaCache).length, vignette:Object.keys(vignCache).length };
+};
+
+/* ===================================================================
    1. TERRENI
    =================================================================== */
 /* scorciatoia ai colori della palette (js/palette.js) */
@@ -2514,7 +2610,8 @@ A.schiuma = function(dir, v, frame){
    e rifatti alla prima richiesta.
    =================================================================== */
 const TUTTE_LE_CACHE = [groundCache, waterCache, charCache, faceCache, objCache,
-                        iconCache, bordoCache, ombraBordoCache, aratoCache, ciuffoCache];
+                        iconCache, bordoCache, ombraBordoCache, aratoCache, ciuffoCache,
+                        pozzaCache, vignCache];
 A.svuotaCache = function(){
   for(const dep of TUTTE_LE_CACHE) for(const k in dep) delete dep[k];
 };
