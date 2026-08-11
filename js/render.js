@@ -110,10 +110,179 @@ R.invalidaCasella = function(mapId, x, y){
 
 function texTerreno(tipo){ return tipo==='roccia' ? 'grotta' : tipo; }
 
+/* Le caselle della fontana sono terreno "acqua" (così ci si può pescare)
+   ma la vasca è tonda: dell'acqua grezza e della schiuma si vedeva il
+   quadrato 4×4 tutt'intorno, come un alone chiaro. Sotto la fontana va
+   disegnato il pavimento, e la vasca ci si appoggia sopra. */
+function eFontana(m, gx, gy){
+  const o = m.obj[WORLD.idx(m,gx,gy)];
+  return !!(o && o.t==='fontana');
+}
+function terrenoAttorno(m, gx, gy){
+  for(const [dx0,dy0] of [[0,-1],[0,1],[-1,0],[1,0],[0,-2],[0,2],[-2,0],[2,0]]){
+    if(!WORLD.dentro(m,gx+dx0,gy+dy0)) continue;
+    const t = WORLD.terreno(m,gx+dx0,gy+dy0);
+    if(t!=='acqua' && t!=='vuoto' && !eFontana(m,gx+dx0,gy+dy0)) return t;
+  }
+  return 'lastre';
+}
+
 /* Variante di un oggetto ricavata dalla sua casella: due alberi vicini
    prendono disegni diversi senza che il mondo debba ricordarsi niente,
    quindi i salvataggi vecchi funzionano identici. */
 function varianteDi(gx, gy){ return (gx*7 + gy*13) & 3; }
+
+/* ===================================================================
+   STRATO DI DETTAGLIO DELLE SUPERFICI
+   Le grandi distese piatte — la sabbia della Costa, la piazza del paese,
+   il pavimento della miniera, la neve del Passo — erano campiture
+   uniformi dove l'occhio non aveva dove posarsi. Qui sopra ci va una
+   variazione tonale a bassa frequenza più qualche detrito sparso.
+
+   Si disegna DENTRO il blocco, non dentro la casella: così dipende dalle
+   coordinate del mondo (niente motivo che si ripete ogni 32 pixel) e
+   viene cotta una volta sola, quindi a schermo non costa niente.
+   =================================================================== */
+const DETTAGLIO = {
+  sabbia:  { chiazza:'#c9ab72', forza:0.16, scala:9,  detriti:['#cfc0a2','#b89b6a'], quanti:2 },
+  lastre:  { chiazza:'#8f8672', forza:0.13, scala:7,  detriti:['#9aa07e','#b0a58c'], quanti:1 },
+  grotta:  { chiazza:'#3e372f', forza:0.22, scala:6,  detriti:['#544c42','#7a6f60'], quanti:2 },
+  neve:    { chiazza:'#b9c6d2', forza:0.13, scala:8,  detriti:['#ffffff','#cdd8e2'], quanti:1 },
+  sentiero:{ chiazza:'#7d7364', forza:0.11, scala:6,  detriti:['#8f8371','#b5a894'], quanti:1 },
+  terra:   { chiazza:'#6d4d38', forza:0.13, scala:7,  detriti:['#a07a56','#5f4433'], quanti:1 }
+};
+
+function dettaglioSuperficie(x, dx, dy, gx, gy, tipo, season){
+  // d'inverno l'erba è disegnata come neve: prende il dettaglio della neve.
+  // L'erba nelle altre stagioni non ne ha bisogno: ha già i ciuffi animati.
+  const D = DETTAGLIO[(tipo==='erba' && season==='inverno') ? 'neve' : tipo];
+  if(!D) return;
+
+  /* 1. chiazze larghe: due frequenze di rumore, in coordinate mondo */
+  const n = ART.rumore(gx, gy, D.scala)*0.68 + ART.rumore(gx, gy, D.scala*0.35)*0.32;
+  const forza = (n-0.5)*2;                       // -1..1
+  if(Math.abs(forza) > 0.12){
+    x.globalAlpha = Math.min(0.5, Math.abs(forza)*D.forza*2.2);
+    x.fillStyle = D.chiazza;
+    // bordo irregolare: la chiazza non deve essere un quadrato
+    for(let k=0;k<8;k++){
+      const ry = (k*4);
+      const inizio = ((ART.hsh(gx, gy*8+k, 401)*5)|0);
+      const largo  = T - inizio - ((ART.hsh(gx*3, gy+k, 402)*5)|0);
+      if(largo > 0) x.fillRect(dx+inizio, dy+ry, largo, 4);
+    }
+    x.globalAlpha = 1;
+  }
+
+  /* 2. detriti radi: qualche sassolino, conchiglia, crepa */
+  for(let k=0; k<D.quanti; k++){
+    if(ART.hsh(gx, gy*7+k, 411) < 0.86) continue;
+    const bx = dx + 3 + ((ART.hsh(gx+k, gy, 412)*(T-7))|0);
+    const by = dy + 3 + ((ART.hsh(gx, gy+k, 413)*(T-7))|0);
+    const col = D.detriti[(ART.hsh(gx+k, gy+k, 414)*D.detriti.length)|0];
+    const forma = ART.hsh(gx*5+k, gy, 415);
+    x.globalAlpha = 0.75;
+    if(forma > 0.66){                            // sassolino
+      x.fillStyle = col; x.fillRect(bx, by, 3, 2);
+      x.fillStyle = ART.shade(col, 0.22); x.fillRect(bx, by, 2, 1);
+    } else if(forma > 0.33){                     // crepa / venatura
+      x.fillStyle = col;
+      x.fillRect(bx, by, 5, 1);
+      x.fillRect(bx+4, by+1, 3, 1);
+    } else {                                     // puntinatura
+      x.fillStyle = col;
+      x.fillRect(bx, by, 1, 1); x.fillRect(bx+2, by+1, 1, 1); x.fillRect(bx+1, by+3, 1, 1);
+    }
+    x.globalAlpha = 1;
+  }
+}
+
+/* ===================================================================
+   PARETI DELLA MINIERA
+   Erano rettangoli neri con un cornicione sottile: gradini da 32 pixel,
+   nessun materiale, e il piano verticale che toccava quello orizzontale
+   senza stacco. Ora la roccia ha corpo e strati, il bordo che affaccia
+   sul vuoto ha una faccia illuminata in alto e scura alla base, con
+   stalattiti e vene di minerale.
+   =================================================================== */
+function pareteRoccia(x, dx, dy, gx, gy, m){
+  const R = PAL.c.roccia;
+  const roccia = (ax,ay)=> WORLD.terreno(m,ax,ay)==='roccia';
+  const sotto = !roccia(gx,gy+1);          // affaccia sul vuoto: si vede la parete
+
+  /* --- corpo della roccia, a strati orizzontali --- */
+  x.fillStyle = R.corpo; x.fillRect(dx,dy,T,T);
+  for(let k=0;k<T;k+=4){
+    const n = ART.hsh(gx, gy*8+k, 421);
+    x.fillStyle = n>0.62 ? R.corpoChiaro : (n>0.3 ? R.corpo : R.strato);
+    x.fillRect(dx, dy+k, T, 4);
+  }
+  // fratture verticali
+  for(let k=0;k<3;k++){
+    if(ART.hsh(gx*3+k, gy, 422) < 0.55) continue;
+    const bx = dx + 3 + ((ART.hsh(gx+k, gy*2, 423)*(T-6))|0);
+    x.fillStyle = R.strato;
+    x.fillRect(bx, dy + ((ART.hsh(gx,gy+k,424)*10)|0), 1, 10+((ART.hsh(gx,gy-k,425)*14)|0));
+  }
+  // vene di minerale, rare
+  if(ART.hsh(gx, gy, 426) > 0.88){
+    const bx = dx+4+((ART.hsh(gx,gy,427)*20)|0), by = dy+5+((ART.hsh(gx,gy,428)*18)|0);
+    x.fillStyle = R.vena;
+    x.fillRect(bx, by, 6, 2); x.fillRect(bx+5, by+2, 5, 2); x.fillRect(bx+9, by+1, 4, 2);
+    x.fillStyle = R.venaLuce;
+    x.fillRect(bx+1, by, 3, 1); x.fillRect(bx+6, by+2, 2, 1);
+  }
+
+  /* --- bordi laterali: spigolo illuminato dove la roccia finisce --- */
+  if(!roccia(gx-1,gy)){ x.fillStyle=R.facciaLuce; x.fillRect(dx,dy,1,T);
+                        x.fillStyle=R.faccia;     x.fillRect(dx+1,dy,1,T); }
+  if(!roccia(gx+1,gy)){ x.fillStyle=R.facciaLuce; x.fillRect(dx+T-1,dy,1,T);
+                        x.fillStyle=R.faccia;     x.fillRect(dx+T-2,dy,1,T); }
+  if(!roccia(gx,gy-1)){ x.fillStyle=R.strato; x.fillRect(dx,dy,T,2); }
+
+  if(!sotto) return;
+
+  /* --- la faccia che guarda la caverna --- */
+  const FH = 15;                            // altezza della parete visibile
+  const fy = dy + T - FH;
+  x.fillStyle = R.cornice; x.fillRect(dx, fy-2, T, 2);      // cornicione in luce
+  x.fillStyle = R.facciaLuce; x.fillRect(dx, fy, T, 3);
+  x.fillStyle = R.faccia; x.fillRect(dx, fy+3, T, FH-6);
+  x.fillStyle = R.base;   x.fillRect(dx, dy+T-3, T, 3);     // base in ombra
+
+  // scanalature verticali della parete
+  for(let k=0;k<T;k+=5){
+    const off = ((ART.hsh(k, gy, 431)*3)|0);
+    x.fillStyle = R.giunto;
+    x.fillRect(dx+k+off, fy+3, 1, FH-5);
+    x.fillStyle = R.facciaLuce;
+    x.fillRect(dx+k+off+1, fy+3, 1, 3);
+  }
+
+  /* Le stalattiti NON si disegnano qui: pendono sotto il bordo, quindi
+     finirebbero fuori dalla casella e verrebbero tagliate al confine fra
+     un blocco e l'altro. Le disegna la casella di pavimento sottostante
+     (vedi stalattiti()), che ha tutto lo spazio che serve. */
+}
+
+/* stalattiti che pendono dalla parete soprastante, disegnate sul
+   pavimento così restano dentro la casella */
+function stalattiti(x, dx, dy, gx, gy){
+  const R = PAL.c.roccia;
+  const sopra = gy-1;                       // il seme viene dalla parete
+  const quante = ART.hsh(gx, sopra, 441) > 0.5 ? (ART.hsh(gx, sopra, 442)>0.72 ? 2 : 1) : 0;
+  for(let k=0;k<quante;k++){
+    const bx = dx + 3 + ((ART.hsh(gx+k*7, sopra, 443)*(T-8))|0);
+    const h  = 4 + ((ART.hsh(gx, sopra+k*5, 444)*8)|0);
+    for(let i=0;i<h;i++){
+      const w = i < h*0.45 ? 3 : (i < h*0.8 ? 2 : 1);
+      x.fillStyle = i<2 ? R.stalattiteLuce : R.stalattite;
+      x.fillRect(bx, dy+i, w, 1);
+    }
+    x.fillStyle = R.base;                   // ombrina sotto la punta
+    x.fillRect(bx, dy+h, 1, 1);
+  }
+}
 
 function costruisciChunk(m, cx, cy, season){
   const c = ART.cv(CH*T, CH*T);
@@ -130,25 +299,24 @@ function costruisciChunk(m, cx, cy, season){
     const v = m.v[WORLD.idx(m,gx,gy)];
 
     /* --- base (l'acqua resta trasparente: è animata sotto) --- */
-    if(tipo!=='acqua'){
-      x.drawImage(ART.ground(texTerreno(tipo), v, season), dx, dy);
+    const fontana = tipo==='acqua' && eFontana(m,gx,gy);
+    if(tipo!=='acqua' || fontana){
+      const t2 = fontana ? terrenoAttorno(m,gx,gy) : tipo;
+      x.drawImage(ART.ground(texTerreno(t2), v, season), dx, dy);
+      dettaglioSuperficie(x, dx, dy, gx, gy, t2, season);
     }
 
-    /* --- pareti di roccia: faccia scura e cornicione --- */
-    if(tipo==='roccia'){
-      x.fillStyle='rgba(8,7,6,0.62)'; x.fillRect(dx,dy,T,T);
-      if(WORLD.terreno(m,gx,gy+1)!=='roccia'){
-        x.fillStyle='#241f1a'; x.fillRect(dx,dy+T-11,T,11);
-        x.fillStyle='#4a4038'; x.fillRect(dx,dy+T-13,T,3);
-        x.fillStyle='#635648'; x.fillRect(dx,dy+T-13,T,1);
-        for(let k=0;k<T;k+=7){
-          x.fillStyle='#191510';
-          x.fillRect(dx+k+((ART.hsh(k,gy,431)*3)|0), dy+T-9, 1, 7);
-        }
-      }
-      if(WORLD.terreno(m,gx-1,gy)!=='roccia'){ x.fillStyle='rgba(90,78,66,0.35)'; x.fillRect(dx,dy,2,T); }
-      if(WORLD.terreno(m,gx+1,gy)!=='roccia'){ x.fillStyle='rgba(90,78,66,0.35)'; x.fillRect(dx+T-2,dy,2,T); }
-      continue;   // la roccia non partecipa ai raccordi
+    /* --- pareti di roccia --- */
+    if(tipo==='roccia'){ pareteRoccia(x, dx, dy, gx, gy, m); continue; }
+
+    /* ombra della parete sul pavimento sottostante: stacca il piano
+       verticale da quello orizzontale, che prima si toccavano di netto */
+    if(tipo==='grotta' && WORLD.terreno(m,gx,gy-1)==='roccia'){
+      const g = x.createLinearGradient(0, dy, 0, dy+10);
+      g.addColorStop(0, 'rgba(0,0,0,0.38)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      x.fillStyle = g; x.fillRect(dx, dy, T, 10);
+      stalattiti(x, dx, dy, gx, gy);
     }
 
     /* --- raccordi: i vicini "più forti" sbordano su questa casella --- */
@@ -239,6 +407,7 @@ R.disegna = function(G){
   /* ---------- 1. ACQUA ANIMATA (sotto al terreno pre-cotto) ---------- */
   for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
     if(WORLD.terreno(m,x,y)!=='acqua') continue;
+    if(eFontana(m,x,y)) continue;              // la vasca disegna la sua acqua
     sx.drawImage(ART.water(stag, wf), (x*T+ox)|0, (y*T+oy)|0);
   }
 
@@ -252,6 +421,7 @@ R.disegna = function(G){
   /* ---------- 3. SCHIUMA SULLE RIVE (animata) ---------- */
   for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
     if(WORLD.terreno(m,x,y)!=='acqua') continue;
+    if(eFontana(m,x,y)) continue;              // niente schiuma sul bordo della vasca
     const px=(x*T+ox)|0, py=(y*T+oy)|0;
     const v=m.v[WORLD.idx(m,x,y)];
     for(const [d,dx,dy] of [['n',0,-1],['s',0,1],['w',-1,0],['e',1,0]]){
@@ -262,6 +432,12 @@ R.disegna = function(G){
       sx.globalAlpha=1;
     }
   }
+
+  /* ---------- 3b. RIFLESSI SULL'ACQUA ----------
+     Chi sta sulla riva si specchia nell'acqua sotto di sé: giocatore,
+     abitanti e alberi. Il riflesso è ritagliato sulle sole caselle
+     d'acqua, altrimenti sborderebbe sulla sabbia. */
+  if(m.esterno) riflessi(m, x0,y0,x1,y1, ox,oy, stag, t, G);
 
   /* ---------- 4. TERRENO ARATO + DECORAZIONI PIATTE ---------- */
   if(m.coltivabile){
@@ -521,6 +697,64 @@ R.disegna = function(G){
   vg.addColorStop(1,'rgba(0,0,0,0.32)');
   ctx.fillStyle=vg; ctx.fillRect(0,0,cvs.width,cvs.height);
 };
+
+/* ===================================================================
+   RIFLESSI SULL'ACQUA
+   =================================================================== */
+
+/* c'è acqua sotto questa casella? quante caselle di fila? */
+function acquaSotto(m, tx, ty){
+  let n = 0;
+  while(n < 3 && WORLD.terreno(m, tx, ty+1+n) === 'acqua') n++;
+  return n;
+}
+
+/* ritaglia sulle caselle d'acqua nell'area del riflesso, poi disegna */
+function specchia(m, sx0, img, cxMondo, byMondo, ox, oy, t, alpha, alt){
+  const tx = (cxMondo/T)|0, ty = ((byMondo-1)/T)|0;
+  const prof = acquaSotto(m, tx, ty);
+  if(!prof) return;
+
+  sx0.save();
+  sx0.beginPath();
+  const raggio = 2;                       // il riflesso può sbandare di lato
+  for(let d=0; d<prof; d++) for(let k=-raggio; k<=raggio; k++){
+    if(WORLD.terreno(m, tx+k, ty+1+d) !== 'acqua') continue;
+    sx0.rect((tx+k)*T+ox, (ty+1+d)*T+oy, T, T);
+  }
+  sx0.clip();
+  FX.riflesso(sx0, img, cxMondo+ox, byMondo+oy, img.width, alt||img.height, t, alpha);
+  sx0.restore();
+}
+
+function riflessi(m, x0,y0,x1,y1, ox,oy, stag, t, G){
+  /* --- alberi e cespugli sulla riva --- */
+  for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
+    const o = m.obj[WORLD.idx(m,x,y)];
+    if(!o) continue;
+    if(o.t==='albero'){
+      if(!acquaSotto(m,x,y)) continue;
+      const img = ART.tree(o.kind, stag, o.stage, varianteDi(x,y));
+      specchia(m, sx, img, x*T+16, (y+1)*T, ox, oy, t, 0.20, img.height*0.8);
+    } else if(o.t==='cespuglio'){
+      if(!acquaSotto(m,x,y)) continue;
+      specchia(m, sx, ART.bush(stag,o.v,o.bacche), x*T+16, (y+1)*T, ox, oy, t, 0.18);
+    }
+  }
+
+  /* --- abitanti e giocatore --- */
+  const gente = [];
+  for(const n of G.npcVivi()) gente.push({px:n.px, py:n.py, look:DATA.NPCS[n.id].look, dir:n.dir, frame:n.frame});
+  if(!G.p.dorme) gente.push({px:G.p.px, py:G.p.py, look:G.p.look, dir:G.p.dir, frame:G.p.frame});
+  for(const g of gente){
+    if(!g.look || g.look.spirito) continue;
+    const px = g.px+ox;
+    if(px < -60 || px > VW+60) continue;
+    const tx=(g.px/T)|0, ty=(g.py/T)|0;
+    if(!acquaSotto(m,tx,ty)) continue;
+    specchia(m, sx, ART.charSprite(g.look, g.dir, g.frame), g.px, (ty+1)*T, ox, oy, t, 0.26);
+  }
+}
 
 /* ===================================================================
    ERBA ANIMATA

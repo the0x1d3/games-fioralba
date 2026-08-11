@@ -58,6 +58,15 @@ P.c = {
   },
   erba: { brina:'#ffffff', fiore:'#fff4d8', fioreAutunno:'#d9a03c' },
 
+  /* --- pareti della miniera --- */
+  roccia: {
+    corpo:'#1a1611', corpoChiaro:'#282118', strato:'#100d08',
+    faccia:'#2f2820', facciaLuce:'#4a4038', cornice:'#6b5d4c',
+    base:'#0d0b07', giunto:'#191510',
+    vena:'#6b5a3c', venaLuce:'#8f7848',
+    stalattite:'#4c4238', stalattiteLuce:'#736858'
+  },
+
   /* --- acqua (la tinta stagionale la sceglie art.js) --- */
   acqua: {
     tiepida: { fondo:'#2f6f96', medio:'#3f8ab0', cresta:'#63b0cc' },

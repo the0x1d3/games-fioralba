@@ -195,7 +195,7 @@ js/data.js          colture, oggetti, ricette, personaggi, lore
 js/palette.js       i colori strutturali della valle, ritoccabili a caldo
 js/art.js           motore di pixel-art: ogni sprite disegnato in codice,
                     raccordi fra terreni, erba animata, aiuole
-js/fx.js            vento globale, ombre proiettate, bloom, gradazione colore
+js/fx.js            vento globale, ombre proiettate, riflessi, bloom, colore
 js/audio.js         musica generata (una traccia per stagione) e suoni
 js/world.js         le quattro mappe, collisioni, respawn notturno
 js/mobs.js          fauna: sprite, comportamenti, comparsa
