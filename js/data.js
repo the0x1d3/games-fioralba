@@ -500,6 +500,245 @@ D.RISVEGLI = [
   'Qualcosa è cresciuto stanotte.'
 ];
 
+/* ------------------------------------------------------------------
+   BATTUTE CONTESTUALI
+   Prima ogni abitante aveva cinque frasi e basta: chi passava a salutare
+   ogni giorno — che è quello che il gioco chiede di fare — le esauriva
+   in meno di una settimana e poi le risentiva per mesi.
+   Qui ognuno ha qualcosa da dire sulla stagione, sul tempo che fa,
+   sull'ora del giorno e su quanto vi conoscete.
+   ------------------------------------------------------------------ */
+D.CONTESTO = {
+  bruno: {
+    stagione: {
+      primavera:['I semi di primavera vanno via che è un piacere. Se ne vuoi, muoviti.',
+                 'Ogni primavera dico che quest\'anno mi organizzo. Ogni primavera arrivo impreparato.'],
+      estate:   ['Con questo caldo la gente compra e scappa. Nessuno chiacchiera più.',
+                 'Tengo i semi di melone all\'ombra. L\'anno scorso mi sono germogliati in negozio.'],
+      autunno:  ['L\'autunno è la mia stagione: si vende tutto e si lavora la metà.',
+                 'Zucche. Ogni anno mi sommergono di zucche. E ogni anno le ricompro.'],
+      inverno:  ['D\'inverno vendo tre cose in croce e parlo con chiunque entri. Compreso te.',
+                 'Il magazzino è pieno e il paese è vuoto. Fa un certo effetto.']
+    },
+    meteo: {
+      pioggia:  ['Con la pioggia entra gente solo per asciugarsi. Non compra niente, ma almeno parla.'],
+      temporale:['Ho staccato l\'insegna prima che la portasse via il vento. È già successo.'],
+      neve:     ['Con la neve la gente compra il doppio del necessario. Non ho mai capito perché.'],
+      vento:    ['Il vento mi rovescia le ceste. Ogni volta.']
+    },
+    ora: {
+      mattina:  ['Aperto da un\'ora e sei il primo. Dimmi che è un buon segno.'],
+      sera:     ['Sto per chiudere. Se ti serve qualcosa, adesso o domani.']
+    }
+  },
+
+  serafina: {
+    stagione: {
+      primavera:['Il bosco si sta svegliando adesso. Cammina piano, i primi giorni.',
+                 'Le viole sono uscite tutte insieme, come se si fossero messe d\'accordo.'],
+      estate:   ['D\'estate il sottobosco profuma di resina. Respira, invece di correre.',
+                 'La lavanda va colta al mattino, prima che il sole se la beva.'],
+      autunno:  ['Adesso il bosco dà tutto quello che ha. Prendine metà e lascia il resto.',
+                 'I porcini escono dopo tre giorni di pioggia. Segnatelo.'],
+      inverno:  ['Sotto la neve non è morto niente. Sta solo contando i giorni.',
+                 'D\'inverno il bosco è più onesto: si vede la forma delle cose.']
+    },
+    meteo: {
+      pioggia:  ['La pioggia è la voce del bosco. Sta dicendo qualcosa, se ti fermi.'],
+      temporale:['I temporali fanno crescere le piante più in fretta. Non chiedermi perché, so solo che è così.'],
+      neve:     ['Nella neve si leggono le impronte. Oggi è passata una volpe, prima di te.'],
+      vento:    ['Il vento porta i semi lontano. È l\'unico modo che hanno di viaggiare.']
+    },
+    ora: {
+      mattina:  ['A quest\'ora il bosco è ancora di chi ci vive. Sei ospite: comportati bene.'],
+      sera:     ['Sta per farsi buio. Se torni al podere, prendi il sentiero, non la scorciatoia.']
+    }
+  },
+
+  tobia: {
+    stagione: {
+      primavera:['Primavera: tutti si ricordano che gli attrezzi sono da aggiustare.',
+                 'Il legno umido non tiene. Aspetta l\'estate per la staccionata.'],
+      estate:   ['Con la fucina accesa e questo caldo, io d\'estate mi sciolgo.',
+                 'Lavoro all\'alba e al tramonto. Nel mezzo, sto all\'ombra come un gatto.'],
+      autunno:  ['Stagione buona per il ferro: né umido né rovente.',
+                 'Se hai lingotti da parte, adesso è il momento di portarmeli.'],
+      inverno:  ['La fucina d\'inverno è il posto più caldo del paese. Passa quando vuoi.',
+                 'Il freddo rende il metallo capriccioso. Ci vuole più pazienza.']
+    },
+    meteo: {
+      pioggia:  ['Il carbone bagnato non serve a niente. Oggi si batte poco.'],
+      temporale:['Sento i tuoni nel petto prima che nelle orecchie. È l\'incudine.'],
+      neve:     ['Nevica. Il mantice tira meglio con l\'aria fredda, però.'],
+      vento:    ['Con questo vento la forgia tira troppo. Brucio il doppio del carbone.']
+    },
+    ora: {
+      mattina:  ['Sono in piedi da prima di te. Il ferro non aspetta.'],
+      sera:     ['Chiudo bottega e vado alla locanda. Ci vediamo là, se ti va.']
+    }
+  },
+
+  marisol: {
+    stagione: {
+      primavera:['In primavera cambio il menu. Le prime erbe cambiano tutto.',
+                 'Serafina mi porta le viole e io ci faccio uno sciroppo che non ti dico.'],
+      estate:   ['D\'estate si mangia fuori, sotto il pergolato. Passa una sera.',
+                 'Il pomodoro d\'estate non ha bisogno di niente. Nemmeno di me.'],
+      autunno:  ['Autunno: zucca, funghi, castagne. La cucina si scrive da sola.',
+                 'È la stagione in cui la locanda si riempie e io dormo poco.'],
+      inverno:  ['D\'inverno tengo il camino acceso tutto il giorno. Vieni a scaldarti.',
+                 'Le conserve d\'estate si aprono adesso. È come riaprire luglio.']
+    },
+    meteo: {
+      pioggia:  ['Quando piove la locanda si riempie. Adoro la pioggia, professionalmente.'],
+      temporale:['Coi tuoni la gente resta a tavola più a lungo. E ordina il dolce.'],
+      neve:     ['Ho messo la zuppa sul fuoco alle sei. Con questa neve, sparirà entro mezzogiorno.'],
+      vento:    ['Il vento fa sbattere le imposte e i clienti si spaventano. Poi ordinano vino.']
+    },
+    ora: {
+      mattina:  ['Sto impastando. Se resti a guardare, ti metto a lavorare.'],
+      sera:     ['È l\'ora buona: c\'è gente, c\'è rumore, c\'è odore di cena. Siediti.']
+    }
+  },
+
+  elio: {
+    stagione: {
+      primavera:['In primavera i pesci hanno fame come me. Si prende tutto.',
+                 'La trota di primavera è più magra ma più buona. Fidati.'],
+      estate:   ['D\'estate si pesca all\'alba o non si pesca. Il resto è stare al sole.',
+                 'Al largo, d\'estate, l\'acqua è così ferma che si vede il fondo.'],
+      autunno:  ['L\'autunno è per il luccio. Grosso, cattivo, e non molla mai.',
+                 'Con le foglie in acqua abbocca meno. Bisogna avere pazienza.'],
+      inverno:  ['D\'inverno le mani si spaccano e i pesci stanno sotto. Ma io vado lo stesso.',
+                 'Lo storione d\'inverno vale tre giorni di freddo. Almeno.']
+    },
+    meteo: {
+      pioggia:  ['Quando piove i pesci salgono. È il momento migliore e nessuno ci crede.'],
+      temporale:['Col temporale non si esce sul molo. Ho imparato bagnandomi.'],
+      neve:     ['Sotto la neve l\'acqua è nera e ferma. Un po\' mi mette soggezione.'],
+      vento:    ['Col vento la lenza va dove vuole lei. Oggi è una lotta.']
+    },
+    ora: {
+      mattina:  ['Sono qui da prima dell\'alba. I pesci non aspettano chi dorme.'],
+      sera:     ['Di notte, al molo, l\'acqua fa un rumore diverso. Più profondo. Provaci.']
+    }
+  },
+
+  eremita: {
+    stagione: {
+      primavera:['Quassù la primavera arriva con un mese di ritardo. Non si offende nessuno.',
+                 'La neve si ritira e sotto trovo le cose che avevo perso a novembre.'],
+      estate:   ['Due settimane d\'estate, quassù. Le uso tutte.',
+                 'D\'estate il passo è quasi ospitale. Quasi.'],
+      autunno:  ['L\'autunno dura tre giorni e poi è già inverno. Fai in fretta.',
+                 'Sto mettendo via legna. Ne serve sempre più di quanto pensi.'],
+      inverno:  ['Adesso siamo io e la montagna. È il periodo che preferisco.',
+                 'Il freddo non è il nemico. È il vento a portarti via.']
+    },
+    meteo: {
+      pioggia:  ['Pioggia quassù vuol dire che sotto sta nevicando. Aspetta.'],
+      temporale:['I temporali di montagna arrivano di sotto in su. Guarda la valle, non il cielo.'],
+      neve:     ['Nevica. Bene. La neve copre e protegge, non uccide.'],
+      vento:    ['Questo vento scende dal ghiacciaio. Coprila, quella faccia.']
+    },
+    ora: {
+      mattina:  ['Sei salito presto. Pochi lo fanno.'],
+      sera:     ['Fra un\'ora non si vedrà più il sentiero. Deciditi.']
+    }
+  }
+};
+
+/* cosa si dicono il giorno della sagra, quando il paese è tutto in piazza */
+D.FESTA = {
+  bruno:    ['Bottega chiusa. Una volta a stagione me lo concedo.',
+             'Guarda quanta gente. E pensare che di solito parlo con le casse.'],
+  serafina: ['Sono scesa dal bosco apposta. Non succede spesso: segnatelo.',
+             'Ilde non ne saltava una. Stava lì, in quell\'angolo, a guardare tutti.'],
+  tobia:    ['Oggi la fucina è fredda e io ho le mani pulite. Mi sento strano.',
+             'Ho portato le panche nuove. Tre giorni di lavoro, per un pomeriggio.'],
+  marisol:  ['Ho cucinato per settanta persone. Settanta, in un paese di dodici.',
+             'Assaggia tutto e non dirmi cosa preferisci: mi offendo comunque.'],
+  elio:     ['Un giorno all\'anno non pesco. Oggi. E già mi manca.',
+             'Alla sagra dell\'anno scorso ho raccontato del Pesce Luna. Ridono ancora.']
+};
+
+/* battute per il proprio compleanno */
+D.AUGURI = {
+  bruno:    'Oggi? Compleanno. Non l\'ho detto a nessuno e voi ve lo ricordate tutti. Misterioso.',
+  serafina: 'Compio gli anni oggi. Li conto ancora, sì. Mi sembra una cortesia verso il tempo.',
+  tobia:    'Compleanno. Mio padre me lo festeggiava battendo l\'incudine dodici volte. Rumoroso, ma sincero.',
+  marisol:  'È il mio compleanno e sto cucinando per gli altri. Non lo cambierei con niente.',
+  elio:     'Oggi compio gli anni. Da ragazzo pescavo per festeggiare. Oggi... pesco lo stesso.',
+  eremita:  'Compleanno. Quassù non lo sa nessuno. Che tu sia salito oggi è una coincidenza notevole.'
+};
+
+/* ------------------------------------------------------------------
+   AGENDE — la giornata degli abitanti
+
+   Prima stavano fermi nello stesso fazzoletto di prato alle tre di notte
+   come a mezzogiorno, con qualsiasi tempo. Ora ognuno ha una giornata:
+   dorme, apre bottega, va alla locanda la sera, e col brutto tempo si
+   mette al riparo.
+
+   `fino`  : minuto della giornata in cui la fascia finisce (6:00 = 360)
+   `giro`  : caselle fra cui gironzola in quella fascia
+   `dentro`: sta in casa — non compare sulla mappa
+   `fisso` : non si sposta (Fiammella)
+   `coperto`: la fascia vale anche col brutto tempo
+   ------------------------------------------------------------------ */
+D.AGENDE = {
+  bruno: [
+    { fino:480,  dentro:true },                                   // dorme fino alle 8
+    { fino:1140, giro:[[12,16],[10,16],[12,15],[11,17]] },         // bottega, tutto il giorno
+    { fino:1320, giro:[[19,9],[20,10],[18,10]] },                  // sera alla locanda
+    { fino:9999, dentro:true }
+  ],
+  tobia: [
+    { fino:540,  dentro:true },
+    { fino:1170, giro:[[29,15],[31,16],[27,16],[30,16]] },         // fucina
+    { fino:1350, giro:[[20,10],[21,11],[19,11]] },                 // locanda fino a tardi
+    { fino:9999, dentro:true }
+  ],
+  marisol: [
+    { fino:420,  dentro:true },
+    { fino:1380, giro:[[19,10],[21,11],[17,11],[20,12]], coperto:true }, // la locanda è al chiuso
+    { fino:9999, dentro:true }
+  ],
+  elio: [
+    { fino:330,  dentro:true },
+    { fino:780,  giro:[[34,19],[35,18],[33,19]] },                 // all'alba al molo
+    { fino:1020, giro:[[24,20],[22,21],[26,20]] },                 // pomeriggio in piazza
+    { fino:1290, giro:[[18,10],[19,11]] },                         // sera alla locanda
+    { fino:9999, dentro:true }
+  ],
+  serafina: [
+    { fino:450,  dentro:true },
+    { fino:900,  giro:[[9,17],[11,18],[7,18],[10,19]] },           // mattina nell'orto
+    { fino:1200, giro:[[14,20],[17,22],[12,23]] },                 // pomeriggio nel bosco
+    { fino:9999, dentro:true }
+  ],
+  eremita: [
+    // l'eremita vive fuori: la neve non lo scoraggia
+    { fino:420,  dentro:true },
+    { fino:1260, giro:[[26,15],[24,16],[28,14],[25,18]], coperto:true },
+    { fino:9999, dentro:true }
+  ],
+  fiammella: [ { fino:9999, fisso:true } ]
+};
+
+/* ------------------------------------------------------------------
+   COMPLEANNI — una casella del calendario che prima era vuota
+   Nel giorno giusto qualunque regalo vale il triplo.
+   ------------------------------------------------------------------ */
+D.COMPLEANNI = {
+  bruno:    { stagione:'autunno',   giorno:9  },
+  serafina: { stagione:'primavera', giorno:14 },
+  tobia:    { stagione:'inverno',   giorno:6  },
+  marisol:  { stagione:'estate',    giorno:21 },
+  elio:     { stagione:'estate',    giorno:4  },
+  eremita:  { stagione:'inverno',   giorno:25 }
+};
+
 /* consigli caricamento */
 D.CONSIGLI = [
   'Dormi prima di mezzanotte o ti sveglierai a pezzi.',

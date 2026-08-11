@@ -245,6 +245,72 @@ verifica('ogni edificio con una porta ha davvero la porta sulla mappa', () => {
   return problemi;
 });
 
+verifica('le agende mandano gli abitanti su caselle calpestabili', () => {
+  // Un punto dell'agenda dentro un muro significa un abitante che resta
+  // incastrato per ore: si nota subito e si trova solo giocando.
+  const maps = WORLD.crea();
+  const dove = {};
+  for (const id in maps) for (const n of (maps[id].npc || [])) dove[n.id] = id;
+  const problemi = [];
+  for (const id in DATA.AGENDE) {
+    const mappa = maps[dove[id]];
+    if (!mappa) { problemi.push(`«${id}» ha un'agenda ma non vive su nessuna mappa`); continue; }
+    for (const fascia of DATA.AGENDE[id]) {
+      for (const [x, y] of (fascia.giro || [])) {
+        if (!WORLD.dentro(mappa, x, y)) problemi.push(`${id}: (${x},${y}) è fuori da ${dove[id]}`);
+        else if (WORLD.solido(mappa, x, y)) problemi.push(`${id}: (${x},${y}) in ${dove[id]} è dentro un ostacolo`);
+      }
+    }
+  }
+  return problemi;
+});
+
+verifica('le agende coprono tutta la giornata, senza buchi', () => {
+  const problemi = [];
+  for (const id in DATA.AGENDE) {
+    const A = DATA.AGENDE[id];
+    if (!A.length) { problemi.push(`«${id}» ha un'agenda vuota`); continue; }
+    let prec = -1;
+    for (const f of A) {
+      if (typeof f.fino !== 'number') { problemi.push(`${id}: una fascia senza «fino»`); break; }
+      if (f.fino <= prec) problemi.push(`${id}: le fasce non sono in ordine (${prec} → ${f.fino})`);
+      prec = f.fino;
+    }
+    if (A[A.length - 1].fino < 1560) problemi.push(`${id}: l'agenda finisce alle ${A[A.length-1].fino}, prima della fine della giornata`);
+  }
+  return problemi;
+});
+
+verifica('i compleanni cadono su giorni che esistono', () => {
+  const stagioni = DATA.SEASONS.map(s => s.id);
+  const problemi = [];
+  const visti = {};
+  for (const id in DATA.COMPLEANNI) {
+    const c = DATA.COMPLEANNI[id];
+    if (!DATA.NPCS[id]) problemi.push(`compleanno di «${id}», che non è un abitante`);
+    if (stagioni.indexOf(c.stagione) < 0) problemi.push(`${id}: stagione «${c.stagione}» inesistente`);
+    if (c.giorno < 1 || c.giorno > DATA.GIORNI_STAGIONE) problemi.push(`${id}: giorno ${c.giorno} fuori dalla stagione`);
+    const k = c.stagione + '/' + c.giorno;
+    if (visti[k]) problemi.push(`${id} e ${visti[k]} compiono gli anni lo stesso giorno`);
+    visti[k] = id;
+    if (!DATA.AUGURI || !DATA.AUGURI[id]) problemi.push(`${id} non ha una battuta per il proprio compleanno`);
+  }
+  return problemi;
+});
+
+verifica('ogni abitante ha battute contestuali per ogni stagione', () => {
+  const problemi = [];
+  for (const id in DATA.NPCS) {
+    if (DATA.NPCS[id].look && DATA.NPCS[id].look.spirito) continue;
+    const C = (DATA.CONTESTO || {})[id];
+    if (!C) { problemi.push(`«${id}» non ha battute contestuali`); continue; }
+    for (const s of DATA.SEASONS.map(x => x.id))
+      if (!C.stagione || !(C.stagione[s] || []).length) problemi.push(`${id}: niente da dire in ${s}`);
+    if (!C.meteo || !Object.keys(C.meteo).length) problemi.push(`${id}: niente da dire sul tempo`);
+  }
+  return problemi;
+});
+
 verifica('ogni mappa è raggiungibile dal podere', () => {
   const maps = WORLD.crea();
   const visti = new Set(['podere']);

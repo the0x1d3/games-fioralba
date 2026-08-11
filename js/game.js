@@ -35,7 +35,7 @@ function statoIniziale(){
     attrezziLiv:{zappa:0, annaffiatoio:0, ascia:0, piccone:0},
     amicizia:{}, regalatoOggi:{}, parlatoOggi:{},
     costruzioni:{},
-    santuario:{}, santuarioDato:{}, braci:0,
+    santuario:{}, santuarioDato:{}, braci:0, regaloRicevuto:{},
     lettere:{}, ricetteNote:{zuppa_contadina:true, frittata:true},
     cassaConsegna:[],
     stats:{raccolti:0, pesci:0, alberi:0, sassi:0, guadagno:0, giorniGiocati:0,
@@ -568,6 +568,7 @@ function avviaGioco(conIntro){
   costruisciHotbar();
   G.aggiornaHUD();
   G.progresso();
+  aggiornaOspitiSagra();          // se si riprende proprio nel giorno di festa
   if(window.GUIDA) GUIDA.init();
   musicaGiusta();
   SND.ambiente(ambienteGiusto());
@@ -865,7 +866,7 @@ function normalizzaStato(){
   const O = k => { if(!G[k] || typeof G[k]!=='object') G[k]={}; };
   ['inv','richieste','cassaConsegna','animali'].forEach(A);
   ['skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
-   'lettere','ricetteNote','stats','obiettiviRiscossi','visitati','collezione',
+   'lettere','ricetteNote','stats','obiettiviRiscossi','visitati','collezione','regaloRicevuto',
    'parlatoOggi','regalatoOggi','mercato'].forEach(O);
   if(!G.trame || typeof G.trame!=='object') G.trame={};
   if(!G.trame.torta)     G.trame.torta={avviata:false,segreto:false,fatta:false};
@@ -1742,28 +1743,83 @@ function apriConsegna(){
 /* ===================================================================
    NPC
    =================================================================== */
+/* ===================================================================
+   AGENDE — dove si trova un abitante a quest'ora
+   =================================================================== */
+const METEO_BRUTTO = { pioggia:1, temporale:1, neve:1 };
+const AL_RIPARO = { dentro:true, riparo:true };   // oggetto unico: viene chiesto a ogni frame
+
+/* la fascia di agenda in corso, tenendo conto del tempo che fa */
+/* il giorno della sagra l'agenda salta: tutti in piazza dalle 9 a sera */
+const FASCE_SAGRA = {};
+for(const id in {bruno:1,tobia:1,marisol:1,elio:1,serafina:1}) FASCE_SAGRA[id]=null;
+
+G.fasciaAgenda = function(id){
+  if(G.eGiornoDiSagra() && POSTI_SAGRA[id] && G.ora>=540 && G.ora<1320){
+    if(!FASCE_SAGRA[id]) FASCE_SAGRA[id] = { fino:1320, giro:POSTI_SAGRA[id], coperto:true, sagra:true };
+    return FASCE_SAGRA[id];
+  }
+  const A = DATA.AGENDE[id];
+  if(!A) return null;
+  let f = A[A.length-1];
+  for(const s of A){ if(G.ora < s.fino){ f = s; break; } }
+  // col brutto tempo chi non è al coperto rientra
+  if(f && f.giro && !f.coperto && METEO_BRUTTO[G.meteo]) return AL_RIPARO;
+  return f;
+};
+
+/* è in casa (o al riparo) e quindi non si vede in giro? */
+G.npcAlChiuso = function(id){
+  const f = G.fasciaAgenda(id);
+  return !!(f && f.dentro);
+};
+
 G.npcVivi = function(){
   const m=G.mappa();
   return (m.npc||[]).filter(n=>{
     if(n.richiedePonte && !G.costruzioni.ponte) return false;
-    if(n.id==='fiammella' && !G.vistoFiammella && G.braci===0) return true;
+    if(G.npcAlChiuso(n.id)) return false;      // dorme, lavora al chiuso o si ripara
     return true;
   });
+};
+
+/* oggi è il compleanno di qualcuno? */
+G.compleannoOggi = function(id){
+  const c = DATA.COMPLEANNI[id];
+  return !!(c && c.stagione===G.stagione().id && c.giorno===G.giorno);
+};
+G.festeggiatoOggi = function(){
+  for(const id in DATA.COMPLEANNI) if(G.compleannoOggi(id)) return id;
+  return null;
 };
 
 function aggiornaNPC(dt){
   const m=G.mappa();
   for(const n of (m.npc||[])){
     if(n.px===undefined){ n.px = n.x*T+16; n.py = n.y*T+24; n.dir=0; n.frame=0; n.animT=0; n.wait=Math.random()*3000; }
-    if(n.fisso){
+
+    const fascia = G.fasciaAgenda(n.id);
+    if(n.fisso || (fascia && fascia.fisso)){
       n.frame=0;
       n.emote = (G.braci<4 && n.id==='fiammella') ? '!' : null;
       continue;
     }
+    /* Al chiuso continua a esistere, ma lo teniamo davanti a casa sua:
+       quando riesce non deve comparire dall'altra parte del paese. */
+    if(fascia && fascia.dentro){
+      const posto = (fascia.giro && fascia.giro[0]) || [n.x, n.y];
+      n.px = posto[0]*T+16; n.py = posto[1]*T+24;
+      n.dest = null; n.frame = 0; n.emote = null;
+      continue;
+    }
+    /* cambio di fascia: si rimette in marcia verso il posto nuovo */
+    const giro = (fascia && fascia.giro) || n.giro;
+    if(n.fasciaPrec !== fascia){ n.fasciaPrec = fascia; n.dest = null; n.wait = Math.random()*900; }
+
     n.wait -= dt;
     if(n.wait>0){ n.frame=0; continue; }
     if(!n.dest){
-      const g = n.giro[(Math.random()*n.giro.length)|0];
+      const g = giro[(Math.random()*giro.length)|0];
       n.dest = {x:g[0]*T+16, y:g[1]*T+24};
     }
     const dx=n.dest.x-n.px, dy=n.dest.y-n.py;
@@ -1781,16 +1837,77 @@ function aggiornaNPC(dt){
   }
 }
 
+/* ===================================================================
+   COSA DICE OGGI
+   Le battute generiche restano il fondo, ma prima si guarda se c'è
+   qualcosa di più pertinente da dire: il compleanno, la stagione, il
+   tempo che fa, l'ora. Così chi passa ogni giorno — che è quello che il
+   gioco chiede — non risente le stesse cinque frasi per mesi.
+   =================================================================== */
+function battutaDelGiorno(id, cuori){
+  const N = DATA.NPCS[id];
+  const C = (DATA.CONTESTO||{})[id];
+  const pool = [];
+
+  // il compleanno ha la precedenza su tutto
+  if(G.compleannoOggi(id) && DATA.AUGURI && DATA.AUGURI[id]) return DATA.AUGURI[id];
+  // poi la sagra, che è il secondo giorno speciale dell'anno
+  if(G.eGiornoDiSagra() && DATA.FESTA && DATA.FESTA[id]){
+    const f = DATA.FESTA[id];
+    return f[(Math.random()*f.length)|0];
+  }
+
+  if(C){
+    const st = G.stagione().id;
+    if(C.stagione && C.stagione[st]) pool.push(...C.stagione[st]);
+    if(C.meteo && C.meteo[G.meteo])  pool.push(...C.meteo[G.meteo]);
+    if(C.ora){
+      if(G.ora < 660 && C.ora.mattina) pool.push(...C.ora.mattina);
+      else if(G.ora > 1020 && C.ora.sera) pool.push(...C.ora.sera);
+    }
+  }
+  // con l'amicizia alta entrano anche le battute confidenziali
+  if(cuori>=6 && N.amico) pool.push(...N.amico, ...N.amico);
+  // e sempre il fondo generico, così non diventa ripetitivo al contrario
+  pool.push(...N.battute);
+  return pool[(Math.random()*pool.length)|0];
+}
+
+/* Ogni tanto un amico stretto ti mette qualcosa in mano: piccolo, ma
+   cambia il senso del passare a salutare. */
+function forseUnRegalo(id){
+  if(G.regaloRicevuto && G.regaloRicevuto[id]===G.giornoTot) return null;
+  const cuori = Math.floor((G.amicizia[id]||0)/100);
+  if(cuori < 4 || Math.random() > 0.16) return null;
+  const doni = {
+    bruno:   ['seme_rapa','seme_patata','fibra'],
+    serafina:['viola','lavanda','fungo_porcino'],
+    tobia:   ['pietra','carbone','rame'],
+    marisol: ['zuppa_contadina','pane_miele','frittata'],
+    elio:    ['carpa','pesce_sole','gambero'],
+    eremita: ['bacca_inverno','quarzo','radice_gelata']
+  }[id];
+  if(!doni) return null;
+  const dono = doni[(Math.random()*doni.length)|0];
+  if(!G.puoiAggiungere(dono,1)) return null;
+  if(!G.regaloRicevuto) G.regaloRicevuto={};
+  G.regaloRicevuto[id]=G.giornoTot;
+  G.aggiungi(dono,1);
+  SND.play('regalo');
+  UI.toast(DATA.NPCS[id].nome+' ti ha regalato '+IT.nome(dono)+'.','gold',dono);
+  return dono;
+}
+
 function parlaCon(n){
   const N = DATA.NPCS[n.id];
   const cuori = Math.floor((G.amicizia[n.id]||0)/100);
-  let righe;
-  if(cuori>=6 && N.amico && Math.random()<0.5) righe=[N.amico[(Math.random()*N.amico.length)|0]];
-  else righe=[N.battute[(Math.random()*N.battute.length)|0]];
+  const righe = [ battutaDelGiorno(n.id, cuori) ];
 
   if(!G.parlatoOggi[n.id]){
     G.parlatoOggi[n.id]=true;
     G.amicizia[n.id]=(G.amicizia[n.id]||0)+12;
+    G.progresso();
+    forseUnRegalo(n.id);
   }
 
   const scelte=[];
@@ -1969,12 +2086,19 @@ G.regala = function(npcId, idx){
   else if(IT.prezzo(s.id)<=6){ punti=-15; reaz='no'; }
   else if(IT.cat(s.id)==='pesce' && DATA.ITEMS[s.id] && DATA.ITEMS[s.id].spazzatura){ punti=-30; reaz='no'; }
 
+  // nel giorno del compleanno qualunque pensiero vale il triplo
+  const festa = G.compleannoOggi(npcId);
+  if(festa && punti>0) punti *= 3;
+
   G.togliSlot(idx,1);
   G.regalatoOggi[npcId]=true;
   G.amicizia[npcId]=Math.max(0,(G.amicizia[npcId]||0)+punti);
   if(punti>0) G.stats.regali=(G.stats.regali||0)+1;
 
-  const risposte = {
+  const risposte = festa && punti>0
+    ? ['Te lo sei ricordato. Non me lo aspettavo, e invece te lo sei ricordato.',
+       'Un regalo, oggi. Guarda, mi hai fatto una festa vera.']
+    : {
     ama:['Ma è… è proprio quello che speravo. Grazie davvero.','Non ci posso credere. Lo tengo da conto.'],
     piace:['Che pensiero gentile. Grazie!','Oh, mi piace. Sei una brava persona.'],
     no:['…grazie? Immagino.','Lo apprezzo. Credo. Sì.']
@@ -2630,6 +2754,14 @@ function nuovoGiorno(svenuto, multa){
       // sagra e mercante
       if(nuovaSagra) setTimeout(()=>UI.toast('🎪 È tempo della '+G.sagra.nome+': consegna i prodotti di stagione dal Diario!','gold'), 2400);
       if(G.mercante && G.mercante.presente) setTimeout(()=>UI.toast('🛒 Il mercante ambulante è in paese, oggi alla Locanda.','gold'), 2700);
+      // compleanni: una casella del calendario che prima era vuota
+      const festeggiato = G.festeggiatoOggi();
+      if(festeggiato) setTimeout(()=>UI.toast('🎂 Oggi è il compleanno di '+DATA.NPCS[festeggiato].nome+
+        '. Un regalo, oggi, vale il triplo.','gold'), 3000);
+      // il giorno della festa il paese si raduna in piazza
+      aggiornaOspitiSagra();
+      if(G.eGiornoDiSagra()) setTimeout(()=>UI.toast('🎪 Oggi è il giorno della '+G.sagra.nome+
+        ': il paese è tutto in piazza a Fioralba.','gold'), 3300);
 
       if(voci.length){
         setTimeout(()=>UI.riepilogo(G, voci, tot, dopoRisveglio), 500);
@@ -2836,7 +2968,47 @@ function creaSagra(){
   const st = G.stagione().id, S = SAGRE[st];
   return { stagione:st, nome:S.nome, icona:S.icona, req:S.req, progresso:0, premio:S.premio,
            scadenza: G.giornoTot + (DATA.GIORNI_STAGIONE - G.giorno), // fino a fine stagione
+           giorno: 24,                    // il giorno della festa in piazza
            fatta:false, riscossa:false };
+}
+
+/* ===================================================================
+   IL GIORNO DELLA SAGRA
+   Prima la sagra era un contatore dentro un menu. Adesso, il giorno
+   della festa, il paese smette di lavorare e si raduna in piazza —
+   Serafina scende dal bosco apposta.
+   =================================================================== */
+G.eGiornoDiSagra = function(){
+  return !!(G.sagra && !G.sagra.riscossa && G.giorno === (G.sagra.giorno||24)
+            && G.sagra.stagione === G.stagione().id);
+};
+
+/* le posizioni in piazza, una per abitante */
+const POSTI_SAGRA = {
+  bruno:   [[18,16],[19,17]],
+  tobia:   [[25,16],[24,17]],
+  marisol: [[21,14],[22,15]],
+  elio:    [[24,21],[23,20]],
+  serafina:[[19,21],[20,22]]
+};
+
+/* Serafina viene giù dal bosco solo per la festa. Va tolta dal bosco
+   mentre è in paese, altrimenti sarebbe in due posti nello stesso
+   momento — cosa che il giocatore nota subito. */
+let serafinaNelBosco = null;
+function aggiornaOspitiSagra(){
+  const paese = G.maps.fioralba, bosco = G.maps.bosco;
+  if(!paese || !bosco) return;
+  const iPaese = paese.npc.findIndex(n=>n.id==='serafina');
+  const iBosco = bosco.npc.findIndex(n=>n.id==='serafina');
+
+  if(G.eGiornoDiSagra()){
+    if(iBosco>=0){ serafinaNelBosco = bosco.npc[iBosco]; bosco.npc.splice(iBosco,1); }
+    if(iPaese<0) paese.npc.push({ id:'serafina', x:19, y:21, ospite:true, giro:POSTI_SAGRA.serafina });
+  } else {
+    if(iPaese>=0) paese.npc.splice(iPaese,1);
+    if(iBosco<0 && serafinaNelBosco){ bosco.npc.push(serafinaNelBosco); serafinaNelBosco=null; }
+  }
 }
 function sagraQualifica(id, season){
   const I = DATA.ITEMS[id]; if(!I) return false;
@@ -3151,6 +3323,7 @@ function costruisciDati(){
     cassaConsegna:G.cassaConsegna, stats:G.stats, animali:G.animali,
     look:G.look, vistoFiammella:G.vistoFiammella, introSerafina:G.introSerafina,
     tutorialFatto:G.tutorialFatto, guidaAperta:G.guidaAperta, guidaNascosta:G.guidaNascosta,
+    regaloRicevuto:G.regaloRicevuto,
     mercato:G.mercato, gelo:G.gelo,
     richieste:G.richieste, richiestaSeq:G.richiestaSeq,
     obiettiviRiscossi:G.obiettiviRiscossi, sagra:G.sagra, mercante:G.mercante, trame:G.trame, visitati:G.visitati, collezione:G.collezione,
@@ -3284,7 +3457,7 @@ function applicaSalvataggio(raw){
                   'anno','giornoTot','ora','meteo','meteoDomani','inv','invMax','slotSel',
                   'skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
                   'braci','lettere','ricetteNote','cassaConsegna','stats','animali','look',
-                  'vistoFiammella','introSerafina','tutorialFatto','guidaAperta','guidaNascosta',
+                  'vistoFiammella','introSerafina','tutorialFatto','guidaAperta','guidaNascosta','regaloRicevuto',
                   'mercato','gelo',
                   'richieste','richiestaSeq','obiettiviRiscossi','sagra','mercante','trame','visitati','collezione']){
     if(d[k]!==undefined) G[k]=d[k];

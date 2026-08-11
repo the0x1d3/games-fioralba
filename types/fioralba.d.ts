@@ -123,6 +123,31 @@ interface FioLook {
   chioma?: 'corti' | 'lunghi' | 'crespi' | 'raccolti' | 'rado';
 }
 
+/** Una fascia della giornata di un abitante. */
+interface FioFascia {
+  /** Minuto in cui la fascia finisce (6:00 = 360, mezzanotte = 1440). */
+  fino: number;
+  /** Caselle fra cui gironzola. Assente se sta al chiuso. */
+  giro?: number[][];
+  /** Sta dentro: non compare sulla mappa. */
+  dentro?: boolean;
+  /** Non si sposta mai (Fiammella). */
+  fisso?: boolean;
+  /** La fascia vale anche col brutto tempo. */
+  coperto?: boolean;
+  /** Fascia generata dal giorno di sagra. */
+  sagra?: boolean;
+  /** Fascia generata dal ripararsi per il maltempo. */
+  riparo?: boolean;
+}
+
+/** Le battute che dipendono dal momento. */
+interface FioContesto {
+  stagione?: Record<string, string[]>;
+  meteo?: Record<string, string[]>;
+  ora?: { mattina?: string[]; sera?: string[] };
+}
+
 interface FioNPC {
   nome: string; ruolo: string;
   look: FioLook;
@@ -164,6 +189,16 @@ interface FioData {
   LETTERE: Record<string, FioLettera>;
   RISVEGLI: string[];
   CONSIGLI: string[];
+  /** Battute che dipendono da stagione, tempo e ora del giorno. */
+  CONTESTO: Record<string, FioContesto>;
+  /** Cosa dicono il giorno della sagra. */
+  FESTA: Record<string, string[]>;
+  /** Cosa dicono il giorno del proprio compleanno. */
+  AUGURI: Record<string, string>;
+  /** La giornata di ogni abitante, fascia per fascia. */
+  AGENDE: Record<string, FioFascia[]>;
+  /** Quando compie gli anni ciascuno. */
+  COMPLEANNI: Record<string, { stagione: string; giorno: number }>;
 }
 
 /* ------------------------------------------------------------------
