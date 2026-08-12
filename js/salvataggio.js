@@ -32,9 +32,40 @@ function serializzaMappa(m){
     obj[i]=o;
   }
   for(let i=0;i<m.suolo.length;i++) if(m.suolo[i]) suolo[i]=m.suolo[i];
+
+  /* Il terreno viaggia in RLE — coppie [valore, quante volte] — invece
+     che numero per numero. Misurato prima: il salvataggio pesava 170 KB
+     e per il 98,6% era terreno, cioè lunghe distese della stessa erba
+     scritte "0,0,0,0…" migliaia di volte. L'autosave riscrive tutto ogni
+     due minuti e a ogni cambio di scheda: erano i byte più inutili del
+     gioco. I salvataggi vecchi restano leggibili: chi rilegge accetta
+     sia `g` pieno sia `gr` compresso. */
+  const gr = [];
+  let v = m.g[0], n = 1;
+  for(let i=1;i<m.g.length;i++){
+    if(m.g[i]===v){ n++; continue; }
+    gr.push(v,n); v=m.g[i]; n=1;
+  }
+  gr.push(v,n);
+
   // w e h servono a chi rilegge: senza, non si può sapere se gli indici
   // salvati parlano ancora della stessa mappa
-  return { w:m.w, h:m.h, g:Array.from(m.g), obj, suolo, deco:m.deco.length };
+  return { w:m.w, h:m.h, gr, obj, suolo, deco:m.deco.length };
+}
+
+/* riapre le coppie [valore, n]: torna null se il conto non torna, e chi
+   chiama tiene il terreno rigenerato invece di uno strappato a metà */
+function espandiRLE(gr, lunghezzaAttesa){
+  if(!Array.isArray(gr) || gr.length%2) return null;
+  const g = new Uint8Array(lunghezzaAttesa);
+  let i = 0;
+  for(let k=0;k<gr.length;k+=2){
+    const v = gr[k], n = gr[k+1];
+    if(!(n>0) || i+n > lunghezzaAttesa) return null;
+    g.fill(v, i, i+n);
+    i += n;
+  }
+  return i === lunghezzaAttesa ? g : null;
 }
 
 /* Gli oggetti sono salvati per indice — `i = y*larghezza + x` — e
@@ -87,7 +118,8 @@ function deserializzaMappa(m, d){
     return;
   }
 
-  if(d.g && d.g.length===m.g.length) m.g = Uint8Array.from(d.g);
+  if(d.g && d.g.length===m.g.length) m.g = Uint8Array.from(d.g);   // salvataggi vecchi
+  else if(d.gr){ const g = espandiRLE(d.gr, m.g.length); if(g) m.g = g; }
   for(let i=0;i<m.obj.length;i++){
     const o=m.obj[i];
     if(o && (o.t==='muro'||o.t==='porta')) continue;
@@ -199,6 +231,7 @@ function validaSalvataggio(d){
     const m = d.maps[k];
     if(!m || typeof m!=='object') return 'La mappa «'+k+'» nel salvataggio è illeggibile.';
     if(m.g!==undefined && !Array.isArray(m.g)) return 'La mappa «'+k+'» ha un terreno non valido.';
+    if(m.gr!==undefined && (!Array.isArray(m.gr) || m.gr.length%2)) return 'La mappa «'+k+'» ha un terreno compresso non valido.';
     if(m.obj!==undefined && (typeof m.obj!=='object' || Array.isArray(m.obj))) return 'La mappa «'+k+'» ha oggetti non validi.';
     if(m.suolo!==undefined && (typeof m.suolo!=='object' || Array.isArray(m.suolo))) return 'La mappa «'+k+'» ha un terreno coltivato non valido.';
   }

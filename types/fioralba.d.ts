@@ -108,7 +108,31 @@ interface FioUpgrade {
   ing: Record<string, number>;
 }
 
-interface FioSkill { nome: string; desc: string; }
+interface FioSkill { nome: string; desc: string; /** Icona nella scheda dei livelli (id di un attrezzo). */ icona: string; }
+
+/** I coefficienti dei bonus di un'abilità (DATA.BONUS): un numero, un posto solo. */
+type FioBonus = Record<string, number>;
+
+/** Il premio di una salita di livello. L'indice 0 della scala è null. */
+interface FioPremioLivello {
+  oro: number;
+  item: string;
+  n: number;
+  /** I livelli 5 e 10: roba che da sola non si troverebbe presto. */
+  chiave?: boolean;
+}
+
+/** Una testimonianza dell'atto secondo. */
+interface FioMemoria {
+  id: string;
+  npc: string;
+  /** Cuori di amicizia richiesti per sentirla. */
+  cuori: number;
+  titolo: string;
+  testo: string[];
+  /** Oggetto donato a fine racconto. */
+  dona?: string;
+}
 
 /** Aspetto di un personaggio (giocatore o NPC). */
 interface FioLook {
@@ -139,6 +163,10 @@ interface FioFascia {
   sagra?: boolean;
   /** Fascia generata dal ripararsi per il maltempo. */
   riparo?: boolean;
+  /** Sta dentro QUELLA stanza: chi ci entra lo trova lì. */
+  interno?: string;
+  /** Fascia generata dalla sera della veglia. */
+  veglia?: boolean;
 }
 
 /** Le battute che dipendono dal momento. */
@@ -163,7 +191,12 @@ interface FioBundle {
   premio: { oro: number; item: string };
 }
 
-interface FioLettera { titolo: string; testo: string; }
+interface FioLettera {
+  titolo: string;
+  testo: string;
+  /** Chi firma. Le lettere senza mittente (l'intro) lo omettono. */
+  da?: string;
+}
 
 /** Struttura completa di window.DATA (js/data.js). */
 interface FioData {
@@ -199,6 +232,18 @@ interface FioData {
   AGENDE: Record<string, FioFascia[]>;
   /** Quando compie gli anni ciascuno. */
   COMPLEANNI: Record<string, { stagione: string; giorno: number }>;
+  /** Le sei testimonianze dell'atto secondo. */
+  MEMORIE: FioMemoria[];
+  /** Dove sta ognuno la sera della veglia: coppie di caselle. */
+  POSTI_VEGLIA: Record<string, number[][]>;
+  /** Il frutto del cespuglio, stagione per stagione. */
+  CESPUGLIO: Record<string, string>;
+  /** Coefficienti dei bonus per abilità: li leggono gioco e scheda. */
+  BONUS: Record<string, FioBonus>;
+  /** I bonus raccontati a parole, per livello: [nome, valore][]. */
+  BONUS_TESTO: Record<string, (liv: number) => [string, string][]>;
+  /** I premi di ogni salita: scala[0] è null, poi un premio a livello. */
+  PREMI_LIVELLO: Record<string, Array<FioPremioLivello | null>>;
 }
 
 /* ------------------------------------------------------------------
@@ -341,6 +386,20 @@ declare const UI: any;
 declare const REND: any;
 /** Guida interattiva (js/tutorial.js). */
 declare const TUT: any;
+/** La scena animata del titolo (js/titolo.js). */
+declare const TITOLO: any;
+/** Salvataggio: localStorage, backup, esporta/importa (js/salvataggio.js). */
+declare const SALVA: any;
+/** Il minigioco della pesca (js/pesca.js). */
+declare const PESCA: any;
+/** Lezione di Oreste e catene narrative (js/storie.js). */
+declare const STORIE: any;
+/** Atto secondo: memorie, verità, veglia (js/solstizio.js). */
+declare const SOLSTIZIO: any;
+/** Barretta, carta del livello, scheda delle abilità (js/livelli.js). */
+declare const LIV: any;
+/** Il pannello di prova (js/debug.js). */
+declare const DEBUG: any;
 
 interface Window {
   DATA: FioData;
@@ -348,4 +407,6 @@ interface Window {
   IT: FioIT;
   ART: any; FX: any; SND: any; WORLD: any;
   MOBS: any; UI: any; REND: any; TUT: any;
+  TITOLO: any; SALVA: any; PESCA: any; STORIE: any;
+  SOLSTIZIO: any; LIV: any; DEBUG: any;
 }

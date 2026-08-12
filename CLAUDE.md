@@ -296,6 +296,14 @@ dire niente.
   motivo di `W.ristampaBurrone`, chiamata dopo il ripristino: il burrone lo
   decidiamo noi, non il giocatore. Stessa attenzione per ogni terreno *scritto*
   che diventi importante.
+- **Il terreno è compresso in RLE** (`gr`: coppie valore/quante volte), ma i
+  salvataggi vecchi con `g` pieno si leggono ancora: `deserializzaMappa`
+  accetta entrambi. Misurato prima di farlo: il file era 170 KB e per il 98,6%
+  era `maps` — ma dentro `maps` il grosso non era il terreno (che in RLE fa
+  ~1 KB a mappa), erano i ~2.300 oggetti del mondo scritti come JSON. Quelli
+  NON si comprimono: un codec a mano sopra i salvataggi è rischio vero per
+  27 KB di guadagno, con 5 MB di quota. Se un giorno i salvataggi crescono
+  davvero, la strada è IndexedDB, non un compressore artigianale.
 - **Gli interni non ripristinano l'arredamento scritto**, solo casse e macchinari
   del giocatore. Nasce da un difetto vero: nella finestra fra due versioni un
   salvataggio si è riscritto l'arredamento sbagliato con le misure nuove, e da lì

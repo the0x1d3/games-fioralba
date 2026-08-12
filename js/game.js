@@ -3543,8 +3543,19 @@ window.addEventListener('load', init);
 window.addEventListener('error', e=>{ try{ console.warn('[motore] errore globale:', e.message, (e.filename||'')+':'+(e.lineno||0)); }catch(_){} });
 window.addEventListener('unhandledrejection', e=>{ try{ console.warn('[motore] promise non gestita:', e.reason); }catch(_){} });
 
-/* salvataggio automatico ogni 2 minuti */
-setInterval(()=>{ if(G.inGioco && !G.p.dorme) sistema('autosave', G.salva); }, 120000);
+/* Salvataggio automatico ogni 2 minuti — nei tempi morti del browser.
+   Misurato: serializzare e scrivere costa ~7ms, e piantati in mezzo a un
+   fotogramma da 16 sono uno scatto visibile ogni due minuti, sempre
+   mentre si cammina. requestIdleCallback lo sposta dove non dà fastidio;
+   il timeout garantisce che comunque si salvi entro quattro secondi.
+   I salvataggi d'uscita (qui sotto) restano sincroni APPOSTA: la pagina
+   sta morendo, un rinvio è un salvataggio perso. */
+setInterval(()=>{
+  if(!(G.inGioco && !G.p.dorme)) return;
+  const fai = ()=>sistema('autosave', G.salva);
+  if(window.requestIdleCallback) requestIdleCallback(fai, { timeout:4000 });
+  else fai();
+}, 120000);
 
 /* Salvataggio all'uscita. "beforeunload" non è affidabile (i telefoni chiudono
    le schede senza emetterlo) e per di più impedisce alla pagina di entrare

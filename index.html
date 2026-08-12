@@ -26,6 +26,13 @@
 
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231c140d'/><rect x='13' y='3' width='6' height='2' fill='%233a3028'/><rect x='10' y='5' width='12' height='3' fill='%233a3028'/><rect x='11' y='8' width='10' height='15' fill='%23f2c14e'/><rect x='13' y='10' width='6' height='11' fill='%23fff0c0'/><rect x='10' y='23' width='12' height='3' fill='%233a3028'/><rect x='14' y='26' width='4' height='3' fill='%233a3028'/></svg>">
 
+<!-- Il font parte insieme al CSS invece di aspettare che il CSS lo
+     scopra: senza preload la landing compare col carattere di sistema e
+     dopo mezzo secondo salta a Nunito (font-display:swap). Solo il
+     latino base: l'esteso serve a poche parole e può arrivare dopo.
+     `crossorigin` è obbligatorio per i font anche sulla stessa origine,
+     altrimenti il browser scarica il file due volte. -->
+<link rel="preload" href="css/font/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>

@@ -20,7 +20,13 @@ let DPR=1, cssW=0, cssH=0;
 
 R.init = function(canvas){
   cvs = canvas;
-  ctx = cvs.getContext('2d');
+  /* alpha:false — il canvas di gioco è sempre coperto per intero (la
+     scena parte da un fillRect dello sfondo), quindi il browser può
+     saltare la fusione col fondo della pagina a ogni compositing. È il
+     consiglio standard per i canvas opachi; le superfici di lavoro
+     (scene, light) restano trasparenti perché la luce si ritaglia con
+     destination-out e ha bisogno dell'alfa. */
+  ctx = cvs.getContext('2d', { alpha:false });
   ctx.imageSmoothingEnabled = false;
   scene = ART.cv(VW,VH); sx = scene.getContext('2d');
   light = ART.cv(VW,VH); lx = light.getContext('2d');
