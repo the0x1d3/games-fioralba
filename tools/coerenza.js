@@ -138,6 +138,61 @@ verifica('le rampe della palette salgono senza buchi né gemelli', () => {
   return problemi;
 });
 
+/* Segnalato in beta: «l'ingresso del secondo livello si attraversa solo
+   in un punto particolare». Era un varco da una casella sola in fondo a
+   un corridoio, e il passaggio scatta quando il *centro* del giocatore
+   ci finisce dentro: trentadue pixel da azzeccare. Un varco che si
+   prende per caso non è un varco. */
+verifica('le scale della miniera si imboccano senza mirare', () => {
+  const problemi = [];
+  const maps = WORLD.crea();
+  const scale = [
+    ['grotta',  'Miniera Profonda'],
+    ['grotta2', 'Su'], ['grotta2', 'Cuore della Miniera'],
+    ['grotta3', 'Su']
+  ];
+  for (const [id, etichetta] of scale) {
+    const m = maps[id];
+    const w = (m.warps || []).find(x => x.etichetta === etichetta);
+    if (!w) { problemi.push(`su ${id} manca il passaggio «${etichetta}»`); continue; }
+    let dentro = 0;
+    const bordo = new Set();
+    for (let y = w.y; y < w.y + w.h; y++) for (let x = w.x; x < w.x + w.w; x++) {
+      if (WORLD.solido(m, x, y)) continue;
+      dentro++;
+      for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+        const nx = x+dx, ny = y+dy;
+        if (WORLD.dentro(m,nx,ny) && !WORLD.solido(m,nx,ny)) bordo.add(nx+','+ny);
+      }
+    }
+    if (dentro < 2)
+      problemi.push(`su ${id} il passaggio «${etichetta}» è calpestabile su ${dentro} casella/e: troppo poco`);
+    if (bordo.size < 3)
+      problemi.push(`su ${id} a «${etichetta}» ci si arriva solo da ${bordo.size} casella/e`);
+  }
+  return problemi;
+});
+
+/* Le porte adesso sono solide, perché camminarci dentro voleva dire
+   finire disegnati dentro la casa. Solide sì, ma davanti a ognuna ci si
+   deve poter stare, altrimenti l'edificio diventa inaccessibile. */
+verifica('davanti a ogni porta si può stare', () => {
+  const problemi = [];
+  const maps = WORLD.crea();
+  for (const id in maps) {
+    const m = maps[id];
+    for (const e of (m.edifici || [])) {
+      if (!e.porta) continue;
+      const { x, y } = e.porta;
+      const davanti = [[x,y+1],[x-1,y],[x+1,y],[x,y-1]]
+        .filter(([a,b]) => WORLD.dentro(m,a,b) && !WORLD.solido(m,a,b));
+      if (!davanti.length)
+        problemi.push(`su ${id} la porta di ${e.kind} a (${x},${y}) non ha una casella da cui aprirla`);
+    }
+  }
+  return problemi;
+});
+
 /* Segnalato in beta come «la miniera non è accessibile», ed era vero
    anche se nessun muro era davvero chiuso: i sassi si spaccano, ma
    dall'ingresso del secondo livello si camminava su quattordici caselle

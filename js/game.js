@@ -649,6 +649,7 @@ function avviaGioco(conIntro){
   G.aggiornaHUD();
   G.progresso();
   aggiornaOspitiSagra();          // se si riprende proprio nel giorno di festa
+  G.azzeraTraguardi();            // quello che è già fatto non si annuncia
   if(window.GUIDA) GUIDA.init();
   musicaGiusta();
   SND.ambiente(ambienteGiusto());
@@ -681,6 +682,46 @@ G.livello = function(k){
    chi è perso continua a cliccare, ed è proprio lui che va aiutato. */
 G.ultimoProgresso = 0;
 G.progresso = function(){ G.ultimoProgresso = performance.now(); };
+
+/* ===================================================================
+   QUANDO UN TRAGUARDO SI COMPIE
+
+   Un traguardo si completava in silenzio. Abbatti il venticinquesimo
+   albero, e non succede niente: il premio resta lì finché non apri il
+   Diario e ti accorgi per caso che c'è un pulsante «Riscuoti». Chi non
+   apre il Diario non lo scopre mai — e il Diario si apre quando si ha
+   già in mente qualcosa, non a caso.
+
+   Quindi si guarda dopo ogni azione che può averne compiuto uno, e
+   quando ne scatta uno lo si dice. Il confronto è sull'insieme di
+   quelli fatti: costa un giro su quindici voci, e si fa solo quando
+   qualcosa è davvero cambiato.
+   =================================================================== */
+let traguardiFatti = null;
+let traguardiT = 0, traguardiVisti = -1;
+
+G.controllaTraguardi = function(annuncia){
+  let ora;
+  try{ ora = G.obiettivi(); }catch(e){ return; }
+  const adesso = new Set(ora.filter(o=>o.fatto).map(o=>o.id));
+  if(traguardiFatti === null){          // prima volta: si prende nota e basta
+    traguardiFatti = adesso;
+    return;
+  }
+  if(annuncia !== false){
+    for(const o of ora){
+      if(!o.fatto || traguardiFatti.has(o.id)) continue;
+      SND.play('livello');
+      UI.toast('Traguardo compiuto: '+o.nome+(o.premio? ' — '+o.premio+' monete da riscuotere':''),
+               'gold', o.icona);
+      particelleTesto(G.p.px, G.p.py-52, 'TRAGUARDO!', '#ffe270');
+    }
+  }
+  traguardiFatti = adesso;
+};
+
+/* quando si carica una partita, quello che è già fatto non è una notizia */
+G.azzeraTraguardi = function(){ traguardiFatti = null; G.controllaTraguardi(false); };
 
 G.xp = function(k, n){
   G.progresso();
@@ -944,6 +985,17 @@ function loop(ts){
 
     sistema('particelle', ()=>aggiornaParticelle(dt));
     sistema('camera',     ()=>aggiornaCamera(false));
+    /* I traguardi si guardano da qui e non dai diciannove punti in cui
+       una statistica può cambiare: uno solo si dimentica, diciannove si
+       dimenticano tutti. Al massimo una volta al secondo e mezzo, e solo
+       se nel frattempo è successo qualcosa. */
+    sistema('traguardi',  ()=>{
+      if(G.ultimoProgresso === traguardiVisti) return;
+      if(performance.now() - traguardiT < 1500) return;
+      traguardiT = performance.now();
+      traguardiVisti = G.ultimoProgresso;
+      G.controllaTraguardi(true);
+    });
     sistema('bersaglio',  calcolaBersaglio);
     if(!bloccato) sistema('prompt', promptContestuale);
     sistema('render',     ()=>REND.disegna(G));

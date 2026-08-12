@@ -201,7 +201,13 @@ function edificio(m, kind, x, y, tw, th, opt){
     if(opt.porta && xx===opt.porta.x && yy===opt.porta.y) continue;
     if(W.dentro(m,xx,yy)) m.obj[W.idx(m,xx,yy)] = {t:'muro', solido:true, ed:e};
   }
-  if(opt.porta) setObj(m, opt.porta.x, opt.porta.y, {t:'porta', ed:e, azione:opt.azione, solido:false});
+  /* La porta è solida come il muro che la contiene. Era calpestabile —
+     l'idea era «ci si entra» — ma quella casella sta dentro la sagoma
+     della casa: chi ci saliva sopra si ritrovava disegnato dentro
+     l'edificio, mezzo dentro e mezzo fuori. Una porta si apre stando
+     davanti, non standoci in mezzo, e `interagisci` guarda già la
+     casella che hai di fronte. */
+  if(opt.porta) setObj(m, opt.porta.x, opt.porta.y, {t:'porta', ed:e, azione:opt.azione, solido:true});
   return e;
 }
 W.edificio = edificio;
@@ -704,11 +710,18 @@ function buildGrotta(){
   warp(m, 16, m.h-1, 4, 1, 'fioralba', 22, 2, 'Fioralba');
   m.deco.push({t:'cartello', x:15, y:26, testo:'↓ Uscita'});
 
-  /* scala che scende alla Miniera Profonda */
-  blob(m, 6, 23, 2.2, 'grotta', R, 0.3);
+  /* Scala che scende alla Miniera Profonda.
+
+     Era un varco da UNA casella, e il passaggio scatta quando il centro
+     del giocatore ci finisce dentro: bisognava azzeccare trentadue
+     pixel in fondo a un corridoio stretto. Segnalato in beta come «si
+     attraversa solo in un punto particolare», ed era esattamente così.
+     Adesso il gradino è largo due caselle e intorno c'è un pianerottolo
+     sgombro, così ci si arriva da più parti. */
+  blob(m, 6, 23, 2.6, 'grotta', R, 0.3);
   linea(m, 8,13, 6,23, 3, 'grotta');
-  setObj(m, 6,23, null); fill(m, 6,23, 1,1, 'lastre');
-  warp(m, 6, 23, 1, 1, 'grotta2', 6, 4, 'Miniera Profonda');
+  fill(m, 6,23, 2,1, 'lastre');
+  warp(m, 6, 23, 2, 1, 'grotta2', 6, 24, 'Miniera Profonda');
   m.deco.push({t:'cartello', x:5, y:21, testo:'↓ Giù'});
 
   /* passaggio a nord: sbuca sul Passo innevato */
@@ -719,7 +732,8 @@ function buildGrotta(){
   m.deco.push({t:'cartello', x:17, y:3, testo:'↑ Passo'});
 
   // scale, passaggi e atterraggi sgombri e protetti dalla rigenerazione
-  m.scaleClear = [[6,23],[6,24],[7,24],[18,0],[19,0],[20,0],[19,1],[19,2],[19,3],[20,3]];
+  m.scaleClear = [[6,22],[7,22],[6,23],[7,23],[6,24],[7,24],[5,23],[5,24],
+                  [18,0],[19,0],[20,0],[19,1],[19,2],[19,3],[20,3]];
   for(const [cx,cy] of m.scaleClear) if(W.dentro(m,cx,cy)) m.g[W.idx(m,cx,cy)]=ti('grotta');
   W.pulisciScale(m);
   m.ingresso = [17,26];                   // dove si entra venendo dal bosco
@@ -760,22 +774,22 @@ function buildMinieraProfonda(id, nome, seed, profondo){
   }
 
   // zone di scala camminabili e sgombre (protette dalla rigenerazione notturna)
-  m.scaleClear = profondo ? [[6,3],[6,4],[6,5]] : [[6,3],[6,4],[6,5],[20,26],[20,27],[20,28]];
+  m.scaleClear = profondo
+    ? [[6,3],[7,3],[6,4],[7,4],[6,5],[5,4]]
+    : [[6,3],[7,3],[6,4],[7,4],[6,5],[5,4],[20,27],[21,27],[20,28],[21,28],[20,26],[19,28]];
   m.ingresso = [6,4];                     // dove si atterra scendendo
   for(const [cx,cy] of m.scaleClear) if(W.dentro(m,cx,cy)) m.g[W.idx(m,cx,cy)]=ti('grotta');
   W.pulisciScale(m);
 
-  /* scala che risale */
-  fill(m, 6,3, 1,1, 'lastre');
-  setObj(m, 6,3, null);
-  warp(m, 6, 3, 1, 1, profondo?'grotta2':'grotta', profondo?20:6, profondo?27:24, 'Su');
+  /* scala che risale — larga due caselle, come quella che scende */
+  fill(m, 6,3, 2,1, 'lastre');
+  warp(m, 6, 3, 2, 1, profondo?'grotta2':'grotta', profondo?20:6, profondo?27:24, 'Su');
   m.deco.push({t:'cartello', x:5, y:2, testo:'↑ Su'});
 
   /* scala che scende ancora (solo dal livello 2) */
   if(!profondo){
-    fill(m, 20,28, 1,1, 'lastre');
-    setObj(m, 20,28, null);
-    warp(m, 20, 28, 1, 1, 'grotta3', 6, 4, 'Cuore della Miniera');
+    fill(m, 20,28, 2,1, 'lastre');
+    warp(m, 20, 28, 2, 1, 'grotta3', 6, 4, 'Cuore della Miniera');
     m.deco.push({t:'cartello', x:19, y:26, testo:'↓ Ancora giù'});
   }
 
