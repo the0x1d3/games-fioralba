@@ -129,13 +129,65 @@ W.spargiSu = function(m, terreno, quanti, fabbrica, seed){
 };
 
 /* edificio: occupa un rettangolo solido, con porta interattiva */
+/* Quante caselle il disegno di un edificio sborda sopra al suo ingombro.
+
+   Il tetto viene disegnato appoggiando il fondo dello sprite al bordo
+   basso dell'edificio e salendo: quasi sempre sale più in alto di quanto
+   dichiari. La locanda sbordava di quasi due caselle, casa tua di una —
+   ed erano caselle calpestabili, quindi ci si camminava dentro e si
+   finiva col mezzobusto dentro il tetto. Qui lo misuriamo dal disegno
+   vero, invece di scriverlo a mano: se un giorno un tetto cambia
+   altezza, l'ingombro lo segue da solo.
+
+   I livelli contano: casa tua cresce quando la amplii, e il muro deve
+   valere per la versione più alta che può prendere. */
+/* Quanto è alto il disegno rispetto a quanto è largo. Sta scritto qui e
+   non chiesto ad ART perché di questi numeri deve poter vivere anche il
+   controllo di coerenza, che gira in Node e un canvas non ce l'ha. Che
+   la tabella dica il vero lo verifica ART stesso appena il gioco parte:
+   se un tetto cambia altezza, in console arriva l'avviso. */
+const PROPORZIONI = {
+  casa:0.875, cottage:0.944, capanna:0.929, bottega:0.833,
+  fucina:0.909, locanda:0.846, santuario:1.000,
+  serra:0.833, pollaio:0.850
+};
+
+function sbordoTetto(kind, tw, th){
+  const r = PROPORZIONI[kind];
+  if(!r) return 0;
+  return Math.max(0, Math.round(r*tw - th));
+}
+
+/* Il controllo che la tabella non menta: gira una volta sola, quando c'è
+   di che misurare. */
+W.verificaProporzioni = function(){
+  if(typeof ART === 'undefined' || !ART.building) return [];
+  const scarti = [];
+  for(const kind in PROPORZIONI){
+    let alto = 0;
+    for(let liv=0; liv<=4; liv++){
+      try{
+        const img = ART.building(kind, { season:'primavera', liv });
+        if(img && img.width) alto = Math.max(alto, img.height/img.width);
+      }catch(e){ /* un tipo che il disegno non conosce si salta */ }
+    }
+    if(alto && Math.abs(alto - PROPORZIONI[kind]) > 0.06)
+      scarti.push(kind+': la tabella dice '+PROPORZIONI[kind]+', il disegno '+(Math.round(alto*1000)/1000));
+  }
+  if(scarti.length) console.warn('[mondo] le proporzioni degli edifici sono cambiate:', scarti);
+  return scarti;
+};
+
 function edificio(m, kind, x, y, tw, th, opt){
   opt = opt||{};
   const e = { kind, x, y, w:tw, h:th, porta:opt.porta, azione:opt.azione,
               nome:opt.nome, scala:opt.scala||1, offY:opt.offY||0, liv:opt.liv||0 };
   m.edifici.push(e);
-  // solidi tranne la casella-porta
-  for(let yy=y; yy<y+th; yy++) for(let xx=x; xx<x+tw; xx++){
+  /* Solido su tutta la sagoma disegnata, tetto compreso: non si passa
+     dietro a una casa perché dietro a una casa c'è la casa. */
+  const su = sbordoTetto(kind, tw, th);
+  e.sbordo = su;
+  for(let yy=y-su; yy<y+th; yy++) for(let xx=x; xx<x+tw; xx++){
     if(opt.porta && xx===opt.porta.x && yy===opt.porta.y) continue;
     if(W.dentro(m,xx,yy)) m.obj[W.idx(m,xx,yy)] = {t:'muro', solido:true, ed:e};
   }

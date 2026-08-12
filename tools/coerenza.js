@@ -122,6 +122,30 @@ verifica('le rampe della palette salgono senza buchi né gemelli', () => {
   return problemi;
 });
 
+/* Il tetto di un edificio è disegnato più in alto del suo ingombro — la
+   locanda di quasi due caselle — e quelle caselle erano calpestabili:
+   ci si camminava dentro e si finiva col mezzobusto nel tetto. Adesso la
+   sagoma è solida tutta, e questo controlla che sia rimasta solida. */
+verifica('la sagoma disegnata di ogni edificio è solida, tetto compreso', () => {
+  const problemi = [];
+  const maps = WORLD.crea();
+  for (const id in maps) {
+    const m = maps[id];
+    for (const e of (m.edifici || [])) {
+      if (!e.sbordo) continue;
+      for (let yy = e.y - e.sbordo; yy < e.y; yy++) {
+        for (let xx = e.x; xx < e.x + e.w; xx++) {
+          if (!WORLD.dentro(m, xx, yy)) continue;
+          if (e.porta && xx === e.porta.x && yy === e.porta.y) continue;
+          if (!WORLD.solido(m, xx, yy))
+            problemi.push(`su ${id} il tetto di ${e.kind} a (${e.x},${e.y}) lascia passare la casella (${xx},${yy})`);
+        }
+      }
+    }
+  }
+  return problemi;
+});
+
 /* Nato da un difetto vero: agganciate alla palette, la chioma e l'erba
    di primavera finivano sullo stesso gradino e i cespugli sparivano nel
    prato. Due cose che devono leggersi separate non possono stare sullo

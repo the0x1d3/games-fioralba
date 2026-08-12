@@ -11,6 +11,25 @@ const $ = s=>document.querySelector(s);
 const G = {};
 window.G = G;
 
+/* La giornata, in energia.
+
+   Era 180, e non bastava: un albero adulto vuole cinque colpi d'ascia da
+   4, cioè venti punti, e un edificio chiede fra le cento e le duecento
+   legne quando un albero ne dà sette. Facevano nove alberi al giorno, e
+   per una sola costruzione ci volevano due giornate passate a spaccare
+   legna senza fare altro — che non è il gioco che questo gioco vuole
+   essere.
+
+   Adesso la giornata è 260 e il colpo d'ascia o di piccone costa 3
+   invece di 4: da nove alberi al giorno a diciassette, cioè una
+   costruzione in una giornata di lavoro. Zappa e annaffiatoio restano
+   come stavano: quelli sono il mestiere, e il mestiere non si sconta.
+
+   `energiaBonus` tiene da parte quello che si guadagna salendo di
+   livello, così alzare la base non cancella quello che uno si è già
+   sudato in una partita cominciata prima. */
+const ENERGIA_BASE = 260;
+
 /* ===================================================================
    STATO INIZIALE
    =================================================================== */
@@ -19,7 +38,7 @@ function statoIniziale(){
     nomeGiocatore:'Contadino',
     mappaId:'podere',
     oro:600,
-    energia:180, energiaMax:180,
+    energia:ENERGIA_BASE, energiaMax:ENERGIA_BASE, energiaBonus:0,
     giorno:1, stagioneIdx:0, anno:1, giornoTot:0,
     ora:360,
     meteo:'sereno', meteoDomani:'sereno',
@@ -610,10 +629,11 @@ G.xp = function(k, n){
   if(dopo>prima){
     SND.play('livello');
     UI.toast(DATA.SKILLS[k].nome+' — livello '+dopo+'!','gold');
-    if(k==='agricoltura'){ G.energiaMax += 8; }
-    if(k==='raccolta'){ G.energiaMax += 6; }
-    if(k==='estrazione'){ G.energiaMax += 6; }
-    if(k==='pesca'){ G.energiaMax += 6; }
+    if(k==='agricoltura'){ G.energiaBonus += 8; }
+    if(k==='raccolta'){ G.energiaBonus += 6; }
+    if(k==='estrazione'){ G.energiaBonus += 6; }
+    if(k==='pesca'){ G.energiaBonus += 6; }
+    G.energiaMax = ENERGIA_BASE + G.energiaBonus;
     G.energia = Math.min(G.energiaMax, G.energia+20);
     particelleTesto(G.p.px, G.p.py-40, 'LIVELLO '+dopo, '#ffe270');
   }
@@ -874,6 +894,15 @@ function normalizzaStato(){
   if(!G.mercante || typeof G.mercante!=='object') G.mercante={presente:false,giorno:-1,stock:[]};
   if(!Array.isArray(G.mercante.stock)) G.mercante.stock=[];
   if(!G.visitati.podere) G.visitati.podere=true;
+  /* Il monte energia si ricalcola sempre da base + bonus: così alzare la
+     base vale anche per le partite già cominciate, senza toccare quello
+     che si è guadagnato salendo di livello. (Il bonus di un salvataggio
+     vecchio lo ricava applicaSalvataggio, che è l'unico posto in cui si
+     sa ancora che nel file non c'era.) */
+  if(typeof G.energiaBonus !== 'number' || !isFinite(G.energiaBonus)) G.energiaBonus = 0;
+  G.energiaMax = ENERGIA_BASE + G.energiaBonus;
+  if(typeof G.energia !== 'number' || !isFinite(G.energia)) G.energia = G.energiaMax;
+  G.energia = Math.min(G.energia, G.energiaMax);
   if(typeof G.invMax!=='number' || G.invMax<1) G.invMax=24;
   while(G.inv.length < G.invMax) G.inv.push(null);
   // giocatore incastrato in un solido dopo il caricamento → sblocca (una tantum)
@@ -1194,7 +1223,7 @@ function usaOggetto(){
         return;
       }
       if(o.t!=='albero' && o.t!=='ceppo'){ nonSiPuo("Con l'ascia si abbattono alberi e ceppi, non questo."); return; }
-      if(!spendi(4 - liv*0.7)) return;
+      if(!spendi(3 - liv*0.5)) return;
       p.usoT=320; SND.play('ascia');
       o.shake = 2.5;
       setTimeout(()=>{ if(o) o.shake=0; }, 260);
@@ -1237,7 +1266,7 @@ function usaOggetto(){
         m.suolo[i]=null; SND.play('zappa'); p.usoT=240; return;
       }
       if(!o || (o.t!=='sasso' && o.t!=='stalagmite')){ nonSiPuo('Il piccone rompe sassi e rocce. Sul terreno arato invece lo ripulisce.'); return; }
-      if(!spendi(4 - liv*0.7)) return;
+      if(!spendi(3 - liv*0.5)) return;
       p.usoT=320; SND.play('piccone');
       if(o.t==='stalagmite'){ m.obj[i]=null; G.aggiungi('pietra',2); G.xp('estrazione',4); return; }
       o.shake=2.5;
@@ -3430,7 +3459,7 @@ function costruisciDati(){
   return {
     v:2,
     nomeGiocatore:G.nomeGiocatore, mappaId:G.mappaId,
-    oro:G.oro, energia:G.energia, energiaMax:G.energiaMax,
+    oro:G.oro, energia:G.energia, energiaMax:G.energiaMax, energiaBonus:G.energiaBonus,
     giorno:G.giorno, stagioneIdx:G.stagioneIdx, anno:G.anno, giornoTot:G.giornoTot,
     ora:G.ora, meteo:G.meteo, meteoDomani:G.meteoDomani,
     inv:G.inv, invMax:G.invMax, slotSel:G.slotSel,
@@ -3571,7 +3600,7 @@ function applicaSalvataggio(raw){
   if(!d || typeof d!=='object' || !d.maps) return false;
   Object.assign(G, statoIniziale());
   G.maps = WORLD.crea();
-  for(const k of ['nomeGiocatore','mappaId','oro','energia','energiaMax','giorno','stagioneIdx',
+  for(const k of ['nomeGiocatore','mappaId','oro','energia','energiaMax','energiaBonus','giorno','stagioneIdx',
                   'anno','giornoTot','ora','meteo','meteoDomani','inv','invMax','slotSel',
                   'skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
                   'braci','lettere','ricetteNote','cassaConsegna','stats','animali','look',
@@ -3580,6 +3609,14 @@ function applicaSalvataggio(raw){
                   'richieste','richiestaSeq','obiettiviRiscossi','sagra','mercante','trame','visitati','collezione']){
     if(d[k]!==undefined) G[k]=d[k];
   }
+  /* Salvataggi fatti quando la giornata era 180: i punti guadagnati coi
+     livelli stavano dentro energiaMax e non c'era un campo per loro.
+     Qui li ricaviamo, altrimenti chi ha una partita avviata si vedrebbe
+     azzerare quello che si è sudato. Va fatto qui e non più tardi:
+     statoIniziale() ha già messo energiaBonus a zero, quindi dopo non si
+     distingue più «non ce l'aveva» da «era davvero zero». */
+  if(d.energiaBonus === undefined && typeof d.energiaMax === 'number')
+    G.energiaBonus = Math.max(0, d.energiaMax - 180);
   for(const id in G.costruzioni) if(G.costruzioni[id]) WORLD.costruisci(G.maps, id);
   if(d.maps){
     for(const k in d.maps) if(G.maps[k]) deserializzaMappa(G.maps[k], d.maps[k]);
