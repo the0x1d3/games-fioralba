@@ -1430,6 +1430,40 @@ U.diario = function(G, tabIniziale){
       body.appendChild(n);
     }
     else if(tab==='lettere'){
+      /* Le memorie della notte del solstizio non sono lettere, ma è qui
+         che uno viene a rileggere. Sei racconti raccolti in giro per la
+         valle a mesi di distanza uno dall'altro: senza un posto dove
+         ritrovarli, quando arriva il sesto il primo è già evaporato. */
+      const V = (G.trame && G.trame.veglia) || {};
+      if(V.avviata && DATA.MEMORIE){
+        const avute = DATA.MEMORIE.filter(m => V.memorie && V.memorie[m.id]);
+        const s=document.createElement('div'); s.className='sectitle';
+        s.textContent='La notte del solstizio — '+avute.length+'/'+DATA.MEMORIE.length;
+        body.appendChild(s);
+        if(!avute.length){
+          const n=document.createElement('div'); n.className='muted'; n.style.marginBottom='10px';
+          n.textContent='Sei abitanti erano da qualche parte, quella notte. Chiedi a ognuno.';
+          body.appendChild(n);
+        }
+        for(const M of avute){
+          const r=document.createElement('div'); r.className='row';
+          const c=document.createElement('canvas'); c.width=c.height=40;
+          const cx=c.getContext('2d'); cx.imageSmoothingEnabled=false;
+          cx.drawImage(ART.face(M.npc, DATA.NPCS[M.npc].look),0,0,40,40);
+          c.style.borderRadius='7px';
+          r.appendChild(c);
+          const info=document.createElement('div'); info.className='rinfo';
+          info.innerHTML='<div class="rname">'+M.titolo+'</div>'+
+                         '<div class="rdesc">Da '+DATA.NPCS[M.npc].nome+'</div>';
+          r.appendChild(info);
+          const b=document.createElement('button'); b.className='btn blue'; b.textContent='Rileggi';
+          b.onclick=()=>{ U.chiudiModal(); U.dialogo(M.npc, M.testo); };
+          r.appendChild(b);
+          body.appendChild(r);
+        }
+        const t=document.createElement('div'); t.className='sectitle'; t.textContent='Lettere';
+        body.appendChild(t);
+      }
       const chiavi = Object.keys(DATA.LETTERE).filter(k=>G.lettere[k]);
       if(!chiavi.length){
         const n=document.createElement('div'); n.className='muted';

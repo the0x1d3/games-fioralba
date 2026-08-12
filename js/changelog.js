@@ -16,6 +16,18 @@
 
 window.CHANGELOG = [
   {
+    v: '2.0',
+    data: 'agosto 2026',
+    titolo: 'La notte del solstizio',
+    voci: [
+      { tipo:'nuovo',  t:'La storia continua dopo le quattro braci', d:'Prima finiva lì: si accendeva la Lanterna e compariva un riquadro di testo. E in tutta la prima parte nessuno diceva mai perché la Lanterna si fosse spenta — il buco stava in mezzo alla trama fin dall\'inizio, e Fiammella lo diceva senza accorgersene: «Ilde lo faceva. Poi ha smesso di riuscirci». Adesso con le quattro braci accese la Lanterna non tiene, e Fiammella ti manda a chiedere in giro.' },
+      { tipo:'nuovo',  t:'Sei testimonianze, una notte sola', d:'Bruno ha una riga aperta nel registro da dodici anni. Marisol ricorda chi è rimasto al tavolo d\'angolo. Elio era sul lago e ha visto due persone sul sentiero. Tobia ha un gancio da lanterna che non ha mai consegnato. Oreste guardava dal Passo, e dall\'alto si vede quello che dal basso non si vede. Serafina è l\'ultima, perché quella notte c\'era. Nessuno ha la risposta da solo, e per farsi raccontare una cosa così bisogna conoscersi: da 2 cuori con Bruno a 6 con Serafina.' },
+      { tipo:'nuovo',  t:'La veglia', d:'Alla fine si scopre che una lanterna tenuta accesa da una persona sola si spegne la prima notte che quella persona non ce la fa. Ilde l\'ha tenuta da sola per quarant\'anni. Quindi l\'ultima cosa da fare non è portare altra roba al Santuario: è invitare tutti e sei alla radura e tornarci la sera dopo, dal tramonto. Due lettere nuove di Ilde chiudono la storia, e il finale adesso racconta la veglia invece di un\'accensione generica.' },
+      { tipo:'meglio', t:'Le memorie si rileggono nel Diario', d:'Sei racconti raccolti in giro per la valle a mesi di distanza uno dall\'altro: senza un posto dove ritrovarli, quando arriva il sesto il primo è già evaporato. Stanno nella scheda Lettere, sopra alla posta.' },
+      { tipo:'fix',    t:'Parlare con Fiammella non salta più il Santuario', d:'La scelta «Il santuario» nel suo dialogo andava dritta alle offerte invece di passare dal controllo di sempre. Siccome lei sta a due passi dalla porta, premendo E si parla con lei e non si entra: la sera della veglia avrebbe aperto la lista delle offerte al posto della veglia.' }
+    ]
+  },
+  {
     v: '1.9',
     data: 'agosto 2026',
     titolo: 'Le staccionate si agganciano, e non si tolgono per sbaglio',

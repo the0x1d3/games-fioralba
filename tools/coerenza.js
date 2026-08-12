@@ -234,6 +234,45 @@ verifica('in ogni livello di miniera si cammina, senza dover bucare', () => {
   return problemi;
 });
 
+/* L'atto secondo tiene solo se le sei testimonianze sono davvero sei,
+   di sei persone diverse e raggiungibili, e se la sera della veglia
+   ognuno ha dove mettere i piedi. Un abitante piantato dentro una
+   pietra rituale è il genere di difetto che si scopre alla fine della
+   partita, cioè quando fa più danno e costa di più da correggere. */
+verifica('la notte del solstizio si può ricostruire', () => {
+  const problemi = [];
+  const M = DATA.MEMORIE;
+  if (!M || !M.length) return ['manca DATA.MEMORIE'];
+
+  const visti = new Set();
+  for (const m of M) {
+    if (!DATA.NPCS[m.npc]) problemi.push(`la memoria «${m.id}» è di «${m.npc}», che non è un abitante`);
+    if (m.npc === 'fiammella') problemi.push('Fiammella non può testimoniare: quella notte si è spenta con la lanterna');
+    if (visti.has(m.npc)) problemi.push(`«${m.npc}» ha più di una memoria: il dialogo ne mostrerebbe una sola`);
+    visti.add(m.npc);
+    if (!Array.isArray(m.testo) || !m.testo.length) problemi.push(`la memoria «${m.id}» non ha testo`);
+    if (!(m.cuori >= 0 && m.cuori <= 10)) problemi.push(`la memoria «${m.id}» chiede ${m.cuori} cuori, fuori scala`);
+    if (m.dona && !DATA.ITEMS[m.dona]) problemi.push(`la memoria «${m.id}» regala «${m.dona}», che non esiste`);
+  }
+
+  /* Alla veglia devono venire esattamente quelli che hanno parlato:
+     se uno testimonia e poi non ha un posto, la veglia non si chiude. */
+  const P = DATA.POSTI_VEGLIA || {};
+  for (const m of M)
+    if (!P[m.npc]) problemi.push(`«${m.npc}» testimonia ma non ha un posto alla veglia`);
+  for (const id in P)
+    if (!M.some(m => m.npc === id)) problemi.push(`«${id}» ha un posto alla veglia ma non testimonia`);
+
+  const bosco = WORLD.crea().bosco;
+  for (const id in P) {
+    for (const [x, y] of P[id]) {
+      if (!WORLD.dentro(bosco, x, y)) { problemi.push(`il posto di ${id} alla veglia (${x},${y}) è fuori dal bosco`); continue; }
+      if (WORLD.solido(bosco, x, y)) problemi.push(`il posto di ${id} alla veglia (${x},${y}) non è calpestabile`);
+    }
+  }
+  return problemi;
+});
+
 /* Una lettera scritta e mai consegnata è lavoro buttato, e una lettera
    consegnata che non esiste è una finestra vuota in faccia al
    giocatore. Le due liste stanno in file diversi — il testo in data.js,
@@ -252,8 +291,12 @@ verifica('ogni lettera esiste ed è consegnata da qualcosa', () => {
   for (const id of posta)
     if (!DATA.LETTERE[id]) problemi.push(`la posta consegna «${id}», che non è fra le lettere`);
 
-  /* le altre vie di consegna: l'apertura, le quattro braci, la ricetta */
-  const altre = new Set(['intro', 'ricetta_ilde']);
+  /* le altre vie di consegna: l'apertura, le quattro braci, la ricetta,
+     e le due dell'atto secondo, che le consegnano la verità e la veglia */
+  const altre = new Set(['intro', 'ricetta_ilde', 'verita', 'veglia']);
+  for (const k of ['verita', 'veglia'])
+    if (!new RegExp('G\\.lettere\\.' + k + '\\s*=\\s*true').test(src))
+      problemi.push(`la lettera «${k}» non viene mai consegnata da game.js`);
   for (const b of DATA.SANTUARIO) altre.add(b.id);
 
   for (const id in DATA.LETTERE) {

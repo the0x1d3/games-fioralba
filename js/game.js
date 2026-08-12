@@ -67,7 +67,8 @@ function statoIniziale(){
     obiettiviRiscossi:{}, sagra:null, mercante:{presente:false, giorno:-1, stock:[]},
     visitati:{podere:true}, collezione:{},
     trame:{ torta:{avviata:false, segreto:false, fatta:false},
-            pesceluna:{avviata:false, preso:false, fatta:false} },
+            pesceluna:{avviata:false, preso:false, fatta:false},
+            veglia:{avviata:false, memorie:{}, verita:false, invitati:{}, giorno:null, fatta:false} },
     tutorialFatto:false,
     animali:[],
     look:{ pelle:'#e8bd8f', capelli:'#6b4423', maglia:'#4f8ab0', pant:'#3d5470', cappello:'#c9a44c' }
@@ -649,6 +650,7 @@ function avviaGioco(conIntro){
   G.aggiornaHUD();
   G.progresso();
   aggiornaOspitiSagra();          // se si riprende proprio nel giorno di festa
+  aggiornaOspitiVeglia();         // o proprio la sera della veglia
   G.azzeraTraguardi();            // quello che è già fatto non si annuncia
   if(window.GUIDA) GUIDA.init();
   musicaGiusta();
@@ -1033,6 +1035,13 @@ function normalizzaStato(){
   if(!G.trame || typeof G.trame!=='object') G.trame={};
   if(!G.trame.torta)     G.trame.torta={avviata:false,segreto:false,fatta:false};
   if(!G.trame.pesceluna) G.trame.pesceluna={avviata:false,preso:false,fatta:false};
+  /* Chi ha una partita avviata prima dell'atto secondo non ha questo
+     pezzo di stato: glielo si mette adesso, vuoto. Se ha già le quattro
+     braci, la prossima volta che entra al Santuario la storia riparte
+     da lì — cioè esattamente dove l'aveva lasciata. */
+  if(!G.trame.veglia) G.trame.veglia={avviata:false,memorie:{},verita:false,invitati:{},giorno:null,fatta:false};
+  if(!G.trame.veglia.memorie)  G.trame.veglia.memorie={};
+  if(!G.trame.veglia.invitati) G.trame.veglia.invitati={};
   if(!G.mercante || typeof G.mercante!=='object') G.mercante={presente:false,giorno:-1,stock:[]};
   if(!Array.isArray(G.mercante.stock)) G.mercante.stock=[];
   if(!G.visitati.podere) G.visitati.podere=true;
@@ -1995,8 +2004,232 @@ function apriPollaio(){
   });
 }
 
+/* ===================================================================
+   ATTO SECONDO — LA NOTTE DEL SOLSTIZIO
+
+   Fino a qui la storia finiva con le quattro braci e un riquadro di
+   testo. E in tutta la prima parte nessuno diceva *perché* la Lanterna
+   si fosse spenta: il buco stava in mezzo alla trama fin dall'inizio, e
+   Fiammella lo diceva senza accorgersene — «Ilde lo faceva. Poi ha
+   smesso di riuscirci».
+
+   Sei testimonianze da sei abitanti, una verità che nessuna di loro
+   contiene da sola, e poi una veglia: la Lanterna non si tiene accesa
+   da soli. È l'errore che Ilde ha fatto per quarant'anni e ha pagato
+   per dodici.
+   =================================================================== */
+function veglia(){ return G.trame.veglia; }
+
+G.memorieAvute = function(){
+  const v = veglia();
+  return DATA.MEMORIE.filter(m => v.memorie[m.id]).length;
+};
+G.invitatiAllaVeglia = function(){
+  const v = veglia();
+  return DATA.MEMORIE.filter(m => v.invitati[m.npc]).length;
+};
+
+/* Quella persona ha una testimonianza da dare, adesso? */
+function memoriaDi(npcId){
+  const v = veglia();
+  if(!v.avviata || v.verita) return null;
+  const M = DATA.MEMORIE.find(m => m.npc === npcId);
+  if(!M || v.memorie[M.id]) return null;
+  return M;
+}
+
+function raccontaMemoria(npcId){
+  const M = memoriaDi(npcId);
+  if(!M) return;
+  const cuori = Math.floor((G.amicizia[npcId]||0)/100);
+  if(cuori < M.cuori){
+    UI.dialogo(npcId, [
+      'Di quella notte non mi va di parlare.',
+      'Non con chiunque, almeno. Torna quando ci conosciamo meglio.'
+    ]);
+    UI.toast('Serve più confidenza: ' + M.cuori + ' cuori con ' + DATA.NPCS[npcId].nome + '.','hint');
+    return;
+  }
+  veglia().memorie[M.id] = true;
+  UI.dialogo(npcId, M.testo, { fine:()=>{
+    if(M.dona && G.puoiAggiungere(M.dona,1)){
+      G.aggiungi(M.dona,1);
+      UI.toast('Ricevuto: ' + IT.nome(M.dona),'gold',M.dona);
+    }
+    const n = G.memorieAvute();
+    SND.play('regalo');
+    UI.toast('Memoria raccolta (' + n + '/' + DATA.MEMORIE.length + '): ' + M.titolo,'gold');
+    G.progresso();
+    if(n >= DATA.MEMORIE.length) setTimeout(laVerita, 900);
+  }});
+}
+
+/* Quando ci sono tutte e sei, i pezzi si incastrano — e non li incastra
+   Fiammella, che quella notte era la fiamma e si è spenta con lei: si
+   incastrano in testa a chi ha ascoltato. */
+function laVerita(){
+  const v = veglia();
+  if(v.verita) return;
+  v.verita = true;
+  G.lettere.verita = true;
+  SND.play('magia');
+  UI.dialogo('fiammella', [
+    'Lo sai. Te lo leggo addosso.',
+    'Io no. Io quella notte ero la fiamma: quando le mani si sono chiuse sono finita anch\'io, e di quello che è successo dopo non ho niente.',
+    'Dodici anni a chiedermi cosa avevo fatto di male.',
+    '...',
+    'Niente. Non avevo fatto niente. È stata la brutta notte di una donna sola, ed è bastata.',
+    'C\'era una lettera nel cassetto della cucina, sotto la carta. Serafina l\'ha tenuta lì tutto questo tempo. Leggila.'
+  ], { fine:()=>setTimeout(()=>UI.lettera('verita', ()=>{
+    UI.dialogo('fiammella', [
+      'Ha scritto «chiama gente». Dodici anni per due parole.',
+      'Ma ha ragione, e adesso lo so anch\'io: questa lanterna l\'ha tenuta accesa una persona sola per quarant\'anni, e si è spenta la prima notte che quella persona non ce l\'ha fatta.',
+      'Non voglio che si spenga la prima notte che non ce la fai tu.',
+      'Vai a chiamarli. Tutti e sei. Di\' che li aspetto qui.',
+      'E se qualcuno ti chiede perché — digli che è per Ilde. Funziona.'
+    ], { fine:()=>{
+      UI.toast('Invita i sei abitanti alla veglia al Santuario.','gold');
+      G.progresso();
+    }});
+  }), 500) });
+}
+
+/* --- gli inviti --- */
+function puoiInvitare(npcId){
+  const v = veglia();
+  return v.verita && !v.fatta && !v.giorno && !v.invitati[npcId] &&
+         DATA.MEMORIE.some(m => m.npc === npcId);
+}
+
+const RISPOSTE_INVITO = {
+  bruno:    ['Al santuario? Io la sera chiudo.', '...', 'Chiudo prima. Vengo. E porto il registro: quella riga la chiudiamo lì.'],
+  marisol:  ['Me lo stavo chiedendo se qualcuno l\'avrebbe mai fatto.',
+             'Cucino io. Non si fa una veglia a stomaco vuoto, non mi importa cosa dice la tradizione.'],
+  elio:     ['Dodici anni che mi dico che avrei dovuto remare fino a riva.', 'Vengo a piedi, stavolta. Ci arrivo prima.'],
+  tobia:    ['Sì.', '...', 'Scusa, non mi viene altro. Sì.'],
+  eremita:  ['Io scendo dal Passo due volte l\'anno, e una è per la sagra.', 'Questa vale come l\'altra. Ci sono.'],
+  serafina: ['Sono salita a quel santuario una volta sola in dodici anni, e ci sono salita per spegnerlo.',
+             '...',
+             'Va bene. Salgo di nuovo. Ma stavolta cammini avanti tu.']
+};
+
+function invitaAllaVeglia(npcId){
+  const v = veglia();
+  if(!puoiInvitare(npcId)) return;
+  v.invitati[npcId] = true;
+  UI.dialogo(npcId, RISPOSTE_INVITO[npcId] || ['Ci sono.'], { fine:()=>{
+    const n = G.invitatiAllaVeglia(), tot = DATA.MEMORIE.length;
+    SND.play('regalo');
+    if(n < tot){ UI.toast('Hanno detto di sì in ' + n + ' su ' + tot + '.','gold'); G.progresso(); return; }
+    /* Ci sono tutti: la veglia è domani sera. Non stasera — a una cosa
+       così la gente ci si prepara, e il giocatore deve poterci arrivare
+       apposta invece di trovarsela addosso mentre fa altro. */
+    v.giorno = G.giornoTot + 1;
+    UI.toast('Ci sono tutti. La veglia è domani sera al Santuario, dal tramonto.','gold');
+    G.progresso();
+  }});
+}
+
+/* La sera della veglia i sei stanno alla radura e non alle loro
+   faccende: stessa scorciatoia della sagra, che per un giorno scavalca
+   l'agenda. */
+const POSTI_VEGLIA = DATA.POSTI_VEGLIA;
+const FASCE_VEGLIA = {};
+
+G.eSeraDiVeglia = function(){
+  const v = veglia();
+  return !!(v.giorno && G.giornoTot === v.giorno && !v.fatta);
+};
+
+let daPrimaDellaVeglia = {};
+function aggiornaOspitiVeglia(){
+  const bosco = G.maps.bosco;
+  if(!bosco) return;
+  const attiva = G.eSeraDiVeglia();
+  for(const id in POSTI_VEGLIA){
+    const i = bosco.npc.findIndex(n => n.id===id && n.veglia);
+    if(attiva && i < 0){
+      // Serafina nel bosco ci vive già: va tolta, o si sdoppia
+      const j = bosco.npc.findIndex(n => n.id===id && !n.veglia);
+      if(j >= 0){ daPrimaDellaVeglia[id] = bosco.npc[j]; bosco.npc.splice(j,1); }
+      bosco.npc.push({ id, x:POSTI_VEGLIA[id][0][0], y:POSTI_VEGLIA[id][0][1],
+                       veglia:true, giro:POSTI_VEGLIA[id] });
+    } else if(!attiva && i >= 0){
+      bosco.npc.splice(i,1);
+      if(daPrimaDellaVeglia[id]){ bosco.npc.push(daPrimaDellaVeglia[id]); delete daPrimaDellaVeglia[id]; }
+    }
+  }
+}
+/* esposta perché è la sola parte dell'atto secondo che si può guardare
+   solo mettendo davvero sei persone su una mappa */
+G.aggiornaOspitiVeglia = aggiornaOspitiVeglia;
+
+/* La quarta brace non chiude più niente: rimanda a Fiammella, che ha
+   una domanda vecchia di dodici anni da fare. */
+function invitoAttoSecondo(){
+  if(veglia().avviata) return;
+  setTimeout(()=>UI.toast('La Lanterna è accesa, ma non tiene. Fiammella ha qualcosa da dirti.','gold'), 1200);
+}
+
+function laVeglia(){
+  const v = veglia();
+  if(v.fatta) return;
+  v.fatta = true;
+  SND.play('magia');
+  UI.dialogo('fiammella', [
+    'Sono venuti tutti e sei. Non era mai successo, nemmeno quando era accesa.',
+    'Bruno ha appoggiato un quaderno sulla pietra e ha strappato una pagina.',
+    'Tobia ha cambiato il gancio senza chiedere il permesso a nessuno. Dice che quello vecchio era storto — lo diceva anche dodici anni fa.',
+    'Serafina è arrivata per ultima e si è fermata dove si era fermata quella notte. Poi ha fatto altri due passi.',
+    'Accendila tu. Io non sono la Lanterna: sono solo quello che resta quando si spegne.',
+    'E stasera non serve che resti niente.'
+  ], { fine:()=>{
+    G.lettere.veglia = true;
+    finale();
+  }});
+}
+
 function apriSantuario(){
-  if(G.braci>=4){ UI.santuario(G); return; }
+  const v = G.trame.veglia;
+  // la sera della veglia, al santuario non si consegna: si fa la veglia
+  if(G.eSeraDiVeglia() && G.ora >= 1020){ laVeglia(); return; }
+
+  if(G.braci>=4){
+    if(!v.avviata){
+      v.avviata = true;
+      UI.dialogo('fiammella', [
+        'È accesa. Quattro braci, quattro nicchie, e la valle si è ricordata.',
+        '...',
+        'Solo che non tiene.',
+        'Guarda: fa quella cosa lì. Si abbassa e risale. Da accesa vera non lo faceva.',
+        'Manca qualcosa, e la cosa peggiore è che non so cosa — perché non ho mai saputo nemmeno perché si sia spenta.',
+        'Ero io la fiamma. Quando è finita sono finita anch\'io, e di quella notte non ho niente: né prima né dopo.',
+        'Ma la valle sì. La valle era sveglia, e sei persone quella notte erano da qualche parte a guardare.',
+        'Vai a chiedere. A tutti e sei. Poi torna e dimmi cosa hai capito.'
+      ], { fine:()=>{
+        UI.toast('Nuova storia: la notte del solstizio. Parla con i sei abitanti.','gold');
+        G.progresso();
+      }});
+      return;
+    }
+    if(!v.verita){
+      UI.dialogo('fiammella', ['Sei a ' + G.memorieAvute() + ' su ' + DATA.MEMORIE.length +
+        '. Vai avanti: quando ci sono tutte capisci da solo.']);
+      return;
+    }
+    if(!v.fatta && !v.giorno){
+      UI.dialogo('fiammella', ['Ne mancano ' +
+        (DATA.MEMORIE.length - G.invitatiAllaVeglia()) + '. Vai a chiamarli: non comincio senza.']);
+      return;
+    }
+    if(!v.fatta){
+      UI.dialogo('fiammella', G.eSeraDiVeglia()
+        ? ['Stasera. Dal tramonto in poi: torna quando cala il sole.']
+        : ['È domani sera. Dormici sopra, che ti serve la giornata intera.']);
+      return;
+    }
+    UI.santuario(G); return;
+  }
   if(!G.vistoFiammella){
     G.vistoFiammella = true;
     UI.dialogo('fiammella', [
@@ -2102,6 +2335,12 @@ const FASCE_SAGRA = {};
 for(const id in {bruno:1,tobia:1,marisol:1,elio:1,serafina:1}) FASCE_SAGRA[id]=null;
 
 G.fasciaAgenda = function(id){
+  /* La sera della veglia l'agenda si mette da parte: dal tramonto in poi
+     quei sei stanno alla radura, e basta. */
+  if(G.eSeraDiVeglia() && POSTI_VEGLIA[id] && G.ora>=1020){
+    if(!FASCE_VEGLIA[id]) FASCE_VEGLIA[id] = { fino:1440, giro:POSTI_VEGLIA[id], coperto:true, veglia:true };
+    return FASCE_VEGLIA[id];
+  }
   if(G.eGiornoDiSagra() && POSTI_SAGRA[id] && G.ora>=540 && G.ora<1320){
     if(!FASCE_SAGRA[id]) FASCE_SAGRA[id] = { fino:1320, giro:POSTI_SAGRA[id], coperto:true, sagra:true };
     return FASCE_SAGRA[id];
@@ -2292,6 +2531,11 @@ function parlaCon(n){
   }
 
   const scelte=[];
+  /* L'atto secondo passa dai dialoghi: prima la testimonianza, poi
+     l'invito. Vanno in cima perché sono la cosa che il giocatore sta
+     cercando quando apre quel dialogo. */
+  if(memoriaDi(n.id))    scelte.push({testo:'✦ Quella notte, dodici anni fa', azione:()=>raccontaMemoria(n.id)});
+  if(puoiInvitare(n.id)) scelte.push({testo:'🕯️ Vieni alla veglia al Santuario', azione:()=>invitaAllaVeglia(n.id)});
   if(n.id==='bruno') scelte.push({testo:'🛒 Vorrei comprare qualcosa', azione:()=>UI.negozio(G,'bruno')});
   if(n.id==='tobia') scelte.push({testo:'🔨 Parliamo di attrezzi', azione:()=>UI.fucina(G)});
   if(n.id==='marisol'){
@@ -2320,7 +2564,12 @@ function parlaCon(n){
     else
       scelte.push({testo:'🏹 Parlami di caccia', azione:()=>consigliCaccia()});
   }
-  if(n.id==='fiammella') scelte.push({testo:'✦ Il santuario', azione:()=>UI.santuario(G)});
+  /* Fiammella sta a due passi dalla porta, quindi premendo E si parla
+     con lei e non si entra: questa scelta è la via vera per il
+     santuario, e deve passare da `apriSantuario` come la porta. Andava
+     dritta a `UI.santuario`, e la sera della veglia avrebbe aperto le
+     offerte invece della veglia. */
+  if(n.id==='fiammella') scelte.push({testo:'✦ Il santuario', azione:()=>apriSantuario()});
 
   if(!G.regalatoOggi[n.id]) scelte.push({testo:'🎁 Ho un regalo per te', azione:()=>UI.regalo(G,n.id)});
   scelte.push({testo:'Ci vediamo!', azione:()=>{}});
@@ -3131,8 +3380,8 @@ G.completaBrace = function(bid){
       const lettera = bid;
       if(DATA.LETTERE[lettera] && !G.lettere[lettera]){
         G.lettere[lettera]=true;
-        setTimeout(()=>UI.lettera(lettera, ()=>{ if(G.braci>=4) finale(); }), 600);
-      } else if(G.braci>=4) finale();
+        setTimeout(()=>UI.lettera(lettera, ()=>{ if(G.braci>=4) invitoAttoSecondo(); }), 600);
+      } else if(G.braci>=4) invitoAttoSecondo();
     }});
   }, 1600);
 };
@@ -3144,10 +3393,17 @@ function finale(){
         <div class="muted" style="font-size:15.5px;line-height:1.85;font-style:italic">
         La valle di Fioralba è accesa.<br><br>
         Non è successo niente di spettacolare: nessun tuono, nessun coro.
-        Solo che l'erba, la mattina dopo, era di un verde che nessuno ricordava,
-        e Bruno ha tenuto aperta la bottega fino a tardi senza un motivo preciso.<br><br>
-        Serafina ha portato una torta al santuario, come faceva Ilde,
-        e non ha spiegato perché.<br><br>
+        Sei persone in piedi attorno a una nicchia, al freddo, che non sapevano
+        bene dove mettere le mani.<br><br>
+        Bruno ha strappato una pagina dal registro e l'ha lasciata sulla pietra:
+        dodici anni di una coperta di lana mai pagata, chiusi senza dire niente.
+        Marisol aveva portato da mangiare per quindici. Elio è arrivato a piedi.
+        Oreste è sceso dal Passo per la seconda volta quest'anno.<br><br>
+        Serafina è arrivata per ultima. Si è fermata dove si era fermata
+        quella notte, e poi ha fatto altri due passi.<br><br>
+        La mattina dopo l'erba era di un verde che nessuno ricordava, e la
+        Lanterna era ancora accesa — <b>senza che nessuno la stesse tenendo</b>.
+        Questa è l'unica cosa davvero nuova, ed è tutto.<br><br>
         Tu hai chiuso la porta di casa piano, perché cigola.<br><br>
         <b>Il podere è tuo. La valle, un po' anche.</b><br><br>
         <span style="font-size:13px;opacity:.75">
@@ -3550,6 +3806,8 @@ function nuovoGiorno(svenuto, multa){
         '. Un regalo, oggi, vale il triplo.','gold'), 3000);
       // il giorno della festa il paese si raduna in piazza
       aggiornaOspitiSagra();
+      // e la sera della veglia si raduna alla radura
+      aggiornaOspitiVeglia();
       if(G.eGiornoDiSagra()) setTimeout(()=>UI.toast('🎪 Oggi è il giorno della '+G.sagra.nome+
         ': il paese è tutto in piazza a Fioralba.','gold'), 3300);
 

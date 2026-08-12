@@ -182,6 +182,7 @@ D.ITEMS = {
   brace_autunno:  { nome:'Brace d\'Autunno',   cat:'speciale', prezzo:0, desc:'Odora di foglie e fumo.' },
   brace_inverno:  { nome:'Brace d\'Inverno',   cat:'speciale', prezzo:0, desc:'Fredda fuori, viva dentro.' },
   medaglione:     { nome:'Medaglione di Ilde', cat:'speciale', prezzo:0, desc:'Sul retro: "torna quando la valle chiama".' },
+  gancio_lanterna:{ nome:'Gancio da Lanterna', cat:'speciale', prezzo:0, desc:'Ferro battuto, con la spirale. Tobia l\'ha finito il giorno prima del solstizio e non l\'ha consegnato per dodici anni.' },
   gallina:        { nome:'Gallina',            cat:'animale',  prezzo:0, desc:'Ha già deciso come si chiama.' }
 };
 
@@ -428,6 +429,98 @@ D.SANTUARIO = [
     premio:{ oro:3000, item:'brace_inverno' } }
 ];
 
+/* ------------------------------------------------------------------
+   ATTO SECONDO — LA NOTTE DEL SOLSTIZIO
+
+   Fino alle quattro braci la storia funziona, poi finisce di colpo: si
+   accende la Lanterna e compare un riquadro di testo. E soprattutto
+   nessuno dice mai *perché* si era spenta — il buco sta in mezzo alla
+   trama fin dall'inizio, e Fiammella lo dice senza accorgersene: «Ilde
+   lo faceva. Poi ha smesso di riuscirci».
+
+   Sei testimonianze, una per abitante. Nessuna è la risposta: ognuno ha
+   visto un pezzo di quella notte da dove stava, e alcuni si
+   contraddicono, perché è così che si ricorda a dodici anni di
+   distanza. La risposta viene fuori solo quando ci sono tutti e sei.
+
+   `cuori` è quanto bisogna conoscere qualcuno perché tiri fuori una
+   cosa del genere. Bruno la racconta quasi subito perché per lui è una
+   questione di conti; Serafina è l'ultima perché quella notte c'era.
+   ------------------------------------------------------------------ */
+D.MEMORIE = [
+  { id:'bruno', npc:'bruno', cuori:2, titolo:'Il registro di Bruno', testo:[
+    'Quella notte? Me la ricordo per via del registro, non per il resto.',
+    'Ilde era passata tre giorni prima. Ha comprato olio da lanterna, il doppio del solito, e una coperta di lana pesante. La coperta non l\'ha pagata.',
+    'Non perché non avesse i soldi. Perché è uscita di fretta e io non l\'ho fermata.',
+    'Sono dodici anni che quella riga è aperta nel registro. L\'ho riscritta quattro volte, cambiando quaderno, e ogni volta l\'ho ricopiata.',
+    'Non è per i soldi. È che finché la riga è aperta la faccenda non è chiusa.'
+  ]},
+
+  { id:'marisol', npc:'marisol', cuori:3, titolo:'Il tavolo d\'angolo', testo:[
+    'Il solstizio d\'inverno di dodici anni fa avevo la locanda piena. Si faceva sempre così: la valle mangiava qui e poi saliva al santuario.',
+    'Ilde è partita presto, da sola, che era ancora chiaro. Aveva da fare lassù.',
+    'Al tavolo d\'angolo è rimasto suo marito. Da solo, col cappotto addosso, che non se l\'era tolto.',
+    'Gli ho chiesto se aspettava qualcuno e ha detto di no. Ha bevuto mezzo bicchiere e si è messo a guardare fuori.',
+    'Poi a un certo punto non c\'era più, e io ero in cucina, e non ho visto quando è uscito.',
+    'È l\'unica sera in vent\'anni in cui non ho visto uscire un cliente.'
+  ]},
+
+  { id:'elio', npc:'elio', cuori:3, titolo:'Quello che ha visto Elio', testo:[
+    'Ero sul lago. Di notte, al solstizio, si prende il pesce che non prendi mai.',
+    'Da lì il santuario si vede bene: sta più in alto e la luce arriva sull\'acqua prima che sulla riva.',
+    'La lanterna era accesa. Poi si è spenta. Non è calata piano come fa una fiamma che finisce l\'olio — si è spenta e basta, come una candela con sopra una mano.',
+    'E c\'erano due persone sul sentiero. Una che saliva di corsa e una ferma.',
+    'Ho pensato: stanno litigando, non sono affari miei. Ho tirato su la lenza e sono andato a casa.',
+    'Ci ho pensato ogni solstizio da allora. Ogni volta mi dico che avrei dovuto remare fino a riva.'
+  ]},
+
+  { id:'tobia', npc:'tobia', cuori:4, titolo:'Quello che Tobia non ha consegnato', testo:[
+    'Aspetta. Devo prendere una cosa.',
+    '...',
+    'Ecco. È un gancio da lanterna. Ferro battuto, con la spirale. Ilde me l\'aveva ordinato quell\'autunno: quello vecchio al santuario era storto e la lanterna pendeva.',
+    'L\'ho finito il giorno prima del solstizio. Volevo portarglielo di persona, che ero contento di come era venuto.',
+    'Poi è successo quello che è successo, e portare un gancio da lanterna a una che aveva appena spento la lanterna mi è sembrato...',
+    'Ho aspettato una settimana. Poi un mese. Poi dodici anni.',
+    'Tienilo tu. Se lassù serve, serve. E se non serve, almeno esce da questo cassetto.'
+  ], dona:'gancio_lanterna' },
+
+  { id:'eremita', npc:'eremita', cuori:4, titolo:'Quello che si vede dal Passo', testo:[
+    'Dal Passo si vede tutta la valle, e la notte del solstizio non dormo mai. Vecchia abitudine.',
+    'Quindi sì: ho visto. Da lassù si vede quello che dal basso non si vede.',
+    'C\'era Ilde davanti alla nicchia. E c\'era Serafina che saliva.',
+    'Serafina le ha detto qualcosa. Non ho sentito cosa, sono duecento metri di dislivello.',
+    'Poi Ilde si è girata verso la lanterna e ci ha messo sopra le mani. Tutte e due. È rimasta lì un momento.',
+    'E quando le ha tolte, era buio.',
+    'Non l\'ha spenta il vento, ragazzo. Non l\'ha spenta la neve. L\'ha spenta lei.'
+  ]},
+
+  { id:'serafina', npc:'serafina', cuori:6, titolo:'Quello che Serafina è salita a dire', testo:[
+    'Lo sapevo che prima o poi saresti arrivato a me. Gli altri ti hanno dato i pezzi e i pezzi non tornano, vero?',
+    'Ero io sul sentiero. Sono salita io.',
+    'Suo marito era uscito dalla locanda ed era andato al fiume, dove andava sempre quando aveva qualcosa che non riusciva a dire. Non stava bene da un anno: il torace, la miniera, il freddo. Quell\'inverno era peggiorato e non l\'aveva detto a nessuno tranne che a me, perché a me si dicono le cose e poi si fa finta di niente.',
+    'L\'hanno trovato lì. Non è caduto, non è successo niente di drammatico. Si è seduto e non si è più alzato.',
+    'Sono salita io a dirglielo perché nessun altro se la sentiva.',
+    'Lei mi ha ascoltata. Non ha pianto, non ha detto niente. Ha guardato la nicchia — mancava un frutto, uno solo, era quasi finita — e ha messo le mani sulla fiamma.',
+    'Io le ho detto: Ilde, ci hai messo un anno. E lei mi ha risposto una cosa che non ho più ripetuto a nessuno per dodici anni.',
+    '«Serafina, per chi la tengo accesa adesso?»',
+    'Poi ha spento. E siamo scese insieme al buio.'
+  ]}
+];
+
+/* Dove sta ognuno, la sera della veglia, nella radura. Sta qui e non in
+   game.js perché così il controllo di coerenza può verificare che siano
+   caselle su cui si cammina davvero: un abitante piantato dentro a una
+   pietra rituale è il genere di cosa che si scopre solo alla fine della
+   partita, cioè quando fa più danno. */
+D.POSTI_VEGLIA = {
+  bruno:    [[33,33],[33,34]],
+  marisol:  [[36,36],[35,36]],
+  elio:     [[42,33],[42,34]],
+  tobia:    [[41,36],[42,36]],
+  eremita:  [[38,38],[37,39]],
+  serafina: [[39,36],[40,36]]
+};
+
 /* Cosa porta un cespuglio carico, stagione per stagione.
 
    Stava scritta dentro al codice della falce, e il disegno del cespuglio
@@ -578,6 +671,47 @@ Passa quando vuoi. Il <b>tavolo d'angolo</b> era quello di Ilde, e da quando non
 Cucino tutti i giorni fino a tardi. E no, non ti faccio pagare la prima volta.
 
 <b>Marisol</b>` },
+
+  verita:{ titolo:'La lettera che non ha spedito', da:'Nonna Ilde', testo:
+`Questa non te la manda il notaio, perché non gliel'ho mai data. L'ho tenuta nel cassetto della cucina, sotto la carta, e se sei arrivato a saperlo vuol dire che Serafina ha deciso di parlare. Ci avrà messo un po'.
+
+Allora lo dico io, che è meglio.
+
+L'ho spenta io. Non il vento, non la neve, non i dodici anni. Io, con le mani, la notte del solstizio, mentre mi dicevano che tuo nonno era morto seduto sulla riva del fiume come uno che si riposa.
+
+Non l'ho fatto per rabbia. Se fosse stata rabbia sarebbe passata in una settimana e l'avrei riaccesa a gennaio.
+
+L'ho fatto perché in quel momento non mi è venuto in mente <b>per chi</b>. È una domanda stupida e ci ho messo undici anni a capire che la risposta non era «per lui». Non è mai stata per lui. Era per la valle, e la valle il giorno dopo si è svegliata lo stesso, solo un po' più grigia, e ha continuato a svegliarsi grigia per dodici anni per colpa di una domanda che mi ero fatta al buio.
+
+Ho provato a rimediare. Le mani non hanno tenuto il passo delle intenzioni, che è il modo educato di dire che sono invecchiata.
+
+Adesso c'è una cosa che devi sapere, e la scrivo qui perché a voce non la direi bene.
+
+Quella lanterna io la tenevo accesa da sola. Mi sembrava giusto: era il mio santuario, la mia valle, il mio compito. Era anche l'errore, e l'ho fatto per quarant'anni senza accorgermene.
+
+Una lanterna tenuta da una persona sola si spegne quando quella persona ha una brutta notte.
+
+Non farla come me. Chiama gente.
+
+<b>Ilde</b>` },
+
+  veglia:{ titolo:'Dopo la veglia', da:'Nonna Ilde', testo:
+`Se stai leggendo questa vuol dire che ce l'hai fatta, e che al santuario non c'eri da solo.
+
+Non ti scrivo per congratularmi. Ti scrivo per dirti la cosa noiosa che le nonne dicono alla fine, e che è l'unica che conta.
+
+Adesso la Lanterna sta accesa senza di te.
+
+Non perché sia magica: perché siete in sette a saperla accendere, e sette persone non hanno una brutta notte tutte insieme. Se domani ti va di stare a letto, la valle non si spegne. Se ti va di andartene per un mese, non si spegne. Se un giorno decidi che questa vita non fa per te e torni in città, non si spegne.
+
+Ci ho messo quarant'anni e una notte al buio per capirlo, quindi permettimi di scriverlo grosso: <b>la valle non ti tiene in ostaggio</b>. Ci stai perché ti va.
+
+Il podere ha ancora la staccionata che cede a est. Il pozzo fa ancora quel rumore. Nel campo grande adesso c'è meno sasso che terra, e quello è merito tuo.
+
+Vai a dormire, che domani c'è da annaffiare.
+
+<b>Con affetto sfacciato, ancora,
+Nonna Ilde</b>` },
 
   primavera:{ titolo:'Sulla prima brace', testo:
 `Allora l'hai trovata.

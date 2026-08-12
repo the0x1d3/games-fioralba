@@ -76,7 +76,22 @@ const PASSI = [
   { id:'brace', icona:'brace_primavera',
     titolo:'Accendi la prima brace',
     come:'Oltre il ponte, nella radura chiusa dal burrone a <b>sud-est del bosco</b>, c\'è il <b>Santuario</b>. Fiammella ti chiede i frutti di una stagione: portali e la Lanterna comincia a riaccendersi.',
-    fatto: G => (G.braci||0) >= 1 }
+    fatto: G => (G.braci||0) >= 1 },
+
+  { id:'quattro', icona:'brace_inverno',
+    titolo:'Accendi tutte e quattro le braci',
+    come:'Una per stagione, e ognuna vuole cinque cose di quella stagione: si fa in un anno di gioco. La lista sta nel <b>Santuario</b>, e quello che hai già portato resta lì.',
+    fatto: G => (G.braci||0) >= 4 },
+
+  { id:'notte', icona:'medaglione',
+    titolo:'Scopri perché la Lanterna si è spenta',
+    come:'Con le quattro braci accese la Lanterna non tiene: torna da <b>Fiammella</b>, che ti manda a chiedere in giro. Sei abitanti, sei pezzi di quella notte — e per farsi raccontare una cosa così bisogna conoscersi: <b>Bruno</b> a 2 cuori, <b>Marisol</b> ed <b>Elio</b> a 3, <b>Tobia</b> e <b>Oreste</b> a 4, <b>Serafina</b> a 6, perché quella notte c\'era.',
+    fatto: G => !!(G.trame && G.trame.veglia && G.trame.veglia.verita) },
+
+  { id:'veglia', icona:'brace_primavera',
+    titolo:'La veglia al Santuario',
+    come:'Invita tutti e sei alla radura, poi torna al <b>Santuario la sera dopo, dal tramonto</b>. Una lanterna tenuta accesa da una persona sola si spegne la prima notte che quella persona non ce la fa: è successo a Ilde, e non deve succedere a te.',
+    fatto: G => !!(G.trame && G.trame.veglia && G.trame.veglia.fatta) }
 ];
 
 GU.PASSI = PASSI;
