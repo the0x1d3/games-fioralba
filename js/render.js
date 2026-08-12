@@ -1413,6 +1413,8 @@ function disegnaDecoPiatta(d, ox, oy, t, stag){
       }
       break;
     }
+    /* Resta per i salvataggi vecchi, dove le staccionate del gioco erano
+       decorazioni: continuano a vedersi, anche se le nuove sono oggetti. */
     case 'recinto': {
       const img=ART.placeable('recinto',{});
       sx.drawImage(img, px-8, py+T-img.height+2);

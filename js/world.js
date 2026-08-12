@@ -57,6 +57,16 @@ W.solido = function(m,x,y){
   return false;
 };
 
+/* Come `solido`, ma per chi non ha le mani. Il cancelletto è aperto per
+   il contadino e chiuso per le galline: è tutto il senso di un
+   cancelletto, e senza questa distinzione o passano tutti o non passa
+   nessuno. */
+W.solidoPerBestie = function(m,x,y){
+  if(W.solido(m,x,y)) return true;
+  const o = m.obj[W.idx(m,x,y)];
+  return !!(o && o.apribile);
+};
+
 W.acqua = function(m,x,y){
   return W.dentro(m,x,y) && TIPI[m.g[W.idx(m,x,y)]]==='acqua';
 };
@@ -273,20 +283,36 @@ function buildPodere(){
   /* ------------------------------------------------------------------
      IL CAMPO GRANDE — recintato e sgombro: si riconosce a colpo d'occhio
      ------------------------------------------------------------------ */
-  const CX0=5, CY0=17, CX1=21, CY1=27;
+  /* Il campo finisce una casella prima del viale. Prima arrivava fino a
+     toccarlo, e siccome la staccionata non si posa sul selciato tutto il
+     lato est restava aperto: tredici caselle di varco, cioè un recinto
+     con tre lati. Adesso la linea corre sull'erba e il viale ci passa
+     accanto, con un cancelletto dove si entra. */
+  const CX0=5, CY0=17, CX1=20, CY1=27;
   for(let y=CY0;y<=CY1;y++) for(let x=CX0;x<=CX1;x++){
     const i=W.idx(m,x,y);
     if(TIPI[m.g[i]]==='sentiero') continue;
     m.obj[i]=null;
     m.g[i]=ti('erba');
   }
+  /* Le staccionate del gioco erano decorazioni, cioè si attraversavano;
+     quelle che posa il giocatore sono oggetti, cioè fermano. Due
+     staccionate identiche che si comportano in modo opposto: quella del
+     gioco non recintava niente e quella del giocatore sembrava rotta.
+     Adesso sono la stessa cosa e fermano tutt'e due — ed è per questo
+     che serve un cancelletto. */
   const recinta=(x,y)=>{
     if(!W.dentro(m,x,y)) return;
     if(TIPI[m.g[W.idx(m,x,y)]]==='sentiero') return;     // il varco dove passa il viale
-    m.deco.push({t:'recinto', x, y});
+    setObj(m, x, y, {t:'mobile', kind:'recinto', solido:true});
   };
   for(let x=CX0-1;x<=CX1+1;x++){ recinta(x,CY0-1); recinta(x,CY1+1); }
   for(let y=CY0;y<=CY1;y++){ recinta(CX0-1,y); recinta(CX1+1,y); }
+  /* I due cancelletti: uno a nord verso l'aia, uno a est sul viale. Si
+     entra di lì, e le galline restano fuori dalle insalate. */
+  const cancello=(x,y)=>setObj(m, x, y, {t:'mobile', kind:'cancelletto', solido:false, apribile:true});
+  cancello(CX0+3, CY0-1);
+  cancello(CX1+1, CY0+5);
   m.deco.push({t:'cartello', x:CX0, y:CY0-2, testo:'Campo grande'});
 
   /* ------------------------------------------------------------------

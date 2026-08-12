@@ -1495,9 +1495,11 @@ function posa(id, tx, ty){
   } else if(['barattoliera','botte','forno','fornace','arnia'].indexOf(kind)>=0){
     m.obj[i] = {t:'macchina', kind, solido:true, dentro:null, out:null, giorni:0, pronto:false};
   } else {
-    m.obj[i] = {t:'mobile', kind, solido: kind!=='sentiero'};
+    m.obj[i] = {t:'mobile', kind, solido: kind!=='sentiero' && kind!=='cancelletto'};
     if(kind==='lanterna') m.obj[i].luce=true;
     if(kind==='spaventapasseri') m.obj[i].raggio=6;
+    // il cancelletto lascia passare te e non le bestie
+    if(kind==='cancelletto') m.obj[i].apribile=true;
   }
   G.togli(id,1);
   SND.play('costruisci');
@@ -2402,7 +2404,7 @@ function aggiornaAnimali(dt){
       }
       const nx=base.x+((Math.random()*base.r*2)|0)-base.r;
       const ny=base.y+((Math.random()*base.r*2)|0)-base.r;
-      if(WORLD.dentro(m,nx,ny) && !WORLD.solido(m,nx,ny)) a.dest={x:nx*T+16,y:ny*T+20};
+      if(WORLD.dentro(m,nx,ny) && !WORLD.solidoPerBestie(m,nx,ny)) a.dest={x:nx*T+16,y:ny*T+20};
       else { a.wait=900; continue; }
     }
     const dx=a.dest.x-a.px, dy=a.dest.y-a.py, d=Math.hypot(dx,dy);

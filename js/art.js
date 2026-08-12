@@ -1819,6 +1819,22 @@ A.placeable = function(kind, opt){
       px(x,6,26,36,4,'#8a6038'); px(x,6,36,36,4,'#8a6038');
       px(x,6,26,36,1,'#a8763c'); px(x,6,36,36,1,'#a8763c');
       break;
+    /* Il cancelletto: gli stessi due pali della staccionata, ma le
+       traverse sono più basse e in mezzo c'è il battente socchiuso.
+       Dev'essere riconoscibile a colpo d'occhio dentro una fila di
+       staccionate identiche, altrimenti il varco non si trova. */
+    case 'cancelletto':
+      px(x,8,18,5,28,'#96704a');  px(x,35,18,5,28,'#96704a');   // i due pali, più grossi
+      px(x,8,18,5,2,'#b58a5e');   px(x,35,18,5,2,'#b58a5e');
+      px(x,8,16,5,3,'#7a5432');   px(x,35,16,5,3,'#7a5432');    // i cappelli
+      // il battente, socchiuso verso l'interno
+      px(x,14,28,20,3,'#a8763c'); px(x,14,37,20,3,'#a8763c');
+      px(x,14,28,20,1,'#c99a5e'); px(x,14,37,20,1,'#c99a5e');
+      for(let k=0;k<4;k++) px(x,15+k*5,28,2,12,'#8a6038');      // le stecche
+      px(x,14,28,2,12,'#7a5432');                                // il montante del battente
+      px(x,31,31,4,2,'#6a6a74');                                 // il gancio
+      px(x,31,31,4,1,'#9a9aa6');
+      break;
     case 'cartello':
       px(x,22,30,4,18,'#6b4a2e');
       px(x,10,16,28,18,'#8a5a34'); px(x,10,16,28,2,'#a8763c');
@@ -2118,7 +2134,7 @@ function drawIcon(x, id){
       }
       break;
     }
-    case 'recinto': case 'spaventapasseri': case 'lanterna': case 'cassa':
+    case 'recinto': case 'cancelletto': case 'spaventapasseri': case 'lanterna': case 'cassa':
     case 'barattoliera': case 'botte': case 'forno': case 'fornace': case 'arnia':
     case 'vaso_lucciole': {
       const src = A.placeable(id==='vaso_lucciole'?'lanterna':id, {attivo:true, pronto:false});
