@@ -32,6 +32,9 @@ const ENERGIA_BASE = 260;
 
 /* ===================================================================
    STATO INIZIALE
+   Appesa a G perché salvataggio.js la chiama: prima di applicare un
+   salvataggio ripulisce lo stato, altrimenti i campi che quel file non
+   contiene resterebbero quelli della partita di prima.
    =================================================================== */
 function statoIniziale(){
   return {
@@ -74,6 +77,7 @@ function statoIniziale(){
     look:{ pelle:'#e8bd8f', capelli:'#6b4423', maglia:'#4f8ab0', pant:'#3d5470', cappello:'#c9a44c' }
   };
 }
+G.statoIniziale = statoIniziale;
 
 /* ===================================================================
    BOOT
@@ -98,7 +102,7 @@ function init(){
   collegaInput();
   collegaTitolo();
   collegaLanding();
-  disegnaTitolo();
+  TITOLO.avvia();
 }
 
 /* ===================================================================
@@ -145,397 +149,12 @@ function collegaLanding(){
 }
 
 /* ===================================================================
-   TITOLO
+   AVVIO DELLA PARTITA
+   Stava sotto l'intestazione "TITOLO" insieme al disegno della
+   schermata, e da lì veniva l'impressione che quella sezione fosse
+   legata a mezzo gioco: erano queste quattro funzioni ad esserlo — la
+   scena animata (ora in titolo.js) non chiamava niente.
    =================================================================== */
-let titoloRaf = null;
-function disegnaTitolo(){
-  const c = $('#title-art');
-  const cx = c.getContext('2d');
-  const off = document.createElement('canvas');
-  let ox = off.getContext('2d');
-  let t = 0;
-
-  /* ---- helper di scena ---- */
-  function profilo(x, W, H, base, amp, freq, fase, col, luce){
-    x.fillStyle = col;
-    x.beginPath(); x.moveTo(0, H);
-    for(let px=0; px<=W; px+=2){
-      const yy = base
-        + Math.sin(px*freq + fase)*amp
-        + Math.sin(px*freq*2.7 + fase*1.6)*amp*0.34
-        + Math.sin(px*freq*5.3 + fase*0.7)*amp*0.14;
-      x.lineTo(px, yy|0);
-    }
-    x.lineTo(W, H); x.closePath(); x.fill();
-    if(luce){
-      x.fillStyle = luce;
-      for(let px=0; px<=W; px+=2){
-        const yy = base
-          + Math.sin(px*freq + fase)*amp
-          + Math.sin(px*freq*2.7 + fase*1.6)*amp*0.34
-          + Math.sin(px*freq*5.3 + fase*0.7)*amp*0.14;
-        x.fillRect(px, yy|0, 2, 2);
-      }
-    }
-  }
-
-  function abete(x, bx, by, s, col){
-    x.fillStyle = col;
-    x.fillRect(bx-1, by-4*s, 2, 5*s);
-    for(let i=0;i<3;i++){
-      const w = (9-i*2.4)*s, hh = 6*s;
-      const yy = by - 4*s - i*4.4*s;
-      x.beginPath();
-      x.moveTo(bx, yy-hh); x.lineTo(bx-w, yy); x.lineTo(bx+w, yy);
-      x.closePath(); x.fill();
-    }
-  }
-
-  function casetta(x, bx, by, s, col, finestra, fumo, tt){
-    x.fillStyle = col;
-    x.fillRect(bx-7*s, by-9*s, 14*s, 9*s);
-    x.beginPath();
-    x.moveTo(bx-9*s, by-8*s); x.lineTo(bx, by-15*s); x.lineTo(bx+9*s, by-8*s);
-    x.closePath(); x.fill();
-    x.fillRect(bx+3*s, by-19*s, 3*s, 6*s);            // comignolo
-    if(finestra){
-      x.fillStyle = finestra;
-      x.fillRect(bx-4*s, by-6*s, 3*s, 3*s);
-      x.fillRect(bx+1*s, by-6*s, 3*s, 3*s);
-    }
-    if(fumo){
-      x.globalAlpha = 0.18;
-      x.fillStyle = '#cfc4b4';
-      for(let i=0;i<4;i++){
-        const p = ((tt*0.00022 + i*0.25) % 1);
-        x.beginPath();
-        x.arc(bx+4.5*s + Math.sin(p*5+i)*4*s, by-19*s - p*22*s, (1.4+p*3.4)*s, 0, 6.3);
-        x.fill();
-      }
-      x.globalAlpha = 1;
-    }
-  }
-
-  function frame(){
-    const titolo = $('#title');
-    if(!titolo || titolo.classList.contains('hidden')) return;
-    t += 16;
-
-    // come il canvas di gioco: si lavora in pixel fisici con ingrandimento intero,
-    // altrimenti su schermi in scala i pixel del disegno risultano irregolari
-    const cw = Math.max(320, window.innerWidth  || 0);
-    const ch = Math.max(240, window.innerHeight || 0);
-    const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-    const dw = Math.round(cw*dpr), dh = Math.round(ch*dpr);
-    const SC = Math.max(1, Math.round((cw < 700 ? 2 : 3)*dpr));
-    const W = Math.ceil(dw/SC), H = Math.ceil(dh/SC);
-    if(off.width!==W || off.height!==H){
-      off.width=W; off.height=H;
-      ox = off.getContext('2d'); ox.imageSmoothingEnabled=false;
-    }
-    const x = ox;
-    const oriz = Math.round(H*0.60);          // linea dell'orizzonte
-    const solX = Math.round(W*0.74);
-    const solY = oriz - Math.round(H*0.020);   // mezzo disco sopra le colline
-    const brezza = Math.sin(t*0.0006)*0.5 + Math.sin(t*0.00023+1.4)*0.5;
-
-    /* ---------- CIELO ---------- */
-    const g = x.createLinearGradient(0,0,0,H);
-    g.addColorStop(0.00,'#101733');
-    g.addColorStop(0.22,'#22284c');
-    g.addColorStop(0.40,'#453a63');
-    g.addColorStop(0.52,'#7a4f63');
-    g.addColorStop(0.58,'#b56a52');
-    g.addColorStop(0.615,'#e39a55');
-    g.addColorStop(0.64,'#f7c777');
-    g.addColorStop(1.00,'#2a2536');
-    x.fillStyle=g; x.fillRect(0,0,W,H);
-
-    /* ---------- STELLE ---------- */
-    for(let i=0;i<90;i++){
-      const sx0 = ART.hsh(i,0,11)*W;
-      const sy0 = ART.hsh(i,1,11)*H*0.46;
-      const tw = 0.30 + Math.sin(t*0.0021 + i*1.7)*0.34;
-      const fade = 1 - sy0/(H*0.50);
-      const a = tw*fade;
-      if(a <= 0.02) continue;
-      x.globalAlpha = a;
-      x.fillStyle = ART.hsh(i,2,11)>0.82 ? '#ffe6b0' : '#e8f0ff';
-      x.fillRect(sx0|0, sy0|0, 1, 1);
-      if(ART.hsh(i,3,11)>0.9){ x.globalAlpha=a*0.5; x.fillRect((sx0|0)-1,sy0|0,3,1); x.fillRect(sx0|0,(sy0|0)-1,1,3); }
-    }
-    x.globalAlpha=1;
-
-    /* ---------- ALONE DEL SOLE ---------- */
-    const halo = x.createRadialGradient(solX,solY,0,solX,solY,H*0.42);
-    halo.addColorStop(0,'rgba(255,214,130,0.55)');
-    halo.addColorStop(0.35,'rgba(240,150,90,0.22)');
-    halo.addColorStop(1,'rgba(200,110,70,0)');
-    x.fillStyle=halo; x.fillRect(0,0,W,H);
-
-    /* ---------- NUVOLE ---------- */
-    for(let i=0;i<7;i++){
-      const vel = 0.0035 + (i%3)*0.0016;
-      const bx = ((ART.hsh(i,0,41)*W*1.6 + t*vel) % (W+180)) - 90;
-      const by = H*0.16 + ART.hsh(i,1,41)*H*0.30;
-      const lw = 26 + ART.hsh(i,2,41)*46;
-      const lh = 3 + ART.hsh(i,3,41)*4;
-      const vicino = 1 - Math.min(1, Math.abs(by-solY)/(H*0.4));
-      // corpo scuro
-      x.globalAlpha = 0.55;
-      x.fillStyle = '#3b3350';
-      x.fillRect(bx|0, by|0, lw|0, lh|0);
-      x.fillRect((bx+lw*0.2)|0, (by-lh*0.8)|0, (lw*0.55)|0, lh|0);
-      // sottopancia illuminato dal sole
-      x.globalAlpha = 0.5*vicino + 0.12;
-      x.fillStyle = '#f0a868';
-      x.fillRect(bx|0, (by+lh-1)|0, lw|0, 1);
-      x.globalAlpha = 1;
-    }
-
-    /* ---------- SOLE ---------- */
-    const solR = Math.round(H*0.055);
-    x.fillStyle='#fff0c0';
-    x.beginPath(); x.arc(solX, solY, solR, 0, 6.3); x.fill();
-    x.fillStyle='#ffd98a';
-    x.beginPath(); x.arc(solX, solY, solR*0.72, 0, 6.3); x.fill();
-    // strisce sull'acqua/aria
-    x.globalAlpha=0.18; x.fillStyle='#ffcf80';
-    for(let i=0;i<4;i++) x.fillRect(solX-solR*2.4, solY-solR + i*solR*0.7, solR*4.8, 1);
-    x.globalAlpha=1;
-
-    /* ---------- MONTAGNE LONTANE ---------- */
-    profilo(x, W, H, oriz-H*0.055, H*0.045, 0.006, 0.4, '#413a5e', '#584f78');
-    profilo(x, W, H, oriz-H*0.018, H*0.032, 0.010, 2.1, '#332e4c', '#453e63');
-
-    /* ---------- COLLINE ---------- */
-    profilo(x, W, H, oriz+H*0.030, H*0.026, 0.008, 1.2, '#2b3a3c', '#3a4c4a');
-
-    profilo(x, W, H, oriz+H*0.075, H*0.022, 0.013, 3.3, '#22302f', '#2f403c');
-
-    /* ---------- LAGHETTO CHE RIFLETTE IL TRAMONTO ----------
-       disegnato dopo le colline, così sta nella conca e non ci finisce sotto */
-    const lagX = W*0.72, lagY = oriz + H*0.098, lagW = W*0.34, lagH = H*0.036;
-    x.fillStyle='#1e2c38';
-    x.beginPath(); x.ellipse(lagX, lagY, lagW/2, lagH/2, 0, 0, 6.3); x.fill();
-    x.save();
-    x.beginPath(); x.ellipse(lagX, lagY, lagW/2-1, lagH/2-1, 0, 0, 6.3); x.clip();
-    const lg = x.createLinearGradient(0, lagY-lagH/2, 0, lagY+lagH/2);
-    lg.addColorStop(0,'#8a5a5e'); lg.addColorStop(0.5,'#c07a52'); lg.addColorStop(1,'#3c3a52');
-    x.fillStyle=lg; x.fillRect(lagX-lagW, lagY-lagH, lagW*2, lagH*2);
-    // scia del sole, a trattini che ondeggiano
-    for(let i=0;i<9;i++){
-      const yy = lagY - lagH/2 + i*(lagH/9);
-      const w2 = (2 + i*1.4) * (1 + Math.sin(t*0.0018 + i*1.1)*0.18);
-      x.globalAlpha = 0.65 - i*0.05;
-      x.fillStyle = '#ffd9a0';
-      x.fillRect((solX - w2/2 + Math.sin(t*0.0022+i)*2)|0, yy|0, w2|0, 1);
-    }
-    x.globalAlpha=1;
-    x.restore();
-    // bordo del laghetto
-    x.strokeStyle='#26332e'; x.lineWidth=1.5;
-    x.beginPath(); x.ellipse(lagX, lagY, lagW/2, lagH/2, 0, 0, 6.3); x.stroke();
-
-    /* ---------- BOSCO SULLE COLLINE ---------- */
-    for(let i=0;i<58;i++){
-      const bx = ART.hsh(i,0,51)*W;
-      const by = oriz + H*0.055 + ART.hsh(i,1,51)*H*0.055;
-      const s  = 0.55 + ART.hsh(i,2,51)*0.5;
-      abete(x, bx, by, s, '#1b2724');
-    }
-
-    /* ---------- IL PAESE ---------- */
-    const paeseY = oriz + H*0.135;
-    const pulse = 0.72 + Math.sin(t*0.0019)*0.16;
-    for(let i=0;i<7;i++){
-      const bx = W*0.50 + i*W*0.052 + Math.sin(i*2.1)*W*0.012;
-      const by = paeseY + ((i%3)-1)*H*0.016;
-      casetta(x, bx, by, 0.85+((i%3)*0.12), '#182029',
-              `rgba(255,206,120,${pulse*(0.7+ART.hsh(i,0,61)*0.3)})`,
-              i%3===0, t);
-    }
-    // campanile
-    x.fillStyle='#182029';
-    x.fillRect(W*0.585, paeseY-H*0.085, 7, H*0.085);
-    x.beginPath();
-    x.moveTo(W*0.585-3, paeseY-H*0.085); x.lineTo(W*0.585+3.5, paeseY-H*0.115);
-    x.lineTo(W*0.585+10, paeseY-H*0.085); x.closePath(); x.fill();
-    x.fillStyle=`rgba(255,206,120,${pulse})`;
-    x.fillRect(W*0.585+2, paeseY-H*0.070, 3, 4);
-
-    /* ---------- IL SANTUARIO, su un poggio a sinistra ---------- */
-    // tenuto a sinistra: la colonna dei pulsanti sta al centro
-    const sX = W*0.175, sY = oriz + H*0.100;
-    const sS = Math.max(1, H*0.0042);          // scala del santuario
-    const battito = 0.55 + Math.sin(t*0.0016)*0.28;
-    // poggio
-    x.fillStyle='#1e2a26';
-    x.beginPath(); x.ellipse(sX, sY+3*sS, 30*sS, 7*sS, 0, 0, 6.3); x.fill();
-    // alone
-    x.globalAlpha = 0.34*battito;
-    const gl = x.createRadialGradient(sX, sY-9*sS, 0, sX, sY-9*sS, 34*sS);
-    gl.addColorStop(0,'rgba(255,222,150,1)'); gl.addColorStop(1,'rgba(255,200,110,0)');
-    x.fillStyle=gl; x.beginPath(); x.arc(sX, sY-9*sS, 34*sS, 0, 6.3); x.fill();
-    x.globalAlpha=1;
-    // tempietto
-    x.fillStyle='#242b33';
-    x.fillRect(sX-13*sS, sY-16*sS, 4*sS, 16*sS);
-    x.fillRect(sX+9*sS,  sY-16*sS, 4*sS, 16*sS);
-    x.fillRect(sX-17*sS, sY-20*sS, 34*sS, 4*sS);
-    x.beginPath();
-    x.moveTo(sX-19*sS, sY-20*sS); x.lineTo(sX, sY-32*sS); x.lineTo(sX+19*sS, sY-20*sS);
-    x.closePath(); x.fill();
-    x.fillRect(sX-18*sS, sY, 36*sS, 3*sS);
-    // la lanterna accesa
-    x.fillStyle=`rgba(255,232,164,${0.78+battito*0.22})`;
-    x.fillRect(sX-3*sS, sY-13*sS, 6*sS, 9*sS);
-    x.fillStyle='#3a3028';
-    x.fillRect(sX-4*sS, sY-14*sS, 8*sS, 1.5*sS);
-    // scintille che salgono
-    for(let i=0;i<4;i++){
-      const p = ((t*0.00035 + i*0.25) % 1);
-      x.globalAlpha = (1-p)*0.8;
-      x.fillStyle='#ffe9a8';
-      x.fillRect((sX + Math.sin(p*7+i*2)*5*sS)|0, (sY-14*sS - p*22*sS)|0, 1, 1);
-    }
-    x.globalAlpha=1;
-
-    /* ---------- CAMPI DEL PODERE ---------- */
-    const campoY = oriz + H*0.195;
-    x.fillStyle='#1d2a18'; x.fillRect(0, campoY, W, H-campoY);
-    // solchi in prospettiva
-    for(let i=0;i<12;i++){
-      const p = i/12;
-      const yy = campoY + p*p*(H-campoY)*1.15;
-      if(yy>H) break;
-      x.fillStyle = i%2 ? 'rgba(46,66,36,0.55)' : 'rgba(28,42,22,0.55)';
-      x.fillRect(0, yy|0, W, Math.max(2, (p*10)|0));
-    }
-    // filari di piantine
-    for(let r=0;r<4;r++){
-      const p = 0.18 + r*0.17;
-      const yy = campoY + p*p*(H-campoY)*1.6;
-      if(yy>H) continue;
-      const passo = 10 + r*5;
-      for(let bx=8; bx<W; bx+=passo){
-        const sw = brezza*(1+r*0.4);
-        x.fillStyle='#2c4423';
-        x.fillRect((bx+sw)|0, (yy-3-r)|0, 2, 3+r);
-        x.fillStyle='#38562c';
-        x.fillRect((bx+sw-2)|0, (yy-4-r)|0, 2, 2);
-        x.fillRect((bx+sw+2)|0, (yy-4-r)|0, 2, 2);
-      }
-    }
-    // staccionata
-    const recY = campoY + H*0.055;
-    x.fillStyle='#241c16';
-    for(let bx=-6; bx<W+10; bx+=22) x.fillRect(bx, recY-9, 3, 12);
-    x.fillRect(0, recY-6, W, 2);
-    x.fillRect(0, recY-2, W, 2);
-
-    /* ---------- ALBERO IN PRIMO PIANO (cornice a sinistra) ---------- */
-    const tX = W*0.045, tY = H*1.02;
-    const oscilla = brezza*3;
-    x.fillStyle='#0e1710';
-    x.fillRect(tX-4, tY-H*0.40, 9, H*0.40);
-    x.save();
-    x.translate(tX+oscilla, tY-H*0.38);
-    for(const b of [[0,0,H*0.095],[-H*0.045,H*0.030,H*0.070],[H*0.050,H*0.024,H*0.064],
-                    [-H*0.024,-H*0.038,H*0.058],[H*0.028,-H*0.032,H*0.054]]){
-      x.beginPath(); x.arc(b[0], b[1], b[2], 0, 6.3); x.fill();
-    }
-    x.restore();
-    // rami che entrano dall'alto a destra
-    x.save();
-    x.translate(W*1.0, -H*0.02);
-    x.fillStyle='#0e1710';
-    for(const b of [[0,0,H*0.10],[-H*0.06,H*0.05,H*0.075],[-H*0.11,H*0.01,H*0.055]]){
-      x.beginPath(); x.arc(b[0]+oscilla*0.6, b[1], b[2], 0, 6.3); x.fill();
-    }
-    x.restore();
-
-    /* ---------- ERBA IN PRIMISSIMO PIANO ---------- */
-    x.fillStyle='#0a1209';
-    x.fillRect(0, H-H*0.045, W, H*0.045);
-    for(let bx=-4; bx<W+8; bx+=3){
-      const hh = 5 + ((ART.hsh(bx,0,81)*11)|0);
-      const sw = brezza*3.2*(0.6+ART.hsh(bx,1,81)*0.8);
-      x.fillStyle = ART.hsh(bx,2,81)>0.5 ? '#0a1209' : '#0f1a0c';
-      for(let k=0;k<hh;k++){
-        const p = k/hh;
-        x.fillRect((bx + sw*p*p)|0, (H-H*0.045-k)|0, 2, 1);
-      }
-    }
-
-    /* ---------- LUCCIOLE ---------- */
-    for(let i=0;i<26;i++){
-      const fx = (ART.hsh(i,0,31)*W + Math.sin(t*0.00045+i*1.3)*W*0.06 + t*0.004*(i%3-1)) % W;
-      const fy = campoY - H*0.03 + ART.hsh(i,1,31)*(H-campoY)*0.85
-               + Math.cos(t*0.0008+i*2.1)*H*0.018;
-      const a = 0.20 + Math.sin(t*0.0033 + i*1.9)*0.55;
-      if(a<=0.02) continue;
-      x.globalAlpha = a*0.30;
-      x.fillStyle='#e8f89a';
-      x.beginPath(); x.arc(fx, fy, 3.4, 0, 6.3); x.fill();
-      x.globalAlpha = a;
-      x.fillStyle='#f4ffc8';
-      x.fillRect(fx|0, fy|0, 1, 1);
-    }
-    x.globalAlpha=1;
-
-    /* ---------- UCCELLI ---------- */
-    for(let i=0;i<5;i++){
-      const p = ((t*0.000045 + i*0.21) % 1.4) - 0.2;
-      if(p<0 || p>1) continue;
-      const bx = p*W*1.1 - W*0.05;
-      const by = H*0.20 + Math.sin(p*3.4+i)*H*0.045 + i*H*0.016;
-      const ali = Math.sin(t*0.006 + i*1.5) > 0 ? 2 : -1;
-      x.strokeStyle='rgba(24,22,34,0.75)'; x.lineWidth=1;
-      x.beginPath();
-      x.moveTo(bx-3, by+ali); x.lineTo(bx, by); x.lineTo(bx+3, by+ali);
-      x.stroke();
-    }
-
-    /* ---------- RAGGI CALDI ---------- */
-    x.save();
-    x.globalCompositeOperation='lighter';
-    for(let i=0;i<4;i++){
-      const gr = x.createLinearGradient(solX, solY, solX - W*0.5 + i*W*0.1, H);
-      gr.addColorStop(0,`rgba(255,206,140,${0.055 - i*0.008})`);
-      gr.addColorStop(1,'rgba(255,180,110,0)');
-      x.fillStyle=gr;
-      x.beginPath();
-      x.moveTo(solX, solY);
-      x.lineTo(solX - W*0.34 + i*W*0.19, H);
-      x.lineTo(solX - W*0.20 + i*W*0.19, H);
-      x.closePath(); x.fill();
-    }
-    x.restore();
-
-    /* ---------- SCRIM CENTRALE PER IL TESTO ---------- */
-    const sc = x.createRadialGradient(W/2, H*0.40, 0, W/2, H*0.40, W*0.52);
-    sc.addColorStop(0,'rgba(16,14,28,0.50)');
-    sc.addColorStop(0.55,'rgba(16,14,28,0.22)');
-    sc.addColorStop(1,'rgba(16,14,28,0)');
-    x.fillStyle=sc; x.fillRect(0,0,W,H);
-
-    /* ---------- VIGNETTA ---------- */
-    const v = x.createRadialGradient(W/2,H/2,Math.min(W,H)*0.34, W/2,H/2,Math.max(W,H)*0.78);
-    v.addColorStop(0,'rgba(0,0,0,0)');
-    v.addColorStop(1,'rgba(8,6,16,0.62)');
-    x.fillStyle=v; x.fillRect(0,0,W,H);
-
-    /* ---------- INGRANDIMENTO A PIXEL ---------- */
-    if(c.width!==dw || c.height!==dh){ c.width=dw; c.height=dh; }
-    cx.imageSmoothingEnabled=false;
-    cx.drawImage(off, 0, 0, W*SC, H*SC);
-
-    titoloRaf = requestAnimationFrame(frame);
-  }
-  frame();
-}
-
 function collegaTitolo(){
   const salvato = caricaGrezzo();
   if(salvato) $('#btn-continue').classList.remove('hidden');
@@ -639,7 +258,7 @@ function avviaGioco(conIntro){
   $('#title').classList.add('hidden');
   const lp=$('#landing'); if(lp) lp.classList.add('hidden');
   if(window.LANDING) LANDING.ferma();     // niente animazioni a vuoto sotto la partita
-  if(titoloRaf) cancelAnimationFrame(titoloRaf);
+  TITOLO.ferma();
   $('#hud').classList.remove('hidden');
   G.inGioco = true;
   G.ultimaAzione = performance.now();
@@ -960,7 +579,7 @@ function loop(ts){
     const bloccato = UI.modalAperta() || UI.dialogoAttivo() ||
                      !$('#letter').classList.contains('hidden') ||
                      !$('#daycard').classList.contains('hidden') ||
-                     G.p.dorme || pesca.attiva;
+                     G.p.dorme || PESCA.inCorso();
 
     // il vento gira sempre: anche a menu aperto l'erba continua a muoversi
     sistema('vento', ()=>FX.aggiornaVento(dt, G.meteo==='vento' ? 2.1 :
@@ -980,7 +599,7 @@ function loop(ts){
       sistema('fauna',     ()=>MOBS.aggiorna(G, dt));
       sistema('guardia',   guardiaGiocatore);
     }
-    if(pesca.attiva) sistema('pesca', ()=>aggiornaPesca(dt));
+    if(PESCA.inCorso()) sistema('pesca', ()=>PESCA.aggiorna(dt));
 
     if(window.TUT)   sistema('tutorial', ()=>TUT.aggiorna());
     if(window.GUIDA) sistema('guida',    ()=>GUIDA.aggiorna());
@@ -1048,8 +667,8 @@ function normalizzaStato(){
   /* Il monte energia si ricalcola sempre da base + bonus: così alzare la
      base vale anche per le partite già cominciate, senza toccare quello
      che si è guadagnato salendo di livello. (Il bonus di un salvataggio
-     vecchio lo ricava applicaSalvataggio, che è l'unico posto in cui si
-     sa ancora che nel file non c'era.) */
+     vecchio lo ricava applicaSalvataggio, in salvataggio.js: è l'unico
+     posto in cui si sa ancora che nel file non c'era.) */
   if(typeof G.energiaBonus !== 'number' || !isFinite(G.energiaBonus)) G.energiaBonus = 0;
   G.energiaMax = ENERGIA_BASE + G.energiaBonus;
   if(typeof G.energia !== 'number' || !isFinite(G.energia)) G.energia = G.energiaMax;
@@ -1069,6 +688,7 @@ function normalizzaStato(){
     if(WORLD.solido(m,tx,ty)){ const s=WORLD.vicinoLibero(m,tx,ty); p.px=s.x*T+16; p.py=s.y*T+20; }
   }
 }
+G.normalizzaStato = normalizzaStato;   // la chiama salvataggio.js, in coda al ripristino
 
 function avanzaMinuto(){
   G.ora++;
@@ -1505,7 +1125,7 @@ function usaOggetto(){
 
     if(id==='canna'){
       if(terr!=='acqua'){ nonSiPuo("Devi essere rivolto verso l'acqua per lanciare la lenza."); return; }
-      iniziaPesca(tx,ty);
+      PESCA.avvia(tx,ty);
       return;
     }
     if(id==='arco'){ tiraDiArco(); return; }
@@ -1600,6 +1220,7 @@ function spendi(e){
   G.aggiornaHUD();
   return true;
 }
+G.spendi = spendi;   // la chiama pesca.js: lanciare la lenza costa 3
 
 function trovaLibero(m,x,y,r){
   for(let k=0;k<12;k++){
@@ -1891,7 +1512,7 @@ function etichettaInterazione(o){
 
 function promptContestuale(){
   // la pesca usa già il prompt per conto suo
-  if(pesca.attiva || G.p.dorme) return;
+  if(PESCA.inCorso() || G.p.dorme) return;
   if(UI.modalAperta() || UI.dialogoAttivo()){ UI.prompt(null); return; }
 
   const p=G.p, m=G.mappa();
@@ -3000,235 +2621,8 @@ function freccia(x0,y0,x1,y1){
 }
 
 /* ===================================================================
-   PESCA
+   PESCA — sta in pesca.js.
    =================================================================== */
-/* I numeri della pesca, tutti qui.
-
-   Com'era: il pesce si muoveva a scatti casuali, la barra rimbalzava
-   oltre dove la volevi, e per fare punti bisognava contenere il pesce
-   *tutto intero* dentro la barra — cioè la finestra buona era la metà
-   di quella disegnata. Tre cose che insieme rendevano la pesca una
-   lotteria, e infatti si perdeva quasi sempre.
-
-   I numeri sotto non sono a occhio: ho simulato un pilota automatico
-   che tiene premuto quando il pesce è sopra la barra, con un ritardo di
-   reazione umano, e ho cercato la combinazione che dà questi risultati
-   (300 partite per casella):
-
-                        prima          dopo
-     attento, facile      0%      →     92%
-     attento, medio       2%      →     79%
-     attento, difficile   6%      →     64%
-     medio,   medio       2%      →     64%
-     livello 5, medio    93%      →     93%
-
-   Prima un giocatore normale non prendeva praticamente niente: non era
-   difficile, era rotto. Adesso i pesci facili si prendono quasi sempre,
-   quelli difficili un po' più di una volta su due, e salire di livello
-   in Pesca si sente. E una lotta dura quattro secondi e mezzo invece di
-   finire in mezzo secondo: il tempo di accorgersi che c'è una lotta. */
-const PISTA = 330;        // altezza della pista, in pixel (vale il CSS)
-const PESCE = 42;         // e del pesce
-const ALTEZZA_BARRA = 104;// barra al livello zero (era 82)
-const MARGINE = 8;        // quanto si perdona ai bordi
-const SPINTA = 0.30;      // quanto tira su tenendo premuto (era 0.42)
-const GRAVITA = 0.24;     // e quanto scende lasciando (era 0.36)
-const ATTRITO = 0.87;     // più attrito = meno rimbalzo (era 0.90)
-const GUADAGNO = 0.026;   // punti al millisecondo quando è agganciato
-const PERDITA = 0.034;    // e quando lo perdi (era 0.06)
-const PROG_INIZIALE = 40; // (era 32)
-const FINESTRA_ABBOCCO = 2200;  // tempo per reagire all'abboccata (era 1400)
-
-const pesca = { attiva:false, fase:'', t:0, barra:50, vBarra:0, pesceY:50, vPesce:0,
-                metaPesce:120, tPesce:0,
-                prog:30, target:null, tx:0, ty:0, diff:2, tenuto:false };
-
-/* i nodi del minigioco non cambiano mai: cercarli a ogni frame era inutile */
-let pescaEls = null;
-function elementiPesca(){
-  if(!pescaEls){
-    const el = $('#fishing');
-    pescaEls = { root:el,
-                 barra:  el.querySelector('.fish-bar'),
-                 pesce:  el.querySelector('.fish-target'),
-                 icona:  el.querySelector('.fish-icon'),
-                 prog:   el.querySelector('.fish-prog') };
-  }
-  return pescaEls;
-}
-
-function iniziaPesca(tx,ty){
-  if(G.gelo){ UI.toast('L\'acqua è gelata: niente pesca oggi.','bad'); return; }
-  if(!spendi(3)) return;
-  /* La prima volta si spiega, poi si pesca. Le tre fasi — aspetta,
-     reagisci, tieni agganciato — non si indovinano guardando: chi non
-     le conosce lascia scappare la prima abboccata senza capire che ci
-     fosse qualcosa da fare. */
-  if(!G.vistoPesca){
-    G.vistoPesca = true;
-    UI.spiegaPesca(()=>lanciaLenza(tx,ty));
-    return;
-  }
-  lanciaLenza(tx,ty);
-}
-
-function lanciaLenza(tx,ty){
-  pesca.attiva=true; pesca.fase='lancio'; pesca.t=0;
-  pesca.tx=tx; pesca.ty=ty;
-  G.p.usoT=400;
-  SND.play('lancio');
-  schizzo(tx,ty);
-  elementiPesca().root.classList.add('hidden');
-}
-
-function scegliPesce(){
-  const st=G.stagione().id;
-  const notte = G.ora>1020 || G.ora<400;
-  const m=G.mappa();
-  const luogo = (G.mappaId==='fioralba') ? 'fiume' : (G.mappaId==='spiaggia' ? 'mare' : 'lago');
-  // durante la storia del Pesce Luna, di notte al lago abbocca più spesso
-  const TL = G.trame && G.trame.pesceluna;
-  if(TL && TL.avviata && !TL.preso && luogo==='lago' && notte &&
-     DATA.ITEMS.pesce_luna.stagioni.indexOf(st)>=0 && Math.random()<0.45){
-    return 'pesce_luna';
-  }
-  let pool = Object.keys(DATA.ITEMS).filter(k=>{
-    const I=DATA.ITEMS[k];
-    if(I.cat!=='pesce') return false;
-    if(I.spazzatura) return false;
-    if(I.stagioni && I.stagioni.indexOf(st)<0) return false;
-    if(I.luogo && I.luogo!==luogo) return false;
-    if(I.notte && !notte) return false;
-    if(I.raro && Math.random()>0.12) return false;
-    return true;
-  });
-  if(!pool.length) pool=['carpa'];
-  if(Math.random() < 0.14 - G.livello('pesca')*0.012){
-    return ['scarpa_vecchia','alga','lattina'][(Math.random()*3)|0];
-  }
-  return pool[(Math.random()*pool.length)|0];
-}
-
-function aggiornaPesca(dt){
-  pesca.t += dt;
-
-  if(pesca.fase==='lancio'){
-    if(pesca.t>600){ pesca.fase='attesa'; pesca.t=0; pesca.attesa=900+Math.random()*4200; }
-    return;
-  }
-  if(pesca.fase==='attesa'){
-    if(pesca.t>pesca.attesa){
-      pesca.fase='abbocca'; pesca.t=0;
-      SND.play('abbocca');
-      UI.prompt('Abbocca! Premi <kbd>Spazio</kbd>');
-      G.particelle.push({t:'splash', x:pesca.tx*T+16, y:pesca.ty*T+16, vx:0,vy:0,g:0, vita:600, vitaMax:600});
-    }
-    return;
-  }
-  if(pesca.fase==='abbocca'){
-    if(pesca.t>FINESTRA_ABBOCCO){ finePesca(false,'Se n\'è andato.'); }
-    return;
-  }
-  if(pesca.fase==='gioco'){
-    const lvl = G.livello('pesca');
-    const altezzaBarra = ALTEZZA_BARRA + lvl*8;
-    const corsaBarra = PISTA - altezzaBarra;     // quanto può scorrere la barra
-    const corsaPesce = PISTA - PESCE;            // il pesce è più piccolo: corre di più
-
-    /* IL PESCE. Prima era una passeggiata aleatoria — a ogni fotogramma
-       una spinta a caso — e usciva un tremolio che non si può seguire
-       perché non ha intenzioni: quando lo prendevi era per fortuna. Ora
-       sceglie un punto e ci va, con un avvicinamento morbido che non
-       supera mai la meta. Si può stare dietro a un pesce che *va da
-       qualche parte*; la difficoltà cambia quanto spesso cambia idea e
-       quanto è svelto ad arrivarci, non quanto trema. */
-    pesca.tPesce -= dt;
-    if(pesca.tPesce <= 0){
-      pesca.metaPesce = Math.random()*corsaPesce;
-      pesca.tPesce = 1200 - pesca.diff*110 + Math.random()*600;
-      if(Math.random() < 0.20) pesca.tPesce += 500;      // ogni tanto si ferma a pensare
-    }
-    const passo = (0.0022 + pesca.diff*0.0011) * dt;
-    pesca.pesceY += (pesca.metaPesce - pesca.pesceY) * Math.min(1, passo);
-
-    /* LA BARRA. Stessa idea di prima — si sale tenendo premuto, si scende
-       lasciando — ma con più attrito e meno spinta: prima rimbalzava
-       oltre il punto in cui la volevi e si passava il tempo a inseguire
-       i propri errori. */
-    pesca.vBarra += pesca.tenuto ? -SPINTA : GRAVITA;
-    pesca.vBarra *= ATTRITO;
-    pesca.barra += pesca.vBarra;
-    if(pesca.barra<0){ pesca.barra=0; pesca.vBarra=0; }
-    if(pesca.barra>corsaBarra){ pesca.barra=corsaBarra; pesca.vBarra=0; }
-
-    /* Conta il CENTRO del pesce dentro la barra, non il pesce tutto
-       intero: prima bisognava contenerlo per intero e la finestra buona
-       era la metà di quella che si vedeva — si mirava a una cosa e ne
-       valeva un'altra. */
-    const centro = pesca.pesceY + PESCE/2;
-    const dentro = centro >= pesca.barra - MARGINE &&
-                   centro <= pesca.barra + altezzaBarra + MARGINE;
-
-    pesca.prog += dentro ? GUADAGNO*dt*(1+lvl*0.03) : -PERDITA*dt;
-    pesca.prog = Math.max(0, Math.min(100, pesca.prog));
-
-    // DOM
-    const E = elementiPesca();
-    E.barra.style.height = altezzaBarra+'px';
-    E.barra.style.top = pesca.barra+'px';
-    E.barra.style.borderColor = dentro? 'rgba(190,240,160,.95)':'rgba(230,180,140,.7)';
-    E.pesce.style.top = pesca.pesceY+'px';
-    E.icona.style.top = (pesca.pesceY+11)+'px';
-    E.prog.style.height = pesca.prog+'%';
-
-    if(pesca.prog>=100) finePesca(true);
-    else if(pesca.prog<=0) finePesca(false,'Ti è scappato.');
-  }
-}
-
-function iniziaLotta(){
-  const id = scegliPesce();
-  pesca.target = id;
-  pesca.diff = DATA.ITEMS[id].diff || 2;
-  pesca.fase='gioco'; pesca.t=0;
-  pesca.barra=120; pesca.vBarra=0;
-  // il pesce comincia dentro la barra: il primo mezzo secondo è tuo
-  pesca.pesceY=140; pesca.vPesce=0;
-  pesca.metaPesce=140; pesca.tPesce=600;
-  pesca.prog=PROG_INIZIALE;
-  UI.prompt(null);
-  const E = elementiPesca();
-  E.root.classList.remove('hidden');
-  E.icona.textContent = DATA.ITEMS[id].spazzatura ? '🥾' : '🐟';
-  E.icona.style.left = '22px';
-}
-
-function finePesca(ok, msg){
-  elementiPesca().root.classList.add('hidden');
-  UI.prompt(null);
-  const id=pesca.target;
-  pesca.attiva=false; pesca.fase=''; pesca.target=null; pesca.tenuto=false;
-
-  if(ok && id){
-    const I=DATA.ITEMS[id];
-    if(G.aggiungi(id,1)){
-      SND.play('pesceOk');
-      UI.toast('Hai preso: '+I.nome+'!', I.spazzatura?'':'gold', id);
-      if(!I.spazzatura){
-        G.xp('pesca', 12 + (I.diff||1)*6);
-        G.stats.pesci++;
-        particelleTesto(G.p.px, G.p.py-46, I.nome, '#9fd8ee');
-      }
-      if(id==='pesce_luna' && G.trame && G.trame.pesceluna.avviata && !G.trame.pesceluna.preso){
-        G.trame.pesceluna.preso = true;
-        setTimeout(()=>UI.toast('Il Pesce Luna! Corri a mostrarlo a Elio.','gold','pesce_luna'), 600);
-      }
-    } else UI.toast('Zaino pieno!','bad');
-  } else {
-    SND.play('pesceKo');
-    if(msg) UI.toast(msg,'bad');
-  }
-}
 
 /* ===================================================================
    MACCHINE
@@ -4232,6 +3626,7 @@ function particelleTesto(x,y,testo,col){
   G.particelle.push({t:'testo', x, y, vx:0, vy:-0.42, g:0, testo, c:col||'#fff8d0',
                      vita:1100, vitaMax:1100});
 }
+G.particelleTesto = particelleTesto;   // pesca.js: il nome del pesce che sale dalla testa
 
 function schegge(tx,ty,col){
   for(let k=0;k<7;k++) G.particelle.push({t:'schegge',
@@ -4246,6 +3641,7 @@ function schizzo(tx,ty){
     x:tx*T+16, y:ty*T+16, vx:(Math.random()-0.5)*1.4, vy:-0.8-Math.random()*0.6, g:0.06,
     vita:500, vitaMax:500});
 }
+G.schizzo = schizzo;   // pesca.js: l'acqua che si apre quando cade la lenza
 
 /* ===================================================================
    OBIETTIVI / STATISTICHE
@@ -4364,280 +3760,22 @@ G.statistiche = function(){
 };
 
 /* ===================================================================
-   SALVATAGGIO
+   SALVATAGGIO — sta in salvataggio.js.
+   Qui resta solo l'aggancio: i pulsanti del menu e l'autosave chiamano
+   G.salva / G.esporta / G.importaTesto / G.importaDaFile, e quel file
+   si carica prima che G esista, quindi non può appenderveli da sé.
    =================================================================== */
-const CHIAVE='fioralba_save_v1';
-const CHIAVE_BAK='fioralba_save_bak';
+G.salva         = SALVA.salva;
+G.esporta       = SALVA.esporta;
+G.importaTesto  = SALVA.importaTesto;
+G.importaDaFile = SALVA.importaDaFile;
 
-function serializzaMappa(m){
-  const obj={}, suolo={};
-  for(let i=0;i<m.obj.length;i++){
-    const o=m.obj[i];
-    if(!o || o.t==='muro' || o.t==='porta') continue;
-    obj[i]=o;
-  }
-  for(let i=0;i<m.suolo.length;i++) if(m.suolo[i]) suolo[i]=m.suolo[i];
-  // w e h servono a chi rilegge: senza, non si può sapere se gli indici
-  // salvati parlano ancora della stessa mappa
-  return { w:m.w, h:m.h, g:Array.from(m.g), obj, suolo, deco:m.deco.length };
-}
+/* dichiarate come funzioni e non come const: collegaTitolo e collegaLanding
+   le chiamano, e sono scritte molto più in su di questa riga. Con const
+   basterebbe spostare l'avvio di un pelo perché diventino una zona morta. */
+function caricaGrezzo(){ return SALVA.grezzo(); }
+function carica(){ return SALVA.carica(); }
 
-/* Gli oggetti sono salvati per indice — `i = y*larghezza + x` — e
-   l'indice ha senso solo se la larghezza è la stessa. Quando le stanze
-   sono state rifatte più grandi, i salvataggi vecchi hanno continuato a
-   riversarci dentro le loro coordinate: nella casa il letto di prima
-   finiva in (11,1) e il camino in (2,2), cioè esattamente sopra al letto
-   nuovo. Da fuori si vedeva «il letto è dietro al camino», ed era vero.
-
-   Se la mappa ha cambiato misura, quello che c'è nel salvataggio per
-   quella mappa non è più leggibile: si tiene l'arredamento nuovo. Si
-   perde quello che il giocatore aveva posato *lì dentro* — ma in una
-   stanza rifatta non c'era comunque un posto dove rimettercelo, e
-   averla arredata a caso era peggio. */
-function deserializzaMappa(m, d){
-  if(!d) return;
-  const stessaMisura = (typeof d.w === 'number' && typeof d.h === 'number')
-    ? (d.w === m.w && d.h === m.h)
-    : (Array.isArray(d.g) && d.g.length === m.g.length);   // salvataggi vecchi: si deduce
-  if(!stessaMisura) return;
-
-  /* Le stanze sono *scritte*, non costruite dal giocatore: il letto sta
-     dove l'abbiamo messo noi, e non c'è motivo di rileggerlo da un
-     salvataggio. Rileggerlo anzi fa danno, e l'ha fatto: chi ha caricato
-     la partita nella finestra fra l'allargamento delle stanze e la
-     correzione si è visto riscrivere nel salvataggio l'arredamento
-     sbagliato, con le misure nuove. Da lì in poi le misure combaciano e
-     il controllo qui sopra non se ne accorge più: il letto resta dietro
-     al camino per sempre.
-
-     Quindi degli interni si tiene solo quello che ci ha messo il
-     giocatore — casse e macchinari — e il resto lo rifà la stanza. Chi
-     ha il salvataggio guasto guarisce da solo alla prima apertura. */
-  if(m.interno){
-    const miei = [];
-    for(const k in d.obj){
-      const o = d.obj[k];
-      if(o && (o.t==='macchina' || o.t==='mobile')) miei.push([k|0, o]);
-    }
-    for(const [i, o] of miei){
-      let dove = i;
-      if(m.obj[dove] || WORLD.solido(m, dove%m.w, (dove/m.w)|0)){
-        // la casella di allora adesso è occupata: si cerca lì vicino
-        const p = WORLD.vicinoLibero(m, dove%m.w, (dove/m.w)|0);
-        dove = p ? WORLD.idx(m, p.x, p.y) : -1;
-        if(dove>=0 && m.obj[dove]) dove = -1;
-      }
-      if(dove>=0) m.obj[dove] = o;
-    }
-    return;
-  }
-
-  if(d.g && d.g.length===m.g.length) m.g = Uint8Array.from(d.g);
-  for(let i=0;i<m.obj.length;i++){
-    const o=m.obj[i];
-    if(o && (o.t==='muro'||o.t==='porta')) continue;
-    m.obj[i]=null;
-  }
-  for(const k in d.obj) m.obj[k|0]=d.obj[k];
-  m.suolo = new Array(m.w*m.h).fill(null);
-  for(const k in d.suolo) m.suolo[k|0]=d.suolo[k];
-}
-
-function costruisciDati(){
-  return {
-    v:2,
-    nomeGiocatore:G.nomeGiocatore, mappaId:G.mappaId,
-    oro:G.oro, energia:G.energia, energiaMax:G.energiaMax, energiaBonus:G.energiaBonus,
-    giorno:G.giorno, stagioneIdx:G.stagioneIdx, anno:G.anno, giornoTot:G.giornoTot,
-    ora:G.ora, meteo:G.meteo, meteoDomani:G.meteoDomani,
-    inv:G.inv, invMax:G.invMax, slotSel:G.slotSel,
-    skills:G.skills, attrezziLiv:G.attrezziLiv,
-    amicizia:G.amicizia, costruzioni:G.costruzioni,
-    santuario:G.santuario, santuarioDato:G.santuarioDato, braci:G.braci,
-    lettere:G.lettere, ricetteNote:G.ricetteNote,
-    cassaConsegna:G.cassaConsegna, stats:G.stats, animali:G.animali,
-    look:G.look, vistoFiammella:G.vistoFiammella, introSerafina:G.introSerafina,
-    vistoPesca:G.vistoPesca, sacaccia:G.sacaccia, lezioneCaccia:G.lezioneCaccia,
-    tutorialFatto:G.tutorialFatto, guidaAperta:G.guidaAperta, guidaNascosta:G.guidaNascosta,
-    regaloRicevuto:G.regaloRicevuto,
-    mercato:G.mercato, gelo:G.gelo,
-    richieste:G.richieste, richiestaSeq:G.richiestaSeq,
-    obiettiviRiscossi:G.obiettiviRiscossi, sagra:G.sagra, mercante:G.mercante, trame:G.trame, visitati:G.visitati, collezione:G.collezione,
-    px:G.p.px, py:G.p.py,
-    maps:(function(){ const o={}; for(const k in G.maps) o[k]=serializzaMappa(G.maps[k]); return o; })()
-  };
-}
-
-G.salva = function(){
-  let testo;
-  // serializza a parte: se fallisce, NON tocchiamo il salvataggio esistente
-  try{ testo = JSON.stringify(costruisciDati()); }
-  catch(e){ console.warn('Serializzazione salvataggio fallita', e); return false; }
-  try{
-    const prec = localStorage.getItem(CHIAVE);
-    if(prec) localStorage.setItem(CHIAVE_BAK, prec);   // backup del precedente buono
-    localStorage.setItem(CHIAVE, testo);
-    return true;
-  }catch(e){ console.warn('Salvataggio non riuscito', e); return false; }
-};
-
-/* ---- Esporta il salvataggio come file .json scaricabile ---- */
-G.esporta = function(){
-  try{
-    const testo = JSON.stringify(costruisciDati());
-    const blob = new Blob([testo], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const nome = (G.nomeGiocatore||'contadino').replace(/[^a-z0-9]/gi,'_');
-    const data = new Date().toISOString().slice(0,10);
-    a.href = url;
-    a.download = `fioralba-${nome}-anno${G.anno}-${data}.json`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url), 1500);
-    return true;
-  }catch(e){ console.warn('Export non riuscito', e); return false; }
-};
-
-/* ---- Valida un testo e lo scrive come salvataggio corrente ----
-   Meglio rifiutare un file storto qui che ritrovarsi una partita che si apre
-   ma è rotta: il renderer sopravvive agli errori, il giocatore no. ---- */
-function validaSalvataggio(d){
-  if(!d || typeof d!=='object' || Array.isArray(d)) return 'Questo file non sembra un salvataggio di Fioralba.';
-  if(!Array.isArray(d.inv)) return 'Il salvataggio non contiene uno zaino valido.';
-  for(const s of d.inv){
-    if(s===null || s===undefined) continue;
-    if(typeof s!=='object' || typeof s.id!=='string' || typeof s.n!=='number' || !(s.n>0))
-      return 'Lo zaino nel salvataggio contiene voci non valide.';
-  }
-  if(!d.maps || typeof d.maps!=='object') return 'Il salvataggio non contiene le mappe della valle.';
-  const trovate = Object.keys(d.maps).filter(k=>WORLD.MAPPE.indexOf(k)>=0);
-  if(!trovate.length) return 'Le mappe del salvataggio non corrispondono a quelle del gioco.';
-  for(const k of trovate){
-    const m = d.maps[k];
-    if(!m || typeof m!=='object') return 'La mappa «'+k+'» nel salvataggio è illeggibile.';
-    if(m.g!==undefined && !Array.isArray(m.g)) return 'La mappa «'+k+'» ha un terreno non valido.';
-    if(m.obj!==undefined && (typeof m.obj!=='object' || Array.isArray(m.obj))) return 'La mappa «'+k+'» ha oggetti non validi.';
-    if(m.suolo!==undefined && (typeof m.suolo!=='object' || Array.isArray(m.suolo))) return 'La mappa «'+k+'» ha un terreno coltivato non valido.';
-  }
-  for(const [k,tipo] of [['oro','number'],['giorno','number'],['stagioneIdx','number'],['anno','number']]){
-    if(d[k]!==undefined && typeof d[k]!==tipo) return 'Il campo «'+k+'» nel salvataggio non è valido.';
-  }
-  if(d.stagioneIdx!==undefined && (d.stagioneIdx<0 || d.stagioneIdx>3)) return 'La stagione nel salvataggio non esiste.';
-  return null;
-}
-
-G.importaTesto = function(testo){
-  let d;
-  try{ d = JSON.parse(testo); }
-  catch(e){ return {ok:false, err:'Il file non è leggibile: non è un salvataggio valido.'}; }
-  const err = validaSalvataggio(d);
-  if(err) return {ok:false, err};
-  try{ localStorage.setItem(CHIAVE, JSON.stringify(d)); }
-  catch(e){ return {ok:false, err:'Impossibile memorizzare il salvataggio (memoria locale bloccata).'}; }
-  return {ok:true};
-};
-
-/* ---- Apre il selettore file e importa; al successo ricarica ---- */
-G.importaDaFile = function(){
-  const inp = document.createElement('input');
-  inp.type='file'; inp.accept='.json,application/json';
-  inp.style.display='none';
-  inp.onchange = ()=>{
-    const file = inp.files && inp.files[0];
-    if(!file){ inp.remove(); return; }
-    const rd = new FileReader();
-    rd.onload = ()=>{
-      const res = G.importaTesto(String(rd.result||''));
-      if(res.ok){
-        flashMessaggio('Salvataggio importato! Riavvio…', true);
-        try{ sessionStorage.setItem('fioralba_import','1'); }catch(e){}
-        setTimeout(()=>location.reload(), 800);
-      }else{
-        flashMessaggio(res.err||'Import non riuscito.', false);
-      }
-      inp.remove();
-    };
-    rd.onerror = ()=>{ flashMessaggio('Non riesco a leggere il file.', false); inp.remove(); };
-    rd.readAsText(file);
-  };
-  document.body.appendChild(inp);
-  inp.click();
-};
-
-/* ---- Messaggio a comparsa indipendente dall'HUD (funziona anche al titolo) ---- */
-function flashMessaggio(testo, ok){
-  const el = document.createElement('div');
-  el.textContent = testo;
-  el.style.cssText =
-    'position:fixed;left:50%;top:22px;transform:translateX(-50%);z-index:100000;'+
-    'background:'+(ok?'rgba(79,122,66,.96)':'rgba(179,72,60,.96)')+';color:#f6e6c8;'+
-    'font-family:Nunito,system-ui,sans-serif;font-weight:800;font-size:15px;'+
-    'padding:12px 20px;border-radius:12px;border:2px solid rgba(0,0,0,.35);'+
-    'box-shadow:0 6px 18px rgba(0,0,0,.45);max-width:90vw;text-align:center;';
-  document.body.appendChild(el);
-  setTimeout(()=>{ el.style.transition='opacity .4s'; el.style.opacity='0'; setTimeout(()=>el.remove(),450); }, 2400);
-}
-
-function caricaGrezzo(){
-  try{ return localStorage.getItem(CHIAVE) || localStorage.getItem(CHIAVE_BAK); }catch(e){ return null; }
-}
-
-/* applica un salvataggio (testo JSON) allo stato. Ritorna true se riuscito. */
-function applicaSalvataggio(raw){
-  if(!raw) return false;
-  const d = JSON.parse(raw);                 // può lanciare: gestito dal chiamante
-  if(!d || typeof d!=='object' || !d.maps) return false;
-  Object.assign(G, statoIniziale());
-  G.maps = WORLD.crea();
-  for(const k of ['nomeGiocatore','mappaId','oro','energia','energiaMax','energiaBonus','giorno','stagioneIdx',
-                  'anno','giornoTot','ora','meteo','meteoDomani','inv','invMax','slotSel',
-                  'skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
-                  'braci','lettere','ricetteNote','cassaConsegna','stats','animali','look',
-                  'vistoFiammella','introSerafina','vistoPesca','sacaccia','lezioneCaccia','tutorialFatto','guidaAperta','guidaNascosta','regaloRicevuto',
-                  'mercato','gelo',
-                  'richieste','richiestaSeq','obiettiviRiscossi','sagra','mercante','trame','visitati','collezione']){
-    if(d[k]!==undefined) G[k]=d[k];
-  }
-  /* Salvataggi fatti quando la giornata era 180: i punti guadagnati coi
-     livelli stavano dentro energiaMax e non c'era un campo per loro.
-     Qui li ricaviamo, altrimenti chi ha una partita avviata si vedrebbe
-     azzerare quello che si è sudato. Va fatto qui e non più tardi:
-     statoIniziale() ha già messo energiaBonus a zero, quindi dopo non si
-     distingue più «non ce l'aveva» da «era davvero zero». */
-  if(d.energiaBonus === undefined && typeof d.energiaMax === 'number')
-    G.energiaBonus = Math.max(0, d.energiaMax - 180);
-  for(const id in G.costruzioni) if(G.costruzioni[id]) WORLD.costruisci(G.maps, id);
-  if(d.maps){
-    for(const k in d.maps) if(G.maps[k]) deserializzaMappa(G.maps[k], d.maps[k]);
-  }
-  /* Il terreno del bosco è appena tornato dal salvataggio, burrone
-     compreso: se il salvataggio è di prima della correzione, il burrone
-     è ancora quello corto e la radura resta aggirabile a piedi. Il
-     burrone lo decidiamo noi, non il giocatore, quindi si ristampa. */
-  WORLD.ristampaBurrone(G.maps.bosco);
-  G.p.look = G.look;
-  G.p.px = d.px||8*T+16;
-  G.p.py = d.py||10*T+16;
-  normalizzaStato();                         // salvataggi vecchi/parziali resi validi
-  return true;
-}
-
-function carica(){
-  let raw=null;
-  try{ raw = localStorage.getItem(CHIAVE); }catch(e){}
-  try{ if(raw && applicaSalvataggio(raw)) return true; }
-  catch(e){ console.warn('Salvataggio principale illeggibile, provo il backup.', e); }
-  // fallback sul backup
-  let bak=null;
-  try{ bak = localStorage.getItem(CHIAVE_BAK); }catch(e){}
-  try{
-    if(bak && applicaSalvataggio(bak)){
-      if(window.UI) UI.toast('Salvataggio principale corrotto: ripristinato il backup.','bad');
-      return true;
-    }
-  }catch(e){ console.warn('Anche il backup è illeggibile.', e); }
-  return false;
-}
 
 /* ===================================================================
    INPUT
@@ -4670,12 +3808,9 @@ function collegaInput(){
       return;
     }
     // pesca
-    if(pesca.attiva){
-      if(k===' '){
-        if(pesca.fase==='abbocca') iniziaLotta();
-        else if(pesca.fase==='gioco') pesca.tenuto=true;
-      }
-      if(k==='escape') finePesca(false,'Hai mollato la lenza.');
+    if(PESCA.inCorso()){
+      if(k===' ') PESCA.premuto();
+      if(k==='escape') PESCA.abbandona();
       return;
     }
 
@@ -4697,7 +3832,7 @@ function collegaInput(){
     const k=e.key.toLowerCase();
     tasti[k]=false;
     if(k==='shift') tasti['shift']=false;
-    if(k===' ' && pesca.attiva) pesca.tenuto=false;
+    if(k===' ' && PESCA.inCorso()) PESCA.rilasciato();
   });
 
   // mouse
@@ -4714,15 +3849,11 @@ function collegaInput(){
     if(UI.modalAperta()||UI.dialogoAttivo()) return;
     const r=cvs.getBoundingClientRect();
     mouseWorld = REND.schermoAMondo(e.clientX-r.left, e.clientY-r.top, G.cam);
-    if(pesca.attiva){
-      if(pesca.fase==='abbocca') iniziaLotta();
-      else if(pesca.fase==='gioco') pesca.tenuto=true;
-      return;
-    }
+    if(PESCA.inCorso()){ PESCA.premuto(); return; }
     if(e.button===0){ calcolaBersaglio(); usaOggetto(); }
     else if(e.button===2){ interagisci(); }
   });
-  cvs.addEventListener('mouseup', ()=>{ if(pesca.attiva) pesca.tenuto=false; });
+  cvs.addEventListener('mouseup', ()=>{ if(PESCA.inCorso()) PESCA.rilasciato(); });
   cvs.addEventListener('contextmenu', e=>e.preventDefault());
   cvs.addEventListener('wheel', e=>{
     if(!G.inGioco || UI.modalAperta()) return;
@@ -4748,10 +3879,7 @@ function collegaInput(){
     const t=e.touches[0];
     const r=cvs.getBoundingClientRect();
     touchStart={x:t.clientX-r.left, y:t.clientY-r.top, t:Date.now()};
-    if(pesca.attiva){
-      if(pesca.fase==='abbocca') iniziaLotta();
-      else if(pesca.fase==='gioco') pesca.tenuto=true;
-    }
+    if(PESCA.inCorso()) PESCA.premuto();
   }, {passive:true});
   cvs.addEventListener('touchmove', e=>{
     if(!G.inGioco||!touchStart) return;
@@ -4763,7 +3891,7 @@ function collegaInput(){
   }, {passive:true});
   cvs.addEventListener('touchend', e=>{
     tasti['a']=tasti['d']=tasti['w']=tasti['s']=false;
-    if(pesca.attiva){ pesca.tenuto=false; touchStart=null; return; }
+    if(PESCA.inCorso()){ PESCA.rilasciato(); touchStart=null; return; }
     if(touchStart && Date.now()-touchStart.t < 220){
       calcolaBersaglio();
       usaOggetto();
@@ -4821,7 +3949,7 @@ function suggerimentiEsplorazione(){
 
 let ultimoHint = 0;
 function mostraHintEsplora(){
-  if(!G.inGioco || G.p.dorme || pesca.attiva) return;
+  if(!G.inGioco || G.p.dorme || PESCA.inCorso()) return;
   if(UI.modalAperta() || UI.dialogoAttivo()) return;
   if(!$('#letter').classList.contains('hidden')) return;
   if(!$('#tutorial').classList.contains('hidden')) return;         // non disturbare durante la guida

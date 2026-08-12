@@ -46,9 +46,13 @@ tutto, `game.js` per ultimo.
 
 ```
 data.js  palette.js  art.js  fx.js  audio.js  world.js  mobs.js
-ui.js  demo.js  changelog.js  landing.js  tutorial.js  guida.js
-render.js  game.js
+ui.js  demo.js  changelog.js  landing.js  titolo.js  salvataggio.js
+pesca.js  tutorial.js  guida.js  render.js  game.js
 ```
+
+Questa lista non va tenuta a mente: un controllo in `tools/coerenza.js`
+confronta `js/*.js` con gli script di `index.html`. Un file scritto e mai
+caricato non fa rumore — non è un errore di sintassi e non è un test rosso.
 
 | globale    | file          | cosa tiene                                              |
 |------------|---------------|---------------------------------------------------------|
@@ -59,13 +63,37 @@ render.js  game.js
 | `WORLD`    | world.js      | mappe, collisioni, rigenerazione giornaliera            |
 | `MOBS`     | mobs.js       | fauna e prede                                           |
 | `UI`, `IT` | ui.js         | finestre e HUD; `IT` sono i testi derivati dagli oggetti |
+| `TITOLO`   | titolo.js     | la scena animata dietro la schermata iniziale           |
+| `SALVA`    | salvataggio.js| localStorage, backup, esporta/importa in `.json`        |
+| `PESCA`    | pesca.js      | il minigioco: lancio, abboccata, lotta                  |
 | `REND`     | render.js     | il disegno di un fotogramma                             |
-| `G`        | game.js       | stato di gioco, input, salvataggi (il file più grosso)  |
+| `G`        | game.js       | stato di gioco, input, sistemi (il file più grosso)     |
 
-`game.js` è ~4600 righe e quasi tutte le sue funzioni sono **private al modulo**.
+`game.js` è ~4000 righe e quasi tutte le sue funzioni sono **private al modulo**.
 Solo quelle appese a `G.` si chiamano da fuori. Se ti serve provare una funzione
 privata dalla console, o la esponi apposta (`G.postaDovuta` nasce così) oppure
 la raggiungi dal percorso vero degli eventi.
+
+### Cosa serve per staccare un pezzo di game.js
+
+Ne sono usciti tre, e si è misurato prima quali si potevano staccare davvero:
+per ogni sezione, quante funzioni private di `game.js` usa e da chi è chiamata.
+`titolo.js` non ne usava **nessuna** (solo `ART`), `salvataggio.js` due,
+`pesca.js` tre. Le sezioni che sembravano peggio legate — `TITOLO` con 17
+dipendenze, `LA POSTA` con 13 — lo erano perché ospitavano funzioni che non
+c'entravano: `nuovaPartita` stava sotto l'intestazione del titolo, `nuovoGiorno`
+sotto quella della posta. **Prima di spostare, guarda cosa c'è davvero dentro
+una sezione, non come si chiama.**
+
+Il prezzo di ogni stacco è nominabile: le funzioni che restano in `game.js` e
+servono al file nuovo vanno appese a `G.` (`G.statoIniziale`, `G.normalizzaStato`,
+`G.spendi`, `G.schizzo`, `G.particelleTesto`). Se l'elenco cresce troppo, la
+sezione non era staccabile.
+
+I file nuovi si caricano **prima** di `game.js` e quindi non possono toccare `G`
+al caricamento: lo usano solo dentro le funzioni. Per questo è `game.js` a
+riappendere `G.salva`, `G.esporta`, `G.importaTesto`, `G.importaDaFile` a
+`SALVA`, e non il contrario.
 
 ### Firme che sorprendono
 
@@ -103,7 +131,7 @@ PAL.snap('#8a6038')   // → '#8a5c34'
 npm test
 ```
 
-`tools/coerenza.js`: **33 controlli** sui dati e sulle mappe, senza dipendenze —
+`tools/coerenza.js`: **35 controlli** sui dati e sulle mappe, senza dipendenze —
 carica i moduli in un finto `window`. Il primo controlla che ogni file `.js` sia
 sintatticamente valido, e non è pignoleria: un apostrofo non protetto dentro una
 stringa fa fallire il caricamento in silenzio e nel browser resta una pagina

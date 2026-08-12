@@ -852,6 +852,34 @@ verifica('chi lavora al chiuso ha una stanza che lo ospita', () => {
   return problemi;
 });
 
+/* Nasce dallo spacchettamento di game.js: titolo.js, salvataggio.js e
+   pesca.js sono usciti da lì, e ognuno andava anche aggiunto a mano in
+   index.html. Un file scritto e mai caricato non fa rumore — non è un
+   errore di sintassi, non è un test rosso: è solo una funzione che non
+   esiste al momento del bisogno, e lo si scopre giocando. Più file ci
+   sono, più è facile dimenticarne uno. */
+verifica('index.html carica tutti i js, nell\'ordine portante', () => {
+  const html = fs.readFileSync(path.join(RADICE, 'index.html'), 'utf8');
+  const caricati = [...html.matchAll(/<script src="js\/([\w.-]+\.js)"><\/script>/g)].map(m => m[1]);
+  const suDisco = fs.readdirSync(path.join(RADICE, 'js')).filter(n => n.endsWith('.js'));
+  const problemi = [];
+
+  for (const f of suDisco)
+    if (caricati.indexOf(f) < 0) problemi.push(`js/${f} esiste ma index.html non lo carica`);
+  for (const f of caricati)
+    if (suDisco.indexOf(f) < 0) problemi.push(`index.html carica js/${f}, che non c'è`);
+  for (const f of new Set(caricati))
+    if (caricati.filter(x => x === f).length > 1) problemi.push(`js/${f} è caricato più di una volta`);
+
+  // i due estremi che CLAUDE.md chiama portanti: DATA serve a tutti, e G
+  // dev'essere l'ultimo perché al caricamento chiama subito init()
+  if (caricati[0] !== 'data.js') problemi.push(`il primo script è ${caricati[0]}, non data.js`);
+  if (caricati[caricati.length - 1] !== 'game.js')
+    problemi.push(`l'ultimo script è ${caricati[caricati.length - 1]}, non game.js`);
+
+  return problemi;
+});
+
 /* =================================================================== */
 
 const larghezza = 62;

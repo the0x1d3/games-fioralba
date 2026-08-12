@@ -342,11 +342,18 @@
 </div>
 
 <!-- L'ordine conta: ogni file registra il proprio oggetto globale (DATA, ART,
-     FX, SND, WORLD, MOBS, UI/IT, TUT, REND, G) e i successivi lo usano.
+     FX, SND, WORLD, MOBS, UI/IT, TITOLO, SALVA, PESCA, TUT, REND, G) e i
+     successivi lo usano.
      Niente ?v=N: le versioni scritte a mano si dimenticano, e con la cache
      lunga di Vercel un aggiornamento dimenticato restava invisibile per un
      anno. Ora js e css rivalidano sempre (vedi vercel.json): il browser li
-     tiene comunque in cache e riceve un 304 finché non cambiano davvero. -->
+     tiene comunque in cache e riceve un 304 finché non cambiano davvero.
+
+     titolo.js, salvataggio.js e pesca.js stanno prima di game.js e dopo
+     tutto il resto: non toccano G al caricamento — lo usano solo dentro le
+     funzioni, cioè a partita avviata — ma game.js li chiama subito, perché
+     appena caricato fa init(). Un controllo in tools/coerenza.js tiene
+     ferma questa lista: un file scritto e mai caricato non fa rumore. -->
 <script src="js/data.js"></script>
 <script src="js/palette.js"></script>
 <script src="js/art.js"></script>
@@ -358,6 +365,9 @@
 <script src="js/demo.js"></script>
 <script src="js/changelog.js"></script>
 <script src="js/landing.js"></script>
+<script src="js/titolo.js"></script>
+<script src="js/salvataggio.js"></script>
+<script src="js/pesca.js"></script>
 <script src="js/tutorial.js"></script>
 <script src="js/guida.js"></script>
 <script src="js/render.js"></script>
