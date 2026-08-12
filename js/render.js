@@ -1093,6 +1093,32 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
       if(o.v===1){ ART.px(sx,px+4,py+5,10,5,'#c9b48c'); ART.px(sx,px+4,py+5,10,1,'#e8dcc0'); }
       break;
     }
+    /* Scaffalatura a parete. Le stanze erano arredate a casse sparse per
+       terra, che è come sembra un magazzino svaligiato: una bottega si
+       legge come bottega perché la roba sta *sui muri*, in file. */
+    case 'scaffale': {
+      const I = PAL.c.interno;
+      const merci = [['#c8402c','#4a7a3c','#d8a02c'], ['#7a4fb0','#c9b48c','#3f7a9c'],
+                     ['#d86a2c','#8ab04a','#b03f4a']][ (o.v||0) % 3 ];
+      for(let r=0;r<2;r++){
+        const y0 = py + 2 + r*13;
+        ART.px(sx, px, y0+8, T, 3, I.legno);              // il ripiano
+        ART.px(sx, px, y0+8, T, 1, I.legnoLuce);
+        ART.px(sx, px, y0+11, T, 1, I.legnoOmbra);
+        // la merce sopra, allineata come la mette chi la vende
+        for(let k=0;k<3;k++){
+          if(ART.hsh(k, (o.v||0)*3+r, 771) < 0.22) continue;   // qualche vuoto
+          const bx = px + 3 + k*10, h = 5 + ((ART.hsh(k,r+(o.v||0),772)*3)|0);
+          ART.px(sx, bx, y0+8-h, 7, h, merci[k]);
+          ART.px(sx, bx, y0+8-h, 7, 1, ART.shade(merci[k], 0.2));
+          ART.px(sx, bx+6, y0+8-h, 1, h, ART.shade(merci[k], -0.2));
+        }
+      }
+      // i montanti laterali, che tengono insieme la fila
+      ART.px(sx, px, py+2, 2, 24, I.legnoOmbra);
+      ART.px(sx, px+T-2, py+2, 2, 24, I.legnoOmbra);
+      break;
+    }
     case 'incudine': {
       const I = PAL.c.interno;
       ART.px(sx,px+8,py+20,16,8,I.legnoOmbra);          // ceppo
@@ -1452,6 +1478,35 @@ function disegnaDecoPiatta(d, ox, oy, t, stag){
       ART.ellip(sx, px+16, py+22, 12, 6, I.legnoOmbra);
       ART.ellip(sx, px+16, py+21, 10, 5, I.legno);
       for(let k=0;k<4;k++) ART.px(sx, px+9+k*4, py+18, 2, 6, I.legnoLuce);
+      break;
+    }
+    /* Il tappeto. Serve meno all'occhio che alla testa: un pavimento
+       tutto uguale non dice dove ci si siede e dove si passa, e i mobili
+       sopra sembrano capitati lì. Un rettangolo di lana sotto il tavolo
+       e all'improvviso quel tavolo ha un posto. */
+    case 'tappeto': {
+      const I = PAL.c.interno;
+      /* Il primo tappeto era una campitura piena del rosso della stoffa:
+         in mezzo a una stanza in penombra veniva fuori una bandiera. Il
+         rosso adesso è solo il filo del bordo; il campo è lana. */
+      const freddo = d.stile==='freddo';
+      const base  = freddo ? I.tappetoFreddo : I.tappeto;
+      const trama = freddo ? I.tappetoFreddoTrama : I.tappetoTrama;
+      const filo  = freddo ? I.metalloLuce : I.tappetoFilo;
+      const w = d.w*T, h = d.h*T;
+      ART.px(sx, px, py, w, h, I.tappetoOmbra);              // il bordo consumato
+      ART.px(sx, px+2, py+2, w-4, h-4, base);
+      ART.px(sx, px+2, py+2, w-4, 1, trama);                 // il lato in luce
+      // ordito: righe fitte, il disegno che si vede da sopra
+      for(let k=6; k<h-5; k+=4) ART.px(sx, px+4, py+k, w-8, 1, trama);
+      // il filo colorato che corre lungo la cornice
+      ART.px(sx, px+4, py+4, w-8, 1, filo);
+      ART.px(sx, px+4, py+h-5, w-8, 1, filo);
+      // frange sui due lati corti
+      for(let k=2; k<w-3; k+=3){
+        ART.px(sx, px+k, py-1, 1, 2, I.tappetoTrama);
+        ART.px(sx, px+k, py+h-1, 1, 2, I.tappetoTrama);
+      }
       break;
     }
     case 'lucciola': break;

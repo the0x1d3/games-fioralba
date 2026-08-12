@@ -905,7 +905,41 @@ function buildPiazza(){
 
    Sono mappe come le altre, solo piccole e al chiuso (`esterno:false`,
    quindi la luce ambientale è quella delle grotte e servono lumi).
+
+   Le prime stanze erano più piccole dello schermo, e si vedeva: una
+   casa di bambole vista tutta in una volta, con mobili enormi in mezzo
+   a un pavimento vuoto. Adesso sono più larghe della veduta, così la
+   camera scorre e i mobili tornano della loro misura.
+
+   E l'arredamento ha una regola, che prima non aveva: la roba sta sui
+   muri, in file continue; i mobili grossi stanno in coppia o in griglia,
+   mai da soli in mezzo; e fra la porta e il bancone ci deve passare una
+   persona. Tre regole banali, ma sono la differenza fra una stanza e un
+   magazzino svaligiato.
    =================================================================== */
+
+/* Una fila di scaffali lungo un muro, interrotta ogni tanto da un lume:
+   è il ritmo che fa sembrare arredato un muro. */
+function filaScaffali(m, x0, x1, y, passoLume){
+  for(let x=x0; x<=x1; x++){
+    if(passoLume && (x-x0) % passoLume === passoLume-1) setObj(m, x, y, {t:'lume', solido:false});
+    else setObj(m, x, y, {t:'scaffale', solido:true, v:(x*3+y)%3});
+  }
+}
+
+/* Una catasta ordinata in un angolo, non casse buttate qua e là. */
+function catasta(m, x, y, w, h){
+  for(let j=0;j<h;j++) for(let i=0;i<w;i++) setObj(m, x+i, y+j, {t:'casse', solido:true, v:(i+j*2)%3});
+}
+
+/* Un tavolo con le sue panche, sopra e sotto: un posto dove si siede
+   della gente, non un tavolo che galleggia. */
+function tavolata(m, x, y){
+  setObj(m, x, y, {t:'tavolo', solido:true});
+  setObj(m, x, y-1, {t:'panchina', solido:true, dir:0});
+  setObj(m, x, y+1, {t:'panchina', solido:true, dir:0});
+}
+
 function stanza(id, nome, w, h, opt){
   const m = mkMap(id, nome, w, h, {
     esterno:false, musica:opt.musica||'paese', ambiente:null,
@@ -928,81 +962,109 @@ function uscita(m, x, y, verso, tx, ty){
   m.deco.push({t:'zerbino', x, y});
 }
 
-/* ---------- LA BOTTEGA DI BRUNO ---------- */
+/* ---------- LA BOTTEGA DI BRUNO ----------
+   Una bottega vera è tre cose: un muro di roba in vendita, un bancone
+   fra chi vende e chi compra, e un pezzo di pavimento libero dove il
+   cliente sta in piedi a decidere. */
 function buildBottega(){
-  const m = stanza('int_bottega','Bottega di Bruno', 15, 11, { pavimento:'assi', sfondo:'#2a1d12' });
-  // bancone lungo, con Bruno dietro
-  for(let x=4;x<11;x++) setObj(m, x, 6, {t:'bancone', solido:true, uso:'bottega', v:x%3});
-  // scaffali e casse addossati alle pareti
-  for(const [x,y] of [[2,2],[3,2],[5,2],[6,2],[9,2],[10,2],[12,2],[12,4],[12,6],[2,4]])
-    setObj(m, x, y, {t:'casse', solido:true, v:(x+y)%3});
-  setObj(m, 12, 8, {t:'casse', solido:true, v:1});
-  setObj(m, 2, 8, {t:'fioriera', solido:true, v:2});
-  setObj(m, 7, 2, {t:'lume', solido:false});
-  setObj(m, 3, 4, {t:'lume', solido:false});
-  setObj(m, 11, 4, {t:'lume', solido:false});
-  m.deco.push({t:'cartello', x:3, y:8, testo:'«Se non ce l\'ho, probabilmente non ti serviva.»'});
-  uscita(m, 7, 9, 'fioralba', 11, 15);
+  const m = stanza('int_bottega','Bottega di Bruno', 21, 14, { pavimento:'assi', sfondo:'#2a1d12' });
+  filaScaffali(m, 2, 18, 2, 6);                   // il muro di merce, coi lumi nel ritmo
+  catasta(m, 2, 4, 1, 2);                         // scorte impilate, negli angoli
+  catasta(m, 17, 4, 2, 2);
+  catasta(m, 8, 6, 3, 1);                         // il banco delle offerte, in mezzo
+  for(let x=5;x<=14;x++)                          // il bancone, lungo e continuo
+    setObj(m, x, 8, {t:'bancone', solido:true, uso:'bottega', v:x%3});
+  setObj(m, 4, 8, {t:'casse', solido:true, v:0});  // il banco finisce contro qualcosa
+  setObj(m, 15, 8, {t:'casse', solido:true, v:2});
+  m.deco.push({t:'tappeto', x:8, y:10, w:4, h:2}); // dove sta il cliente a decidere
+  setObj(m, 2, 11, {t:'fioriera', solido:true, v:2});
+  setObj(m, 18, 11, {t:'fioriera', solido:true, v:1});
+  setObj(m, 3, 9, {t:'lume', solido:false});
+  setObj(m, 17, 9, {t:'lume', solido:false});
+  m.deco.push({t:'cartello', x:4, y:11, testo:'«Se non ce l\'ho, probabilmente non ti serviva.»'});
+  uscita(m, 10, 12, 'fioralba', 11, 15);
   m.npcInterno = ['bruno'];
-  m.postiInterni = { bruno:[[6,4],[8,4],[7,5]] };
+  m.postiInterni = { bruno:[[6,7],[10,7],[13,7]] };   // dietro al bancone, per tutta la sua lunghezza
   return m;
 }
 
-/* ---------- LA FUCINA DI TOBIA ---------- */
+/* ---------- LA FUCINA DI TOBIA ----------
+   Qui il centro non è il bancone ma l'incudine, e tutto le gira intorno:
+   la forgia dietro, il banco degli attrezzi di fianco, il ferro grezzo
+   accatastato lontano dal fuoco. */
 function buildFucina(){
-  const m = stanza('int_fucina','Fucina di Tobia', 15, 11, { pavimento:'cotto', parete:'pietra', sfondo:'#1e1712' });
-  setObj(m, 4, 3, {t:'camino', solido:true});           // la forgia
-  setObj(m, 7, 5, {t:'incudine', solido:true, uso:'fucina'});
-  for(const [x,y] of [[10,2],[11,2],[12,3],[12,5],[2,6],[2,7]])
-    setObj(m, x, y, {t:'casse', solido:true, v:(x*2+y)%3});
-  setObj(m, 11, 7, {t:'tavolo', solido:true});
-  setObj(m, 3, 6, {t:'lume', solido:false});
-  setObj(m, 12, 7, {t:'lume', solido:false});
-  m.deco.push({t:'cartello', x:9, y:8, testo:'«Il ferro va scaldato, non convinto.»'});
-  uscita(m, 7, 9, 'fioralba', 29, 14);
+  const m = stanza('int_fucina','Fucina di Tobia', 19, 14, { pavimento:'cotto', parete:'pietra', sfondo:'#1e1712' });
+  setObj(m, 4, 2, {t:'camino', solido:true});          // la forgia, contro il muro
+  catasta(m, 2, 2, 2, 1);
+  filaScaffali(m, 8, 16, 2, 5);                        // rastrelliera degli attrezzi
+  setObj(m, 6, 5, {t:'incudine', solido:true, uso:'fucina'});   // il cuore della stanza
+  setObj(m, 11, 5, {t:'tavolo', solido:true});         // banco da lavoro, in coppia
+  setObj(m, 12, 5, {t:'tavolo', solido:true});
+  catasta(m, 15, 6, 2, 3);                             // ferro grezzo, lontano dal fuoco
+  catasta(m, 2, 8, 2, 2);                              // carbone
+  setObj(m, 4, 10, {t:'panchina', solido:true, dir:0});// dove si siede a rifiatare
+  catasta(m, 12, 9, 2, 1);                             // il lavoro finito, vicino all'uscita
+  /* Quattro lumi e non due: il cotto è il pavimento più scuro del gioco
+     e con due la metà bassa della stanza restava un pozzo nero. */
+  for(const [x,y] of [[3,5],[8,8],[14,6],[15,10]]) setObj(m, x, y, {t:'lume', solido:false});
+  m.deco.push({t:'cartello', x:12, y:10, testo:'«Il ferro va scaldato, non convinto.»'});
+  uscita(m, 9, 12, 'fioralba', 29, 14);
   m.npcInterno = ['tobia'];
-  m.postiInterni = { tobia:[[6,4],[8,4],[5,5]] };
+  m.postiInterni = { tobia:[[6,4],[5,5],[7,5]] };      // intorno all'incudine
   return m;
 }
 
-/* ---------- LA LOCANDA DEL TASSO STORTO ---------- */
+/* ---------- LA LOCANDA DEL TASSO STORTO ----------
+   Due ambienti in una stanza sola: il bancone con le bottiglie dietro, e
+   il camino con le sue panche, che è dove uno si siede se non ha voglia
+   di parlare. In mezzo, la sala, con i tavoli in griglia e un corridoio
+   che ci passa. */
 function buildLocanda(){
-  const m = stanza('int_locanda','Locanda del Tasso Storto', 17, 12, { pavimento:'assi', sfondo:'#2b1c10' });
-  setObj(m, 2, 3, {t:'camino', solido:true});           // il camino, e la sua luce
-  for(let x=8;x<14;x++) setObj(m, x, 3, {t:'bancone', solido:true, uso:'locanda', v:x%3});
-  // tavoli e panche in sala
-  for(const [x,y] of [[4,6],[8,6],[12,6],[4,9],[8,9],[12,9]]) setObj(m, x, y, {t:'tavolo', solido:true});
-  for(const [x,y,d] of [[3,7,0],[9,7,0],[13,7,0],[3,10,0],[9,10,0],[13,10,0]])
-    setObj(m, x, y, {t:'panchina', solido:true, dir:d});
-  setObj(m, 5, 3, {t:'casse', solido:true, v:0});
-  setObj(m, 15, 5, {t:'casse', solido:true, v:2});
-  for(const [x,y] of [[6,2],[11,2],[3,8],[14,8]]) setObj(m, x, y, {t:'lume', solido:false});
-  m.deco.push({t:'cartello', x:15, y:9, testo:'«Qui si mangia e si ascolta. In quest\'ordine.»'});
-  uscita(m, 8, 10, 'fioralba', 18, 9);
+  const m = stanza('int_locanda','Locanda del Tasso Storto', 23, 16, { pavimento:'assi', sfondo:'#2b1c10' });
+  // il bancone e le bottiglie dietro
+  filaScaffali(m, 13, 20, 2, 0);
+  for(let x=13;x<=20;x++) setObj(m, x, 4, {t:'bancone', solido:true, uso:'locanda', v:x%3});
+  setObj(m, 12, 4, {t:'casse', solido:true, v:0});
+  // l'angolo del camino: due panche che si guardano, sul tappeto
+  setObj(m, 3, 2, {t:'camino', solido:true});
+  m.deco.push({t:'tappeto', x:3, y:4, w:3, h:3});
+  setObj(m, 2, 5, {t:'panchina', solido:true, dir:0});
+  setObj(m, 6, 5, {t:'panchina', solido:true, dir:0});
+  // la sala: due file di tavolate, e in mezzo ci si passa
+  for(const x of [4,9,14,19]) tavolata(m, x, 8);
+  for(const x of [4,9,14,19]) tavolata(m, x, 12);
+  catasta(m, 20, 6, 1, 2);
+  for(const [x,y] of [[9,2],[2,9],[20,11]]) setObj(m, x, y, {t:'lume', solido:false});
+  m.deco.push({t:'cartello', x:2, y:13, testo:'«Qui si mangia e si ascolta. In quest\'ordine.»'});
+  uscita(m, 11, 14, 'fioralba', 18, 9);
   m.npcInterno = ['marisol','bruno','tobia','elio'];
+  // ognuno al suo posto: Marisol dietro al banco, gli altri nel corridoio fra i tavoli
   m.postiInterni = {
-    marisol:[[10,4],[12,4],[9,4]],
-    bruno:  [[4,7],[5,7]],
-    tobia:  [[9,8],[10,8]],
-    elio:   [[13,8],[12,8]]
+    marisol:[[14,3],[17,3],[19,3]],
+    bruno:  [[4,10],[5,10]],
+    tobia:  [[9,10],[10,10]],
+    elio:   [[14,10],[15,10]]
   };
   return m;
 }
 
 /* ---------- CASA DEL GIOCATORE ---------- */
 function buildCasa(){
-  const m = stanza('int_casa','Casa', 13, 10, { pavimento:'assi', sfondo:'#2a1e14', musica:'notte' });
+  const m = stanza('int_casa','Casa', 17, 13, { pavimento:'assi', sfondo:'#2a1e14', musica:'notte' });
+  // la zona notte a sinistra, il fuoco e la cucina al centro, lo studio a destra
   setObj(m, 2, 2, {t:'letto', solido:true});
-  setObj(m, 10, 2, {t:'camino', solido:true});
-  setObj(m, 6, 3, {t:'cucina', solido:true});
-  setObj(m, 4, 6, {t:'tavolo', solido:true});
-  setObj(m, 3, 7, {t:'panchina', solido:true, dir:0});
-  setObj(m, 9, 6, {t:'scrivania', solido:true});
-  setObj(m, 8, 2, {t:'lume', solido:false});
-  setObj(m, 3, 5, {t:'lume', solido:false});
-  setObj(m, 11, 6, {t:'casse', solido:true, v:1});
-  m.deco.push({t:'cartello', x:11, y:8, testo:'La teiera di Nonna Ilde è ancora sul tavolo.'});
-  uscita(m, 6, 8, 'podere', 7, 8);
+  m.deco.push({t:'tappeto', x:2, y:4, w:2, h:2});      // scendiletto
+  setObj(m, 8, 2, {t:'camino', solido:true});
+  setObj(m, 11, 2, {t:'cucina', solido:true});
+  setObj(m, 12, 2, {t:'casse', solido:true, v:0});     // la dispensa, accanto alla cucina
+  setObj(m, 14, 5, {t:'scrivania', solido:true});
+  setObj(m, 14, 9, {t:'casse', solido:true, v:1});
+  // il tavolo dove si mangia, con le sue panche, sul tappeto buono
+  m.deco.push({t:'tappeto', x:6, y:7, w:4, h:3});
+  tavolata(m, 7, 8);
+  for(const [x,y] of [[5,2],[14,2],[3,9]]) setObj(m, x, y, {t:'lume', solido:false});
+  m.deco.push({t:'cartello', x:11, y:10, testo:'La teiera di Nonna Ilde è ancora sul tavolo.'});
+  uscita(m, 8, 11, 'podere', 7, 8);
   return m;
 }
 

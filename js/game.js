@@ -1614,7 +1614,7 @@ function idDaKind(kind){
 
 /* Le porte che hanno una stanza vera ci fanno entrare. Le altre
    continuano a rispondere come prima. */
-const RIENTRO = { int_casa:[6,7], int_bottega:[7,8], int_fucina:[7,8], int_locanda:[8,9] };
+const RIENTRO = { int_casa:[8,10], int_bottega:[10,11], int_fucina:[9,11], int_locanda:[11,13] };
 
 function apriPorta(ed){
   if(!ed) return;
@@ -2593,6 +2593,39 @@ G.mangia = function(idx){
   G.aggiornaHUD();
 };
 
+/* Dove si trova adesso uno che non è nella stanza in cui sei entrato.
+   Serve a distinguere «è chiuso» da «è rotto». */
+function doveSta(id){
+  const f = G.fasciaAgenda(id);
+  if(!f) return 'è in giro';
+  if(f.dentro) return G.ora>1200||G.ora<420 ? 'sta dormendo' : 'è in casa sua';
+  if(f.interno && G.maps[f.interno]) return 'è ' + (f.interno==='int_locanda' ? 'alla locanda'
+                                                  : 'in ' + G.maps[f.interno].nome.toLowerCase());
+  return 'è fuori, in paese';
+}
+
+/* Entrare in una stanza vuota senza che niente lo spieghi non sembra un
+   orario di chiusura: sembra un difetto del gioco. La bottega e la
+   fucina restano usabili lo stesso — il bancone e l'incudine funzionano
+   anche col padrone fuori — ma bisogna dirlo, altrimenti chi entra alle
+   nove di mattina pensa che la stanza non si sia caricata. */
+function chiCeDentro(m){
+  if(!m || !m.interno || !m.npcInterno || !m.npcInterno.length) return null;
+  const presenti = m.npcInterno.filter(id=>{
+    const f = G.fasciaAgenda(id);
+    return !!(f && f.interno === m.id);
+  });
+  if(presenti.length === 1) return DATA.NPCS[presenti[0]].nome + ' è qui.';
+  if(presenti.length > 1){
+    const nomi = presenti.map(id=>DATA.NPCS[id].nome);
+    const ultimo = nomi[nomi.length-1];
+    const e = /^[eE]/.test(ultimo) ? 'ed' : 'e';     // «ed Elio», non «e Elio»
+    return nomi.slice(0,-1).join(', ') + ' ' + e + ' ' + ultimo + ' sono qui.';
+  }
+  const padrone = m.npcInterno[0];
+  return 'Non c\'è nessuno: ' + DATA.NPCS[padrone].nome + ' ' + doveSta(padrone) + '.';
+}
+
 /* ===================================================================
    CAMBIO MAPPA
    =================================================================== */
@@ -2614,7 +2647,8 @@ function cambiaMappa(id, tx, ty){
   aggiornaCamera(true);
   musicaGiusta();
   SND.ambiente(ambienteGiusto());
-  UI.toast(dest.nome);
+  const chi = chiCeDentro(dest);
+  UI.toast(chi ? dest.nome + ' — ' + chi : dest.nome);
 }
 
 /* punti d'arrivo del viaggio rapido (casella camminabile per ogni luogo) */

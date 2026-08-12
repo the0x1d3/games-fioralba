@@ -340,8 +340,8 @@ return {
      spento, perché una stanza illuminata a lume non può avere per terra
      la stessa pietra chiara della piazza a mezzogiorno */
   cotto: {
-    malta:R.legno[0],
-    pietre:[R.legno[2], R.terra[1], R.sabbia[0], R.legno[1]],
+    malta:R.legno[1],
+    pietre:[R.legno[3], R.terra[2], R.sabbia[1], R.legno[2]],
     fuliggine:R.neutro[0]
   },
   neve:   { base:R.neve[3], chiaro:R.neutro[5], scuro:R.neve[2] },
@@ -399,6 +399,13 @@ return {
     legno:R.legno[4], legnoLuce:R.legno[5], legnoOmbra:R.legno[2],
     metallo:R.metallo[3], metalloLuce:R.metallo[4], metalloOmbra:R.metallo[1],
     stoffa:R.rosso[4], stoffaLuce:R.rosso[5], lenzuolo:R.sabbia[6],
+    /* La lana di un tappeto vissuto non è rossa: è terra, con dentro un
+       filo rosso. Fatto col rosso e basta veniva una bandiera stesa in
+       mezzo alla stanza — scura quanto serviva, ma satura al 77%, ed è
+       la saturazione quella che urla. */
+    tappeto:R.pelleScura[2], tappetoOmbra:R.pelleScura[1],
+    tappetoTrama:R.pelleScura[3], tappetoFilo:R.rosso[3],
+    tappetoFreddo:R.metallo[2], tappetoFreddoTrama:R.metallo[3],
     brace:R.fuoco[3], braceCuore:R.fuoco[5],
     lume:R.fuoco[6], lumeMetallo:R.terra[1]
   },

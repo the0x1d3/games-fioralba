@@ -210,26 +210,30 @@ function grassTile(v, season){
   const c = cv(T,T), x = c.getContext('2d');
   const base = S.grass, dark = S.grass2;
   px(x,0,0,T,T,base);
-  // chiazze morbide
-  for(let i=0;i<26;i++){
+  /* Chiazze larghe: devono essere un respiro, non un disegno. Chiedevano
+     di schiarire del 6%, che sulla palette a gradini è diventato un
+     gradino intero — e il prato si è riempito di coriandoli. Adesso si
+     muovono solo fra il verde del corpo e quello d'ombra, con poca
+     opacità: la variazione si sente e non si conta. */
+  for(let i=0;i<22;i++){
     const r = hsh(i,v,season.length*7);
     const bx = (hsh(i,v,1)*T)|0, by=(hsh(i,v,2)*T)|0;
     const sz = 2+((r*4)|0);
-    x.fillStyle = r>0.5 ? shade(base,0.06) : dark;
-    x.globalAlpha = 0.5;
+    x.fillStyle = dark;
+    x.globalAlpha = r>0.5 ? 0.14 : 0.30;
     x.fillRect(bx,by,sz,sz-1);
   }
   x.globalAlpha=1;
-  // fili d'erba
+  // fili d'erba: meno fitti, più corti, e solo i chiari staccano davvero
   const blade = shade(base, season==='inverno'? 0.10 : 0.16);
-  const blade2 = shade(dark, -0.10);
-  for(let i=0;i<16;i++){
+  for(let i=0;i<10;i++){
     const bx=(hsh(i,v,11)*T)|0, by=(hsh(i,v,12)*T)|0;
-    const h = 2+((hsh(i,v,13)*3)|0);
-    x.fillStyle = i%3? blade : blade2;
+    const h = 2+((hsh(i,v,13)*2)|0);
+    x.globalAlpha = i%3 ? 0.5 : 0.7;
+    x.fillStyle = i%3 ? dark : blade;
     x.fillRect(bx,by,1,h);
-    if(i%4===0) x.fillRect(bx+1,by+1,1,h-1);
   }
+  x.globalAlpha=1;
   // fiorellini stagionali
   if(season!=='inverno'){
     const n = season==='primavera'?3:(season==='estate'?2:1);
@@ -2569,7 +2573,10 @@ A.ciuffo = function(season, v, piega){
   const S = DATA.SEASONS.find(s=>s.id===season) || DATA.SEASONS[0];
   const c = cv(20,20), x = c.getContext('2d');
   const base = season==='inverno' ? '#b8c8d0' : S.grass;
-  const cols = [shade(base,0.26), shade(base,0.10), shade(base,-0.12)];
+  /* Chiaro, corpo, ombra: un gradino per parte e basta. Prima il filo
+     più chiaro saliva di un gradino e la sua punta di altri due, cioè
+     tre sopra l'erba: da lontano il prato sembrava spolverato di sale. */
+  const cols = [PAL.passo(base,1), PAL.snap(base), PAL.passo(base,-1)];
   const n = 3 + (v%3);
   for(let i=0;i<n;i++){
     const bx = 6 + i*3 + ((hsh(i,v,811)*3)|0);
@@ -2583,8 +2590,8 @@ A.ciuffo = function(season, v, piega){
       x.fillRect(Math.round(bx+dx), 16-k, 1, 1);
       if(k>h-3) x.fillRect(Math.round(bx+dx)+(piega>0?-1:1), 16-k, 1, 1);
     }
-    // punta più chiara
-    x.fillStyle = shade(col,0.3);
+    // punta più chiara, di un gradino solo
+    x.fillStyle = PAL.passo(col, 1);
     x.fillRect(Math.round(bx + piega*1.15), 16-h, 1, 1);
   }
   // fiorellino ogni tanto
