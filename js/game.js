@@ -1685,7 +1685,7 @@ G.iniziaSpostamento = function(o, x, y){
   G.spostamento = { obj:o, mappa:m.id, x, y };
   m.obj[WORLD.idx(m,x,y)] = null;
   SND.play('prendi');
-  UI.toast('Scegli dove metterlo. <b>Esc</b> per rimetterlo dov\'era.', 'good');
+  UI.toast('Scegli dove metterlo. Esc per rimetterlo dov\'era.', 'good');
 };
 
 G.annullaSpostamento = function(){
@@ -3697,11 +3697,30 @@ function serializzaMappa(m){
     obj[i]=o;
   }
   for(let i=0;i<m.suolo.length;i++) if(m.suolo[i]) suolo[i]=m.suolo[i];
-  return { g:Array.from(m.g), obj, suolo, deco:m.deco.length };
+  // w e h servono a chi rilegge: senza, non si può sapere se gli indici
+  // salvati parlano ancora della stessa mappa
+  return { w:m.w, h:m.h, g:Array.from(m.g), obj, suolo, deco:m.deco.length };
 }
 
+/* Gli oggetti sono salvati per indice — `i = y*larghezza + x` — e
+   l'indice ha senso solo se la larghezza è la stessa. Quando le stanze
+   sono state rifatte più grandi, i salvataggi vecchi hanno continuato a
+   riversarci dentro le loro coordinate: nella casa il letto di prima
+   finiva in (11,1) e il camino in (2,2), cioè esattamente sopra al letto
+   nuovo. Da fuori si vedeva «il letto è dietro al camino», ed era vero.
+
+   Se la mappa ha cambiato misura, quello che c'è nel salvataggio per
+   quella mappa non è più leggibile: si tiene l'arredamento nuovo. Si
+   perde quello che il giocatore aveva posato *lì dentro* — ma in una
+   stanza rifatta non c'era comunque un posto dove rimettercelo, e
+   averla arredata a caso era peggio. */
 function deserializzaMappa(m, d){
   if(!d) return;
+  const stessaMisura = (typeof d.w === 'number' && typeof d.h === 'number')
+    ? (d.w === m.w && d.h === m.h)
+    : (Array.isArray(d.g) && d.g.length === m.g.length);   // salvataggi vecchi: si deduce
+  if(!stessaMisura) return;
+
   if(d.g && d.g.length===m.g.length) m.g = Uint8Array.from(d.g);
   for(let i=0;i<m.obj.length;i++){
     const o=m.obj[i];

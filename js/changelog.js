@@ -20,6 +20,9 @@ window.CHANGELOG = [
     data: 'agosto 2026',
     titolo: 'La miniera si esplora davvero, e il podere si riordina',
     voci: [
+      { tipo:'fix',    t:'I mobili delle stanze rifatte sono tornati al loro posto', d:'Le stanze sono state allargate, ma i salvataggi vecchi continuavano a riversarci dentro le vecchie coordinate: nella casa il letto finiva sotto al camino. Chi riprende una partita di prima ritrova le stanze arredate come vanno.' },
+      { tipo:'meglio', t:'I messaggi «hai preso qualcosa» si vedono', d:'Erano schiacciati contro il nome dell\'attrezzo sopra la barra, e uguali a tutte le altre notifiche. Adesso stanno più in alto, hanno icona grande e nome in oro, e se lo stesso oggetto arriva di nuovo non si impila un secondo cartello: si aggiorna quello che c\'è.' },
+      { tipo:'meglio', t:'Il letto sembra un letto', d:'Era un rettangolo più piccolo del tappetino che gli sta accanto.' },
       { tipo:'fix',    t:'La miniera non è più un vicolo cieco', d:'I sassi si spaccano, quindi in teoria nessun livello era chiuso. In pratica lo era: dall\'ingresso del secondo livello si camminava su quattordici caselle su trecentoventotto, e la scala per il terzo stava dall\'altra parte di un tappo che non si vedeva. Adesso i corridoi restano aperti su tutti e tre i livelli.' },
       { tipo:'fix',    t:'Il primo livello non si mura più da solo', d:'Ogni notte si aggiungevano cinquantacinque sassi a quelli già lì, senza togliere i vecchi: in un mese la miniera passava dal 66% percorribile al 10%.' },
       { tipo:'nuovo',  t:'Le casse si possono chiamare per nome', d:'«Semi», «Minerali», «Roba da vendere». Il nome si legge su una targhetta sopra il coperchio, quindi si sa cosa c\'è dentro senza aprirla.' },

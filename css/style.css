@@ -305,8 +305,12 @@ kbd{
 #quickbtns button:active{transform:translateY(2px); box-shadow:inset 0 2px 0 rgba(255,255,255,.15), 0 1px 0 rgba(0,0,0,.3);}
 
 /* ---------- toast ---------- */
+/* Sopra la barra c'è anche il nome dell'attrezzo scelto: la barra sta a
+   14px, il nome arriva a centodieci, e i messaggi partivano da
+   novantasei — si sovrapponevano per forza. Adesso partono da
+   centotrentotto, che è dove il nome finisce davvero. */
 #toasts{
-  position:absolute; bottom:96px; left:50%; transform:translateX(-50%);
+  position:absolute; bottom:138px; left:50%; transform:translateX(-50%);
   display:flex; flex-direction:column-reverse; align-items:center; gap:8px;
   pointer-events:none; width:min(560px,94vw);
 }
@@ -1177,3 +1181,31 @@ kbd{
 }
 .cassa-nome:focus{ outline:none; border-color:var(--gold-d); background:#fff; }
 .cassa-nome::placeholder{ color:var(--ink-soft); opacity:.7; }
+
+/* =================== HAI PRESO QUALCOSA ===================
+   Il messaggio che annuncia un oggetto ha una faccia sua: si vuole
+   vedere quello, non le notifiche di servizio. */
+.toast.oggetto{
+  background:linear-gradient(180deg, rgba(62,42,22,.98), rgba(44,28,15,.98));
+  border-color:var(--gold); border-width:3px;
+  padding:11px 24px 11px 14px; gap:14px;
+  font-size:17px; color:var(--gold);
+  box-shadow:0 10px 26px rgba(0,0,0,.6), 0 0 18px rgba(242,193,78,.22),
+             inset 0 1px 0 rgba(255,255,255,.10);
+}
+.toast.oggetto canvas{
+  width:42px; height:42px;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.6));
+}
+.toast.oggetto .toast-testo{ letter-spacing:.2px; }
+/* lo stesso oggetto che arriva di nuovo: non un secondo cartello, un
+   guizzo su quello che c'è già */
+.toast.oggetto.ripeti{ animation:toastripeti .34s cubic-bezier(.2,1.6,.4,1) both; }
+@keyframes toastripeti{
+  0%{ transform:scale(1); }
+  40%{ transform:scale(1.08); box-shadow:0 10px 26px rgba(0,0,0,.6), 0 0 30px rgba(242,193,78,.5); }
+  100%{ transform:scale(1); }
+}
+@media (prefers-reduced-motion:reduce){
+  .toast.oggetto.ripeti{ animation:none; }
+}

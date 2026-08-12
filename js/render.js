@@ -1166,15 +1166,26 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
       }
       break;
     }
+    /* Il letto stava tutto dentro una casella, ed era più piccolo del
+       tappetino che gli sta accanto: da lontano sembrava una macchia di
+       stoffa, non un mobile. Adesso sale contro la parete come fa la
+       cappa del camino — occupa sempre una casella sola, ma si vede che
+       è un letto. */
     case 'letto': {
       const I = PAL.c.interno;
-      ART.px(sx,px+2,py+2,28,30,I.legno);               // struttura
-      ART.px(sx,px+2,py+2,28,3,I.legnoLuce);
-      ART.px(sx,px+2,py+29,28,3,I.legnoOmbra);
-      ART.px(sx,px+4,py+6,24,24,I.stoffa);              // coperta
-      ART.px(sx,px+4,py+6,24,2,I.stoffaLuce);
-      ART.px(sx,px+5,py+6,22,7,I.lenzuolo);             // cuscino e risvolto
-      ART.px(sx,px+5,py+6,22,2,'#fff8e8');
+      const y0 = py - 18;                                // testata addossata al muro
+      ART.px(sx,px+1,y0,30,50,I.legnoOmbra);             // struttura
+      ART.px(sx,px+2,y0+1,28,48,I.legno);
+      ART.px(sx,px+2,y0+1,28,2,I.legnoLuce);
+      ART.px(sx,px+1,y0+47,30,3,I.legnoOmbra);           // pediera
+      ART.px(sx,px+1,y0,30,7,I.legno);                   // spalliera
+      ART.px(sx,px+1,y0,30,2,I.legnoLuce);
+      ART.px(sx,px+4,y0+8,24,10,I.lenzuolo);             // cuscino
+      ART.px(sx,px+4,y0+8,24,2,PAL.passo(I.lenzuolo,1));
+      ART.px(sx,px+4,y0+19,24,27,I.stoffa);              // coperta
+      ART.px(sx,px+4,y0+19,24,2,I.stoffaLuce);
+      ART.px(sx,px+4,y0+19,24,4,I.lenzuolo);             // il risvolto sopra la coperta
+      ART.px(sx,px+4,y0+42,24,4,PAL.passo(I.stoffa,-1)); // ombra ai piedi
       break;
     }
     case 'cucina': {

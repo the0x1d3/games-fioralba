@@ -91,20 +91,54 @@ U.ico = ico;
 /* ===================================================================
    TOAST
    =================================================================== */
+/* I messaggi che annunciano un oggetto — un pesce preso, la legna di un
+   albero — sono quelli che si vogliono vedere, ed erano quelli che si
+   vedevano peggio: uguali a tutti gli altri, e schiacciati contro il
+   nome dell'attrezzo sopra la barra. Adesso hanno una faccia loro
+   (icona grande, nome in oro) e stanno più in alto; e soprattutto se lo
+   stesso oggetto arriva di nuovo mentre il messaggio è ancora lì, non
+   se ne impila un secondo: si aggiorna quello che c'è. Chi taglia tre
+   alberi di fila vedeva tre cartelli sovrapposti, adesso ne vede uno
+   che conta. */
 U.toast = function(msg, tipo, itemId){
   const box = $('#toasts');
+
+  if(itemId){
+    const gia = box.querySelector('.toast.oggetto[data-item="'+CSS.escape(itemId)+'"]:not(.out)');
+    if(gia){
+      gia.querySelector('.toast-testo').textContent = msg;
+      gia.classList.remove('ripeti');
+      void gia.offsetWidth;                    // forza il riavvio dell'animazione
+      gia.classList.add('ripeti');
+      riarmaTimer(gia, msg);
+      return;
+    }
+  }
+
   const el = document.createElement('div');
-  el.className = 'toast'+(tipo? ' '+tipo : '');
-  if(itemId) el.appendChild(ico(itemId));
+  el.className = 'toast'+(tipo? ' '+tipo : '')+(itemId? ' oggetto':'');
+  if(itemId){
+    el.dataset.item = itemId;
+    el.appendChild(ico(itemId));
+  }
   const s = document.createElement('span');
+  s.className = 'toast-testo';
   s.textContent = msg;
   el.appendChild(s);
   box.appendChild(el);
-  // durata proporzionale alla lunghezza: i messaggi lunghi restano di più
-  const dur = Math.min(8500, Math.max(4200, String(msg).length*75));
-  setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(), 400); }, dur);
-  while(box.children.length>5) box.firstChild.remove();
+  riarmaTimer(el, msg);
+  while(box.children.length>4) box.firstChild.remove();
 };
+
+/* durata proporzionale alla lunghezza: i messaggi lunghi restano di più */
+function riarmaTimer(el, msg){
+  if(el._timer) clearTimeout(el._timer);
+  const dur = Math.min(8500, Math.max(4200, String(msg).length*75));
+  el._timer = setTimeout(()=>{
+    el.classList.add('out');
+    setTimeout(()=>el.remove(), 400);
+  }, dur);
+}
 
 /* ===================================================================
    PROMPT DI INTERAZIONE
