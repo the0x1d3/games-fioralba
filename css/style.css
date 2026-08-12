@@ -1176,15 +1176,35 @@ kbd{
 .ss-riga:last-child{ border-bottom:none; }
 .ss-riga span{ color:var(--ink-soft); }
 
-/* =================== CASSE CON UN NOME =================== */
-.cassa-barra{ display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+/* =================== CASSE CON UN NOME ===================
+   Il campo stava in fila coi pulsanti e si leggeva come una casella di
+   ricerca: chi ci ha giocato non l'ha trovato. Ora ha una riga sua,
+   l'etichetta davanti e la cornice dorata — le stesse tre cose che
+   rendono evidente un campo su qualunque modulo. */
+.cassa-nome-riga{
+  display:flex; gap:10px; align-items:center;
+  background:var(--paper-2); border:2px solid var(--gold-d);
+  border-radius:10px; padding:9px 12px;
+}
+.cassa-et{
+  flex:none; display:flex; align-items:center; gap:6px;
+  font-weight:800; font-size:12.5px; letter-spacing:.5px;
+  text-transform:uppercase; color:var(--ink-soft); cursor:pointer;
+}
+.cassa-et-ico{ font-size:15px; }
 .cassa-nome{
-  flex:1; min-width:0; padding:8px 11px; font:inherit; font-size:14px;
-  color:var(--ink); background:var(--paper-2);
+  flex:1; min-width:0; padding:7px 11px; font:inherit; font-size:15px;
+  font-weight:700; color:var(--ink); background:#fffdf7;
   border:2px solid var(--wood-3); border-radius:8px;
 }
-.cassa-nome:focus{ outline:none; border-color:var(--gold-d); background:#fff; }
-.cassa-nome::placeholder{ color:var(--ink-soft); opacity:.7; }
+.cassa-nome:focus{ outline:none; border-color:var(--gold-d); box-shadow:0 0 0 3px rgba(242,193,78,.3); }
+.cassa-nome::placeholder{ color:var(--ink-soft); opacity:.6; font-weight:400; font-style:italic; }
+.cassa-nota{
+  font-size:12.5px; line-height:1.5; color:var(--ink-soft);
+  margin:6px 2px 12px;
+}
+.cassa-nota.fatta::before{ content:'✔ '; color:var(--green-d); font-weight:800; }
+.cassa-barra{ display:flex; gap:8px; align-items:center; margin-bottom:12px; }
 
 /* =================== HAI PRESO QUALCOSA ===================
    Il messaggio che annuncia un oggetto ha una faccia sua: si vuole

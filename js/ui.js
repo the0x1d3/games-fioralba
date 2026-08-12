@@ -1768,22 +1768,47 @@ U.demo = function(id){
 U.cassa = function(G, obj, ox, oy){
   U.modal(G.nomeCassa(obj), body=>{
     /* Il nome. Dieci casse tutte chiamate «Cassa» sono dieci casse da
-       aprire una per una per ricordarsi dove stanno i semi. Il nome si
-       legge anche da fuori, sopra il coperchio. */
-    const barra=document.createElement('div'); barra.className='cassa-barra';
+       aprire una per una per ricordarsi dove stanno i semi.
+
+       Stava in fila con «Ordina» e «Sposta», e in quella compagnia un
+       campo di testo si legge come una casella di ricerca: chi ci ha
+       giocato non l'ha trovato. Adesso ha una riga sua, con l'etichetta
+       davanti, e sotto una frase che dice a cosa serve — cioè che quel
+       nome si legge anche da fuori, senza aprire la cassa. */
+    const rigaNome=document.createElement('div'); rigaNome.className='cassa-nome-riga';
+    const et=document.createElement('label'); et.className='cassa-et';
+    et.setAttribute('for','cassa-nome-campo');
+    et.innerHTML = '<span class="cassa-et-ico">🏷️</span>Nome';
+    rigaNome.appendChild(et);
+
     const inp=document.createElement('input');
     inp.type='text'; inp.className='cassa-nome'; inp.maxLength=18;
-    inp.placeholder='Dai un nome a questa cassa';
+    inp.id='cassa-nome-campo';
+    inp.placeholder='Semi, Minerali, Roba da vendere…';
     inp.value = obj.nome || '';
+    const nota=document.createElement('div'); nota.className='cassa-nota';
+    const aggiornaNota=()=>{
+      nota.textContent = obj.nome
+        ? 'Si legge su una targhetta sopra il coperchio.'
+        : 'Dagliene uno: comparirà su una targhetta sopra il coperchio, e saprai cosa c\'è dentro senza aprirla.';
+      nota.classList.toggle('fatta', !!obj.nome);
+    };
     const salva=()=>{
       const v = inp.value.trim().slice(0,18);
       obj.nome = v || null;
       document.getElementById('modal-title').textContent = G.nomeCassa(obj);
+      aggiornaNota();
     };
     inp.oninput = salva;
     inp.onkeydown = e=>{ e.stopPropagation(); if(e.key==='Enter') inp.blur(); };
-    barra.appendChild(inp);
+    rigaNome.appendChild(inp);
+    body.appendChild(rigaNome);
+    aggiornaNota();
+    body.appendChild(nota);
 
+    /* i due comandi stanno per conto loro, così non fanno concorrenza
+       al campo del nome */
+    const barra=document.createElement('div'); barra.className='cassa-barra';
     const bOrdina=document.createElement('button'); bOrdina.className='btn';
     bOrdina.textContent='Ordina';
     bOrdina.title='Raggruppa le pile uguali e mette in ordine per tipo';
@@ -1791,7 +1816,7 @@ U.cassa = function(G, obj, ox, oy){
     barra.appendChild(bOrdina);
 
     const bSposta=document.createElement('button'); bSposta.className='btn';
-    bSposta.textContent='Sposta';
+    bSposta.textContent='Sposta la cassa';
     bSposta.title='La cassa cambia posto con tutto quello che ha dentro';
     bSposta.onclick=()=>{ salva(); U.chiudiModal(); G.iniziaSpostamento(obj, ox, oy); };
     barra.appendChild(bSposta);
