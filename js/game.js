@@ -40,6 +40,7 @@ function statoIniziale(){
     oro:600,
     energia:ENERGIA_BASE, energiaMax:ENERGIA_BASE, energiaBonus:0,
     vistoPesca:false,
+    sacaccia:false, lezioneCaccia:null,
     giorno:1, stagioneIdx:0, anno:1, giornoTot:0,
     ora:360,
     meteo:'sereno', meteoDomani:'sereno',
@@ -693,6 +694,7 @@ G.xp = function(k, n){
     if(k==='raccolta'){ G.energiaBonus += 6; }
     if(k==='estrazione'){ G.energiaBonus += 6; }
     if(k==='pesca'){ G.energiaBonus += 6; }
+    if(k==='caccia'){ G.energiaBonus += 6; }
     G.energiaMax = ENERGIA_BASE + G.energiaBonus;
     G.energia = Math.min(G.energiaMax, G.energia+20);
     particelleTesto(G.p.px, G.p.py-40, 'LIVELLO '+dopo, '#ffe270');
@@ -1068,6 +1070,8 @@ function aggiornaGiocatore(dt){
   // attrezzo visibile
   const s = G.slot();
   p.attrezzoVisibile = (s && IT.cat(s.id)==='attrezzo') ? s.id : null;
+  // il passo della lezione che si chiude prendendo l'arco in mano
+  if(G.lezioneCaccia==='inMano' && p.attrezzoVisibile==='arco') avanzaLezioneCaccia('inMano');
 
   // warp
   for(const w of m.warps){
@@ -1425,6 +1429,7 @@ function usaOggetto(){
       iniziaPesca(tx,ty);
       return;
     }
+    if(id==='arco'){ tiraDiArco(); return; }
     return;
   }
 
@@ -2232,12 +2237,125 @@ function parlaCon(n){
     else if(!t.avviata && cuori>=2) scelte.push({testo:'🌙 Parlami del Pesce Luna', azione:()=>avviaPesceLuna()});
     scelte.push({testo:'🎣 Consigli sulla pesca?', azione:()=>consigliPesca()});
   }
+  if(n.id==='eremita'){
+    if(!G.sacaccia && !G.lezioneCaccia)
+      scelte.push({testo:'🏹 Cos\'è quell\'arco?', azione:()=>offriLezioneCaccia(cuori)});
+    else if(G.lezioneCaccia)
+      scelte.push({testo:'🏹 Sono qui per la lezione', azione:()=>riprendiLezioneCaccia()});
+    else
+      scelte.push({testo:'🏹 Parlami di caccia', azione:()=>consigliCaccia()});
+  }
   if(n.id==='fiammella') scelte.push({testo:'✦ Il santuario', azione:()=>UI.santuario(G)});
 
   if(!G.regalatoOggi[n.id]) scelte.push({testo:'🎁 Ho un regalo per te', azione:()=>UI.regalo(G,n.id)});
   scelte.push({testo:'Ci vediamo!', azione:()=>{}});
 
   UI.dialogo(n.id, righe, {scelte});
+}
+
+/* ===================================================================
+   LA LEZIONE DI ORESTE
+
+   Il tutorial è la lezione, e la lezione è nel gioco: non c'è un
+   cartello che spiega la caccia, c'è un vecchio sul Passo che ti dà un
+   arco e ti dice cosa fare, un pezzo per volta, mentre lo fai. Ogni
+   passo si chiude quando lo hai fatto davvero, non quando hai premuto
+   «avanti» — che è la differenza fra aver capito e aver letto.
+
+   Sta scritto qui e non in tutorial.js perché tutorial.js è la guida
+   dei primi minuti, uguale per tutti e una volta sola; questa invece è
+   un pezzo di mondo: la trovi quando sali lassù, e vale finché non
+   l'hai imparata.
+   =================================================================== */
+const LEZIONE_CACCIA = [
+  { id:'arco',
+    testo:['Questo? Un arco. Corno di cervo e tendine, l\'ho fatto io d\'inverno che non c\'era altro da fare.',
+           'Se vuoi te ne do uno. Ma un arco senza sapere dove puntarlo è un bastone storto: prima la lezione.'],
+    fine:['Tieni. È teso male e tira corto, ma è onesto.',
+          'Prima cosa: <b>mettitelo in mano</b>, dalla barra in basso. Poi torna qui.'] },
+  { id:'inMano', attesa:'Prendi l\'arco dalla barra in basso.',
+    testo:['Bene. Adesso ascolta, perché è la parte che conta.',
+           'Si tira <b>davanti a sé</b>, non dove guarda il tuo dito. Da che parte sei girato conta: '+
+           'è metà della caccia. L\'altra metà è arrivarci vicino senza farti sentire.'],
+    fine:['Le bestie ti sentono da lontano. Il coniglio a due passi, il cervo a quattro.',
+          'Vai piano, non correre, e tirà quando sei <b>abbastanza vicino</b>: da lontano si sbaglia, '+
+          'e chi sbaglia fa scappare tutto il bosco.'] },
+  { id:'colpito', attesa:'Trova una preda e colpiscila. Coniglio nel prato, cervo nel bosco all\'alba.',
+    testo:['Ecco. Adesso lo sai.',
+           'Non sprecare niente: la carne si mangia, la pelle si concia, il corno lo tiene Tobia. '+
+           'E non tirare a quello che non ti serve — allo scoiattolo, al riccio. Non sono cacciagione, sono vicini.'],
+    fine:['Torna quando vuoi. Se l\'arco ti sta stretto, Tobia lo rinforza con quello che porti giù.'] }
+];
+
+function passoLezione(){
+  return LEZIONE_CACCIA.find(p => p.id === G.lezioneCaccia) || null;
+}
+
+function offriLezioneCaccia(cuori){
+  if(cuori < 1){
+    UI.dialogo('eremita', [
+      'L\'arco? È mio.',
+      'Torna quando ci conosciamo un po\' meglio. Non do archi a chi ho visto due volte.'
+    ]);
+    return;
+  }
+  const p = LEZIONE_CACCIA[0];
+  UI.dialogo('eremita', p.testo, { scelte:[
+    { testo:'🏹 Insegnami', azione:()=>{
+        G.lezioneCaccia = 'arco';
+        UI.dialogo('eremita', p.fine, { scelte:[{ testo:'Va bene', azione:()=>{
+          if(!G.conta('arco')) G.aggiungi('arco',1);
+          avanzaLezioneCaccia('arco');
+        }}]});
+      }},
+    { testo:'Un\'altra volta', azione:()=>{} }
+  ]});
+}
+
+function riprendiLezioneCaccia(){
+  const p = passoLezione();
+  if(!p){ G.lezioneCaccia = null; return; }
+  UI.dialogo('eremita', [p.attesa ? 'Non ancora. ' + p.attesa.replace(/^./, c=>c.toLowerCase()) : 'Sei pronto.']);
+}
+
+/* Chiude il passo corrente e apre il successivo. Chiamata da chi il
+   passo lo compie: la barra quando ci metti l'arco, il tiro quando
+   colpisci. */
+function avanzaLezioneCaccia(fatto){
+  if(G.lezioneCaccia !== fatto) return;
+  const i = LEZIONE_CACCIA.findIndex(p => p.id === fatto);
+  const prossimo = LEZIONE_CACCIA[i+1];
+
+  if(!prossimo){
+    G.lezioneCaccia = null;
+    G.sacaccia = true;
+    const p = LEZIONE_CACCIA[i];
+    UI.dialogo('eremita', p.testo.concat(p.fine));
+    UI.toast('Hai imparato: <b>Caccia</b>','gold');
+    G.xp('caccia', 40);
+    return;
+  }
+  G.lezioneCaccia = prossimo.id;
+  /* il primo passo che si compie lontano da Oreste apre già la caccia:
+     altrimenti l'unica cosa da fare sarebbe risalire il Passo per
+     sentirsi dire di scendere a cercare un coniglio */
+  if(prossimo.id === 'colpito'){
+    G.sacaccia = true;
+    UI.dialogo('eremita', LEZIONE_CACCIA[i].testo.concat(LEZIONE_CACCIA[i].fine));
+  }
+  if(prossimo.attesa) UI.toast('Lezione di caccia: '+prossimo.attesa);
+}
+G.avanzaLezioneCaccia = avanzaLezioneCaccia;
+
+function consigliCaccia(){
+  const liv = G.livello('caccia');
+  const righe = [
+    'Il coniglio sta nel prato e nel bosco, di giorno. Il cervo solo nel bosco, all\'alba o sul tardi, e non tutti i giorni.',
+    'Più sei vicino, più è facile. Non c\'è altro segreto.'
+  ];
+  if(liv >= 3) righe.push('Te la cavi. Adesso ti sentono più tardi, e quello che porti a casa rende di più.');
+  if((G.stats.prede||0) >= 20) righe.push('Ilde diceva che un bosco senza cacciatori si ammala. Non esagerare, però.');
+  UI.dialogo('eremita', righe);
 }
 
 function insegnaRicetta(){
@@ -2450,6 +2568,110 @@ function aggiornaAnimali(dt){
     const spd=(a.tipo==='gatto'?0.42:0.3)*dt/16;
     a.px+=dx/d*spd; a.py+=dy/d*spd;
     a.dir = dx<0?-1:1;
+  }
+}
+
+/* ===================================================================
+   CACCIA
+
+   Non c'era niente da inventare: la fauna esisteva già e si comportava
+   già bene — conigli e cervi girano, e scappano quando ti avvicini
+   troppo. Mancava solo un modo per raggiungerli da lontano, che è poi
+   tutta la caccia: avvicinarsi abbastanza senza farsi sentire, e non
+   sbagliare il tiro.
+
+   Regole, in ordine di importanza:
+   — si tira in avanti, dentro un cono; non si mira col mouse a
+     trecentosessanta gradi, altrimenti non conta più da che parte sei
+     girato e sparisce l'unica cosa che rende la caccia un mestiere;
+   — la gittata cresce col livello dell'arco, la mira col livello
+     dell'abilità: uno lo compri, l'altra te la guadagni;
+   — un colpo mancato fa scappare tutto quello che c'è intorno. Sbagliare
+     deve costare, altrimenti si tira a caso finché non va bene.
+   =================================================================== */
+const GITTATA = 210;          // portata dell'arco semplice, in pixel
+const CONO = 0.62;            // mezzo angolo del cono di tiro, in radianti
+const COSTO_TIRO = 4;
+
+/* La preda più conveniente davanti a te: la più vicina dentro il cono. */
+function predaMirata(){
+  if(!window.MOBS) return null;
+  const p = G.p;
+  const liv = G.attrezziLiv.arco || 0;
+  const portata = GITTATA + liv*55;
+  const versoX = [0,-1,1,0][p.dir], versoY = [1,0,0,-1][p.dir];
+  let scelta = null, vicina = Infinity;
+  for(const b of MOBS.lista()){
+    if(!MOBS.ePreda(b)) continue;
+    const dx = b.x - p.px, dy = (b.y - b.z) - p.py;
+    const d = Math.hypot(dx, dy);
+    if(d > portata || d < 1) continue;
+    // dentro al cono davanti a te?
+    const cos = (dx*versoX + dy*versoY) / d;
+    if(cos < Math.cos(CONO)) continue;
+    if(d < vicina){ vicina = d; scelta = b; }
+  }
+  return scelta;
+}
+
+/* Ci prendi? Più sei lontano e più è dura; il livello di Caccia rimedia. */
+function colpisce(distanza){
+  const liv = G.livello('caccia');
+  const liva = G.attrezziLiv.arco || 0;
+  const portata = GITTATA + liva*55;
+  const vicinanza = 1 - (distanza / portata);          // 1 addosso, 0 al limite
+  const prob = 0.42 + vicinanza*0.40 + liv*0.035 + liva*0.05;
+  return Math.random() < Math.min(0.95, prob);
+}
+
+function tiraDiArco(){
+  if(!G.sacaccia){
+    nonSiPuo('Hai un arco ma non sai ancora cosa farne. Oreste, sul Passo, insegna.');
+    return;
+  }
+  const p = G.p;
+  const preda = predaMirata();
+  if(!preda){
+    nonSiPuo('Niente da tirare, qui davanti. La selvaggina sta nel bosco, e sente da lontano.');
+    return;
+  }
+  if(!spendi(COSTO_TIRO)) return;
+  p.usoT = 340;
+  SND.play('lancio');
+
+  const dx = preda.x - p.px, dy = (preda.y - preda.z) - p.py;
+  const d = Math.hypot(dx, dy);
+  freccia(p.px, p.py-16, preda.x, preda.y - preda.z);
+
+  if(!colpisce(d)){
+    MOBS.spaventa(preda.x, preda.y, 190);
+    UI.toast('La freccia passa alta. Sono già lontani.','bad');
+    G.xp('caccia', 2);                 // si impara anche sbagliando, poco
+    return;
+  }
+
+  const esito = MOBS.abbatti(preda);
+  if(!esito) return;
+  SND.play('pesceOk');
+  MOBS.spaventa(preda.x, preda.y, 150);
+  for(const b of esito.bottino){
+    if(G.aggiungi(b.id, b.n)) UI.toast('+'+b.n+' '+IT.nome(b.id), 'good', b.id);
+    else UI.toast('Zaino pieno: qualcosa è rimasto lì.','bad');
+  }
+  G.xp('caccia', esito.xp);
+  G.stats.prede = (G.stats.prede||0) + 1;
+  particelleTesto(preda.x, preda.y-30, 'Presa!', '#e8c07a');
+  if(G.lezioneCaccia) avanzaLezioneCaccia('colpito');
+}
+
+/* la freccia: solo una scia, ma serve a far capire dov'è andata */
+function freccia(x0,y0,x1,y1){
+  const passi = 7;
+  for(let i=0;i<passi;i++){
+    const t = i/passi;
+    G.particelle.push({ t:'pietrisco',
+      x: x0+(x1-x0)*t, y: y0+(y1-y0)*t,
+      vx:0, vy:0, g:0, vita:150+i*22, vitaMax:150+i*22, s:2, c:'#e8dcc0' });
   }
 }
 
@@ -3786,7 +4008,7 @@ function costruisciDati(){
     lettere:G.lettere, ricetteNote:G.ricetteNote,
     cassaConsegna:G.cassaConsegna, stats:G.stats, animali:G.animali,
     look:G.look, vistoFiammella:G.vistoFiammella, introSerafina:G.introSerafina,
-    vistoPesca:G.vistoPesca,
+    vistoPesca:G.vistoPesca, sacaccia:G.sacaccia, lezioneCaccia:G.lezioneCaccia,
     tutorialFatto:G.tutorialFatto, guidaAperta:G.guidaAperta, guidaNascosta:G.guidaNascosta,
     regaloRicevuto:G.regaloRicevuto,
     mercato:G.mercato, gelo:G.gelo,
@@ -3922,7 +4144,7 @@ function applicaSalvataggio(raw){
                   'anno','giornoTot','ora','meteo','meteoDomani','inv','invMax','slotSel',
                   'skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
                   'braci','lettere','ricetteNote','cassaConsegna','stats','animali','look',
-                  'vistoFiammella','introSerafina','vistoPesca','tutorialFatto','guidaAperta','guidaNascosta','regaloRicevuto',
+                  'vistoFiammella','introSerafina','vistoPesca','sacaccia','lezioneCaccia','tutorialFatto','guidaAperta','guidaNascosta','regaloRicevuto',
                   'mercato','gelo',
                   'richieste','richiestaSeq','obiettiviRiscossi','sagra','mercante','trame','visitati','collezione']){
     if(d[k]!==undefined) G[k]=d[k];

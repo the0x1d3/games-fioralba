@@ -84,6 +84,7 @@ D.ITEMS = {
   piccone:    { nome:'Piccone',      cat:'attrezzo', desc:'Frantuma sassi e vene di minerale.',  icona:'piccone' },
   falce:      { nome:'Falce',        cat:'attrezzo', desc:'Taglia erbacce e sterpaglia.',        icona:'falce' },
   canna:      { nome:'Canna da pesca',cat:'attrezzo',desc:'Per le acque calme della valle.',     icona:'canna' },
+  arco:       { nome:'Arco',         cat:'attrezzo', desc:'Corno e tendine. Te lo insegna Oreste, sul Passo.', icona:'arco' },
 
   /* --- materiali --- */
   legna:      { nome:'Legna',      cat:'materiale', prezzo:6,  desc:'Utile per costruire quasi tutto.' },
@@ -92,6 +93,10 @@ D.ITEMS = {
   argilla:    { nome:'Argilla',    cat:'materiale', prezzo:14, desc:'Morbida, si trova zappando.' },
   carbone:    { nome:'Carbone',    cat:'materiale', prezzo:22, desc:'Brucia a lungo e caldo.' },
   linfa:      { nome:'Linfa d\'acero', cat:'materiale', prezzo:26, desc:'Dolce resina degli alberi.' },
+  /* --- la caccia --- */
+  carne:      { nome:'Carne',      cat:'animale',   prezzo:70, desc:'Da appendere al fresco. Oreste dice di non sprecarne niente.' },
+  pelle:      { nome:'Pelle',      cat:'materiale', prezzo:85, desc:'Conciata dura una vita. Tobia la usa per le impugnature.' },
+  corno_cervo:{ nome:'Corno di Cervo', cat:'materiale', prezzo:220, desc:'Il cervo lo perde ogni anno da solo: prenderlo così è un\'altra cosa.' },
   uovo:       { nome:'Uovo',       cat:'animale',   prezzo:32, desc:'Ancora tiepido.' },
   uovo_oro:   { nome:'Uovo d\'Oro',cat:'animale',   prezzo:340,desc:'Le galline felici fanno miracoli.' },
   miele:      { nome:'Miele',      cat:'materiale', prezzo:75, desc:'Denso, profumato di fiori.' },
@@ -161,6 +166,7 @@ D.ITEMS = {
 
   /* --- cibo --- */
   zuppa_contadina:{ nome:'Zuppa Contadina', cat:'cibo', prezzo:135, energia:70,  desc:'Scalda anche i pensieri.' },
+  spezzatino:     { nome:'Spezzatino',      cat:'cibo', prezzo:290, energia:130, desc:'Cotto piano tutto il pomeriggio. La ricetta è di Oreste, e non prevede fretta.' },
   frittata:       { nome:'Frittata',        cat:'cibo', prezzo:150, energia:80,  desc:'Semplice, perfetta.' },
   insalata_orto:  { nome:'Insalata dell\'Orto', cat:'cibo', prezzo:110, energia:55, desc:'Croccante di rugiada.' },
   torta_zucca:    { nome:'Torta di Zucca',  cat:'cibo', prezzo:300, energia:140, desc:'La ricetta di Nonna Ilde.' },
@@ -221,6 +227,7 @@ D.CUCINA = [
   { id:'crostata',        ing:{fragola:1, mirtillo:1, miele:1} },
   { id:'torta_zucca',     ing:{zucca:1, uovo:2, miele:1} },
   { id:'pesce_arrosto',   ing:{trota:1, lavanda:1} },
+  { id:'spezzatino',      ing:{carne:1, patata:2, cipolla_selvatica:1} },
   { id:'tisana',          ing:{lavanda:1, erba_dolce:1, viola:1} }
 ];
 
@@ -263,7 +270,12 @@ D.UPGRADE = {
                  {liv:3,nome:'Oro',    costo:11000,ing:{lingotto_oro:5}}],
   piccone:      [{liv:1,nome:'Rame',   costo:1500, ing:{lingotto_rame:5}},
                  {liv:2,nome:'Ferro',  costo:4500, ing:{lingotto_ferro:5}},
-                 {liv:3,nome:'Oro',    costo:11000,ing:{lingotto_oro:5}}]
+                 {liv:3,nome:'Oro',    costo:11000,ing:{lingotto_oro:5}}],
+  /* l'arco non si tempra: si rinforza con quello che la caccia stessa
+     restituisce, ed e' il motivo per cui Tobia lo accetta in fucina */
+  arco:         [{liv:1,nome:'Teso',   costo:1200, ing:{pelle:4}},
+                 {liv:2,nome:'Ricurvo',costo:3800, ing:{corno_cervo:2, pelle:6}},
+                 {liv:3,nome:'Lungo',  costo:9000, ing:{corno_cervo:5, lingotto_oro:2}}]
 };
 D.UPG_NOMI = ['Semplice','di Rame','di Ferro','d\'Oro'];
 
@@ -274,7 +286,8 @@ D.SKILLS = {
   agricoltura:{ nome:'Agricoltura', desc:'I raccolti valgono di più.' },
   raccolta:   { nome:'Raccolta',    desc:'Più legna, più fibra, più fortuna nel bosco.' },
   estrazione: { nome:'Estrazione',  desc:'Le rocce cedono più in fretta.' },
-  pesca:      { nome:'Pesca',       desc:'La barra si allarga, i pesci si stancano.' }
+  pesca:      { nome:'Pesca',       desc:'La barra si allarga, i pesci si stancano.' },
+  caccia:     { nome:'Caccia',      desc:'Le prede si accorgono di te più tardi, e rendono di piu.' }
 };
 D.XP_LIV = [0,100,260,500,850,1350,2000,2850,3900,5200,6800];
 

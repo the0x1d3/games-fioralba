@@ -59,6 +59,18 @@ function verifica(nome, fn) {
 }
 
 /* --- da dove può arrivare un oggetto, in gioco --- */
+/* mobs.js disegna e ha bisogno del DOM, quindi non si carica: le prede
+   si leggono dal sorgente. Meno elegante che importarlo, ma è l'unico
+   modo di tenere una sola fonte di verità senza un finto canvas. */
+function dropDellePrede() {
+  const src = fs.readFileSync(path.join(RADICE, 'js/mobs.js'), 'utf8');
+  const ids = new Set();
+  for (const m of src.matchAll(/preda:\s*\{[^}]*drop:\s*\[([^\]]*(?:\][^\]]*)*?)\]\s*\}/g)) {
+    for (const d of m[1].matchAll(/\['([a-z_]+)'/g)) ids.add(d[1]);
+  }
+  return ids;
+}
+
 function fontiOttenibili() {
   const ok = new Set();
   for (const id in DATA.ITEMS) {
@@ -72,6 +84,10 @@ function fontiOttenibili() {
   for (const r of DATA.CUCINA) ok.add(r.id);                 // fornelli
   ok.add('uovo'); ok.add('uovo_oro');                        // pollaio
   ok.add('miele');                                           // arnia
+  /* la caccia: quello che lasciano le prede. Letto dal file della fauna
+     invece che scritto qui, così se domani una preda smette di lasciare
+     la pelle il controllo se ne accorge da solo. */
+  for (const id of dropDellePrede()) ok.add(id);
   for (const b of DATA.SANTUARIO) if (b.premio && b.premio.item) ok.add(b.premio.item);
   return ok;
 }

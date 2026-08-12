@@ -1947,6 +1947,20 @@ function toolHead(x, kind, tx, ty){
       px(x,tx+10,ty+8,3,3,'#d84f4f');
       px(x,tx-5,ty+9,4,4,'#6b4a2e');
       break;
+    /* L'arco: il legno curvo, la corda tesa e la freccia incoccata. A
+       questa misura si legge per la sagoma, non per i dettagli — la
+       curva del legno e la retta della corda bastano. */
+    case 'arco':
+      x.strokeStyle='#8a5c34'; x.lineWidth=3;
+      x.beginPath(); x.arc(tx+5, ty+4, 11, 2.0, 4.3); x.stroke();
+      x.strokeStyle='#c99a5e'; x.lineWidth=1;
+      x.beginPath(); x.arc(tx+4, ty+4, 11, 2.1, 4.2); x.stroke();
+      x.strokeStyle='#e8dcc0'; x.lineWidth=1;          // la corda
+      x.beginPath(); x.moveTo(tx-1,ty-6); x.lineTo(tx-1,ty+14); x.stroke();
+      px(x,tx-1,ty+3,11,1,'#d8cca8');                   // la freccia
+      px(x,tx+9,ty+2,3,3,'#a8a8b2');
+      px(x,tx-3,ty+2,3,3,'#6f5238');                    // impugnatura
+      break;
   }
 }
 

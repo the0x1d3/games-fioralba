@@ -296,9 +296,16 @@ M.sprite = function(tipo, frame, volo, col){
 /* ===================================================================
    REGOLE DI COMPARSA
    =================================================================== */
+/* `preda` dice cosa lascia una bestia colpita, e quanta esperienza vale.
+   Non tutte le bestie sono prede: allo scoiattolo, al riccio e alle
+   lucciole non si spara, ed è una scelta — un gioco in cui si può
+   sparare a tutto quello che si muove non è questo gioco. Oreste lo
+   dice a modo suo la prima volta che ci provi. */
 const SPECIE = {
-  coniglio:   { mappe:['podere','bosco'], terreni:['erba'], notte:false, max:3, vel:0.55, timido:70 },
-  cervo:      { mappe:['bosco'],          terreni:['erba'], alba:true,   max:1, vel:0.42, timido:110, raro:0.35 },
+  coniglio:   { mappe:['podere','bosco'], terreni:['erba'], notte:false, max:3, vel:0.55, timido:70,
+                preda:{ xp:14, drop:[['carne',1,2],['pelle',1,1]] } },
+  cervo:      { mappe:['bosco'],          terreni:['erba'], alba:true,   max:1, vel:0.42, timido:110, raro:0.35,
+                preda:{ xp:45, drop:[['carne',2,3],['pelle',1,2],['corno_cervo',0,1]] } },
   scoiattolo: { mappe:['bosco'],          terreni:['erba'], notte:false, max:2, vel:0.7,  timido:60 },
   riccio:     { mappe:['bosco','podere'], terreni:['erba'], notte:true,  max:2, vel:0.3,  timido:44 },
   rana:       { mappe:['podere','bosco'], terreni:['sabbia','erba'], vicinoAcqua:true, max:3, vel:0.35, timido:40 },
@@ -316,6 +323,39 @@ const COLORI_UCCELLO  = ['#7a9cc0','#c07a5a','#d0b45a','#7ab08a','#b07a9c'];
 let mobs = [];
 M.lista = ()=>mobs;
 M.reset = ()=>{ mobs=[]; };
+M.specie = id => SPECIE[id] || null;
+M.ePreda = b => !!(b && SPECIE[b.tipo] && SPECIE[b.tipo].preda);
+
+/* Toglie una bestia dalla lista e restituisce cosa lascia. Chi spara
+   non deve sapere com'è fatta la fauna dentro. */
+M.abbatti = function(b){
+  const S = SPECIE[b.tipo];
+  const i = mobs.indexOf(b);
+  if(i>=0) mobs.splice(i,1);
+  if(!S || !S.preda) return null;
+  const bottino = [];
+  for(const [id, min, max] of S.preda.drop){
+    const n = min + ((Math.random()*(max-min+1))|0);
+    if(n>0) bottino.push({id, n});
+  }
+  return { xp:S.preda.xp, bottino };
+};
+
+/* Un colpo che manca non lascia le cose come stavano: la bestia scappa
+   davvero, e con lei tutte quelle lì intorno. È la differenza fra
+   sbagliare e non aver tirato. */
+M.spaventa = function(wx, wy, raggio){
+  for(const b of mobs){
+    const d = Math.hypot(b.x-wx, b.y-wy);
+    if(d > (raggio||150)) continue;
+    const S = SPECIE[b.tipo];
+    const a = Math.atan2(b.y-wy, b.x-wx);
+    b.stato='fugge'; b.t=1100+Math.random()*800;
+    b.vx = Math.cos(a)*(S.vel||0.5)*2.4;
+    b.vy = Math.sin(a)*(S.vel||0.5)*2.4;
+    if(S.vola) b.z = Math.max(b.z, 12);
+  }
+};
 
 function notteOra(ora){ return ora>1080 || ora<390; }
 function albaOra(ora){ return (ora>=360 && ora<480) || (ora>=1020 && ora<1140); }
