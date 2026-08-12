@@ -883,7 +883,10 @@ function ombraOggetto(o, px, py, gx, gy, t, stag, sole){
       FX.ombraTerra(sx, px+16, py+28, 13, 4, sole.a*0.7); break;
     }
     case 'macchina': case 'mobile': {
-      const img = ART.placeable(o.kind, {attivo:!!o.dentro, pronto:!!o.pronto});
+      const opt = {attivo:!!o.dentro, pronto:!!o.pronto};
+      // l'ombra deve venire dal pezzo giusto, non da quello isolato
+      if(o.kind==='recinto' || o.kind==='cancelletto') opt.lati = latiRecinto(G.mappa(), gx, gy);
+      const img = ART.placeable(o.kind, opt);
       FX.ombraSprite(sx, img, px+16, py+T, sole, img.width, img.height, 0);
       break;
     }
@@ -928,6 +931,19 @@ function disegnaEdificio(e, ox, oy, G, stag){
     sx.beginPath(); sx.arc(px+w/2, py+dh*sc*0.55, 70, 0, 6.3); sx.fill();
     sx.globalAlpha=1;
   }
+}
+
+/* Da che parte continua la staccionata. Il cancelletto conta come
+   staccionata: è un pezzo della fila, non un buco nella fila, e se non
+   contasse le traverse gli si fermerebbero a un passo di distanza. */
+function eRecinto(m, x, y){
+  if(!m || !WORLD.dentro(m,x,y)) return false;
+  const o = m.obj[WORLD.idx(m,x,y)];
+  return !!(o && o.t==='mobile' && (o.kind==='recinto' || o.kind==='cancelletto'));
+}
+function latiRecinto(m, x, y){
+  return (eRecinto(m,x,y-1) ? 1 : 0) | (eRecinto(m,x+1,y) ? 2 : 0)
+       | (eRecinto(m,x,y+1) ? 4 : 0) | (eRecinto(m,x-1,y) ? 8 : 0);
 }
 
 function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
@@ -1274,7 +1290,9 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
       break;
     }
     case 'mobile': {
-      const img = ART.placeable(o.kind, {attivo:true});
+      const opt = {attivo:true};
+      if(o.kind==='recinto' || o.kind==='cancelletto') opt.lati = latiRecinto(G.mappa(), gx, gy);
+      const img = ART.placeable(o.kind, opt);
       if(o.kind==='spaventapasseri'){
         const vento = FX.vento(gx*T, gy*T);
         sx.save();

@@ -16,6 +16,15 @@
 
 window.CHANGELOG = [
   {
+    v: '1.9',
+    data: 'agosto 2026',
+    titolo: 'Le staccionate si agganciano, e non si tolgono per sbaglio',
+    voci: [
+      { tipo:'fix',    t:'La staccionata segue la fila', d:'Il disegno era sempre lo stesso — due pali e due traverse orizzontali — quindi una fila che andava su e giù veniva su come una scala a pioli, e negli angoli i pezzi non si toccavano. Adesso ogni pezzo guarda chi ha intorno: traverse verso est e ovest, correnti di taglio verso nord e sud, e angoli, incroci e diramazioni che si chiudono da sé. Anche il cancelletto ruota, e di taglio resta l\'unica cosa chiara in mezzo alla fila, così il varco si trova.' },
+      { tipo:'fix',    t:'Con E non si raccoglie più quello che hai posato', d:'Bastava premere E camminando lungo la propria staccionata per ritrovarsi un pezzo nello zaino e un buco nel recinto, con scritto solo «Raccolto». Adesso E gli passa accanto senza toccarli e senza rubare il turno: per togliere una staccionata, un cancelletto, una lanterna o uno spaventapasseri ci vuole una picconata, che è un gesto che non si fa distratti. L\'oggetto torna comunque nello zaino.' }
+    ]
+  },
+  {
     v: '1.8',
     data: 'agosto 2026',
     titolo: 'Arriva la posta, e i cespugli dicono la verità',

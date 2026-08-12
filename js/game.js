@@ -1245,7 +1245,7 @@ function azionePossibile(id, tx, ty){
   if(id==='zappa') return m.coltivabile && !o && !suolo && (terr==='erba'||terr==='terra');
   if(id==='annaffiatoio') return (suolo && !suolo.bagnato) || terr==='acqua';
   if(id==='ascia') return !!(o && (o.t==='albero'||o.t==='ceppo'||o.t==='ramo'));
-  if(id==='piccone') return !!(o && (o.t==='sasso'||o.t==='stalagmite')) || !!(suolo && !suolo.crop);
+  if(id==='piccone') return !!(o && (o.t==='sasso'||o.t==='stalagmite'||o.t==='mobile')) || !!(suolo && !suolo.crop);
   if(id==='falce') return !!(o && (o.t==='erbaccia'||o.t==='fiori'||o.t==='cespuglio'));
   if(id==='canna') return terr==='acqua';
   if(cat==='seme') return !!(suolo && !suolo.crop);
@@ -1416,7 +1416,20 @@ function usaOggetto(){
       if(suolo && !suolo.crop && !o){
         m.suolo[i]=null; SND.play('zappa'); p.usoT=240; return;
       }
-      if(!o || (o.t!=='sasso' && o.t!=='stalagmite')){ nonSiPuo('Il piccone rompe sassi e rocce. Sul terreno arato invece lo ripulisce.'); return; }
+      /* Il piccone è anche il modo di togliere quello che si è posato:
+         staccionate, cancelletti, lanterne, spaventapasseri. Prima lo
+         faceva E, e lo faceva per sbaglio. */
+      if(o && o.t==='mobile'){
+        const it = idDaKind(o.kind);
+        if(!G.puoiAggiungere(it,1)){ nonSiPuo('Lo zaino è pieno: prima fai posto.'); return; }
+        if(!spendi(1)) return;
+        m.obj[i]=null; G.aggiungi(it,1);
+        p.usoT=280; SND.play('piccone');
+        schegge(tx,ty,'#a8763c');
+        UI.toast('+1 '+IT.nome(it),'good',it);
+        return;
+      }
+      if(!o || (o.t!=='sasso' && o.t!=='stalagmite')){ nonSiPuo('Il piccone rompe sassi e rocce, e toglie le cose che hai posato. Sul terreno arato invece lo ripulisce.'); return; }
       if(!spendi(3 - liv*0.5)) return;
       p.usoT=320; SND.play('piccone');
       if(o.t==='stalagmite'){ m.obj[i]=null; G.aggiungi('pietra',2); G.xp('estrazione',4); return; }
@@ -1699,14 +1712,18 @@ function interagisci(){
       if(o.pronto){ G.ritiraMacchina(o); return; }
       UI.macchina(G,o,tx,ty); return;
     }
+    /* Con E si raccoglieva quello che si era posato, e con E si sbaglia:
+       uno cammina lungo la propria staccionata, preme E per parlare o
+       per aprire qualcosa, e si ritrova un pezzo di recinto nello zaino
+       e un buco nel recinto — senza nemmeno accorgersene, perché il
+       messaggio diceva solo «Raccolto».
+
+       Adesso E non tocca gli arredi e non blocca nemmeno il turno: si
+       continua a cercare cos'altro c'è intorno. Per togliere una cosa
+       posata ci vuole il piccone, che è un gesto che non si fa distratti. */
     if(o.t==='mobile'){
       if(o.kind==='spaventapasseri'){ UI.toast('Fa il suo lavoro in silenzio.'); return; }
-      // raccogli l'oggetto
-      if(G.puoiAggiungere(idDaKind(o.kind),1)){
-        G.aggiungi(idDaKind(o.kind),1); m.obj[i]=null; SND.play('prendi');
-        UI.toast('Raccolto.','good');
-      }
-      return;
+      continue;
     }
     if(o.t==='pietra_rituale'){
       UI.toast('Rune consumate dal tempo. Sembrano aspettare qualcosa.');
@@ -1857,7 +1874,8 @@ function etichettaInterazione(o){
     if(o.dentro)          return 'in lavorazione…';
     return 'usa: '+IT.nome(idDaKind(o.kind));
   }
-  if(o.t==='mobile') return o.kind==='spaventapasseri' ? null : 'raccogli';
+  // gli arredi con E non si toccano più: l'etichetta prometterebbe il falso
+  if(o.t==='mobile') return null;
   if(o.t==='pietra_rituale') return 'esamina le rune';
   return null;
 }

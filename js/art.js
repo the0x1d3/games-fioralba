@@ -1763,7 +1763,7 @@ function bCapanna(o){
    =================================================================== */
 A.placeable = function(kind, opt){
   opt=opt||{};
-  const key='p|'+kind+'|'+(opt.attivo?1:0)+'|'+(opt.pronto?1:0);
+  const key='p|'+kind+'|'+(opt.attivo?1:0)+'|'+(opt.pronto?1:0)+'|'+(opt.lati|0);
   if(objCache[key]) return objCache[key];
   const c=cv(48,56), x=c.getContext('2d');
   x.globalAlpha=0.22; ellip(x,24,50,14,5,'#000'); x.globalAlpha=1;
@@ -1845,17 +1845,75 @@ A.placeable = function(kind, opt){
       px(x,14,10,20,5,'#8a7458'); px(x,22,4,4,7,'#8a7458');
       if(opt.attivo!==false){ x.globalAlpha=0.3; circ(x,24,23,20,'#ffd98a'); x.globalAlpha=1; }
       break;
-    case 'recinto':
-      px(x,10,20,4,26,'#96704a'); px(x,34,20,4,26,'#96704a');
-      px(x,10,20,4,2,'#b58a5e'); px(x,34,20,4,2,'#b58a5e');
-      px(x,6,26,36,4,'#8a6038'); px(x,6,36,36,4,'#8a6038');
-      px(x,6,26,36,1,'#a8763c'); px(x,6,36,36,1,'#a8763c');
+    /* Una staccionata non è un pezzo: è una fila. Il disegno però era
+       sempre lo stesso — due pali e due traverse orizzontali larghe
+       quanto la casella — quindi una fila che andava su e giù veniva su
+       come una scala a pioli, e negli angoli i pezzi non si toccavano.
+
+       Adesso `opt.lati` dice da che parte c'è un pezzo vicino, e da qui
+       si tirano solo le traverse che servono: verso est e ovest quelle
+       orizzontali, verso nord e sud un corrente visto di taglio — che è
+       come si vede un corrente che va via dallo sguardo. Il palo va per
+       ultimo, sopra tutto, così le traverse gli spariscono dietro come
+       fanno quelle vere. Le sedici combinazioni escono da questa regola
+       sola: angoli, incroci e diramazioni comprese. */
+    case 'recinto': {
+      const L = opt.lati|0;
+      const n=!!(L&1), e=!!(L&2), s=!!(L&4), w=!!(L&8);
+      const traversa=(x0,x1)=>{
+        px(x,x0,26,x1-x0,4,'#8a6038'); px(x,x0,26,x1-x0,1,'#a8763c');
+        px(x,x0,36,x1-x0,4,'#8a6038'); px(x,x0,36,x1-x0,1,'#a8763c');
+      };
+      /* I correnti che vanno verso nord e verso sud vanno di taglio, e
+         devono passare *fuori* dal palo: messi al centro finivano tutti
+         dietro al palo e una fila su-giù veniva su come una fila di pali
+         nudi. Due strisce, una per corrente, ai lati del palo: è come si
+         vede una staccionata che va via dallo sguardo. */
+      /* Le due strisce sono i due correnti: quello davanti prende luce,
+         quello dietro sta in ombra. La differenza va tenuta larga, perché
+         la palette aggancia ogni tinta al gradino più vicino della sua
+         rampa e due marroni vicini finiscono sullo stesso: al primo giro
+         palo e correnti snappavano tutti e tre a #8a5c34 e la fila
+         veniva su come un'unica asse di legno. */
+      const corrente=(y0,y1)=>{
+        px(x,17,y0,4,y1-y0,'#a8763c'); px(x,17,y0,1,y1-y0,'#c99a5e');   // davanti, in luce
+        px(x,27,y0,4,y1-y0,'#6b4a2e'); px(x,27,y0,1,y1-y0,'#7a5636');   // dietro, in ombra
+      };
+      if(w) traversa(4,26);
+      if(e) traversa(22,44);
+      if(n) corrente(12,34);
+      if(s) corrente(34,56);
+      // un pezzo da solo deve somigliare a una staccionata, non a un palo
+      if(!L) traversa(6,42);
+      px(x,21,22,6,26,'#96704a');            // il palo, fra i due correnti
+      px(x,21,22,6,2,'#b58a5e');
+      px(x,18,19,12,4,'#6b4a2e');            // il cappello, sporgente: taglia la fila
+      px(x,18,19,12,1,'#8a6038');
       break;
+    }
     /* Il cancelletto: gli stessi due pali della staccionata, ma le
        traverse sono più basse e in mezzo c'è il battente socchiuso.
        Dev'essere riconoscibile a colpo d'occhio dentro una fila di
        staccionate identiche, altrimenti il varco non si trova. */
-    case 'cancelletto':
+    case 'cancelletto': {
+      /* Anche il cancelletto segue la fila: in mezzo a una staccionata
+         che va su e giù, uno sportello disegnato di traverso è il pezzo
+         che stona di più, perché è quello che si cerca con gli occhi. */
+      const L = opt.lati|0;
+      const suGiu = ((L&1)||(L&4)) && !((L&2)||(L&8));
+      if(suGiu){
+        /* Il varco si cerca con gli occhi, quindi deve staccarsi dalla
+           fila anche di taglio. Come quello orizzontale: un battente di
+           legno chiaro incassato fra due pali scuri e grossi — dentro una
+           fila di correnti scuri è l'unica cosa chiara, e si trova. */
+        px(x,16,16,16,7,'#6b4a2e'); px(x,16,16,16,2,'#8a6038');  // il palo di sopra
+        px(x,16,45,16,7,'#6b4a2e'); px(x,16,45,16,2,'#8a6038');  // e quello di sotto
+        px(x,18,23,12,22,'#c99a5e');                              // il battente
+        px(x,18,23,2,22,'#a8763c');
+        for(let k=0;k<4;k++) px(x,18,25+k*5,12,2,'#8a6038');      // le stecche
+        px(x,21,43,5,3,'#6a6a74'); px(x,21,43,5,1,'#9a9aa6');     // il gancio
+        break;
+      }
       px(x,8,18,5,28,'#96704a');  px(x,35,18,5,28,'#96704a');   // i due pali, più grossi
       px(x,8,18,5,2,'#b58a5e');   px(x,35,18,5,2,'#b58a5e');
       px(x,8,16,5,3,'#7a5432');   px(x,35,16,5,3,'#7a5432');    // i cappelli
@@ -1867,6 +1925,7 @@ A.placeable = function(kind, opt){
       px(x,31,31,4,2,'#6a6a74');                                 // il gancio
       px(x,31,31,4,1,'#9a9aa6');
       break;
+    }
     case 'cartello':
       px(x,22,30,4,18,'#6b4a2e');
       px(x,10,16,28,18,'#8a5a34'); px(x,10,16,28,2,'#a8763c');
