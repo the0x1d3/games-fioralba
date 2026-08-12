@@ -76,6 +76,125 @@ IT.energia = function(id){
 
 IT.commestibile = id => IT.energia(id) > 0;
 
+/* ===================================================================
+   DOVE SI TROVA
+
+   Segnalato in beta due volte con parole diverse: «la lavanda non è
+   ancora presente» e «l'uva non si sa dove sia». Nessuna delle due
+   mancava — la lavanda è un foraggio d'estate e ne spuntano più di cento
+   in una stagione, l'uva cresce dai semi che Bruno vende in autunno. Il
+   difetto era che l'oggetto non lo diceva: sapeva a quanto si vende, non
+   dove lo si prende.
+
+   Questa riga è *derivata* dai dati, non scritta a mano oggetto per
+   oggetto: se domani si sposta una coltura di stagione o si cambia una
+   ricetta, la spiegazione si aggiorna da sola invece di restare a
+   raccontare il gioco di ieri.
+   =================================================================== */
+const NOMI_STAGIONE = { primavera:'primavera', estate:'estate', autunno:'autunno', inverno:'inverno' };
+function elenco(a, cong){
+  const v = a.filter(Boolean);
+  if(!v.length) return '';
+  if(v.length===1) return v[0];
+  return v.slice(0,-1).join(', ') + ' ' + (cong||'e') + ' ' + v[v.length-1];
+}
+function stagioni(a){ return elenco((a||[]).map(s=>NOMI_STAGIONE[s]||s), 'e'); }
+
+/* la ricetta che produce questo oggetto, se ce n'è una */
+function ricettaDi(id){
+  for(const r of DATA.CRAFT)  if(r.id===id) return {ing:r.ing, dove:'al banco da lavoro (tasto C)'};
+  for(const r of DATA.CUCINA) if(r.id===id) return {ing:r.ing, dove:'ai fornelli di casa'};
+  return null;
+}
+
+IT.dove = function(id){
+  /* prodotti delle macchine: conserva:rapa, vino:uva… */
+  if(id.indexOf(':')>0){
+    const k = id.split(':')[0], s = IT.nome(IT.src(id));
+    if(k==='conserva') return 'Esce dalla <b>barattoliera</b>, mettendoci dentro ' + s + '.';
+    if(k==='vino')     return 'Esce dalla <b>botte</b>, mettendoci dentro ' + s + '. Ci vogliono quattro giorni.';
+    if(k==='succo')    return 'Esce dalla <b>botte</b>, mettendoci dentro ' + s + '.';
+    return null;
+  }
+  const I = DATA.ITEMS[id];
+  if(!I) return null;
+
+  /* semi: quando si seminano e chi li vende */
+  if(I.cat === 'seme'){
+    const c = id.replace(/^seme_/, '');
+    const C = DATA.CROPS[c];
+    if(C){
+      const st = stagioni(C.stagioni);
+      let dove = 'Si semina in <b>' + st + '</b>';
+      const giorni = C.fasi.reduce((a,b)=>a+b, 0);
+      dove += ', e ci mette <b>' + giorni + ' giorni</b> a maturare';
+      if(C.ricresce) dove += '; poi ricresce ogni ' + C.ricresce + ' giorni senza riseminare';
+      dove += '. Lo vende <b>Bruno</b> in bottega, ma solo nella sua stagione.';
+      return dove;
+    }
+  }
+  /* raccolti: si risale al seme */
+  if(DATA.CROPS[id]){
+    const C = DATA.CROPS[id];
+    return 'Cresce nel campo dai <b>Semi di ' + C.nome + '</b>, che <b>Bruno</b> vende in <b>' +
+           stagioni(C.stagioni) + '</b>. Fuori stagione la pianta appassisce.';
+  }
+  /* foraggio: si raccoglie per terra, e conta la stagione */
+  if(I.cat === 'foraggio'){
+    if(['bacca_inverno','radice_gelata','fiocco_cristallo'].indexOf(id) >= 0)
+      return 'Si raccoglie da terra sul <b>Passo di montagna</b>, dove è sempre inverno: c\'è tutto l\'anno.';
+    return 'Si raccoglie da terra in <b>' + (NOMI_STAGIONE[I.stagione]||I.stagione) +
+           '</b>, sparso per la valle — prato, bosco, radure. Nelle altre stagioni non c\'è.';
+  }
+  /* pesci */
+  if(I.cat === 'pesce' && !I.spazzatura){
+    const luoghi = { fiume:'nel fiume del paese', lago:'nel lago del bosco', mare:'in mare, alla Costa' };
+    let d = 'Si pesca ' + (luoghi[I.luogo] || 'nelle acque della valle');
+    if(I.stagioni && I.stagioni.length < 4) d += ', in <b>' + stagioni(I.stagioni) + '</b>';
+    if(I.notte) d += ', e solo <b>dopo il tramonto</b>';
+    return d + '.';
+  }
+  /* minerali */
+  if(I.cat === 'minerale'){
+    const rari = ['oro','ametista','gemma_luna','geode','quarzo'];
+    return 'Si spacca col <b>piccone</b> nella <b>miniera</b>' +
+           (rari.indexOf(id)>=0 ? ', e più si scende più se ne trova.' : '.');
+  }
+  /* roba che si costruisce o si cucina */
+  const r = ricettaDi(id);
+  if(r){
+    const lista = Object.keys(r.ing).map(k => IT.nome(k) + ' ×' + r.ing[k]).join(', ');
+    return 'Si fa ' + r.dove + ' con: <b>' + lista + '</b>.';
+  }
+  /* i pochi casi che i dati non sanno raccontare da soli */
+  const AMANO = {
+    legna:'Si prende abbattendo alberi e ceppi con l\'<b>ascia</b>.',
+    pietra:'Si prende spaccando sassi col <b>piccone</b>.',
+    fibra:'Si prende tagliando le <b>erbacce</b> con la falce, o a mani nude.',
+    argilla:'Salta fuori <b>zappando</b> la terra, ogni tanto.',
+    carbone:'Dai sassi neri della <b>miniera</b>, o bruciando legna nella fornace.',
+    linfa:'Ogni tanto la lascia un <b>albero abbattuto</b>.',
+    uovo:'Lo fanno le <b>galline</b> del pollaio, ogni mattina.',
+    uovo_oro:'Lo fa una gallina molto contenta. Trattale bene.',
+    miele:'Dall\'<b>arnia</b>, ogni quattro giorni. Meglio se ci sono fiori intorno.',
+    latte:'Lo vende <b>Bruno</b> in bottega: viene dalla cascina di là dal colle.',
+    gallina:'La vende <b>Bruno</b>. Ti serve prima il <b>pollaio</b>.',
+    concime:'Lo vende <b>Bruno</b>, o si fa al banco da lavoro con fibra e carbone.'
+  };
+  if(AMANO[id]) return AMANO[id];
+  if(I.cat === 'attrezzo') return 'Ce l\'hai dall\'inizio. <b>Tobia</b>, alla fucina, lo può potenziare.';
+  /* le quattro braci sono il filo di tutta la partita: se c'è una cosa
+     che deve dire dove si prende, è questa */
+  if(/^brace_/.test(id)){
+    const st = id.replace('brace_','');
+    return 'La consegna il <b>Santuario</b>, nel bosco, quando gli porti le cinque offerte di <b>' +
+           (NOMI_STAGIONE[st]||st) + '</b>. Le quattro braci insieme riaccendono la Lanterna.';
+  }
+  if(id === 'medaglione') return 'Te l\'ha lasciato <b>Nonna Ilde</b>. Non si vende e non si perde.';
+  if(I.spazzatura) return 'Roba che ogni tanto abbocca al posto di un pesce. Si butta, o si vende per due soldi.';
+  return null;
+};
+
 /* icona come elemento canvas */
 function ico(id, size){
   const c = document.createElement('canvas');
@@ -463,6 +582,13 @@ function mostraOggetto(G, idx){
     row.appendChild(info);
     body.appendChild(row);
 
+    const dove = IT.dove(s.id);
+    if(dove){
+      const d=document.createElement('div'); d.className='dove';
+      d.innerHTML = '<span class="dove-tit">Dove si trova</span>'+dove;
+      body.appendChild(d);
+    }
+
     const az=document.createElement('div');
     az.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-top:12px';
 
@@ -593,7 +719,12 @@ function rigaCompra(G, id, prezzo){
   const r=document.createElement('div'); r.className='row';
   r.appendChild(ico(id));
   const info=document.createElement('div'); info.className='rinfo';
-  info.innerHTML=`<div class="rname">${IT.nome(id)}</div><div class="rdesc">${IT.desc(id)}</div>`;
+  /* Segnalato in beta: parecchia roba in vendita non dice a cosa serve.
+     Un sacchetto di semi con scritto solo «Semi di Uva» e un prezzo non
+     aiuta a decidere; dire in che stagione si semina e in quanti giorni
+     matura, sì. */
+  info.innerHTML=`<div class="rname">${IT.nome(id)}</div><div class="rdesc">${IT.desc(id)}</div>`+
+                 (IT.dove(id) ? `<div class="rserve">${IT.dove(id)}</div>` : '');
   r.appendChild(info);
   const p=document.createElement('span'); p.className='price'; p.textContent=prezzo+' ✦';
   r.appendChild(p);
@@ -1653,15 +1784,21 @@ U.cassa = function(G, obj, ox, oy){
     inp.onkeydown = e=>{ e.stopPropagation(); if(e.key==='Enter') inp.blur(); };
     barra.appendChild(inp);
 
+    const bOrdina=document.createElement('button'); bOrdina.className='btn';
+    bOrdina.textContent='Ordina';
+    bOrdina.title='Raggruppa le pile uguali e mette in ordine per tipo';
+    bOrdina.onclick=()=>{ G.ordinaCassa(obj); SND.play('menu'); U.aggiorna(); };
+    barra.appendChild(bOrdina);
+
     const bSposta=document.createElement('button'); bSposta.className='btn';
-    bSposta.textContent='Sposta la cassa';
+    bSposta.textContent='Sposta';
     bSposta.title='La cassa cambia posto con tutto quello che ha dentro';
     bSposta.onclick=()=>{ salva(); U.chiudiModal(); G.iniziaSpostamento(obj, ox, oy); };
     barra.appendChild(bSposta);
     body.appendChild(barra);
 
     const n=document.createElement('div'); n.className='muted'; n.style.marginBottom='10px';
-    n.textContent='Clicca un oggetto per spostarlo dentro o fuori.';
+    n.textContent='Clicca un oggetto per spostarlo dentro o fuori. Trascina per riordinare.';
     body.appendChild(n);
 
     const t1=document.createElement('div'); t1.className='sectitle'; t1.textContent='Nella cassa';
@@ -1673,13 +1810,36 @@ U.cassa = function(G, obj, ox, oy){
       if(s){
         c.appendChild(ico(s.id));
         if(s.n>1){const q=document.createElement('span');q.className='qty';q.textContent=s.n;c.appendChild(q);}
-        c.title=IT.nome(s.id);
+        c.title=IT.nome(s.id)+' — trascina per riordinare, clicca per prenderlo';
+        c.draggable=true;
+        c.ondragstart=e=>{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain','c'+i); };
         c.onclick=()=>{
           if(!G.puoiAggiungere(s.id,s.n)){ U.toast('Zaino pieno.','bad'); return; }
           G.aggiungi(s.id,s.n); obj.slots[i]=null;
           SND.play('prendi'); U.aggiorna();
         };
       }
+      /* Il riordino dentro la cassa: stesso gesto dello zaino, così non
+         c'è una seconda cosa da imparare. Si accettano anche gli oggetti
+         trascinati dallo zaino qui sotto. */
+      c.ondragover=e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; c.classList.add('mira'); };
+      c.ondragleave=()=>c.classList.remove('mira');
+      c.ondrop=e=>{
+        e.preventDefault(); c.classList.remove('mira');
+        const dato=e.dataTransfer.getData('text/plain');
+        if(dato && dato[0]==='c'){
+          if(G.spostaInCassa(obj, parseInt(dato.slice(1),10), i)){ SND.play('menu'); U.aggiorna(); }
+        } else {
+          const k=parseInt(dato,10);
+          const z=G.inv[k];
+          if(!z) return;
+          if(IT.cat(z.id)==='attrezzo'){ U.toast('Gli attrezzi restano con te.','bad'); return; }
+          if(obj.slots[i] && obj.slots[i].id!==z.id){ U.toast('Quella casella è occupata.','bad'); return; }
+          if(obj.slots[i]) obj.slots[i].n += z.n; else obj.slots[i]={id:z.id, n:z.n};
+          G.inv[k]=null; G.rinfrescaHotbar();
+          SND.play('prendi'); U.aggiorna();
+        }
+      };
       g1.appendChild(c);
     }
     body.appendChild(g1);
@@ -1693,7 +1853,9 @@ U.cassa = function(G, obj, ox, oy){
       if(s){
         c.appendChild(ico(s.id));
         if(s.n>1){const q=document.createElement('span');q.className='qty';q.textContent=s.n;c.appendChild(q);}
-        c.title=IT.nome(s.id);
+        c.title=IT.nome(s.id)+' — trascina nella cassa, o clicca';
+        c.draggable=true;
+        c.ondragstart=e=>{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain', String(i)); };
         c.onclick=()=>{
           if(IT.cat(s.id)==='attrezzo'){ U.toast('Gli attrezzi restano con te.','bad'); return; }
           // cerca slot nella cassa

@@ -471,9 +471,13 @@ kbd{
 .dlg-choices button:hover{background:linear-gradient(180deg,#fff,#f4dcae); border-color:var(--gold-d); transform:translateX(3px);}
 
 /* =================== MODAL =================== */
-/* sopra la schermata del titolo (z 100): "Come si gioca" si apre anche da lì */
+/* Sopra tutto quello che può stare sotto: la schermata del titolo (100)
+   ma soprattutto la pagina di presentazione, che sta a 9000. Da lì si
+   aprono «Come si gioca» e l'avviso che stai per cancellare la partita,
+   e a z-index 200 finivano *dietro* alla pagina — si vedeva la finestra
+   trasparire sotto il logo, con i pulsanti della landing sopra. */
 #modal-wrap{
-  position:absolute; inset:0; z-index:200;
+  position:absolute; inset:0; z-index:9500;
   background:rgba(12,8,5,.62); backdrop-filter:blur(3px);
   display:flex; align-items:center; justify-content:center; padding:20px;
 }
@@ -1043,7 +1047,7 @@ kbd{
 
 /* --- la finestra --- */
 #chlog-wrap{
-  position:fixed; inset:0; z-index:120; display:flex;
+  position:fixed; inset:0; z-index:9400; display:flex;
   align-items:center; justify-content:center; padding:24px;
   background:rgba(10,7,4,.72);
 }
@@ -1209,3 +1213,21 @@ kbd{
 @media (prefers-reduced-motion:reduce){
   .toast.oggetto.ripeti{ animation:none; }
 }
+
+/* =================== DOVE SI TROVA =================== */
+.dove{
+  margin-top:12px; padding:11px 14px;
+  background:rgba(154,103,65,.12); border-left:4px solid var(--gold-d);
+  border-radius:0 8px 8px 0; font-size:13.5px; line-height:1.6; color:var(--ink);
+}
+.dove-tit{
+  display:block; font-weight:800; font-size:11.5px; letter-spacing:.6px;
+  text-transform:uppercase; color:var(--ink-soft); margin-bottom:3px;
+}
+.dove b{ color:var(--wood-1); }
+/* la stessa riga, in versione stretta, dentro le righe del negozio */
+.rserve{
+  font-size:12px; line-height:1.45; color:var(--ink-soft);
+  margin-top:3px; padding-left:9px; border-left:2px solid rgba(201,146,43,.5);
+}
+.rserve b{ color:var(--wood-2); }

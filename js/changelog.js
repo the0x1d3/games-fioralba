@@ -16,6 +16,19 @@
 
 window.CHANGELOG = [
   {
+    v: '1.5',
+    data: 'agosto 2026',
+    titolo: 'Ogni cosa dice dove si trova',
+    voci: [
+      { tipo:'fix',    t:'Le finestre sul menu iniziale si vedono', d:'L\'avviso «hai una partita in corso» e la lista dei cambiamenti si aprivano dietro alla pagina di presentazione: si vedeva la finestra trasparire sotto il logo, coi pulsanti della pagina sopra.' },
+      { tipo:'nuovo',  t:'Ogni oggetto dice dove si trova', d:'«La lavanda non c\'è» e «l\'uva non si sa dove sia» erano la stessa cosa: la lavanda è un foraggio d\'estate e ne spuntano più di cento in una stagione, l\'uva cresce dai semi che Bruno vende in autunno — solo che nessuno lo diceva. Adesso ogni oggetto porta la sua riga, ricavata dai dati del gioco: stagione, posto, attrezzo, ricetta.' },
+      { tipo:'meglio', t:'Il negozio spiega cosa stai comprando', d:'Un sacchetto con scritto «Semi di Uva» e un prezzo non basta a decidere. Adesso dice in che stagione si semina e in quanti giorni matura, anche dal mercante ambulante.' },
+      { tipo:'nuovo',  t:'Le casse si riordinano', d:'Trascinando, come nello zaino — e si trascina anche dallo zaino direttamente nella casella che vuoi. C\'è anche un tasto «Ordina» che raggruppa le pile uguali e mette in fila per tipo.' },
+      { tipo:'fix',    t:'Le staccionate recintano davvero', d:'Quelle del giocatore fermavano, quelle del gioco si attraversavano. E il campo grande aveva tredici caselle aperte sul lato del viale: un recinto con tre lati. Adesso fermano tutte, e ci sono i cancelletti.' },
+      { tipo:'nuovo',  t:'Il cancelletto', d:'Un varco nella staccionata, da costruire con 4 legna: ci passi tu, non le bestie.' }
+    ]
+  },
+  {
     v: '1.4',
     data: 'agosto 2026',
     titolo: 'La miniera si esplora davvero, e il podere si riordina',

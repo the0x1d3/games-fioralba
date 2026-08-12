@@ -1726,6 +1726,44 @@ G.nomeCassa = function(o){
   return (o && typeof o.nome === 'string' && o.nome.trim()) ? o.nome.trim() : 'Cassa';
 };
 
+/* Riordinare dentro una cassa, con lo stesso gesto dello zaino. Una
+   cassa che si riempie nell'ordine in cui ci butti dentro le cose è un
+   mucchio, non un deposito. */
+G.spostaInCassa = function(obj, da, a){
+  if(!obj || !obj.slots) return false;
+  if(da===a || da<0 || a<0 || da>=obj.slots.length || a>=obj.slots.length) return false;
+  const x = obj.slots[da], y = obj.slots[a];
+  if(!x) return false;
+  if(y && y.id===x.id && IT.cat(x.id)!=='attrezzo'){
+    y.n += x.n; obj.slots[da] = null;
+  } else {
+    obj.slots[da] = y || null; obj.slots[a] = x;
+  }
+  return true;
+};
+
+/* Mette in ordine da sola: prima per categoria, poi per nome. Con
+   ventiquattro caselle a mano ci si mette più tempo a sistemarle che a
+   riempirle. */
+G.ordinaCassa = function(obj){
+  if(!obj || !obj.slots) return false;
+  const ORDINE = ['attrezzo','seme','raccolto','foraggio','pesce','minerale','materiale','animale','cibo','artigianato'];
+  const roba = obj.slots.filter(Boolean);
+  // prima si fondono le pile sparse dello stesso oggetto
+  const fuse = [];
+  for(const s of roba){
+    const g = fuse.find(f=>f.id===s.id && IT.cat(s.id)!=='attrezzo');
+    if(g) g.n += s.n; else fuse.push({id:s.id, n:s.n});
+  }
+  fuse.sort((a,b)=>{
+    const ca = ORDINE.indexOf(IT.cat(a.id)), cb = ORDINE.indexOf(IT.cat(b.id));
+    if(ca !== cb) return (ca<0?99:ca) - (cb<0?99:cb);
+    return IT.nome(a.id).localeCompare(IT.nome(b.id), 'it');
+  });
+  for(let i=0;i<obj.slots.length;i++) obj.slots[i] = fuse[i] || null;
+  return true;
+};
+
 /* ===================================================================
    PROMPT CONTESTUALE
    Dice cosa fa E su quello che hai davanti. Prima bisognava indovinare
