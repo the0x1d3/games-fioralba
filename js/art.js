@@ -165,6 +165,14 @@ A.vignetta = function(w, h, forza){
   const fq = Math.round((forza||0.32)*50)/50;
   const key = w+'|'+h+'|'+fq;
   if(vignCache[key]) return vignCache[key];
+  /* La chiave contiene w e h, e w e h cambiano a ogni pixel di
+     ridimensionamento della finestra: trascinare un bordo per due
+     secondi cuoce decine di vignette, e ognuna è un canvas grande
+     quanto lo schermo virtuale (~mezzo MB). Le misure vecchie non
+     servono più a niente — la finestra ha una sola misura per volta —
+     quindi sopra le 8 si butta via tutto e si ricomincia. */
+  const chiavi = Object.keys(vignCache);
+  if(chiavi.length >= 8) for(const k of chiavi) delete vignCache[k];
   const c = cv(w,h), x = c.getContext('2d');
   const img = x.createImageData(w,h), d = img.data;
   const cx = w/2, cy = h/2;

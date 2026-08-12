@@ -279,6 +279,17 @@ risultato che *sembra* un esito del test e non lo è:
 - **Il pannello a volte è 0×0** e allora ogni misura di geometria è finta.
   Controlla il rettangolo del canvas prima di fidarti.
 
+**La prova di determinismo del disegno**: congela `G.tempoMs`, chiama
+`REND.disegna(G)` due volte, confronta i pixel. Zero differenze è la norma; una
+differenza è un `Math.random` (o uno stato che avanza) in un percorso
+per-fotogramma — così è saltata fuori la pioggia che cadeva 2,4× più veloce
+sui monitor a 144Hz. Due trappole di misura collegate: `getImageData` spinge
+il canvas in modalità software (mai profilare il disegno dopo aver letto i
+pixel), e `performance.memory` cresce per giri interi senza che sia una
+perdita — i canvas sono memoria esterna, V8 non li sente e rimanda il GC.
+Prima di dichiarare una perdita, applica pressione di allocazione e guarda se
+il pavimento torna giù.
+
 **Metti sempre una prova di taratura davanti.** Un test che dice "la staccionata
 è ancora lì" viene verde sia che il tasto funzioni sia che non parta affatto.
 Prima verifica che il percorso giri (E su una cassa la apre), poi misura la cosa

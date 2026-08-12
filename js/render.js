@@ -1717,8 +1717,19 @@ function initMeteo(){
 }
 R.initMeteo = initMeteo;
 
+/* Gocce e fiocchi avanzano col TEMPO, non col fotogramma. Prima era
+   `g.y += g.v` a ogni chiamata: su un monitor a 144Hz la pioggia cadeva
+   2,4 volte più veloce che a 60Hz, perché requestAnimationFrame segue il
+   refresh. Scoperto con la prova di determinismo — due disegni a tempo
+   congelato davano 24.796 pixel diversi sotto la pioggia, e zero col
+   sereno. Il fattore `k` vale 1 a 60fps; la pinza a 100ms evita che al
+   ritorno da una scheda in secondo piano le gocce attraversino mezzo
+   schermo in un colpo. */
+let meteoT = 0;
 function disegnaMeteo(G, t){
   if(!gocce.length) initMeteo();
+  const k = Math.min(100, Math.max(0, t - meteoT)) / 16.667;
+  meteoT = t;
   const M = G.meteo;
   const vento = FX.vento();
   if(M==='pioggia'||M==='temporale'){
@@ -1727,7 +1738,7 @@ function disegnaMeteo(G, t){
     sx.lineWidth=1;
     sx.beginPath();
     for(const g of gocce){
-      g.y += g.v*(forte?1.5:1); g.x += (forte?1.6:0.9) + vento*1.4;
+      g.y += g.v*(forte?1.5:1)*k; g.x += ((forte?1.6:0.9) + vento*1.4)*k;
       if(g.y>VH){ g.y=-10; g.x=Math.random()*VW; }
       if(g.x>VW) g.x=0; if(g.x<0) g.x=VW;
       sx.moveTo(g.x,g.y); sx.lineTo(g.x-(forte?4:2), g.y-g.l);
@@ -1746,7 +1757,7 @@ function disegnaMeteo(G, t){
   }
   else if(M==='neve'){
     for(const f of fiocchi){
-      f.y += f.v; f.x += Math.sin(f.f + t*0.0012)*0.5 + vento*0.9;
+      f.y += f.v*k; f.x += (Math.sin(f.f + t*0.0012)*0.5 + vento*0.9)*k;
       if(f.y>VH){ f.y=-6; f.x=Math.random()*VW; }
       if(f.x>VW) f.x=0; if(f.x<0) f.x=VW;
       sx.globalAlpha=0.85;
