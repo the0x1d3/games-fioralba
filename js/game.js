@@ -146,6 +146,20 @@ function collegaLanding(){
       chiediNuovaPartita();     // se c'è già una partita, prima si avverte
     });
   });
+  /* L'import stava solo nel menu del titolo, che la landing nasconde
+     (`title-inner` sparisce qui sopra): per importare bisognava prima
+     entrare in partita, cioè averne già una. Dalla landing invece si
+     parte con un salvataggio portato da un altro computer. Il resto del
+     giro esiste già: importaDaFile valida, scrive e ricarica, e al
+     ritorno collegaTitolo vede il segnale in sessionStorage e riprende
+     la partita da solo. */
+  document.querySelectorAll('.lp-import').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      if(daMobile()){ avviso(); return; }
+      SND.resume(); SND.play('menu');
+      G.importaDaFile();
+    });
+  });
 }
 
 /* ===================================================================

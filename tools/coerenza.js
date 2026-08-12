@@ -909,21 +909,26 @@ verifica('i tag nei testi dei dialoghi sono semplici e chiusi', () => {
   /* I moduli non si possono caricare qui (vogliono il DOM): le loro
      battute si leggono dal sorgente, come si fa già per le prede.
 
-     Due filtri, tutti e due necessari. Si guardano solo le stringhe che
-     contengono un tag da dialogo (<b>, <i>, <kbd>…): l'estrazione con
-     una regex è ingenua e gli apostrofi italiani nei commenti le fanno
-     agganciare pezzi di codice — «<DATA.XP_LIV.length;i++)» sembrava un
-     tag rotto ed era un ciclo for. E si saltano le stringhe con span,
-     div o attributi: quelli sono i template delle finestre, HTML
-     legittimo per innerHTML, non battute. */
+     L'estrazione con una regex è ingenua, e gli apostrofi italiani nei
+     commenti («l'ho», «un'altra») le fanno accoppiare virgolette che non
+     c'entrano: ne uscivano "stringhe" che erano pezzi di codice, e il
+     controllo cambiava esito a ogni commento aggiunto altrove nel file.
+     Prima di estrarre si tolgono commenti e template literal, che è dove
+     quegli apostrofi vivono. Poi due filtri: si guardano solo le stringhe
+     con un tag da dialogo (<b>, <i>, <kbd>…), e si saltano quelle di
+     markup — span, div, attributi, anche in chiusura: «</b></div>» è un
+     frammento di finestra concatenata, non una battuta monca. */
   for (const f of ['js/storie.js', 'js/solstizio.js', 'js/pesca.js', 'js/game.js']) {
-    const src = fs.readFileSync(path.join(RADICE, f), 'utf8');
+    const src = fs.readFileSync(path.join(RADICE, f), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '')
+      .replace(/`(?:[^`\\]|\\.)*`/g, '``');
     let n = 0;
     for (const m of src.matchAll(/'((?:[^'\\]|\\.)*?)'/g)) {
       const s = m[1].replace(/\\'/g, "'");
       n++;
       if (!/<\/?(b|i|kbd|em|strong|br)\s*>/.test(s)) continue;
-      if (/<(span|div|button|style|canvas)\b|style=|class=/.test(s)) continue;
+      if (/<\/?(span|div|button|style|canvas)\b|style=|class=/.test(s)) continue;
       controlla(`${f} (stringa ${n})`, s);
     }
   }

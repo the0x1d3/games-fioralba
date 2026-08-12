@@ -136,17 +136,45 @@ S.salva = function(){
   }catch(e){ console.warn('Salvataggio non riuscito', e); return false; }
 };
 
-/* ---- Esporta il salvataggio come file .json scaricabile ---- */
+/* ---- Esporta il salvataggio come file .json scaricabile ----
+
+   Esporta LA PARTITA GIUSTA per il momento in cui viene chiamata.
+   Serializzava sempre `G`, e da lì è uscito un file di 31 byte con
+   «announdefined» nel nome: dalla landing, «Nuova Partita» con una
+   partita salvata apre l'avviso che consiglia di esportare prima — ma a
+   quel punto la partita sta solo nel localStorage, e `G` è ancora ai
+   valori di avvio. La finestra mostrava i dati veri, letti dal
+   salvataggio, e il bottone accanto esportava il vuoto.
+
+   Quindi: in gioco si esporta lo stato vivo, fuori dal gioco si esporta
+   il salvataggio scritto — che è esattamente quello che l'avviso
+   promette di mettere in salvo. E in ogni caso il file passa dalla
+   stessa validazione dell'import: un file che non riusciremmo a
+   rileggere non deve neanche partire. ---- */
 S.esporta = function(){
   try{
-    const testo = JSON.stringify(costruisciDati());
+    let testo, d;
+    if(G.inGioco){
+      d = costruisciDati();
+      testo = JSON.stringify(d);
+    } else {
+      testo = caricaGrezzo();
+      if(!testo){ flashMessaggio('Non c\'è nessuna partita da esportare.', false); return false; }
+      d = JSON.parse(testo);
+    }
+    const err = validaSalvataggio(d);
+    if(err){
+      console.warn('Export rifiutato:', err);
+      flashMessaggio('Questo salvataggio è incompleto, meglio non esportarlo: ' + err, false);
+      return false;
+    }
     const blob = new Blob([testo], {type:'application/json'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const nome = (G.nomeGiocatore||'contadino').replace(/[^a-z0-9]/gi,'_');
+    const nome = (d.nomeGiocatore||'contadino').replace(/[^a-z0-9]/gi,'_');
     const data = new Date().toISOString().slice(0,10);
     a.href = url;
-    a.download = `fioralba-${nome}-anno${G.anno}-${data}.json`;
+    a.download = `fioralba-${nome}-anno${d.anno||1}-${data}.json`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(url), 1500);
     return true;
