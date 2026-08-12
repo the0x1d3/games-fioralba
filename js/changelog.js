@@ -16,6 +16,18 @@
 
 window.CHANGELOG = [
   {
+    v: '1.6',
+    data: 'agosto 2026',
+    titolo: 'Si caccia, e i traguardi lo dicono',
+    voci: [
+      { tipo:'nuovo',  t:'La caccia, insegnata da Oreste', d:'Sul Passo c\'è un vecchio con un arco. Se vi conoscete abbastanza te ne dà uno e ti insegna: tre passi, e ognuno si chiude quando lo hai fatto davvero. Si tira davanti a sé, e più sei vicino più è facile. Allo scoiattolo e al riccio non si spara.' },
+      { tipo:'nuovo',  t:'Quando compi un traguardo, il gioco te lo dice', d:'Prima si compivano in silenzio: il premio restava lì finché non aprivi il Diario e te ne accorgevi per caso.' },
+      { tipo:'fix',    t:'Non si entra più dentro le porte', d:'La casella della porta era calpestabile, e sta dentro la sagoma della casa: chi ci saliva si ritrovava disegnato mezzo dentro e mezzo fuori.' },
+      { tipo:'fix',    t:'La scala della miniera si imbocca', d:'Era un varco da una casella sola in fondo a un corridoio, e il passaggio scatta col centro del giocatore: trentadue pixel da azzeccare. Adesso tutte e quattro le scale sono larghe il doppio, con un pianerottolo sgombro.' },
+      { tipo:'meglio', t:'La pagina di presentazione mostra la valle', d:'Al posto delle scenette a schede — che chiedevano di scegliere, aspettare e ricominciare — ci sono i sei posti tutti insieme: ritagli veri delle mappe, disegnati dal motore.' }
+    ]
+  },
+  {
     v: '1.5',
     data: 'agosto 2026',
     titolo: 'Ogni cosa dice dove si trova',
