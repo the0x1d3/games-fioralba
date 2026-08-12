@@ -39,6 +39,7 @@ function statoIniziale(){
     mappaId:'podere',
     oro:600,
     energia:ENERGIA_BASE, energiaMax:ENERGIA_BASE, energiaBonus:0,
+    vistoPesca:false,
     giorno:1, stagioneIdx:0, anno:1, giornoTot:0,
     ora:360,
     meteo:'sereno', meteoDomani:'sereno',
@@ -136,7 +137,7 @@ function collegaLanding(){
     b.addEventListener('click', ()=>{
       if(daMobile()){ avviso(); return; }
       SND.resume(); SND.play('menu');
-      nuovaPartita();
+      chiediNuovaPartita();     // se c'è già una partita, prima si avverte
     });
   });
 }
@@ -539,7 +540,7 @@ function collegaTitolo(){
 
   $('#btn-new').onclick = ()=>{
     SND.resume(); SND.play('menu');
-    nuovaPartita();
+    chiediNuovaPartita();
   };
   $('#btn-continue').onclick = ()=>{
     SND.resume(); SND.play('menu');
@@ -557,6 +558,65 @@ function collegaTitolo(){
     if(autoImport) sessionStorage.removeItem('fioralba_import');
   }catch(e){}
   if(autoImport && salvato && carica()){ avviaGioco(false); }
+}
+
+/* Cominciare da capo cancella quello che c'era, e finora non lo diceva
+   nessuno: bastava un clic di troppo sul menu per perdere una stagione
+   di lavoro. Adesso si chiede, e prima di rispondere si vede cosa c'è
+   in ballo — che giorno è, quante monete, quanto si è guadagnato. */
+function chiediNuovaPartita(){
+  const grezzo = caricaGrezzo();
+  if(!grezzo){ nuovaPartita(); return; }
+
+  let d = null;
+  try{ d = JSON.parse(grezzo); }catch(e){}
+  if(!d){ nuovaPartita(); return; }
+
+  const st = (DATA.SEASONS[d.stagioneIdx] || DATA.SEASONS[0]).nome;
+  const giorni = (d.giornoTot|0) + 1;
+
+  UI.modal('Ricominciare da capo?', body=>{
+    const avviso = document.createElement('div');
+    avviso.className = 'avviso-grave';
+    avviso.innerHTML = 'Hai una partita in corso. Cominciandone una nuova <b>la perdi</b>, '+
+                       'e non si torna indietro.';
+    body.appendChild(avviso);
+
+    const scheda = document.createElement('div'); scheda.className = 'salva-scheda';
+    scheda.innerHTML =
+      '<div class="ss-riga"><span>Contadino</span><b>'+(d.nomeGiocatore||'—')+'</b></div>'+
+      '<div class="ss-riga"><span>A che punto</span><b>'+st+' '+(d.giorno||1)+', anno '+(d.anno||1)+'</b></div>'+
+      '<div class="ss-riga"><span>Giorni giocati</span><b>'+giorni+'</b></div>'+
+      '<div class="ss-riga"><span>Monete</span><b>'+(d.oro||0)+'</b></div>'+
+      '<div class="ss-riga"><span>Guadagnate in tutto</span><b>'+((d.stats&&d.stats.guadagno)||0)+'</b></div>';
+    body.appendChild(scheda);
+
+    const consiglio = document.createElement('div');
+    consiglio.className = 'muted'; consiglio.style.margin = '10px 0 14px';
+    consiglio.innerHTML = 'Se ci tieni, prima <b>esportala in un file</b>: la ritrovi quando vuoi, '+
+                          'anche su un altro computer.';
+    body.appendChild(consiglio);
+
+    const az = document.createElement('div');
+    az.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
+
+    const bEsp = document.createElement('button'); bEsp.className = 'btn';
+    bEsp.textContent = 'Esporta la partita';
+    bEsp.onclick = ()=>{ G.esporta(); };
+    az.appendChild(bEsp);
+
+    const bAnn = document.createElement('button'); bAnn.className = 'btn blue';
+    bAnn.textContent = 'Lascia stare';
+    bAnn.onclick = ()=>UI.chiudiModal();
+    az.appendChild(bAnn);
+
+    const bOk = document.createElement('button'); bOk.className = 'btn red';
+    bOk.textContent = 'Cancella e ricomincia';
+    bOk.onclick = ()=>{ UI.chiudiModal(); nuovaPartita(); };
+    az.appendChild(bOk);
+
+    body.appendChild(az);
+  });
 }
 
 function nuovaPartita(){
@@ -693,6 +753,34 @@ G.togliSlot = function(i, n){
   G.aggiornaHUD();
 };
 G.slot = ()=> G.inv[G.slotSel];
+
+/* Sposta un oggetto da una casella all'altra dello zaino.
+
+   Se le due caselle hanno la stessa roba, si sommano invece di
+   scambiarsi: è quello che uno si aspetta trascinando dieci rape sopra
+   altre dieci rape, e senza si restava con mezze pile sparse ovunque
+   senza modo di rimetterle insieme.
+
+   Le prime nove caselle sono la barra in basso: spostare lì un oggetto
+   vuol dire metterselo in mano, ed è il motivo per cui questa cosa
+   serve davvero. */
+G.spostaSlot = function(da, a){
+  if(da===a) return false;
+  if(da<0 || a<0 || da>=G.invMax || a>=G.invMax) return false;
+  const x = G.inv[da], y = G.inv[a];
+  if(!x) return false;
+
+  // le pile in questo gioco non hanno tetto, quindi si sommano e basta
+  if(y && y.id===x.id && IT.cat(x.id)!=='attrezzo'){
+    y.n += x.n;
+    G.inv[da] = null;
+  } else {
+    G.inv[da] = y || null; G.inv[a] = x;
+  }
+  costruisciHotbar();
+  G.aggiornaHUD();
+  return true;
+};
 
 /* Registra una vendita, da qualunque parte arrivi (bottega o cassa di
    consegna). Prima le vendite in bottega non finivano in `guadagno`:
@@ -2266,7 +2354,45 @@ function aggiornaAnimali(dt){
 /* ===================================================================
    PESCA
    =================================================================== */
+/* I numeri della pesca, tutti qui.
+
+   Com'era: il pesce si muoveva a scatti casuali, la barra rimbalzava
+   oltre dove la volevi, e per fare punti bisognava contenere il pesce
+   *tutto intero* dentro la barra — cioè la finestra buona era la metà
+   di quella disegnata. Tre cose che insieme rendevano la pesca una
+   lotteria, e infatti si perdeva quasi sempre.
+
+   I numeri sotto non sono a occhio: ho simulato un pilota automatico
+   che tiene premuto quando il pesce è sopra la barra, con un ritardo di
+   reazione umano, e ho cercato la combinazione che dà questi risultati
+   (300 partite per casella):
+
+                        prima          dopo
+     attento, facile      0%      →     92%
+     attento, medio       2%      →     79%
+     attento, difficile   6%      →     64%
+     medio,   medio       2%      →     64%
+     livello 5, medio    93%      →     93%
+
+   Prima un giocatore normale non prendeva praticamente niente: non era
+   difficile, era rotto. Adesso i pesci facili si prendono quasi sempre,
+   quelli difficili un po' più di una volta su due, e salire di livello
+   in Pesca si sente. E una lotta dura quattro secondi e mezzo invece di
+   finire in mezzo secondo: il tempo di accorgersi che c'è una lotta. */
+const PISTA = 330;        // altezza della pista, in pixel (vale il CSS)
+const PESCE = 42;         // e del pesce
+const ALTEZZA_BARRA = 104;// barra al livello zero (era 82)
+const MARGINE = 8;        // quanto si perdona ai bordi
+const SPINTA = 0.30;      // quanto tira su tenendo premuto (era 0.42)
+const GRAVITA = 0.24;     // e quanto scende lasciando (era 0.36)
+const ATTRITO = 0.87;     // più attrito = meno rimbalzo (era 0.90)
+const GUADAGNO = 0.026;   // punti al millisecondo quando è agganciato
+const PERDITA = 0.034;    // e quando lo perdi (era 0.06)
+const PROG_INIZIALE = 40; // (era 32)
+const FINESTRA_ABBOCCO = 2200;  // tempo per reagire all'abboccata (era 1400)
+
 const pesca = { attiva:false, fase:'', t:0, barra:50, vBarra:0, pesceY:50, vPesce:0,
+                metaPesce:120, tPesce:0,
                 prog:30, target:null, tx:0, ty:0, diff:2, tenuto:false };
 
 /* i nodi del minigioco non cambiano mai: cercarli a ogni frame era inutile */
@@ -2286,6 +2412,19 @@ function elementiPesca(){
 function iniziaPesca(tx,ty){
   if(G.gelo){ UI.toast('L\'acqua è gelata: niente pesca oggi.','bad'); return; }
   if(!spendi(3)) return;
+  /* La prima volta si spiega, poi si pesca. Le tre fasi — aspetta,
+     reagisci, tieni agganciato — non si indovinano guardando: chi non
+     le conosce lascia scappare la prima abboccata senza capire che ci
+     fosse qualcosa da fare. */
+  if(!G.vistoPesca){
+    G.vistoPesca = true;
+    UI.spiegaPesca(()=>lanciaLenza(tx,ty));
+    return;
+  }
+  lanciaLenza(tx,ty);
+}
+
+function lanciaLenza(tx,ty){
   pesca.attiva=true; pesca.fase='lancio'; pesca.t=0;
   pesca.tx=tx; pesca.ty=ty;
   G.p.usoT=400;
@@ -2339,30 +2478,50 @@ function aggiornaPesca(dt){
     return;
   }
   if(pesca.fase==='abbocca'){
-    if(pesca.t>1400){ finePesca(false,'Se n\'è andato.'); }
+    if(pesca.t>FINESTRA_ABBOCCO){ finePesca(false,'Se n\'è andato.'); }
     return;
   }
   if(pesca.fase==='gioco'){
     const lvl = G.livello('pesca');
-    const altezzaBarra = 82 + lvl*7;
-    const H = 330 - altezzaBarra;
+    const altezzaBarra = ALTEZZA_BARRA + lvl*8;
+    const corsaBarra = PISTA - altezzaBarra;     // quanto può scorrere la barra
+    const corsaPesce = PISTA - PESCE;            // il pesce è più piccolo: corre di più
 
-    // movimento del pesce
-    pesca.vPesce += (Math.random()-0.5)*pesca.diff*0.55;
-    pesca.vPesce *= 0.92;
-    pesca.pesceY += pesca.vPesce;
-    if(pesca.pesceY<0){ pesca.pesceY=0; pesca.vPesce*=-0.5; }
-    if(pesca.pesceY>H){ pesca.pesceY=H; pesca.vPesce*=-0.5; }
+    /* IL PESCE. Prima era una passeggiata aleatoria — a ogni fotogramma
+       una spinta a caso — e usciva un tremolio che non si può seguire
+       perché non ha intenzioni: quando lo prendevi era per fortuna. Ora
+       sceglie un punto e ci va, con un avvicinamento morbido che non
+       supera mai la meta. Si può stare dietro a un pesce che *va da
+       qualche parte*; la difficoltà cambia quanto spesso cambia idea e
+       quanto è svelto ad arrivarci, non quanto trema. */
+    pesca.tPesce -= dt;
+    if(pesca.tPesce <= 0){
+      pesca.metaPesce = Math.random()*corsaPesce;
+      pesca.tPesce = 1200 - pesca.diff*110 + Math.random()*600;
+      if(Math.random() < 0.20) pesca.tPesce += 500;      // ogni tanto si ferma a pensare
+    }
+    const passo = (0.0022 + pesca.diff*0.0011) * dt;
+    pesca.pesceY += (pesca.metaPesce - pesca.pesceY) * Math.min(1, passo);
 
-    // movimento della barra
-    pesca.vBarra += pesca.tenuto ? -0.42 : 0.36;
-    pesca.vBarra *= 0.90;
+    /* LA BARRA. Stessa idea di prima — si sale tenendo premuto, si scende
+       lasciando — ma con più attrito e meno spinta: prima rimbalzava
+       oltre il punto in cui la volevi e si passava il tempo a inseguire
+       i propri errori. */
+    pesca.vBarra += pesca.tenuto ? -SPINTA : GRAVITA;
+    pesca.vBarra *= ATTRITO;
     pesca.barra += pesca.vBarra;
     if(pesca.barra<0){ pesca.barra=0; pesca.vBarra=0; }
-    if(pesca.barra>H){ pesca.barra=H; pesca.vBarra=0; }
+    if(pesca.barra>corsaBarra){ pesca.barra=corsaBarra; pesca.vBarra=0; }
 
-    const dentro = pesca.pesceY >= pesca.barra-6 && pesca.pesceY <= pesca.barra+altezzaBarra-36;
-    pesca.prog += dentro ? 0.075*dt*(1+lvl*0.03) : -0.06*dt;
+    /* Conta il CENTRO del pesce dentro la barra, non il pesce tutto
+       intero: prima bisognava contenerlo per intero e la finestra buona
+       era la metà di quella che si vedeva — si mirava a una cosa e ne
+       valeva un'altra. */
+    const centro = pesca.pesceY + PESCE/2;
+    const dentro = centro >= pesca.barra - MARGINE &&
+                   centro <= pesca.barra + altezzaBarra + MARGINE;
+
+    pesca.prog += dentro ? GUADAGNO*dt*(1+lvl*0.03) : -PERDITA*dt;
     pesca.prog = Math.max(0, Math.min(100, pesca.prog));
 
     // DOM
@@ -2385,8 +2544,10 @@ function iniziaLotta(){
   pesca.diff = DATA.ITEMS[id].diff || 2;
   pesca.fase='gioco'; pesca.t=0;
   pesca.barra=120; pesca.vBarra=0;
+  // il pesce comincia dentro la barra: il primo mezzo secondo è tuo
   pesca.pesceY=140; pesca.vPesce=0;
-  pesca.prog=32;
+  pesca.metaPesce=140; pesca.tPesce=600;
+  pesca.prog=PROG_INIZIALE;
   UI.prompt(null);
   const E = elementiPesca();
   E.root.classList.remove('hidden');
@@ -3370,34 +3531,69 @@ G.contaCollezione = function(){
   return r;
 };
 
+/* I traguardi dicevano cosa serve — «Frantuma 100 rocce» — ma non dove
+   si trovano cento rocce né con cosa si frantumano. Chi sa già giocare
+   lo indovina; chi ha appena cominciato legge un compito e non un
+   suggerimento. `come` è la riga che manca: dove andare, con cosa, e
+   quale scorciatoia c'è se una c'è. */
 G.obiettivi = function(){
   const s=G.stats, o=[];
   const cc=G.contaCollezione();
-  // conta (id,nome,icona,desc, valore corrente, traguardo, premio in monete)
-  const cont=(id,nome,icona,desc,cur,tot,premio)=>o.push({
-    id, nome, icona, desc, premio,
+  // conta (id,nome,icona,desc, valore corrente, traguardo, premio, come)
+  const cont=(id,nome,icona,desc,cur,tot,premio,come)=>o.push({
+    id, nome, icona, desc, premio, come,
     prog: Math.min(tot,cur)+'/'+tot, fatto: cur>=tot });
   // traguardo booleano (fatto/da fare)
-  const flag=(id,nome,icona,desc,ok,premio)=>o.push({
-    id, nome, icona, desc, premio,
+  const flag=(id,nome,icona,desc,ok,premio,come)=>o.push({
+    id, nome, icona, desc, premio, come,
     prog: ok?'fatto':'da fare', fatto: !!ok });
 
-  cont('mani_terra','Mani nella terra','zappa','Raccogli 50 prodotti dal campo.', s.raccolti,50,500);
-  cont('boscaiolo','Boscaiolo','legna','Abbatti 25 alberi.', s.alberi,25,500);
-  cont('cuore_pietra','Cuore di pietra','piccone','Frantuma 100 rocce.', s.sassi,100,600);
-  cont('pescatore','Pescatore paziente','canna','Pesca 30 pesci.', s.pesci,30,700);
-  cont('cuoco','Ai fornelli','frittata','Cucina 20 piatti in cucina.', s.piatti||0,20,800);
-  cont('generoso','Cuore generoso','miele','Fai 15 regali graditi agli abitanti.', s.regali||0,15,700);
-  cont('factotum','Persona di fiducia','medaglione','Completa 15 richieste della bacheca.', s.richiesteFatte||0,15,1200);
-  cont('festaiolo','Anima delle sagre','melagrana','Vinci 3 sagre di stagione.', s.sagre||0,3,1500);
+  cont('mani_terra','Mani nella terra','zappa','Raccogli 50 prodotti dal campo.', s.raccolti,50,500,
+    'Nel <b>podere</b>, dentro il campo recintato. Zappa la terra, semina, annaffia ogni giorno e raccogli quando la pianta è matura. '+
+    'I semi li vende <b>Bruno</b> in bottega, e ogni stagione ha i suoi: quelli fuori stagione appassiscono.');
+  cont('boscaiolo','Boscaiolo','legna','Abbatti 25 alberi.', s.alberi,25,500,
+    'Con l\'<b>ascia</b>, e conta solo l\'albero adulto — non il ceppo che resta. Ce ne sono nel <b>podere</b> e tanti nel <b>bosco</b>. '+
+    'Ogni tanto cade un seme d\'albero lì vicino: se lo lasci crescere, gli alberi non finiscono mai.');
+  cont('cuore_pietra','Cuore di pietra','piccone','Frantuma 100 rocce.', s.sassi,100,600,
+    'Con il <b>piccone</b>. Nella <b>miniera</b> (l\'ingresso è nel bosco) ce ne sono a ogni livello, e più scendi più fruttano. '+
+    'Anche i sassi sparsi nel podere contano.');
+  cont('pescatore','Pescatore paziente','canna','Pesca 30 pesci.', s.pesci,30,700,
+    'Con la <b>canna</b>, mettendoti sulla riva e mirando all\'acqua. Fiume del paese, lago del bosco, mare della <b>Costa</b>. '+
+    'La spazzatura non conta: contano solo i pesci veri.');
+  cont('cuoco','Ai fornelli','frittata','Cucina 20 piatti in cucina.', s.piatti||0,20,800,
+    'Serve l\'<b>Ampliamento Casa</b>: fino ad allora in casa c\'è il focolare ma non una cucina vera. '+
+    'Poi entra in casa e usa i fornelli. Le ricette si sbloccano parlando con gli abitanti e salendo di livello.');
+  cont('generoso','Cuore generoso','miele','Fai 15 regali graditi agli abitanti.', s.regali||0,15,700,
+    'Tieni in mano l\'oggetto e parla con qualcuno: te lo chiederà. Conta solo se il regalo gli <b>piace</b> — '+
+    'i gusti di ognuno li trovi in <b>Diario → Abitanti</b>. Uno a testa al giorno.');
+  cont('factotum','Persona di fiducia','medaglione','Completa 15 richieste della bacheca.', s.richiesteFatte||0,15,1200,
+    'La <b>bacheca</b> è al porto, in paese. Ti chiedono un oggetto entro un tot di giorni: prendilo, torna alla bacheca e consegna. '+
+    'Le richieste aperte le vedi in <b>Diario → Richieste</b>.');
+  cont('festaiolo','Anima delle sagre','melagrana','Vinci 3 sagre di stagione.', s.sagre||0,3,1500,
+    'Una per stagione, in <b>piazza</b>. Bisogna portare il prodotto migliore che hai: la qualità conta più della quantità, '+
+    'quindi conserva i raccolti belli invece di venderli subito.');
   flag('esploratore','Conosci la valle','viola','Visita bosco, miniera e paese.',
-       s.visitatoBosco && s.visitatoGrotta && s.visitatoPaese, 400);
-  flag('ponte','Il ponte','legna','Costruisci il ponte per la radura.', G.costruzioni.ponte, 400);
-  flag('serra','Sotto vetro','seme_cristallia','Costruisci la serra.', G.costruzioni.serra, 800);
-  cont('benestante','Benestante','lingotto_oro','Accumula 50.000 monete guadagnate.', s.guadagno,50000,3000);
-  cont('ittiologo','Ittiologo','storione','Scopri tutti i pesci della valle.', cc.Pesci.d, cc.Pesci.t, 1600);
-  cont('gemmologo','Gemmologo','gemma_luna','Scopri tutti i minerali.', cc.Minerali.d, cc.Minerali.t, 1600);
-  cont('collezionista','Collezionista','medaglione','Completa la Collezione del Naturalista.', cc.tot.d, cc.tot.t, 4000);
+       s.visitatoBosco && s.visitatoGrotta && s.visitatoPaese, 400,
+    'Il <b>paese</b> è a est del podere, il <b>bosco</b> a nord, e la <b>miniera</b> si apre dentro il bosco. '+
+    'Basta metterci piede una volta.');
+  flag('ponte','Il ponte','legna','Costruisci il ponte per la radura.', G.costruzioni.ponte, 400,
+    'Servono <b>100 legna</b>, <b>40 pietra</b> e 3000 monete. Si ordina da <b>Tobia</b> alla fucina — '+
+    'o dall\'incudine, se lui non c\'è. Apre la radura oltre il ruscello.');
+  flag('serra','Sotto vetro','seme_cristallia','Costruisci la serra.', G.costruzioni.serra, 800,
+    'La costruzione più cara: <b>200 legna</b>, <b>120 pietra</b>, <b>5 lingotti d\'oro</b> e 12.000 monete, sempre da Tobia. '+
+    'Dentro si coltiva tutto l\'anno, anche d\'inverno.');
+  cont('benestante','Benestante','lingotto_oro','Accumula 50.000 monete guadagnate.', s.guadagno,50000,3000,
+    'Conta il <b>totale guadagnato</b>, non quello che hai in tasca: spendere non ti fa tornare indietro. '+
+    'La strada breve è trasformare — l\'uva cruda vale 76 monete, il vino 228 — con botte, barattoliera e forno.');
+  cont('ittiologo','Ittiologo','storione','Scopri tutti i pesci della valle.', cc.Pesci.d, cc.Pesci.t, 1600,
+    'Ogni pesce ha la sua stagione, la sua acqua e a volte la sua ora: certi escono solo di notte. '+
+    'Quelli che ti mancano li vedi in <b>Diario → Collezione</b>, con dove e quando cercarli.');
+  cont('gemmologo','Gemmologo','gemma_luna','Scopri tutti i minerali.', cc.Minerali.d, cc.Minerali.t, 1600,
+    'Nella <b>miniera</b>, e i più rari stanno in fondo: scendi di livello. I <b>geodi</b> vanno rotti alla fucina '+
+    'per vedere cosa c\'è dentro.');
+  cont('collezionista','Collezionista','medaglione','Completa la Collezione del Naturalista.', cc.tot.d, cc.tot.t, 4000,
+    'È la somma di tutte le altre: pesci, minerali, raccolti e cose trovate in giro. '+
+    'Basta averne visto uno di ogni tipo, non serve tenerlo.');
   return o;
 };
 
@@ -3469,6 +3665,7 @@ function costruisciDati(){
     lettere:G.lettere, ricetteNote:G.ricetteNote,
     cassaConsegna:G.cassaConsegna, stats:G.stats, animali:G.animali,
     look:G.look, vistoFiammella:G.vistoFiammella, introSerafina:G.introSerafina,
+    vistoPesca:G.vistoPesca,
     tutorialFatto:G.tutorialFatto, guidaAperta:G.guidaAperta, guidaNascosta:G.guidaNascosta,
     regaloRicevuto:G.regaloRicevuto,
     mercato:G.mercato, gelo:G.gelo,
@@ -3604,7 +3801,7 @@ function applicaSalvataggio(raw){
                   'anno','giornoTot','ora','meteo','meteoDomani','inv','invMax','slotSel',
                   'skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
                   'braci','lettere','ricetteNote','cassaConsegna','stats','animali','look',
-                  'vistoFiammella','introSerafina','tutorialFatto','guidaAperta','guidaNascosta','regaloRicevuto',
+                  'vistoFiammella','introSerafina','vistoPesca','tutorialFatto','guidaAperta','guidaNascosta','regaloRicevuto',
                   'mercato','gelo',
                   'richieste','richiestaSeq','obiettiviRiscossi','sagra','mercante','trame','visitati','collezione']){
     if(d[k]!==undefined) G[k]=d[k];

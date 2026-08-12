@@ -1080,3 +1080,90 @@ kbd{
   .lp-chlog-box{ padding:18px 16px; }
   #chlog-body{ padding:14px 16px 6px; }
 }
+
+/* =================== LA PRIMA PESCATA =================== */
+.pesca-passo{ display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:2px solid var(--paper-2); }
+.pesca-passo:last-of-type{ border-bottom:none; }
+.pesca-num{
+  flex:none; width:28px; height:28px; border-radius:50%;
+  background:var(--wood-2); color:var(--gold); font-weight:800;
+  display:flex; align-items:center; justify-content:center; font-size:15px;
+}
+.pesca-pista{
+  flex:none; position:relative; width:38px; height:96px; margin-left:6px;
+  background:linear-gradient(180deg,#25313d,#16202a);
+  border:3px solid var(--wood-edge); border-radius:8px; overflow:hidden;
+}
+.pesca-barra{
+  position:absolute; left:3px; right:3px; top:30px; height:40px; border-radius:5px;
+  background:linear-gradient(180deg,rgba(160,220,130,.55),rgba(90,170,80,.4));
+  border:2px solid rgba(190,240,160,.85);
+}
+.pesca-barra.acceso{ animation:pesca-su 2.4s ease-in-out infinite; }
+@keyframes pesca-su{ 0%,100%{ top:46px; } 50%{ top:14px; } }
+.pesca-pesce{
+  position:absolute; left:8px; top:38px; font-size:17px;
+  animation:pesca-pesce 2.4s ease-in-out infinite;
+}
+@keyframes pesca-pesce{ 0%,100%{ top:54px; } 50%{ top:22px; } }
+@media (prefers-reduced-motion:reduce){
+  .pesca-barra.acceso, .pesca-pesce{ animation:none; }
+}
+
+/* =================== SPOSTARE NELLO ZAINO =================== */
+.icell{ cursor:grab; }
+.icell:active{ cursor:grabbing; }
+.icell.empty{ cursor:default; }
+.icell.presa{
+  outline:3px solid var(--gold); outline-offset:-3px;
+  box-shadow:0 0 12px rgba(242,193,78,.55) inset;
+}
+.icell.mira{
+  outline:3px dashed var(--green); outline-offset:-3px;
+  background:rgba(127,176,105,.18);
+}
+/* le prime nove sono la barra in basso: si vedono diverse, e portano il
+   loro numero, perché è lì che uno vuole mettere gli attrezzi */
+.icell.barra{ border-color:var(--gold-d); }
+.slotnum{
+  position:absolute; top:2px; left:4px; font-size:10px; font-weight:800;
+  color:var(--gold-d); pointer-events:none; opacity:.85;
+}
+
+/* =================== TRAGUARDI CON SPIEGAZIONE =================== */
+.obiettivo{ margin-bottom:2px; }
+.obiettivo .row.cliccabile{ cursor:pointer; }
+.obiettivo .row.cliccabile:hover{ background:rgba(154,103,65,.10); }
+.ob-freccia{
+  display:inline-block; margin-left:7px; font-size:12px; color:var(--ink-soft);
+  transition:transform .18s ease;
+}
+.ob-freccia.giu{ transform:rotate(180deg); }
+.ob-come{
+  margin:0 0 10px 52px; padding:11px 14px;
+  background:rgba(154,103,65,.12); border-left:4px solid var(--gold-d);
+  border-radius:0 8px 8px 0; font-size:13.5px; line-height:1.6; color:var(--ink);
+}
+.ob-come.hidden{ display:none; }
+.ob-come-tit{
+  font-weight:800; font-size:11.5px; letter-spacing:.6px; text-transform:uppercase;
+  color:var(--ink-soft); margin-bottom:4px;
+}
+.ob-come b{ color:var(--wood-1); }
+
+/* =================== RICOMINCIARE DA CAPO =================== */
+.avviso-grave{
+  background:rgba(217,105,79,.16); border:2px solid var(--red);
+  border-radius:10px; padding:12px 14px; margin-bottom:14px;
+  color:var(--ink); font-size:14.5px; line-height:1.5;
+}
+.salva-scheda{
+  background:var(--paper-2); border:2px solid var(--wood-3);
+  border-radius:10px; padding:4px 14px;
+}
+.ss-riga{
+  display:flex; justify-content:space-between; gap:14px;
+  padding:7px 0; font-size:14px; border-bottom:1px solid rgba(154,103,65,.25);
+}
+.ss-riga:last-child{ border-bottom:none; }
+.ss-riga span{ color:var(--ink-soft); }

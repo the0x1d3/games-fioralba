@@ -139,6 +139,62 @@ U.modal = function(titolo, costruisci, onClose){
   SND.play('menu');
 };
 
+/* ===================================================================
+   LA PRIMA PESCATA
+   Le tre fasi non si indovinano guardando: chi non le conosce lascia
+   scappare la prima abboccata senza capire che ci fosse da fare
+   qualcosa. Si spiega una volta sola, con la pista disegnata accanto
+   invece che descritta a parole.
+   =================================================================== */
+function pistaFinta(evidenzia){
+  const c = document.createElement('div');
+  c.className = 'pesca-pista';
+  const barra = document.createElement('div');
+  barra.className = 'pesca-barra' + (evidenzia==='barra' ? ' acceso' : '');
+  const pesce = document.createElement('div');
+  pesce.className = 'pesca-pesce'; pesce.textContent = '🐟';
+  c.appendChild(barra); c.appendChild(pesce);
+  return c;
+}
+
+U.spiegaPesca = function(poi){
+  const PASSI = [
+    { n:'1', tit:'Aspetta che abbocchi',
+      txt:'La lenza è in acqua. Ci mette da uno a cinque secondi: quando senti il tonfo e vedi lo schizzo, qualcosa ha abboccato.' },
+    { n:'2', tit:'Ferra subito',
+      txt:'Hai poco più di due secondi per premere <b>Spazio</b>. Se aspetti troppo il pesce se ne va con l\'esca.' },
+    { n:'3', tit:'Tienilo nella barra',
+      txt:'Il pesce sale e scende. <b>Tieni premuto Spazio</b> per far salire la barra verde, <b>lascia</b> per farla scendere: '+
+          'ti basta tenerci dentro il pesce. Finché ci sta, la barra dorata a destra si riempie; quando riesce, cala — ma più piano.' }
+  ];
+  U.modal('Come si pesca', body=>{
+    const intro = document.createElement('div');
+    intro.className = 'muted'; intro.style.marginBottom = '14px';
+    intro.textContent = 'È la tua prima volta con la canna. Tre cose, poi non se ne parla più.';
+    body.appendChild(intro);
+
+    for(const p of PASSI){
+      const r = document.createElement('div'); r.className = 'pesca-passo';
+      const n = document.createElement('div'); n.className = 'pesca-num'; n.textContent = p.n;
+      const t = document.createElement('div');
+      t.innerHTML = '<div class="rname">'+p.tit+'</div><div class="rdesc">'+p.txt+'</div>';
+      r.appendChild(n); r.appendChild(t);
+      if(p.n === '3') r.appendChild(pistaFinta('barra'));
+      body.appendChild(r);
+    }
+
+    const nota = document.createElement('div');
+    nota.className = 'muted'; nota.style.margin = '4px 0 12px';
+    nota.innerHTML = 'Più sali di livello in <b>Pesca</b>, più la barra diventa alta e più è facile tenerlo.';
+    body.appendChild(nota);
+
+    const b = document.createElement('button'); b.className = 'btn gold';
+    b.textContent = 'Ho capito, lancia la lenza';
+    b.onclick = ()=>{ U.chiudiModal(); };
+    body.appendChild(b);
+  }, ()=>{ if(typeof poi === 'function') poi(); });
+};
+
 U.chiudiModal = function(){
   if(!modalAperta) return;
   $('#modal-wrap').classList.add('hidden');
@@ -258,7 +314,7 @@ U.lettera = function(key, dopo){
 /* ===================================================================
    INVENTARIO
    =================================================================== */
-U.inventario = function(G){
+U.inventario = function(G, presoIniziale){
   U.modal('Zaino', body=>{
     // statistiche rapide
     const head = document.createElement('div');
@@ -271,20 +327,76 @@ U.inventario = function(G){
     const t1=document.createElement('div'); t1.className='sectitle'; t1.textContent='Oggetti';
     body.appendChild(t1);
 
+    const aiuto=document.createElement('div'); aiuto.className='muted';
+    aiuto.style.cssText='font-size:12px;margin:-6px 0 8px';
+    aiuto.innerHTML='Trascina per spostare. Le prime nove caselle sono la barra in basso: '+
+                    'quello che metti lì lo hai in mano.';
+    body.appendChild(aiuto);
+
     const g=document.createElement('div'); g.className='invgrid';
+    /* Lo spostamento funziona in due modi apposta. Trascinare è quello
+       che uno prova per primo; ma il trascinamento è anche il gesto che
+       riesce peggio — parte per sbaglio, si perde a metà, e su un
+       trackpad è una piccola prova di abilità. Quindi c'è anche il
+       clic-clic: scegli la casella, scegli dove va. Uno dei due
+       funziona sempre. */
+    let preso = (typeof presoIniziale==='number' && G.inv[presoIniziale]) ? presoIniziale : -1;
+    const ridisegna = ()=>{ U.chiudiModal(); U.inventario(G); };
+    const marca = ()=>{
+      [...g.children].forEach((c,i)=>c.classList.toggle('presa', i===preso));
+      aiuto.innerHTML = preso>=0
+        ? '<b>'+IT.nome(G.inv[preso].id)+'</b> in mano: clicca la casella dove vuoi metterlo. '+
+          '(Le prime nove sono la barra in basso.)'
+        : 'Trascina per spostare. Le prime nove caselle sono la barra in basso: '+
+          'quello che metti lì lo hai in mano.';
+    };
+
     for(let i=0;i<G.invMax;i++){
       const s = G.inv[i];
       const c=document.createElement('div');
-      c.className='icell'+(s?'':' empty');
+      c.className='icell'+(s?'':' empty')+(i<9?' barra':'');
+      c.dataset.i = i;
+      if(i<9){ const n=document.createElement('span'); n.className='slotnum'; n.textContent=i+1; c.appendChild(n); }
       if(s){
         c.appendChild(ico(s.id));
         if(s.n>1){ const q=document.createElement('span'); q.className='qty'; q.textContent=s.n; c.appendChild(q); }
         c.title = IT.nome(s.id)+' — '+IT.desc(s.id);
-        c.onclick = ()=>mostraOggetto(G, i);
+        c.draggable = true;
+        c.ondragstart = e=>{
+          preso = i; marca();
+          e.dataTransfer.effectAllowed='move';
+          e.dataTransfer.setData('text/plain', String(i));
+        };
+        c.ondragend = ()=>{ preso=-1; marca(); };
       }
+      c.ondragover = e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; c.classList.add('mira'); };
+      c.ondragleave = ()=>c.classList.remove('mira');
+      c.ondrop = e=>{
+        e.preventDefault(); c.classList.remove('mira');
+        const da = parseInt(e.dataTransfer.getData('text/plain'), 10);
+        if(isFinite(da) && G.spostaSlot(da, i)){ SND.play('menu'); ridisegna(); }
+      };
+      c.onclick = ()=>{
+        if(preso >= 0){                       // seconda parte del clic-clic
+          if(preso === i){ preso = -1; marca(); return; }
+          if(G.spostaSlot(preso, i)){ SND.play('menu'); ridisegna(); }
+          else { preso = -1; marca(); }
+          return;
+        }
+        if(!s) return;
+        mostraOggetto(G, i);
+      };
+      // clic destro: prendi senza aprire la scheda dell'oggetto
+      c.oncontextmenu = e=>{
+        e.preventDefault();
+        if(!s && preso<0) return;
+        preso = (preso===i) ? -1 : i;
+        marca();
+      };
       g.appendChild(c);
     }
     body.appendChild(g);
+    marca();
 
     /* abilità */
     const t2=document.createElement('div'); t2.className='sectitle'; t2.textContent='Abilità';
@@ -326,6 +438,11 @@ function mostraOggetto(G, idx){
       b.onclick=()=>{ G.mangia(idx); U.chiudiModal(); };
       az.appendChild(b);
     }
+    const bs=document.createElement('button'); bs.className='btn';
+    bs.textContent='Sposta in un\'altra casella';
+    bs.onclick=()=>{ U.chiudiModal(); U.inventario(G, idx); };
+    az.appendChild(bs);
+
     const bd=document.createElement('button'); bd.className='btn red';
     bd.textContent='Butta via 1';
     bd.onclick=()=>{ G.togliSlot(idx,1); U.chiudiModal(); U.inventario(G); };
@@ -832,25 +949,54 @@ U.diario = function(G, tabIniziale){
 
       const s2=document.createElement('div'); s2.className='sectitle'; s2.textContent='Traguardi';
       body.appendChild(s2);
+      const nota=document.createElement('div'); nota.className='muted';
+      nota.style.cssText='font-size:12px;margin:-4px 0 8px';
+      nota.textContent='Clicca un traguardo per sapere dove si fa e con cosa.';
+      body.appendChild(nota);
+
       for(const o of G.obiettivi()){
+        /* Un traguardo che dice solo cosa serve è un compito; quello che
+           dice anche dove si fa è un suggerimento. Il come sta chiuso
+           finché non lo si chiede, altrimenti l'elenco diventa un muro
+           di testo e non si legge più niente. */
+        const box=document.createElement('div'); box.className='obiettivo';
         const r=document.createElement('div'); r.className='row';
         r.appendChild(ico(o.icona));
         const info=document.createElement('div'); info.className='rinfo';
         const riscosso = G.obiettiviRiscossi && G.obiettiviRiscossi[o.id];
-        info.innerHTML=`<div class="rname">${o.nome} ${o.fatto?'✔':''}</div>`+
+        info.innerHTML=`<div class="rname">${o.nome} ${o.fatto?'✔':''}<span class="ob-freccia">▾</span></div>`+
                        `<div class="rdesc">${o.desc}</div>`+
                        `<div class="ringr">${o.prog}${o.premio?' · premio '+o.premio+' ✦':''}</div>`;
         r.appendChild(info);
         if(o.fatto && !riscosso){
           const b=document.createElement('button'); b.className='btn gold'; b.textContent='Riscuoti';
-          b.onclick=()=>{ const pr=o.premio;
+          b.onclick=e=>{ e.stopPropagation(); const pr=o.premio;
             if(G.riscuotiObiettivo(o)){ U.toast('Traguardo riscosso! +'+pr+' monete','gold'); G.aggiornaHUD(); U.aggiorna(); } };
           r.appendChild(b);
         } else if(riscosso){
           const t=document.createElement('span'); t.className='price'; t.style.opacity='.7'; t.textContent='riscosso';
           r.appendChild(t);
         }
-        body.appendChild(r);
+        box.appendChild(r);
+
+        if(o.come){
+          const come=document.createElement('div'); come.className='ob-come hidden';
+          come.innerHTML='<div class="ob-come-tit">Come si fa</div>'+o.come;
+          box.appendChild(come);
+          r.classList.add('cliccabile');
+          r.onclick=()=>{
+            const chiuso = come.classList.contains('hidden');
+            // uno alla volta: due spiegazioni aperte insieme non si leggono
+            body.querySelectorAll('.ob-come').forEach(e=>e.classList.add('hidden'));
+            body.querySelectorAll('.ob-freccia').forEach(e=>e.classList.remove('giu'));
+            if(chiuso){
+              come.classList.remove('hidden');
+              info.querySelector('.ob-freccia').classList.add('giu');
+              SND.play('menu');
+            }
+          };
+        }
+        body.appendChild(box);
       }
     }
     else if(tab==='richieste'){

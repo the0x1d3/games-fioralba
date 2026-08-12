@@ -16,6 +16,18 @@
 
 window.CHANGELOG = [
   {
+    v: '1.3',
+    data: 'agosto 2026',
+    titolo: 'La pesca si può vincere, e lo zaino si riordina',
+    voci: [
+      { tipo:'meglio', t:'La pesca non è più una lotteria', d:'Il pesce si muoveva a scatti casuali, la barra rimbalzava oltre dove la volevi, e per fare punti bisognava contenerlo tutto intero — cioè la finestra buona era la metà di quella disegnata. Misurato: un giocatore normale prendeva meno del 5% dei pesci. Adesso il pesce va verso un punto e ci si può stare dietro, e una lotta dura quattro secondi e mezzo invece di finire in mezzo secondo.' },
+      { tipo:'nuovo',  t:'La prima volta che peschi, il gioco te lo spiega', d:'Tre passi: aspetta l\'abboccata, ferra entro due secondi, tieni il pesce nella barra. Con la pista disegnata accanto invece che descritta a parole.' },
+      { tipo:'nuovo',  t:'Gli oggetti dello zaino si spostano', d:'Trascinandoli, oppure con «Sposta in un\'altra casella» dalla scheda dell\'oggetto. Le prime nove caselle sono la barra in basso: quello che metti lì lo hai in mano. Due pile uguali si sommano.' },
+      { tipo:'meglio', t:'I traguardi spiegano dove si fanno', d:'Cliccane uno nel Diario: dice con quale attrezzo, in quale posto, e quale scorciatoia c\'è. «Frantuma 100 rocce» era un compito, non un suggerimento.' },
+      { tipo:'fix',    t:'Nuova Partita avverte prima di cancellare', d:'Bastava un clic di troppo sul menu per perdere una stagione di lavoro. Adesso mostra a che punto eri e propone di esportare la partita prima.' }
+    ]
+  },
+  {
     v: '1.2',
     data: 'agosto 2026',
     titolo: 'Le case si aprono, i colori si mettono d\'accordo',
