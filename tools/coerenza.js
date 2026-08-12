@@ -122,6 +122,47 @@ verifica('le rampe della palette salgono senza buchi né gemelli', () => {
   return problemi;
 });
 
+/* Segnalato in beta come «la miniera non è accessibile», ed era vero
+   anche se nessun muro era davvero chiuso: i sassi si spaccano, ma
+   dall'ingresso del secondo livello si camminava su quattordici caselle
+   su trecentoventotto e la scala per il terzo stava dall'altra parte di
+   un tappo che non si vedeva. Una miniera in cui bisogna indovinare
+   dove bucare non è una miniera. */
+verifica('in ogni livello di miniera si cammina, senza dover bucare', () => {
+  const problemi = [];
+  const maps = WORLD.crea();
+  const livelli = [
+    ['grotta',  [17,26], [6,23]],
+    ['grotta2', [6,4],   [20,28]],
+    ['grotta3', [6,4],   null]
+  ];
+  const cava = (m,x,y)=>{ const t = WORLD.terreno(m,x,y); return t!=='roccia' && t!=='vuoto'; };
+
+  for (const [id, ing, scala] of livelli) {
+    const m = maps[id];
+    if (!m) { problemi.push(`manca il livello ${id}`); continue; }
+    const visto = new Set([ing[0]+','+ing[1]]);
+    const q = [ing];
+    while (q.length) {
+      const [x,y] = q.shift();
+      for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+        const nx=x+dx, ny=y+dy, k=nx+','+ny;
+        if (visto.has(k) || !WORLD.dentro(m,nx,ny)) continue;
+        if (!cava(m,nx,ny) || WORLD.solido(m,nx,ny)) continue;
+        visto.add(k); q.push([nx,ny]);
+      }
+    }
+    let totale = 0;
+    for (let y=0;y<m.h;y++) for (let x=0;x<m.w;x++) if (cava(m,x,y)) totale++;
+    const quota = visto.size / totale;
+    if (quota < 0.6)
+      problemi.push(`su ${id} si cammina solo sul ${Math.round(quota*100)}% della grotta (${visto.size}/${totale})`);
+    if (scala && !visto.has(scala[0]+','+scala[1]))
+      problemi.push(`su ${id} la scala (${scala}) non si raggiunge camminando`);
+  }
+  return problemi;
+});
+
 /* Il tetto di un edificio è disegnato più in alto del suo ingombro — la
    locanda di quasi due caselle — e quelle caselle erano calpestabili:
    ci si camminava dentro e si finiva col mezzobusto nel tetto. Adesso la

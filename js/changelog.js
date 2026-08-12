@@ -16,6 +16,17 @@
 
 window.CHANGELOG = [
   {
+    v: '1.4',
+    data: 'agosto 2026',
+    titolo: 'La miniera si esplora davvero, e il podere si riordina',
+    voci: [
+      { tipo:'fix',    t:'La miniera non è più un vicolo cieco', d:'I sassi si spaccano, quindi in teoria nessun livello era chiuso. In pratica lo era: dall\'ingresso del secondo livello si camminava su quattordici caselle su trecentoventotto, e la scala per il terzo stava dall\'altra parte di un tappo che non si vedeva. Adesso i corridoi restano aperti su tutti e tre i livelli.' },
+      { tipo:'fix',    t:'Il primo livello non si mura più da solo', d:'Ogni notte si aggiungevano cinquantacinque sassi a quelli già lì, senza togliere i vecchi: in un mese la miniera passava dal 66% percorribile al 10%.' },
+      { tipo:'nuovo',  t:'Le casse si possono chiamare per nome', d:'«Semi», «Minerali», «Roba da vendere». Il nome si legge su una targhetta sopra il coperchio, quindi si sa cosa c\'è dentro senza aprirla.' },
+      { tipo:'nuovo',  t:'Casse e macchinari si spostano', d:'Senza svuotarli e senza perdere la lavorazione in corso: l\'oggetto cambia casella e basta. Serve quando amplii la casa e quello che avevi messo davanti alla porta finisce in mezzo ai piedi.' }
+    ]
+  },
+  {
     v: '1.3',
     data: 'agosto 2026',
     titolo: 'La pesca si può vincere, e lo zaino si riordina',

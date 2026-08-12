@@ -129,6 +129,26 @@ function terrenoAttorno(m, gx, gy){
   return 'lastre';
 }
 
+/* Una targhetta di legno con sopra una parola. Il testo è disegnato con
+   il font del sistema e non a pixel: a questa misura un alfabeto
+   disegnato a mano sarebbe illeggibile, e una targhetta che non si
+   legge non serve a niente. */
+function targhetta(testo, cx, cy){
+  const s = String(testo).slice(0, 18);
+  sx.font = 'bold 9px system-ui, sans-serif';
+  sx.textAlign = 'center';
+  sx.textBaseline = 'middle';
+  const w = Math.ceil(sx.measureText(s).width) + 8;
+  const I = PAL.c.interno;
+  ART.px(sx, Math.round(cx-w/2), Math.round(cy-7), w, 13, I.legnoOmbra);
+  ART.px(sx, Math.round(cx-w/2)+1, Math.round(cy-6), w-2, 11, I.legno);
+  ART.px(sx, Math.round(cx-w/2)+1, Math.round(cy-6), w-2, 1, I.legnoLuce);
+  sx.fillStyle = '#2a1d12';
+  sx.fillText(s, Math.round(cx), Math.round(cy)+1);
+  sx.textAlign = 'start';
+  sx.textBaseline = 'alphabetic';
+}
+
 /* Variante di un oggetto ricavata dalla sua casella: due alberi vicini
    prendono disegni diversi senza che il mondo debba ricordarsi niente,
    quindi i salvataggi vecchi funzionano identici. */
@@ -1213,6 +1233,10 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
         const bob = Math.sin(t*0.004)*2;
         sx.drawImage(ART.bolla(o.out), px-4, py-32+bob);
       }
+      /* La targhetta di una cassa con un nome. Serve a non aprirne
+         dieci per trovare i semi: il nome si legge da fuori, come su un
+         cassetto vero. */
+      if(o.kind==='cassa' && o.nome) targhetta(o.nome, px+16, py-3);
       break;
     }
     case 'mobile': {

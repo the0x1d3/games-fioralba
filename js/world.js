@@ -696,6 +696,8 @@ function buildGrotta(){
   m.scaleClear = [[6,23],[6,24],[7,24],[18,0],[19,0],[20,0],[19,1],[19,2],[19,3],[20,3]];
   for(const [cx,cy] of m.scaleClear) if(W.dentro(m,cx,cy)) m.g[W.idx(m,cx,cy)]=ti('grotta');
   W.pulisciScale(m);
+  m.ingresso = [17,26];                   // dove si entra venendo dal bosco
+  W.apriPassaggi(m, m.ingresso[0], m.ingresso[1]);
 
   return m;
 }
@@ -733,6 +735,7 @@ function buildMinieraProfonda(id, nome, seed, profondo){
 
   // zone di scala camminabili e sgombre (protette dalla rigenerazione notturna)
   m.scaleClear = profondo ? [[6,3],[6,4],[6,5]] : [[6,3],[6,4],[6,5],[20,26],[20,27],[20,28]];
+  m.ingresso = [6,4];                     // dove si atterra scendendo
   for(const [cx,cy] of m.scaleClear) if(W.dentro(m,cx,cy)) m.g[W.idx(m,cx,cy)]=ti('grotta');
   W.pulisciScale(m);
 
@@ -750,6 +753,7 @@ function buildMinieraProfonda(id, nome, seed, profondo){
     m.deco.push({t:'cartello', x:19, y:26, testo:'↓ Ancora giù'});
   }
 
+  W.apriPassaggi(m, m.ingresso[0], m.ingresso[1]);
   return m;
 }
 
@@ -757,6 +761,98 @@ function buildMinieraProfonda(id, nome, seed, profondo){
 W.pulisciScale = function(m){
   if(!m || !m.scaleClear) return;
   for(const [x,y] of m.scaleClear) if(W.dentro(m,x,y)) m.obj[W.idx(m,x,y)]=null;
+};
+
+/* ===================================================================
+   APRIRE I PASSAGGI NELLA MINIERA
+
+   I sassi si spaccano col piccone, quindi in teoria nessuna miniera è
+   chiusa. In pratica lo era: sui livelli profondi si spargono settanta
+   sassi dentro corridoi larghi tre caselle, e basta un sasso nel punto
+   sbagliato per tagliare in due il livello. Misurato: dall'ingresso del
+   secondo livello si raggiungevano *quattordici* caselle su
+   trecentoventotto — il 4% — e la scala per il terzo livello stava
+   dall'altra parte del tappo. Il primo livello, che di sassi ne ha molti
+   meno, stava al 74%: è quella la differenza fra una miniera che si
+   esplora e una che sembra rotta.
+
+   Qui si tolgono i sassi che *chiudono* una zona, e soltanto quelli: si
+   guarda cosa si raggiunge camminando, si trovano le sacche di grotta
+   rimaste fuori, e per ognuna si apre il varco più corto. Il minerale
+   in mezzo alle sale resta dov'è — sparisce il tappo, non la miniera.
+   =================================================================== */
+const DIR4 = [[1,0],[-1,0],[0,1],[0,-1]];
+
+W.apriPassaggi = function(m, ix, iy){
+  if(!m || !W.dentro(m, ix, iy)) return 0;
+  const cava = (x,y)=>{ const t=W.terreno(m,x,y); return t!=='roccia' && t!=='vuoto'; };
+  const rompibile = (x,y)=>{ const o=m.obj[W.idx(m,x,y)]; return !!(o && (o.t==='sasso' || o.t==='stalagmite')); };
+  const passa = (x,y)=> cava(x,y) && !W.solido(m,x,y);
+  const SACCA_MINIMA = 5;      // una nicchia da quattro caselle può restare chiusa
+  let aperti = 0;
+
+  for(let giro=0; giro<80; giro++){
+    // 1. dove si arriva camminando
+    const zona = new Set([ix+','+iy]);
+    const q = [[ix,iy]];
+    while(q.length){
+      const [x,y] = q.shift();
+      for(const [dx,dy] of DIR4){
+        const nx=x+dx, ny=y+dy, k=nx+','+ny;
+        if(zona.has(k) || !W.dentro(m,nx,ny) || !passa(nx,ny)) continue;
+        zona.add(k); q.push([nx,ny]);
+      }
+    }
+    // 2. la sacca di grotta più grande rimasta fuori
+    const fatte = new Set();
+    let sacca = null;
+    for(let y=0;y<m.h && !sacca;y++) for(let x=0;x<m.w;x++){
+      const k = x+','+y;
+      if(zona.has(k) || fatte.has(k) || !passa(x,y)) continue;
+      const comp = [], cq=[[x,y]]; fatte.add(k);
+      while(cq.length){
+        const [cx,cy] = cq.shift(); comp.push([cx,cy]);
+        for(const [dx,dy] of DIR4){
+          const nx=cx+dx, ny=cy+dy, kk=nx+','+ny;
+          if(fatte.has(kk) || !W.dentro(m,nx,ny) || !passa(nx,ny)) continue;
+          fatte.add(kk); cq.push([nx,ny]);
+        }
+      }
+      if(comp.length >= SACCA_MINIMA){ sacca = comp; break; }
+    }
+    if(!sacca) break;                       // non è rimasto niente da aprire
+
+    /* 3. il varco più corto: una visita che può attraversare i sassi
+       pagandoli uno, e che si ferma appena tocca la sacca. */
+    const meta = new Set(sacca.map(([x,y])=>x+','+y));
+    const costo = new Map([[ix+','+iy, 0]]);
+    const padre = new Map();
+    const coda = [[ix,iy]];                 // coda a due teste, costi 0 e 1
+    let arrivo = null;
+    while(coda.length && !arrivo){
+      const [x,y] = coda.shift();
+      const c = costo.get(x+','+y);
+      for(const [dx,dy] of DIR4){
+        const nx=x+dx, ny=y+dy, k=nx+','+ny;
+        if(!W.dentro(m,nx,ny) || !cava(nx,ny)) continue;
+        if(W.solido(m,nx,ny) && !rompibile(nx,ny)) continue;   // muro vero: non si passa
+        const nc = c + (rompibile(nx,ny) ? 1 : 0);
+        if(costo.has(k) && costo.get(k) <= nc) continue;
+        costo.set(k, nc); padre.set(k, x+','+y);
+        if(nc === c) coda.unshift([nx,ny]); else coda.push([nx,ny]);
+        if(meta.has(k)){ arrivo = k; break; }
+      }
+    }
+    if(!arrivo) break;                      // sacca murata sul serio: si lascia stare
+    // 4. si tolgono i sassi lungo il varco, e solo quelli
+    let k = arrivo;
+    while(k){
+      const [x,y] = k.split(',').map(Number);
+      if(rompibile(x,y)){ m.obj[W.idx(m,x,y)] = null; aperti++; }
+      k = padre.get(k);
+    }
+  }
+  return aperti;
 };
 
 /* rigenera i minerali di una miniera (build + ogni notte) */
@@ -1233,6 +1329,12 @@ W.nuovoGiorno = function(maps, stagione, rngSeed){
 
   /* --- GROTTA: rigenera minerali --- */
   const g = maps.grotta;
+  /* Prima si tolgono i sassi di ieri. Senza, ogni notte se ne
+     aggiungevano cinquantacinque a quelli già lì e in un mese la
+     miniera si murava da sola: misurato, dal 66% percorribile la prima
+     notte al 10% la trentesima. I livelli profondi lo facevano già —
+     era solo il primo a dimenticarsene. */
+  for(let i=0;i<g.obj.length;i++) if(g.obj[i] && g.obj[i].t==='sasso') g.obj[i]=null;
   const tabella = [
     ['pietra',0.42],['rame',0.20],['ferro',0.14],['carbone',0.09],
     ['quarzo',0.07],['ametista',0.04],['oro',0.03],['geode',0.01]
@@ -1256,6 +1358,13 @@ W.nuovoGiorno = function(maps, stagione, rngSeed){
   W.pulisciScale(maps.grotta);
   if(maps.grotta2)  W.rigeneraMiniera(maps.grotta2,  (rngSeed^0x0002)>>>0, false);
   if(maps.grotta3)  W.rigeneraMiniera(maps.grotta3,  (rngSeed^0x0003)>>>0, true);
+  /* I sassi nuovi possono aver richiuso i corridoi: ogni notte si
+     riaprono i varchi, altrimenti la miniera si tappa da sola mentre
+     dormi e ti ritrovi murato da una parte all'altra. */
+  for(const id of ['grotta','grotta2','grotta3']){
+    const g = maps[id];
+    if(g && g.ingresso) W.apriPassaggi(g, g.ingresso[0], g.ingresso[1]);
+  }
   if(maps.montagna) W.rigeneraMontagna(maps.montagna,(rngSeed^0x0004)>>>0);
 };
 

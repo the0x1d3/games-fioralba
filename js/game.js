@@ -1228,6 +1228,8 @@ function usaOggetto(){
   if(p.usoT>0) return;
   const b=G.bersaglio;
   if(!b) return;
+  // se si ha qualcosa in mano da posare, lo spazio serve a quello
+  if(G.spostamento){ G.posaSpostamento(b.x, b.y); return; }
   const tx=b.x, ty=b.y;
   if(!WORLD.dentro(m,tx,ty)) return;
   const i=WORLD.idx(m,tx,ty);
@@ -1629,9 +1631,9 @@ function interagisci(){
       return;
     }
     if(o.t==='macchina'){
-      if(o.kind==='cassa'){ UI.cassa(G,o); return; }
+      if(o.kind==='cassa'){ UI.cassa(G,o,tx,ty); return; }
       if(o.pronto){ G.ritiraMacchina(o); return; }
-      UI.macchina(G,o); return;
+      UI.macchina(G,o,tx,ty); return;
     }
     if(o.t==='mobile'){
       if(o.kind==='spaventapasseri'){ UI.toast('Fa il suo lavoro in silenzio.'); return; }
@@ -1664,6 +1666,65 @@ function interagisci(){
 }
 
 /* ===================================================================
+   SPOSTARE QUELLO CHE SI È POSATO
+
+   Il podere cambia mentre ci giochi: amplii la casa, costruisci la
+   serra, e la fila di casse che avevi messo davanti alla porta adesso è
+   in mezzo ai piedi. Finora l'unico modo era raccogliere e riposare, e
+   per una cassa non si poteva nemmeno fare — sarebbe tornata
+   nell'inventario portandosi via quello che c'era dentro.
+
+   Quindi non si raccoglie: si *sposta*. L'oggetto resta lo stesso
+   oggetto — con il suo contenuto, il suo nome, la sua lavorazione a
+   metà — e cambia solo casella.
+   =================================================================== */
+G.spostamento = null;      // { obj, mappa, x, y }
+
+G.iniziaSpostamento = function(o, x, y){
+  const m = G.mappa();
+  G.spostamento = { obj:o, mappa:m.id, x, y };
+  m.obj[WORLD.idx(m,x,y)] = null;
+  SND.play('prendi');
+  UI.toast('Scegli dove metterlo. <b>Esc</b> per rimetterlo dov\'era.', 'good');
+};
+
+G.annullaSpostamento = function(){
+  const s = G.spostamento;
+  if(!s) return false;
+  const m = G.maps[s.mappa];
+  if(m && !m.obj[WORLD.idx(m,s.x,s.y)]) m.obj[WORLD.idx(m,s.x,s.y)] = s.obj;
+  G.spostamento = null;
+  UI.prompt(null);
+  UI.toast('Rimesso dov\'era.');
+  return true;
+};
+
+G.posaSpostamento = function(tx, ty){
+  const s = G.spostamento;
+  if(!s) return false;
+  const m = G.mappa();
+  const i = WORLD.idx(m,tx,ty);
+  const terr = WORLD.terreno(m,tx,ty);
+  if(!WORLD.dentro(m,tx,ty) || m.obj[i] || m.suolo[i] ||
+     terr==='acqua' || terr==='roccia' || terr==='vuoto'){
+    nonSiPuo('Qui non ci sta: serve una casella libera, senza acqua e senza terra dissodata.');
+    return false;
+  }
+  m.obj[i] = s.obj;
+  G.spostamento = null;
+  SND.play('costruisci');
+  UI.prompt(null);
+  UI.toast('Spostato.','good');
+  return true;
+};
+
+/* Il nome di una cassa, che si legge da fuori. «Cassa» e poi «Cassa» e
+   poi «Cassa» non aiuta nessuno a ricordarsi dove sono i semi. */
+G.nomeCassa = function(o){
+  return (o && typeof o.nome === 'string' && o.nome.trim()) ? o.nome.trim() : 'Cassa';
+};
+
+/* ===================================================================
    PROMPT CONTESTUALE
    Dice cosa fa E su quello che hai davanti. Prima bisognava indovinare
    che porte, casse, macchine e bacheche fossero interattive.
@@ -1677,6 +1738,7 @@ const NOMI_PORTA = {
 };
 
 function etichettaInterazione(o){
+  if(G.spostamento) return null;      // ha già il suo messaggio
   if(!o) return null;
   if(o.t==='porta' || (o.t==='muro' && o.ed)){
     const ed = o.ed;
@@ -1688,7 +1750,7 @@ function etichettaInterazione(o){
   if(o.t==='bancarella' && o.kiosk)
     return o.kiosk==='bacheca' ? 'bacheca delle richieste' : 'banco del mercante';
   if(o.t==='macchina'){
-    if(o.kind==='cassa')  return 'apri la cassa';
+    if(o.kind==='cassa')  return 'apri: '+G.nomeCassa(o);
     if(o.pronto && o.out) return 'ritira: '+IT.nome(o.out);
     if(o.dentro)          return 'in lavorazione…';
     return 'usa: '+IT.nome(idDaKind(o.kind));
@@ -3890,7 +3952,7 @@ function collegaInput(){
       case 'c': UI.artigianato(G); break;
       case 'j': UI.diario(G); break;
       case 'm': UI.mappa(G); break;
-      case 'escape': UI.menu(G); break;
+      case 'escape': if(!G.annullaSpostamento()) UI.menu(G); break;
       case 'q': gettaOggetto(); break;
       case 'f': schermoIntero(); break;
     }

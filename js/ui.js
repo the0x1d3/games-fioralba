@@ -1600,8 +1600,32 @@ U.demo = function(id){
 /* ===================================================================
    CASSA / DEPOSITO
    =================================================================== */
-U.cassa = function(G, obj){
-  U.modal('Cassa', body=>{
+U.cassa = function(G, obj, ox, oy){
+  U.modal(G.nomeCassa(obj), body=>{
+    /* Il nome. Dieci casse tutte chiamate «Cassa» sono dieci casse da
+       aprire una per una per ricordarsi dove stanno i semi. Il nome si
+       legge anche da fuori, sopra il coperchio. */
+    const barra=document.createElement('div'); barra.className='cassa-barra';
+    const inp=document.createElement('input');
+    inp.type='text'; inp.className='cassa-nome'; inp.maxLength=18;
+    inp.placeholder='Dai un nome a questa cassa';
+    inp.value = obj.nome || '';
+    const salva=()=>{
+      const v = inp.value.trim().slice(0,18);
+      obj.nome = v || null;
+      document.getElementById('modal-title').textContent = G.nomeCassa(obj);
+    };
+    inp.oninput = salva;
+    inp.onkeydown = e=>{ e.stopPropagation(); if(e.key==='Enter') inp.blur(); };
+    barra.appendChild(inp);
+
+    const bSposta=document.createElement('button'); bSposta.className='btn';
+    bSposta.textContent='Sposta la cassa';
+    bSposta.title='La cassa cambia posto con tutto quello che ha dentro';
+    bSposta.onclick=()=>{ salva(); U.chiudiModal(); G.iniziaSpostamento(obj, ox, oy); };
+    barra.appendChild(bSposta);
+    body.appendChild(barra);
+
     const n=document.createElement('div'); n.className='muted'; n.style.marginBottom='10px';
     n.textContent='Clicca un oggetto per spostarlo dentro o fuori.';
     body.appendChild(n);
@@ -1657,9 +1681,19 @@ U.cassa = function(G, obj){
 /* ===================================================================
    MACCHINA (barattoliera/botte/fornace/forno)
    =================================================================== */
-U.macchina = function(G, obj){
+U.macchina = function(G, obj, ox, oy){
   const nomi = { barattoliera:'Barattoliera', botte:'Botte', fornace:'Fornace', forno:'Forno a legna', arnia:'Arnia' };
   U.modal(nomi[obj.kind]||'Macchina', body=>{
+    /* Anche le macchine si spostano, e senza perdere la lavorazione in
+       corso: raccoglierle e riposarle avrebbe buttato via i tre giorni
+       di botte che avevi già aspettato. */
+    if(typeof ox === 'number'){
+      const b=document.createElement('button'); b.className='btn';
+      b.style.cssText='float:right;margin-left:10px';
+      b.textContent='Sposta';
+      b.onclick=()=>{ U.chiudiModal(); G.iniziaSpostamento(obj, ox, oy); };
+      body.appendChild(b);
+    }
     if(obj.pronto){
       const r=document.createElement('div'); r.className='row';
       r.appendChild(ico(obj.out));

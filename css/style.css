@@ -1167,3 +1167,13 @@ kbd{
 }
 .ss-riga:last-child{ border-bottom:none; }
 .ss-riga span{ color:var(--ink-soft); }
+
+/* =================== CASSE CON UN NOME =================== */
+.cassa-barra{ display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+.cassa-nome{
+  flex:1; min-width:0; padding:8px 11px; font:inherit; font-size:14px;
+  color:var(--ink); background:var(--paper-2);
+  border:2px solid var(--wood-3); border-radius:8px;
+}
+.cassa-nome:focus{ outline:none; border-color:var(--gold-d); background:#fff; }
+.cassa-nome::placeholder{ color:var(--ink-soft); opacity:.7; }
