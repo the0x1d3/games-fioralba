@@ -374,5 +374,10 @@
 <script src="js/guida.js"></script>
 <script src="js/render.js"></script>
 <script src="js/game.js"></script>
+
+<!-- Ultimo di tutti, e non è un caso: il pannello di prova legge G appena
+     montato, quindi vuole che game.js abbia già finito. Non compare a chi
+     gioca — si accende su localhost e altrove solo con ?debug. -->
+<script src="js/debug.js"></script>
 </body>
 </html>

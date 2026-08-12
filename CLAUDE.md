@@ -71,6 +71,7 @@ caricato non fa rumore — non è un errore di sintassi e non è un test rosso.
 | `SOLSTIZIO`| solstizio.js  | atto secondo: le sei memorie, la verità, la veglia      |
 | `REND`     | render.js     | il disegno di un fotogramma                             |
 | `G`        | game.js       | stato di gioco, input, sistemi (il file più grosso)     |
+| `DEBUG`    | debug.js      | il pannello di prova (dopo game.js: legge `G` subito)   |
 
 `game.js` è ~3500 righe e quasi tutte le sue funzioni sono **private al modulo**.
 Solo quelle appese a `G.` si chiamano da fuori. Se ti serve provare una funzione
@@ -174,6 +175,33 @@ npm run check      # tsc --noEmit sui JSDoc
 npm run verifica   # test + check
 npm run serve      # http://localhost:8123, senza cache
 ```
+
+### Il pannello di prova
+
+`js/debug.js` monta una linguetta **debug** in basso a destra: monete, oggetti,
+tempo, meteo, tutti i luoghi, le braci, l'atto secondo passo per passo, le
+catene narrative, e un «Tutto quanto» che apre la partita da ogni parte. Serve a
+raggiungere in un clic pezzi di gioco che altrimenti vogliono quattro stagioni.
+
+**Adesso è sempre visibile, per scelta del proprietario e in via provvisoria.**
+Dentro `richiesto()` c'è già scritto, e provato, il corpo che lo riaccende solo
+su localhost e con `?debug`: quando il gioco esce, si rimette quello.
+
+Due regole che il pannello si dà, e che conviene tenere se lo si allarga:
+
+- **passa dalle funzioni del gioco**, mai da scorciatoie sue. Le braci si
+  accendono nicchia per nicchia con `DATA.SANTUARIO`, non con `G.braci = 4`, che
+  lascerebbe la partita in uno stato che giocando non capita mai. Il giorno dopo
+  arriva da `G.dormi()`, che vende la cassa, fa crescere i campi e tira il meteo.
+- **ogni bottone dice cosa ha combinato.** «+10 Rapa», oppure «zaino pieno: ne
+  sono entrate 3 su 10». Un bottone che non fa niente perché lo zaino è pieno,
+  senza quella riga, sembra un bottone rotto.
+
+La casella di ricerca degli oggetti ferma `keydown`/`keyup`/`keypress` prima che
+arrivino a `window`: il gioco ascolta la tastiera lì e **non guarda da dove viene
+il tasto**, quindi scrivere «rapa» farebbe camminare il giocatore, aprirebbe lo
+zaino sulla «a» e darebbe una zappata sulla barra spaziatrice. Vale per qualunque
+campo di testo che venga aggiunto in futuro.
 
 ### Verificare nel browser
 

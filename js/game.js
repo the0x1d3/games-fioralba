@@ -2405,6 +2405,21 @@ G.viaggiaRapido = function(id){
   return true;
 };
 
+/* Come il viaggio rapido, ma senza le due regole che lì servono: si va
+   anche dove non si è mai stati e anche negli interni. Esiste per il
+   pannello di debug, ed è qui e non lì perché i punti d'arrivo buoni —
+   ARRIVO_RAPIDO per i luoghi aperti, RIENTRO per le quattro stanze —
+   sono scritti in questo file: un pannello che se li ricopiasse
+   comincerebbe a mentire il giorno che una stanza cambia forma. */
+G.teletrasporta = function(id){
+  if(!G.maps[id]) return false;
+  const a = ARRIVO_RAPIDO[id] || RIENTRO[id] || [8,10];
+  cambiaMappa(id, a[0], a[1]);
+  return true;
+};
+
+G.dormi = dormi;   // il pannello di debug salta la notte da qui
+
 function musicaGiusta(){
   const m=G.mappa();
   if(!m.esterno){ SND.musica('grotta'); return; }

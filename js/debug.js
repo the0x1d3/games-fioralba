@@ -1,0 +1,547 @@
+/* ===================================================================
+   FIORALBA — debug.js
+   Il pannello che serve a provare il gioco senza giocarlo per tre ore:
+   monete, oggetti, tempo, luoghi, e soprattutto i pezzi di storia che
+   altrimenti si raggiungono solo dopo quattro stagioni di partita vera.
+
+   Non compare a chi gioca. Si accende da solo su localhost e da file://,
+   e altrove solo con `?debug` nell'indirizzo — sul sito pubblicato,
+   quindi, esiste ma bisogna chiederlo. È la ragione per cui sta in un
+   file suo: un pannello che regala diecimila monete non deve poter
+   finire aperto per sbaglio davanti a chi il gioco lo sta scoprendo.
+
+   Tutto quello che fa passa dalle stesse funzioni che usa il gioco —
+   `G.aggiungi`, `G.teletrasporta`, `G.dormi`, `G.aggiornaOspitiVeglia` —
+   e mai da scorciatoie sue. Un pannello che si scrivesse lo stato a mano
+   proverebbe sé stesso invece del gioco: metterebbe `G.braci = 4` senza
+   accendere le nicchie, e la partita risulterebbe in uno stato che
+   giocando non capita mai.
+   =================================================================== */
+(function(){
+
+const $ = s=>document.querySelector(s);
+
+const D = {};
+window.DEBUG = D;
+
+/* --------------------------------------------------------------- */
+/* quando accendersi                                               */
+/* --------------------------------------------------------------- */
+/* Per adesso: sempre. È una scelta esplicita e provvisoria del proprietario
+   del repo — il pannello serve anche sul sito pubblicato, finché il gioco è
+   in lavorazione. Quando sarà il momento di nasconderlo a chi gioca basta
+   rimettere il corpo qui sotto, che è già scritto e provato:
+
+     const h = location.hostname;
+     if(h==='localhost' || h==='127.0.0.1' || h==='' || location.protocol==='file:') return true;
+     return /(\?|&)debug\b/.test(location.search);
+
+   così tornerebbe ad accendersi da solo in locale e altrove solo con
+   `?debug` nell'indirizzo. */
+function richiesto(){
+  return true;
+}
+
+/* --------------------------------------------------------------- */
+/* attrezzi del pannello                                           */
+/* --------------------------------------------------------------- */
+let corpo = null, scatola = null, riga = null;
+
+function el(tag, cls, testo){
+  const e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(testo != null) e.textContent = testo;
+  return e;
+}
+
+/* Ogni comando dice cosa ha combinato invece di lasciare indovinare:
+   «+10 rapa» o «zaino pieno: ne sono entrate 3 su 10». Senza, un bottone
+   che non fa niente perché lo zaino è pieno sembra un bottone rotto. */
+function nota(testo, buona){
+  if(!riga) return;
+  riga.textContent = testo;
+  riga.className = 'dbg-nota' + (buona === false ? ' male' : '');
+  clearTimeout(nota._t);
+  nota._t = setTimeout(()=>{ if(riga) riga.textContent = ''; }, 4000);
+}
+
+function sezione(titolo){
+  const s = el('div','dbg-sez');
+  s.appendChild(el('div','dbg-tit',titolo));
+  const g = el('div','dbg-griglia');
+  s.appendChild(g);
+  corpo.appendChild(s);
+  return g;
+}
+
+function bottone(dove, testo, fn, cls){
+  const b = el('button','dbg-b'+(cls?' '+cls:''),testo);
+  b.onclick = ()=>{
+    if(!G.inGioco){ nota('Prima entra in partita.', false); return; }
+    try{ fn(); }catch(e){ nota('è esploso: '+e.message, false); console.error(e); }
+    rinfresca();
+  };
+  dove.appendChild(b);
+  return b;
+}
+
+/* dopo ogni comando: HUD, barra degli attrezzi e riquadro di stato */
+function rinfresca(){
+  if(G.inGioco){
+    G.aggiornaHUD();
+    G.rinfrescaHotbar();
+  }
+  scriviStato();
+}
+
+/* --------------------------------------------------------------- */
+/* il riquadro di stato                                            */
+/* --------------------------------------------------------------- */
+let statoEl = null;
+function scriviStato(){
+  if(!statoEl) return;
+  if(!G.inGioco){ statoEl.textContent = 'fuori partita'; return; }
+  const v = G.trame.veglia;
+  const c = G.contaCollezione().tot;
+  const ora = Math.floor(G.ora/60) + ':' + String(G.ora%60).padStart(2,'0');
+  statoEl.innerHTML = [
+    G.stagione().nome + ' ' + G.giorno + ', anno ' + G.anno + ' — ' + ora + ' — ' + G.meteo,
+    'luogo: ' + G.mappaId + ' · monete: ' + G.oro.toLocaleString('it-IT') +
+      ' · energia: ' + Math.round(G.energia) + '/' + G.energiaMax,
+    'braci: ' + G.braci + '/4 · collezione: ' + c.d + '/' + c.t +
+      ' · zaino: ' + G.inv.filter(Boolean).length + '/' + G.inv.length,
+    'atto secondo: ' + (!v.avviata ? 'non avviato'
+      : v.fatta ? 'concluso'
+      : v.giorno ? 'veglia fissata (giorno ' + v.giorno + ', oggi ' + G.giornoTot + ')'
+      : v.verita ? 'verità saputa, invitati ' + G.invitatiAllaVeglia() + '/' + DATA.MEMORIE.length
+      : 'memorie ' + G.memorieAvute() + '/' + DATA.MEMORIE.length)
+  ].join('<br>');
+}
+
+/* --------------------------------------------------------------- */
+/* MONETE, ENERGIA                                                 */
+/* --------------------------------------------------------------- */
+function costruisciRicchezza(){
+  const g = sezione('Monete ed energia');
+  /* i puntini a mano: toLocaleString('it-IT') lascia «1000» senza separatore
+     e mette «10.000» con, e i tre bottoni in fila risultavano scritti in due
+     modi diversi */
+  const conPunti = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  for(const n of [1000, 10000, 100000])
+    bottone(g, '+' + conPunti(n), ()=>{
+      G.oro += n; G.progresso();
+      nota('monete: ' + conPunti(G.oro));
+    });
+  bottone(g, 'Azzera monete', ()=>{ G.oro = 0; nota('monete: 0'); });
+  bottone(g, 'Energia piena', ()=>{
+    G.energia = G.energiaMax;
+    nota('energia: ' + G.energiaMax);
+  });
+
+  /* Energia infinita a forza di riempirla, e non spegnendo `spendi`:
+     il costo dei colpi è sparso fra game.js e pesca.js, e ogni volta che
+     nasce un attrezzo nuovo un elenco di funzioni da zittire resterebbe
+     indietro. Rimettere il pieno venti volte al secondo non può restare
+     indietro di niente. */
+  let pieno = null;
+  const b = bottone(g, 'Energia infinita: no', ()=>{
+    if(pieno){ clearInterval(pieno); pieno = null; b.textContent = 'Energia infinita: no'; b.classList.remove('acceso'); nota('energia normale'); return; }
+    pieno = setInterval(()=>{ if(G.inGioco) G.energia = G.energiaMax; }, 50);
+    b.textContent = 'Energia infinita: sì';
+    b.classList.add('acceso');
+    nota('energia infinita accesa');
+  });
+}
+
+/* --------------------------------------------------------------- */
+/* OGGETTI                                                         */
+/* --------------------------------------------------------------- */
+function aggiungiTanti(id, n){
+  let messi = 0;
+  for(let i=0;i<n;i++){ if(!G.aggiungi(id,1)) break; messi++; }
+  const nome = IT.nome(id);
+  if(messi === n) nota('+' + n + ' ' + nome);
+  else nota('zaino pieno: ' + nome + ' ×' + messi + ' su ' + n, false);
+  return messi;
+}
+
+function costruisciOggetti(){
+  const s = el('div','dbg-sez');
+  s.appendChild(el('div','dbg-tit','Oggetti'));
+
+  const cerca = el('input','dbg-cerca');
+  cerca.type = 'text';
+  cerca.placeholder = 'cerca fra ' + Object.keys(DATA.ITEMS).length + ' oggetti…';
+  /* Il gioco ascolta la tastiera su `window` e non guarda da dove arriva
+     il tasto: senza fermare qui l'evento, scrivere «rapa» in questa
+     casella farebbe camminare il giocatore, aprirebbe lo zaino sulla «a»
+     e darebbe una zappata sulla barra spaziatrice. */
+  for(const ev of ['keydown','keyup','keypress'])
+    cerca.addEventListener(ev, e=>e.stopPropagation());
+  s.appendChild(cerca);
+
+  const elenco = el('div','dbg-elenco');
+  s.appendChild(elenco);
+
+  function mostra(){
+    const q = cerca.value.trim().toLowerCase();
+    elenco.textContent = '';
+    const ids = Object.keys(DATA.ITEMS).filter(id =>
+      !q || id.includes(q) || (DATA.ITEMS[id].nome||'').toLowerCase().includes(q));
+    if(!ids.length){ elenco.appendChild(el('div','dbg-vuoto','niente che somigli a «'+q+'»')); return; }
+    for(const id of ids.slice(0, 60)){
+      const r = el('div','dbg-voce');
+      r.appendChild(el('span','dbg-nome', DATA.ITEMS[id].nome + '  ') );
+      r.querySelector('.dbg-nome').title = id + ' · ' + (DATA.ITEMS[id].cat||'');
+      for(const n of [1,10,99]){
+        const b = el('button','dbg-mini','×'+n);
+        b.onclick = ()=>{
+          if(!G.inGioco){ nota('Prima entra in partita.', false); return; }
+          aggiungiTanti(id, n); rinfresca();
+        };
+        r.appendChild(b);
+      }
+      elenco.appendChild(r);
+    }
+    if(ids.length > 60) elenco.appendChild(el('div','dbg-vuoto','…e altri '+(ids.length-60)+': affina la ricerca'));
+  }
+  cerca.oninput = mostra;
+  mostra();
+
+  const g = el('div','dbg-griglia');
+  s.appendChild(g);
+  corpo.appendChild(s);
+
+  bottone(g, 'Attrezzi al massimo', ()=>{
+    for(const k in DATA.UPGRADE){
+      if(!G.conta(k)) G.aggiungi(k,1);
+      G.attrezziLiv[k] = DATA.UPGRADE[k].length;
+    }
+    nota('attrezzi al livello ' + Object.values(G.attrezziLiv)[0]);
+  });
+  bottone(g, 'Tutte le ricette', ()=>{
+    for(const r of DATA.CUCINA) G.ricetteNote[r.id] = true;
+    nota(DATA.CUCINA.length + ' ricette imparate');
+  });
+  bottone(g, 'Semi di stagione ×20', ()=>{
+    const st = G.stagione().id;
+    let n = 0;
+    for(const id in DATA.ITEMS){
+      const I = DATA.ITEMS[id];
+      if(I.cat !== 'seme') continue;
+      const C = DATA.CROPS[(I.crop)||id.replace('seme_','')];
+      if(C && C.stagioni && C.stagioni.indexOf(st) < 0) continue;
+      if(aggiungiTanti(id, 20)) n++;
+    }
+    nota(n + ' tipi di seme di ' + st);
+  });
+  bottone(g, 'Svuota lo zaino', ()=>{
+    for(let i=0;i<G.inv.length;i++) G.inv[i] = null;
+    nota('zaino vuoto');
+  }, 'rosso');
+}
+
+/* --------------------------------------------------------------- */
+/* TEMPO E METEO                                                   */
+/* --------------------------------------------------------------- */
+function costruisciTempo(){
+  const g = sezione('Tempo');
+  bottone(g, '+1 ora', ()=>{ G.ora = Math.min(1439, G.ora + 60); nota('ore ' + Math.floor(G.ora/60)); });
+  bottone(g, '+6 ore', ()=>{ G.ora = Math.min(1439, G.ora + 360); nota('ore ' + Math.floor(G.ora/60)); });
+  bottone(g, 'Sera (17:00)', ()=>{ G.ora = 1020; nota('le 17, ora della veglia'); });
+  /* passa da G.dormi, non da «giorno++»: la fine giornata vende la cassa,
+     fa crescere i campi, tira il meteo, muove il mercante e consegna la
+     posta. Saltarla darebbe un giorno dopo che non è mai esistito. */
+  bottone(g, 'Dormi (giorno dopo)', ()=>{ G.dormi(); nota('buonanotte'); });
+
+  const s = sezione('Stagione e meteo');
+  DATA.SEASONS.forEach((st, i)=>{
+    bottone(s, st.nome, ()=>{
+      G.stagioneIdx = i;
+      WORLD.nuovoGiorno(G.maps, st.id, Math.random()*99999|0);
+      REND.initMeteo();
+      nota('adesso è ' + st.nome + ' (dormi per vedere i campi aggiornati)');
+    });
+  });
+  for(const m in DATA.METEO)
+    bottone(s, DATA.METEO[m].nome || m, ()=>{
+      G.meteo = m;
+      REND.initMeteo();
+      nota('meteo: ' + m);
+    });
+
+  /* La gelata ha un bottone suo e non segue la neve. Nel gioco è
+     «inverno + neve + una volta su due», tirata a inizio giornata, e blocca
+     due cose lontane fra loro: l'annaffiatoio e la pesca. Legarla al meteo
+     avrebbe voluto dire non poterla provare d'estate e non poter mettere la
+     neve senza. */
+  const bg = bottone(s, 'Gelata: no', ()=>{
+    G.gelo = !G.gelo;
+    bg.textContent = 'Gelata: ' + (G.gelo ? 'sì' : 'no');
+    bg.classList.toggle('acceso', G.gelo);
+    nota(G.gelo ? 'fiume e pozzo ghiacciati: niente pesca, niente annaffiatoio'
+                : 'acqua di nuovo liquida');
+  });
+}
+
+/* --------------------------------------------------------------- */
+/* LUOGHI                                                          */
+/* --------------------------------------------------------------- */
+function costruisciLuoghi(){
+  const g = sezione('Dove andare');
+  for(const id of WORLD.MAPPE){
+    bottone(g, id, ()=>{
+      if(!G.teletrasporta(id)) nota('non ci riesco: ' + id, false);
+      else nota('sei a ' + id);
+    });
+  }
+}
+
+/* --------------------------------------------------------------- */
+/* STORIA                                                          */
+/* --------------------------------------------------------------- */
+function accendiBraci(n){
+  /* le nicchie si accendono davvero, una per una, con quello che
+     ognuna chiede: `G.braci = 4` e basta lascerebbe il santuario con
+     quattro braci spente e la storia che chiede roba già data */
+  for(let i=0;i<DATA.SANTUARIO.length;i++){
+    const B = DATA.SANTUARIO[i];
+    if(i < n){
+      G.santuario[B.id] = true;
+      G.santuarioDato[B.id] = B.req.slice();
+    } else {
+      delete G.santuario[B.id];
+      delete G.santuarioDato[B.id];
+    }
+  }
+  G.braci = n;
+  G.visitati.bosco = true;
+  G.costruzioni.ponte = true;      // al santuario ci si arriva solo col ponte
+  WORLD.costruisci(G.maps, 'ponte');
+}
+
+function costruisciStoria(){
+  const b = sezione('Braci del santuario');
+  for(let n=0;n<=4;n++)
+    bottone(b, n + '/4', ()=>{
+      accendiBraci(n);
+      nota(n === 0 ? 'santuario spento (il ponte resta: serve per arrivarci)'
+                   : n + ' braci accese, e il ponte per andarci');
+    });
+
+  const a = sezione('Atto secondo — la notte del solstizio');
+  bottone(a, '1. Avvia (4 braci)', ()=>{
+    accendiBraci(4);
+    G.trame.veglia.avviata = true;
+    nota('atto secondo avviato: adesso i sei hanno qualcosa da dire');
+  });
+  bottone(a, '2. Tutte le memorie', ()=>{
+    const v = G.trame.veglia;
+    v.avviata = true;
+    for(const m of DATA.MEMORIE) v.memorie[m.id] = true;
+    nota(DATA.MEMORIE.length + ' memorie raccolte: ora Fiammella chiude il cerchio');
+  });
+  bottone(a, '3. Sai la verità', ()=>{
+    const v = G.trame.veglia;
+    v.avviata = true;
+    for(const m of DATA.MEMORIE) v.memorie[m.id] = true;
+    v.verita = true;
+    G.lettere.verita = true;
+    nota('verità saputa: adesso si può invitare');
+  });
+  bottone(a, '4. Invita tutti e sei', ()=>{
+    const v = G.trame.veglia;
+    v.verita = true; v.giorno = null;
+    for(const m of DATA.MEMORIE) v.invitati[m.npc] = true;
+    nota('invitati ' + G.invitatiAllaVeglia() + '/' + DATA.MEMORIE.length);
+  });
+  bottone(a, '5. Veglia stasera', ()=>{
+    const v = G.trame.veglia;
+    v.verita = true; v.fatta = false;
+    for(const m of DATA.MEMORIE) v.invitati[m.npc] = true;
+    /* `giornoTot` a zero è il primo giorno di una partita nuova, e
+       `v.giorno &&` lo leggerebbe come «nessuna veglia fissata»: la sera
+       non arriverebbe mai e il pannello sembrerebbe rotto. */
+    if(!G.giornoTot) G.giornoTot = 1;
+    v.giorno = G.giornoTot;
+    G.ora = 1020;
+    G.aggiornaOspitiVeglia();
+    nota('è stasera: vai alla radura nel bosco dopo il tramonto');
+  });
+  bottone(a, 'Vai alla radura', ()=>{
+    G.teletrasporta('bosco');
+    nota('bosco: la radura è oltre il ponte, a est');
+  });
+  bottone(a, 'Azzera atto secondo', ()=>{
+    G.trame.veglia = { avviata:false, memorie:{}, verita:false, invitati:{}, giorno:null, fatta:false };
+    G.aggiornaOspitiVeglia();
+    nota('atto secondo da rifare');
+  }, 'rosso');
+
+  const c = sezione('Le altre storie');
+  bottone(c, 'Torta di Ilde: avvia', ()=>{
+    G.trame.torta = { avviata:true, segreto:false, fatta:false };
+    G.amicizia.marisol = Math.max(G.amicizia.marisol||0, 200);
+    G.amicizia.serafina = Math.max(G.amicizia.serafina||0, 200);
+    nota('parla con Marisol, poi con Serafina');
+  });
+  bottone(c, 'Pesce Luna: avvia', ()=>{
+    G.trame.pesceluna = { avviata:true, preso:false, fatta:false };
+    G.amicizia.elio = Math.max(G.amicizia.elio||0, 200);
+    nota('di notte, al lago: abbocca molto più spesso');
+  });
+  bottone(c, 'Lezione di caccia: fatta', ()=>{
+    G.lezioneCaccia = null;
+    G.sacaccia = true;
+    if(!G.conta('arco')) G.aggiungi('arco',1);
+    nota('caccia sbloccata, arco nello zaino');
+  });
+  bottone(c, 'Lezione di caccia: da capo', ()=>{
+    G.lezioneCaccia = null; G.sacaccia = false;
+    G.amicizia.eremita = Math.max(G.amicizia.eremita||0, 150);
+    nota('sali al Passo e chiedi a Oreste dell\'arco');
+  });
+}
+
+/* --------------------------------------------------------------- */
+/* PROGRESSI                                                       */
+/* --------------------------------------------------------------- */
+function costruisciProgressi(){
+  const g = sezione('Progressi');
+  bottone(g, 'Amicizia al massimo', ()=>{
+    for(const id in DATA.NPCS) G.amicizia[id] = 1000;
+    nota('dieci cuori con tutti');
+  });
+  bottone(g, 'Abilità al livello 10', ()=>{
+    const max = DATA.XP_LIV[DATA.XP_LIV.length-1];
+    for(const k of ['agricoltura','raccolta','estrazione','pesca','caccia']) G.skills[k] = max;
+    G.energiaBonus = 0;
+    nota('tutte le abilità a ' + G.livello('pesca'));
+  });
+  bottone(g, 'Tutte le costruzioni', ()=>{
+    for(const c of DATA.COSTRUZIONI){
+      G.costruzioni[c.id] = true;
+      WORLD.costruisci(G.maps, c.id);
+    }
+    nota(DATA.COSTRUZIONI.length + ' costruzioni in piedi');
+  });
+  bottone(g, 'Collezione completa', ()=>{
+    for(const [,,ids] of G.categorieCollezione()) for(const id of ids) G.collezione[id] = true;
+    const c = G.contaCollezione().tot;
+    nota('collezione ' + c.d + '/' + c.t);
+  });
+  bottone(g, 'Tutte le mappe scoperte', ()=>{
+    for(const id of WORLD.MAPPE) G.visitati[id] = true;
+    G.stats.visitatoBosco = G.stats.visitatoGrotta = G.stats.visitatoPaese = true;
+    nota(WORLD.MAPPE.length + ' luoghi sulla mappa');
+  });
+  bottone(g, 'Salta la guida', ()=>{
+    G.tutorialFatto = true;
+    G.guidaNascosta = true;
+    if(window.TUT && TUT.chiudi) TUT.chiudi();
+    if(window.GUIDA && GUIDA.init) GUIDA.init();
+    nota('primi passi tolti di mezzo');
+  });
+  bottone(g, 'Tutto quanto', ()=>{
+    for(const id in DATA.NPCS) G.amicizia[id] = 1000;
+    const max = DATA.XP_LIV[DATA.XP_LIV.length-1];
+    for(const k of ['agricoltura','raccolta','estrazione','pesca','caccia']) G.skills[k] = max;
+    for(const c of DATA.COSTRUZIONI){ G.costruzioni[c.id] = true; WORLD.costruisci(G.maps, c.id); }
+    for(const r of DATA.CUCINA) G.ricetteNote[r.id] = true;
+    for(const k in DATA.UPGRADE){ if(!G.conta(k)) G.aggiungi(k,1); G.attrezziLiv[k] = DATA.UPGRADE[k].length; }
+    for(const id of WORLD.MAPPE) G.visitati[id] = true;
+    for(const [,,ids] of G.categorieCollezione()) for(const id of ids) G.collezione[id] = true;
+    G.oro += 100000;
+    G.sacaccia = true;
+    accendiBraci(4);
+    nota('partita aperta da tutte le parti');
+  }, 'oro');
+}
+
+/* --------------------------------------------------------------- */
+/* SALVATAGGIO                                                     */
+/* --------------------------------------------------------------- */
+function costruisciSalvataggio(){
+  const g = sezione('Salvataggio');
+  bottone(g, 'Salva adesso', ()=>{
+    nota(G.salva() ? 'salvato' : 'non è riuscito a salvare', G.salva());
+  });
+  bottone(g, 'Esporta in .json', ()=>{ G.esporta(); nota('scaricato'); });
+  bottone(g, 'Ricarica la pagina', ()=>{ location.reload(); });
+
+  /* Chiede conferma perché è l'unico comando del pannello che distrugge
+     qualcosa che non si può rifare con un altro bottone. */
+  const b = el('button','dbg-b rosso','Cancella il salvataggio');
+  b.onclick = ()=>{
+    if(!confirm('Cancello il salvataggio di questo browser? Non si torna indietro.')) return;
+    try{
+      localStorage.removeItem('fioralba_save_v1');
+      localStorage.removeItem('fioralba_save_bak');
+    }catch(e){}
+    nota('salvataggio cancellato: ricarica per ricominciare');
+  };
+  g.appendChild(b);
+}
+
+/* --------------------------------------------------------------- */
+/* montaggio                                                       */
+/* --------------------------------------------------------------- */
+function monta(){
+  scatola = el('div','dbg-scatola');
+
+  const linguetta = el('button','dbg-linguetta','debug');
+  linguetta.title = 'pannello di prova — non lo vede chi gioca';
+  scatola.appendChild(linguetta);
+
+  const pannello = el('div','dbg-pannello nascosto');
+  scatola.appendChild(pannello);
+
+  const testa = el('div','dbg-testa');
+  testa.appendChild(el('strong',null,'Pannello di prova'));
+  const chiudi = el('button','dbg-x','✕');
+  chiudi.onclick = ()=>{ pannello.classList.add('nascosto'); linguetta.classList.remove('acceso'); };
+  testa.appendChild(chiudi);
+  pannello.appendChild(testa);
+
+  statoEl = el('div','dbg-stato');
+  pannello.appendChild(statoEl);
+
+  riga = el('div','dbg-nota');
+  pannello.appendChild(riga);
+
+  corpo = el('div','dbg-corpo');
+  pannello.appendChild(corpo);
+
+  costruisciRicchezza();
+  costruisciOggetti();
+  costruisciTempo();
+  costruisciLuoghi();
+  costruisciStoria();
+  costruisciProgressi();
+  costruisciSalvataggio();
+
+  linguetta.onclick = ()=>{
+    const chiuso = pannello.classList.toggle('nascosto');
+    linguetta.classList.toggle('acceso', !chiuso);
+    if(!chiuso) scriviStato();
+  };
+
+  document.body.appendChild(scatola);
+  scriviStato();
+  setInterval(scriviStato, 1000);   // l'ora e il luogo cambiano da soli
+}
+
+D.attivo = false;
+D.monta = function(){
+  if(D.attivo) return false;
+  D.attivo = true;
+  monta();
+  return true;
+};
+
+if(richiesto()){
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', D.monta);
+  else D.monta();
+}
+
+})();

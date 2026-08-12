@@ -881,10 +881,15 @@ verifica('index.html carica tutti i js, nell\'ordine portante', () => {
     if (caricati.filter(x => x === f).length > 1) problemi.push(`js/${f} è caricato più di una volta`);
 
   // i due estremi che CLAUDE.md chiama portanti: DATA serve a tutti, e G
-  // dev'essere l'ultimo perché al caricamento chiama subito init()
+  // dev'essere l'ultimo perché al caricamento chiama subito init().
+  // L'unica eccezione è debug.js, che viene dopo proprio perché legge G:
+  // sta in fondo alla lista e non conta come «ultimo».
+  const gioco = caricati.filter(f => f !== 'debug.js');
   if (caricati[0] !== 'data.js') problemi.push(`il primo script è ${caricati[0]}, non data.js`);
-  if (caricati[caricati.length - 1] !== 'game.js')
-    problemi.push(`l'ultimo script è ${caricati[caricati.length - 1]}, non game.js`);
+  if (gioco[gioco.length - 1] !== 'game.js')
+    problemi.push(`l'ultimo script del gioco è ${gioco[gioco.length - 1]}, non game.js`);
+  if (caricati.indexOf('debug.js') >= 0 && caricati[caricati.length - 1] !== 'debug.js')
+    problemi.push('debug.js va caricato dopo game.js: legge G appena montato');
 
   return problemi;
 });
