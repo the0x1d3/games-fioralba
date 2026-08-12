@@ -1187,14 +1187,46 @@ A.bush = function(season, v, bacche){
   foliageBlob(x,14,22,10,S.tree,season);
   foliageBlob(x,26,23,10,S.tree,season);
   foliageBlob(x,20,17,11,S.tree,season);
-  if(bacche){
-    for(let i=0;i<6;i++){
-      const bx=10+((hsh(i,v,191)*20)|0), byy=12+((hsh(i,v,192)*16)|0);
+  if(bacche) fruttoCespuglio(x, v, DATA.CESPUGLIO[season]);
+  objCache[key]=c; return c;
+};
+
+/* Il cespuglio carico metteva sei pallini rossi in ogni stagione, ma
+   d'estate dà more, d'autunno nocciole e di primavera viole: tre
+   stagioni su quattro il cespuglio diceva una cosa e la falce ne dava
+   un'altra. Qui disegna quello che dà, leggendo la stessa tabella. */
+function fruttoCespuglio(x, v, item){
+  if(item === 'viola'){
+    /* Le viole non stanno sul ramo — «cresce all'ombra», dice la sua
+       scheda — quindi spuntano sotto, ai piedi del cespuglio.
+
+       Le posizioni sono distribuite a mano e il caso sposta solo di un
+       pixel: lasciandole scegliere tutte all'hash finivano appiccicate
+       da una parte sola e si leggevano come una macchia viola, non come
+       cinque viole. */
+    const posti = [[7,34],[13,31],[19,35],[27,32],[32,34]];
+    for(let i=0;i<posti.length;i++){
+      const bx  = posti[i][0] + ((hsh(i,v,193)*3)|0) - 1;
+      const byy = posti[i][1] + ((hsh(i,v,194)*2)|0) - 1;
+      px(x,bx,byy-4,1,4,'#4f8a32');                       // gambo
+      px(x,bx-1,byy-2,3,1,'#5f9c3c');                     // foglioline
+      for(let k=0;k<4;k++){ const a=k/4*6.28+0.78;
+        px(x,(bx+Math.cos(a)*2)|0,(byy-6+Math.sin(a)*2)|0,2,2,'#8a5fc0'); }
+      px(x,bx,byy-6,1,1,'#ffe270');                       // cuore giallo
+    }
+    return;
+  }
+  for(let i=0;i<6;i++){
+    const bx=10+((hsh(i,v,191)*20)|0), byy=12+((hsh(i,v,192)*16)|0);
+    if(item === 'mora'){
+      px(x,bx,byy,3,3,'#3a2440'); px(x,bx,byy,1,1,'#6a4a70');
+    } else if(item === 'nocciola'){
+      px(x,bx,byy,3,3,'#a8763c'); px(x,bx,byy,3,1,'#c99a5e'); px(x,bx,byy+2,3,1,'#7a5228');
+    } else {
       px(x,bx,byy,3,3,'#c8324a'); px(x,bx,byy,1,1,'#f07a88');
     }
   }
-  objCache[key]=c; return c;
-};
+}
 
 A.weed = function(season,v){
   const key='weed|'+season+'|'+v;

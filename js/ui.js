@@ -100,6 +100,12 @@ function elenco(a, cong){
 }
 function stagioni(a){ return elenco((a||[]).map(s=>NOMI_STAGIONE[s]||s), 'e'); }
 
+/* `IT.dove` risponde in HTML, perché quasi ovunque finisce dentro alla
+   pagina. Nell'attributo `title` invece i tag si vedrebbero scritti. */
+function spoglia(html){
+  return String(html||'').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+}
+
 /* la ricetta che produce questo oggetto, se ce n'è una */
 function ricettaDi(id){
   for(const r of DATA.CRAFT)  if(r.id===id) return {ing:r.ing, dove:'al banco da lavoro (tasto C)'};
@@ -141,10 +147,20 @@ IT.dove = function(id){
   }
   /* foraggio: si raccoglie per terra, e conta la stagione */
   if(I.cat === 'foraggio'){
+    /* Quattro di questi vengono anche dai cespugli carichi, uno per
+       stagione: chi ne taglia uno con la falce se li ritrova in mano
+       senza che nessuno gliel'avesse detto. */
+    const daCespuglio = Object.keys(DATA.CESPUGLIO||{}).find(s => DATA.CESPUGLIO[s] === id);
+    /* La stagione va ripetuta: la bacca d'inverno si trova sul Passo
+       tutto l'anno, ma sui cespugli solo d'inverno, e senza dirlo la
+       riga si contraddiceva da sola. */
+    const cespuglio = daCespuglio
+      ? ' Si trova anche sui <b>cespugli carichi</b> in <b>' + (NOMI_STAGIONE[daCespuglio]||daCespuglio) +
+        '</b>, tagliandoli con la <b>falce</b>.' : '';
     if(['bacca_inverno','radice_gelata','fiocco_cristallo'].indexOf(id) >= 0)
-      return 'Si raccoglie da terra sul <b>Passo di montagna</b>, dove è sempre inverno: c\'è tutto l\'anno.';
+      return 'Si raccoglie da terra sul <b>Passo di montagna</b>, dove è sempre inverno: c\'è tutto l\'anno.' + cespuglio;
     return 'Si raccoglie da terra in <b>' + (NOMI_STAGIONE[I.stagione]||I.stagione) +
-           '</b>, sparso per la valle — prato, bosco, radure. Nelle altre stagioni non c\'è.';
+           '</b>, sparso per la valle — prato, bosco, radure. Nelle altre stagioni non c\'è.' + cespuglio;
   }
   /* pesci */
   if(I.cat === 'pesce' && !I.spazzatura){
@@ -1343,18 +1359,51 @@ U.diario = function(G, tabIniziale){
         const s=document.createElement('div'); s.className='sectitle'; s.textContent=nome+' — '+d+'/'+ids.length;
         body.appendChild(s);
         const grid=document.createElement('div'); grid.className='invgrid';
+        const mancanti=[];
         for(const id of ids){
           const scoperto=!!coll[id];
           const cell=document.createElement('div'); cell.className='icell'+(scoperto?'':' empty');
           if(scoperto){ cell.appendChild(ico(id)); cell.title=IT.nome(id); }
           else{
+            mancanti.push(id);
             const q=document.createElement('span'); q.textContent='?';
             q.style.cssText='font-size:20px;font-weight:800;color:#8a7c66;opacity:.55';
-            cell.appendChild(q); cell.title='Non ancora scoperto';
+            cell.appendChild(q);
+            /* «La lavanda non esiste» — esiste, è foraggio d'estate, e chi
+               giocava in primavera non aveva modo di saperlo: la casella
+               diceva soltanto «?». Adesso dice cos'è e dove sta. */
+            cell.title = IT.nome(id) + ' — ' + spoglia(IT.dove(id));
           }
           grid.appendChild(cell);
         }
         body.appendChild(grid);
+
+        /* E siccome passare il mouse su dodici caselle per cercarne una
+           non è un modo di cercare, sotto c'è la lista in chiaro. */
+        if(mancanti.length){
+          const box=document.createElement('div'); box.className='coll-manca';
+          const cap=document.createElement('div'); cap.className='coll-manca-cap cliccabile';
+          cap.innerHTML='<span class="ob-freccia"></span>Te ne mancano '+mancanti.length+
+                        ' — dove si trovano';
+          const lista=document.createElement('div'); lista.className='coll-manca-lista hidden';
+          for(const id of mancanti){
+            const r=document.createElement('div'); r.className='coll-manca-riga';
+            const c=document.createElement('div'); c.className='icell mini'; c.appendChild(ico(id));
+            r.appendChild(c);
+            const t=document.createElement('div');
+            t.innerHTML='<b>'+IT.nome(id)+'</b><div class="rdesc">'+IT.dove(id)+'</div>';
+            r.appendChild(t);
+            lista.appendChild(r);
+          }
+          cap.onclick=()=>{
+            const chiuso=lista.classList.contains('hidden');
+            lista.classList.toggle('hidden', !chiuso);
+            cap.querySelector('.ob-freccia').classList.toggle('giu', chiuso);
+            SND.play('menu');
+          };
+          box.appendChild(cap); box.appendChild(lista);
+          body.appendChild(box);
+        }
       }
     }
     else if(tab==='abitanti'){
@@ -1391,8 +1440,11 @@ U.diario = function(G, tabIniziale){
         const r=document.createElement('div'); r.className='row';
         r.appendChild(ico('medaglione'));
         const info=document.createElement('div'); info.className='rinfo';
+        /* Diceva «Da Nonna Ilde» su tutte, e adesso che scrivono anche
+           Elio, Tobia e Marisol sarebbe una bugia. Le vecchie sono sue
+           davvero, quindi restano sue anche senza dirlo nei dati. */
         info.innerHTML=`<div class="rname">${DATA.LETTERE[k].titolo}</div>`+
-                       `<div class="rdesc">Da Nonna Ilde</div>`;
+                       `<div class="rdesc">Da ${DATA.LETTERE[k].da || 'Nonna Ilde'}</div>`;
         r.appendChild(info);
         const b=document.createElement('button'); b.className='btn blue'; b.textContent='Rileggi';
         b.onclick=()=>{ U.chiudiModal(); U.lettera(k); };

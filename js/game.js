@@ -1468,7 +1468,7 @@ function usaOggetto(){
         if(o.bacche){
           o.bacche=false;
           const st=G.stagione().id;
-          const f = {primavera:'viola', estate:'mora', autunno:'nocciola', inverno:'bacca_inverno'}[st];
+          const f = DATA.CESPUGLIO[st];     // stessa tabella che usa il disegno
           G.aggiungi(f, 1+((Math.random()*2)|0));
           UI.toast(IT.nome(f),'good',f);
           G.xp('raccolta',5); SND.play('raccolta');
@@ -3314,6 +3314,56 @@ function sveniamo(){
   }, 1100);
 }
 
+/* ===================================================================
+   LA POSTA
+
+   Le lettere erano sei: l'apertura, le quattro delle braci e la ricetta.
+   Ma le braci arrivano dopo il ponte, e il ponte costa 3000 monete: fra
+   la prima lettera e la seconda passava mezza partita con la cassetta
+   vuota, e chi apriva il Diario vedeva un elenco da una riga sola.
+
+   Queste otto sono agganciate a cose che si fanno comunque. La
+   condizione la si legge dallo stato che c'è già: non si aggiungono
+   contatori nuovi, così le vecchie partite si trovano subito in pari.
+
+   L'ordine dell'elenco è l'ordine di consegna, e ne arriva **una per
+   mattina**: otto lettere tutte insieme non sono un racconto, sono un
+   fascicolo. =================================================================== */
+const POSTA = [
+  { id:'paese',          quando:()=> !!G.stats.visitatoPaese },
+  { id:'bosco',          quando:()=> !!G.stats.visitatoBosco },
+  { id:'primo_raccolto', quando:()=> (G.stats.raccolti||0) >= 1 },
+  { id:'miniera',        quando:()=> !!G.stats.visitatoGrotta },
+  { id:'primo_pesce',    quando:()=> (G.stats.pesci||0) >= 1 },
+  { id:'prima_stagione', quando:()=> (G.giornoTot||0) > DATA.GIORNI_STAGIONE },
+  { id:'amicizia',       quando:()=> Object.keys(G.amicizia||{}).some(k=>(G.amicizia[k]||0) >= 100) },
+  { id:'ponte',          quando:()=> !!G.costruzioni.ponte }
+];
+
+/* Restituisce la prossima lettera dovuta, o null. Non consegna niente:
+   così la si può interrogare anche da un controllo, senza effetti. */
+G.postaDovuta = function(){
+  for(const p of POSTA){
+    if(G.lettere[p.id]) continue;
+    if(!DATA.LETTERE[p.id]) continue;    // lettera tolta dai dati: si salta
+    if(p.quando()) return p.id;
+  }
+  return null;
+};
+
+function consegnaPosta(ritardo){
+  const id = G.postaDovuta();
+  if(!id) return false;
+  G.lettere[id] = true;
+  const da = DATA.LETTERE[id].da || 'Nonna Ilde';
+  setTimeout(()=>{
+    UI.toast('📬 C\'è posta per te: una lettera da ' + da + '.','gold');
+    SND.play('regalo');
+    setTimeout(()=>UI.lettera(id), 900);
+  }, ritardo||0);
+  return true;
+}
+
 function nuovoGiorno(svenuto, multa){
   /* --- vendita cassa di consegna --- */
   const voci=[]; let tot=0;
@@ -3474,6 +3524,8 @@ function nuovoGiorno(svenuto, multa){
       // sagra e mercante
       if(nuovaSagra) setTimeout(()=>UI.toast('🎪 È tempo della '+G.sagra.nome+': consegna i prodotti di stagione dal Diario!','gold'), 2400);
       if(G.mercante && G.mercante.presente) setTimeout(()=>UI.toast('🛒 Il mercante ambulante è in paese, oggi alla Locanda.','gold'), 2700);
+      // la posta arriva col mattino, una lettera per volta
+      consegnaPosta(3300);
       // compleanni: una casella del calendario che prima era vuota
       const festeggiato = G.festeggiatoOggi();
       if(festeggiato) setTimeout(()=>UI.toast('🎂 Oggi è il compleanno di '+DATA.NPCS[festeggiato].nome+

@@ -16,6 +16,16 @@
 
 window.CHANGELOG = [
   {
+    v: '1.8',
+    data: 'agosto 2026',
+    titolo: 'Arriva la posta, e i cespugli dicono la verità',
+    voci: [
+      { tipo:'nuovo',  t:'Otto lettere nuove', d:'Ce n\'erano sei: l\'apertura, le quattro delle braci e la ricetta di Ilde. Ma le braci arrivano dopo il ponte, e fra la prima lettera e la seconda passava mezza partita con la cassetta vuota. Adesso la posta arriva col mattino, una lettera per volta, agganciata a cose che si fanno comunque: scendere in paese, tirare su il primo raccolto, prendere il primo pesce. Scrivono anche Elio, Tobia e Marisol — e la cassetta dice chi, invece di firmare tutto «Nonna Ilde».' },
+      { tipo:'fix',    t:'Il cespuglio mostra quello che dà', d:'Sei bacche rosse in ogni stagione, ma d\'estate dà more, d\'autunno nocciole e di primavera viole: tre stagioni su quattro il cespuglio diceva una cosa e la falce ne dava un\'altra, e chi tagliava bacche rosse per ritrovarsi una viola in mano credeva di aver raccolto due cose diverse. Adesso in primavera le viole spuntano ai piedi del cespuglio, dove crescono davvero, e d\'estate e d\'autunno si vedono more e nocciole.' },
+      { tipo:'nuovo',  t:'La Collezione dice cosa manca e dove sta', d:'Le caselle non scoperte dicevano «?» e basta, e da lì «la lavanda non esiste» è una conclusione ragionevole: esiste, è foraggio d\'estate, e in primavera non c\'è modo di incontrarla. Adesso ogni casella vuota dice cos\'è passandoci sopra, e sotto ogni sezione c\'è la lista di quello che manca con stagione e posto.' }
+    ]
+  },
+  {
     v: '1.7',
     data: 'agosto 2026',
     titolo: 'Il ponte serve davvero',

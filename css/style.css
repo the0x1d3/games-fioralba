@@ -1376,3 +1376,31 @@ kbd{
 .quanti-chip:hover{ background:#fff; border-color:var(--gold-d); }
 .quanti-az{ display:flex; gap:6px; }
 .quanti-az .btn{ flex:1; padding:6px 8px; font-size:13px; }
+
+/* ============ COLLEZIONE: cosa manca e dove sta ============
+   Le caselle non scoperte dicevano «?» e basta, e da lì «la lavanda non
+   esiste» è una conclusione ragionevole: esiste, è foraggio d'estate, e
+   in primavera non c'è modo di incontrarla. */
+.coll-manca{ margin:-2px 0 14px; }
+.coll-manca-cap{
+  display:flex; align-items:center; gap:7px;
+  font-size:13px; font-weight:700; color:var(--ink-soft);
+  padding:5px 2px; user-select:none;
+}
+.coll-manca-cap:hover{ color:var(--ink); }
+.coll-manca-lista{
+  margin-top:4px; padding:8px 10px;
+  background:var(--paper-2); border:2px solid var(--wood-3); border-radius:10px;
+}
+.coll-manca-lista.hidden{ display:none; }
+.coll-manca-riga{
+  display:flex; align-items:flex-start; gap:9px;
+  padding:6px 0; border-bottom:1px solid rgba(122,79,48,.16);
+}
+.coll-manca-riga:last-child{ border-bottom:none; }
+.coll-manca-riga .rdesc{ margin-top:1px; }
+.icell.mini{
+  flex:none; width:34px; height:34px; min-width:34px; padding:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.icell.mini canvas{ width:26px; height:26px; }

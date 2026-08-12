@@ -428,7 +428,34 @@ D.SANTUARIO = [
     premio:{ oro:3000, item:'brace_inverno' } }
 ];
 
-/* lettere di Nonna Ilde — sbloccate dagli eventi */
+/* Cosa porta un cespuglio carico, stagione per stagione.
+
+   Stava scritta dentro al codice della falce, e il disegno del cespuglio
+   non la conosceva: metteva sei bacche rosse tutto l'anno. Chi tagliava
+   un cespuglio di bacche rosse in primavera si ritrovava in mano una
+   viola, e credeva di aver raccolto due cose diverse dallo stesso posto.
+   D'autunno le bacche rosse davano nocciole. Adesso la tabella è una
+   sola e la leggono tutti e due. */
+D.CESPUGLIO = {
+  primavera: 'viola',        // crescono all'ombra del cespuglio, non sul ramo
+  estate:    'mora',
+  autunno:   'nocciola',
+  inverno:   'bacca_inverno'
+};
+
+/* Le lettere.
+
+   Ce n'erano sei: quella d'apertura, quattro legate alle braci del
+   Santuario e la ricetta di Ilde. Ma le braci arrivano dopo il ponte, e
+   il ponte costa 3000 monete: fra la prima lettera e la seconda passa
+   mezza partita, e in mezzo la cassetta resta vuota.
+
+   Queste otto riempiono il vuoto, e sono agganciate a cose che il
+   giocatore fa comunque — scendere in paese, tirare su il primo
+   raccolto, prendere il primo pesce. Ilde ne aveva lasciato un mazzo dal
+   notaio, con scritto sopra quando aprirle; le altre le scrive chi è
+   ancora vivo. Il `da` compare nella cassetta: prima diceva «Da Nonna
+   Ilde» anche quando non era vero. */
 D.LETTERE = {
   intro:{ titolo:'La prima lettera', testo:
 `Caro nipote,
@@ -447,6 +474,110 @@ Ma se una mattina ti svegli e senti che l'aria sa di terra bagnata — allora pr
 
 <b>Con affetto sfacciato,
 Nonna Ilde</b>` },
+
+  paese:{ titolo:'Sul paese', da:'Nonna Ilde', testo:
+`Sei sceso a Fioralba. Il notaio doveva darti questa dopo, e a quanto pare ha fatto il suo lavoro anche stavolta.
+
+<b>Bruno</b> ti sembrerà scorbutico. Lo è. Tiene i conti a memoria e non sbaglia mai di una moneta, il che lo rende insopportabile quando sbagli tu.
+
+<b>Tobia</b> lavora bene e lo sa, e te lo fa pagare. Non tirare sul prezzo: si offende e poi ci mette il doppio.
+
+<b>Marisol</b> alla locanda sa tutto di tutti. Ti dirà anche cose che non hai chiesto. Ascoltale lo stesso: nella valle le notizie utili viaggiano di striscio.
+
+Una cosa pratica, che di quelle vivo: davanti a casa c'è la <b>cassa di consegna</b>. Metticiquello che vuoi vendere e passano a ritirarlo di notte. Non è tanto per il prezzo — è per non doverti fare la strada del paese ogni volta che ti avanza una rapa.
+
+<b>Ilde</b>` },
+
+  bosco:{ titolo:'Su Serafina', da:'Nonna Ilde', testo:
+`Se sei arrivato fin nel bosco, prima o poi incontri <b>Serafina</b>.
+
+È scesa dalla montagna trent'anni fa e non è mai scesa del tutto. Vive in quel cottage con più erbe secche che mobili, e parla come se ogni frase le costasse qualcosa.
+
+Ti dirà del <b>burrone</b> e di cosa c'è dall'altra parte. Non farle fretta.
+
+Ti dirà anche che ho provato a riaccendere la lanterna da sola. È vero. Ci ho messo undici anni a capire che non è una cosa che si fa da soli, e altri due a trovare qualcuno a cui lasciarla. Sei arrivato tardi, ma sei arrivato.
+
+Portale una <b>viola</b>, quando ne trovi una. Fa finta di niente ma se le ricorda tutte.
+
+<b>Ilde</b>` },
+
+  miniera:{ titolo:'Sul buio', da:'Nonna Ilde', testo:
+`Quindi sei sceso in <b>miniera</b>. Bene: vuol dire che hai capito che la terra da sola non basta.
+
+Tuo nonno ci passava le giornate. Tornava su nero fino ai gomiti e diceva sempre la stessa cosa: «sotto non c'è niente di magico, c'è solo roba che nessuno ha ancora tirato fuori».
+
+Aveva torto, ma non di molto.
+
+Tre cose, e poi ti lascio in pace.
+
+La prima: si scende più di un livello. Le <b>scale</b> stanno in fondo, e più vai giù più le pietre valgono.
+
+La seconda: il <b>piccone</b> si migliora da Tobia, e un piccone migliore non è un lusso, è meno fatica per lo stesso sasso.
+
+La terza: quando sei stanco, risali. La miniera non scappa. Tu sì, ma poi ti svegli a casa senza metà di quello che avevi in tasca.
+
+<b>Ilde</b>` },
+
+  primo_raccolto:{ titolo:'Sul primo raccolto', da:'Nonna Ilde', testo:
+`Il primo raccolto non è mai il migliore. Non prendertela.
+
+La terra del campo grande è stanca — l'ho sfruttata per quarant'anni e non le ho mai chiesto scusa. Ci vuole un anno perché torni gentile.
+
+Nel frattempo: <b>semina fitto</b>, annaffia ogni giorno, e non piantare fuori stagione sperando che stavolta funzioni. Non funziona. L'ho provato tre volte, con tre stagioni diverse, e tre volte il campo mi ha risposto la stessa cosa.
+
+Quando avrai qualche moneta da parte, fatti tirare su la <b>serra</b>: lì dentro le stagioni non contano e d'inverno hai qualcosa da fare che non sia guardare la neve.
+
+<b>Ilde</b>` },
+
+  prima_stagione:{ titolo:'Sul cambio di stagione', da:'Nonna Ilde', testo:
+`È cambiata la stagione, e quindi metà del tuo campo è appassita in una notte.
+
+Lo so, sembra un dispetto. Non lo è: è solo che qui le stagioni non chiedono permesso, e le piante lo sanno meglio di noi.
+
+Regola unica: <b>raccogli prima dell'ultimo giorno</b>. Se una coltura ci mette otto giorni e la stagione ne ha ventotto, l'ultima semina utile è al ventesimo. Fatti il conto, non fidarti dell'occhio — io mi sono fidata dell'occhio per quarant'anni e ho perso un campo di zucche a tre giorni dalla fine.
+
+E cambia anche quello che trovi nel bosco. Le <b>viole</b> di primavera non le rivedi fino all'anno dopo. Se te ne serve una per qualcosa, raccoglila quando la vedi.
+
+<b>Ilde</b>` },
+
+  primo_pesce:{ titolo:'Tre acque', da:'Elio', testo:
+`Ehi.
+
+Marisol dice che hai tirato su qualcosa dall'acqua. Non chiedo cosa, tanto lo so: la prima è sempre una carpa e sempre piccola.
+
+Comunque. Ti scrivo perché la gente qui pensa che pescare sia un modo di perdere tempo con stile, e invece è l'unica cosa in questa valle che ti insegna ad aspettare senza innervosirti.
+
+Tre posti, tre acque diverse: il <b>fiume</b> in paese, il <b>lago</b> nel bosco, il <b>mare</b> alla Costa. Non c'è pesce che stia in due posti, e non c'è pesce che stia in tutte le stagioni. Quello che prendi oggi fra tre mesi non c'è più.
+
+Se un giorno ti capita di veder salire qualcosa di grosso in una notte di luna piena — non tirare subito. Vieni a dirmelo.
+
+<b>Elio</b>` },
+
+  ponte:{ titolo:'Castagno, non abete', da:'Tobia', testo:
+`Conto saldato. Ti scrivo lo stesso perché una cosa così non la faccio tutti i giorni e voglio che resti scritta da qualche parte.
+
+Cento legna, quaranta pietra, tre giorni sul burrone con la fune. Il legno l'ho scelto io: castagno, non abete. L'abete costava meno e tu non l'avresti saputo, ma io sì.
+
+Quel ponte regge trent'anni. Non ci sarò per verificarlo e non ci sarai nemmeno tu, ma regge.
+
+Tua nonna me l'aveva chiesto due volte. La prima non avevo l'attrezzatura, la seconda non aveva più i soldi. Non gliel'ho mai detto, ma di quelle due volte mi è rimasto un po' di magone.
+
+Adesso è in piedi. Vacci.
+
+<b>Tobia</b>` },
+
+  amicizia:{ titolo:'Il tavolo d\'angolo', da:'Marisol', testo:
+`Ti scrivo dalla locanda, che tanto sono sempre qui.
+
+Volevo dirti una cosa che nessuno ti dirà in faccia: da queste parti ci si mette del tempo a decidere se una persona resta o no. Non è cattiveria, è che ne abbiamo visti passare parecchi.
+
+Tu stai restando, e si vede. Qualcuno ha cominciato a chiedermi di te — di solito è il primo segno.
+
+Passa quando vuoi. Il <b>tavolo d'angolo</b> era quello di Ilde, e da quando non c'è più nessuno ci si siede volentieri. Sarebbe ora che ci si sedesse qualcuno.
+
+Cucino tutti i giorni fino a tardi. E no, non ti faccio pagare la prima volta.
+
+<b>Marisol</b>` },
 
   primavera:{ titolo:'Sulla prima brace', testo:
 `Allora l'hai trovata.

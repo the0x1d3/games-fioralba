@@ -234,6 +234,68 @@ verifica('in ogni livello di miniera si cammina, senza dover bucare', () => {
   return problemi;
 });
 
+/* Una lettera scritta e mai consegnata è lavoro buttato, e una lettera
+   consegnata che non esiste è una finestra vuota in faccia al
+   giocatore. Le due liste stanno in file diversi — il testo in data.js,
+   la condizione in game.js, che qui non si può caricare perché vuole il
+   DOM — quindi gli id si leggono dal sorgente. */
+verifica('ogni lettera esiste ed è consegnata da qualcosa', () => {
+  const problemi = [];
+  const src = fs.readFileSync(path.join(RADICE, 'js/game.js'), 'utf8');
+
+  const posta = [];
+  const blocco = src.slice(src.indexOf('const POSTA = ['), src.indexOf('G.postaDovuta'));
+  const re = /\{\s*id\s*:\s*'([a-z_0-9]+)'/g;
+  let m; while ((m = re.exec(blocco))) posta.push(m[1]);
+  if (!posta.length) return ['non trovo la lista POSTA in game.js'];
+
+  for (const id of posta)
+    if (!DATA.LETTERE[id]) problemi.push(`la posta consegna «${id}», che non è fra le lettere`);
+
+  /* le altre vie di consegna: l'apertura, le quattro braci, la ricetta */
+  const altre = new Set(['intro', 'ricetta_ilde']);
+  for (const b of DATA.SANTUARIO) altre.add(b.id);
+
+  for (const id in DATA.LETTERE) {
+    if (posta.indexOf(id) >= 0 || altre.has(id)) continue;
+    problemi.push(`la lettera «${id}» è scritta ma non la consegna nessuno`);
+  }
+
+  /* e il mittente deve essere qualcuno che esiste (o Ilde, che non è
+     un abitante perché è morta prima che cominciasse la partita) */
+  const nomi = new Set(['Nonna Ilde']);
+  for (const k in DATA.NPCS) nomi.add(DATA.NPCS[k].nome);
+  for (const id in DATA.LETTERE) {
+    const da = DATA.LETTERE[id].da;
+    if (da && !nomi.has(da)) problemi.push(`la lettera «${id}» è firmata «${da}», che non esiste`);
+  }
+  return problemi;
+});
+
+/* Il cespuglio carico e la falce devono dire la stessa cosa. Per un po'
+   non l'hanno fatto: il disegno metteva bacche rosse in ogni stagione e
+   la falce dava viole di primavera, more d'estate, nocciole d'autunno.
+   Adesso leggono la stessa tabella, e questo controlla che la tabella
+   sia sensata: quattro stagioni, e ogni frutto è foraggio di quella. */
+verifica('quello che dà il cespuglio esiste ed è di stagione', () => {
+  const problemi = [];
+  const T = DATA.CESPUGLIO;
+  if (!T) return ['manca DATA.CESPUGLIO'];
+  for (const s of DATA.SEASONS) {
+    const id = T[s.id];
+    if (!id) { problemi.push(`nessun frutto per ${s.id}`); continue; }
+    const it = DATA.ITEMS[id];
+    if (!it) { problemi.push(`il cespuglio di ${s.id} dà «${id}», che non è un oggetto`); continue; }
+    if (it.cat !== 'foraggio')
+      problemi.push(`il cespuglio di ${s.id} dà «${id}», che è ${it.cat} e non foraggio`);
+    else if (it.stagione !== s.id)
+      problemi.push(`il cespuglio di ${s.id} dà «${id}», che è foraggio di ${it.stagione}`);
+  }
+  for (const k in T)
+    if (!DATA.SEASONS.some(s => s.id === k)) problemi.push(`«${k}» non è una stagione`);
+  return problemi;
+});
+
 /* Il ponte del bosco costa 3000 monete, 100 legna e 40 pietra, ed è la
    missione che apre la storia. Solo che il burrone che avrebbe dovuto
    rendere obbligatorio il ponte copriva mezza fascia: si scendeva
