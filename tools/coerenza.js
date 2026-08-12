@@ -861,6 +861,76 @@ verifica('chi lavora al chiuso ha una stanza che lo ospita', () => {
   return problemi;
 });
 
+/* I dialoghi si scrivono a macchina un carattere per volta, e per farlo
+   ui.js deve spezzare la riga in tag e testo. Regge i tag semplici e
+   bilanciati — <b>, <i>, <kbd>, <br> — e nient'altro: un tag mai chiuso
+   lascerebbe il grassetto acceso fino a fine dialogo, e uno sconosciuto
+   (o con attributi) andrebbe a schermo in chiaro.
+
+   Nasce da un difetto vero: la macchina da scrivere usava `textContent`,
+   e i grassetti dei dialoghi si leggevano come parole — «Prima cosa:
+   <b>mettitelo in mano</b>». Adesso lavora su HTML, quindi conviene che
+   l'HTML sia quello che si aspetta. */
+verifica('i tag nei testi dei dialoghi sono semplici e chiusi', () => {
+  const AMMESSI = { b:1, i:1, kbd:1, em:1, strong:1, br:1 };
+  const VUOTI = { br:1 };
+  const problemi = [];
+
+  function controlla(dove, testo) {
+    if (typeof testo !== 'string' || testo.indexOf('<') < 0) return;
+    const aperti = [];
+    for (const m of testo.matchAll(/<[^>]*>/g)) {
+      const tag = m[0];
+      const t = tag.match(/^<\s*(\/?)\s*([a-zA-Z][\w-]*)\s*\/?>$/);
+      if (!t) { problemi.push(`${dove}: «${tag}» non è un tag semplice`); continue; }
+      const nome = t[2].toLowerCase();
+      if (!AMMESSI[nome]) { problemi.push(`${dove}: tag «${nome}» non ammesso nei dialoghi`); continue; }
+      if (VUOTI[nome]) continue;
+      if (t[1]) {
+        const j = aperti.lastIndexOf(nome);
+        if (j < 0) problemi.push(`${dove}: </${nome}> chiude un tag mai aperto`);
+        else aperti.splice(j, 1);
+      } else aperti.push(nome);
+    }
+    if (aperti.length) problemi.push(`${dove}: ${aperti.map(n=>'<'+n+'>').join(' ')} non si chiude`);
+  }
+
+  // i testi che stanno in DATA, letti per davvero
+  for (const id in DATA.NPCS) {
+    const N = DATA.NPCS[id];
+    for (const campo of ['battute', 'amico'])
+      (N[campo] || []).forEach((t, i) => controlla(`NPCS.${id}.${campo}[${i}]`, t));
+  }
+  (DATA.MEMORIE || []).forEach(m =>
+    (m.testo || []).forEach((t, i) => controlla(`MEMORIE.${m.id}[${i}]`, t)));
+  for (const k in DATA.LETTERE) controlla(`LETTERE.${k}`, DATA.LETTERE[k].testo);
+  for (const b of DATA.SANTUARIO) controlla(`SANTUARIO.${b.id}`, b.testo);
+
+  /* I moduli non si possono caricare qui (vogliono il DOM): le loro
+     battute si leggono dal sorgente, come si fa già per le prede.
+
+     Due filtri, tutti e due necessari. Si guardano solo le stringhe che
+     contengono un tag da dialogo (<b>, <i>, <kbd>…): l'estrazione con
+     una regex è ingenua e gli apostrofi italiani nei commenti le fanno
+     agganciare pezzi di codice — «<DATA.XP_LIV.length;i++)» sembrava un
+     tag rotto ed era un ciclo for. E si saltano le stringhe con span,
+     div o attributi: quelli sono i template delle finestre, HTML
+     legittimo per innerHTML, non battute. */
+  for (const f of ['js/storie.js', 'js/solstizio.js', 'js/pesca.js', 'js/game.js']) {
+    const src = fs.readFileSync(path.join(RADICE, f), 'utf8');
+    let n = 0;
+    for (const m of src.matchAll(/'((?:[^'\\]|\\.)*?)'/g)) {
+      const s = m[1].replace(/\\'/g, "'");
+      n++;
+      if (!/<\/?(b|i|kbd|em|strong|br)\s*>/.test(s)) continue;
+      if (/<(span|div|button|style|canvas)\b|style=|class=/.test(s)) continue;
+      controlla(`${f} (stringa ${n})`, s);
+    }
+  }
+
+  return problemi;
+});
+
 /* I premi dei livelli sono cinquanta righe scritte a mano che nominano
    oggetti: basta un id sbagliato — «lingotto_argento», che non esiste —
    perché salire di livello regali il nulla, e non se ne accorge nessuno

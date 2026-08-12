@@ -44,7 +44,7 @@ const LEZIONE_CACCIA = [
            'Si tira <b>davanti a sé</b>, non dove guarda il tuo dito. Da che parte sei girato conta: '+
            'è metà della caccia. L\'altra metà è arrivarci vicino senza farti sentire.'],
     fine:['Le bestie ti sentono da lontano. Il coniglio a due passi, il cervo a quattro.',
-          'Vai piano, non correre, e tirà quando sei <b>abbastanza vicino</b>: da lontano si sbaglia, '+
+          'Vai piano, non correre, e tira quando sei <b>abbastanza vicino</b>: da lontano si sbaglia, '+
           'e chi sbaglia fa scappare tutto il bosco.'] },
   { id:'colpito', attesa:'Trova una preda e colpiscila. Coniglio nel prato, cervo nel bosco all\'alba.',
     testo:['Ecco. Adesso lo sai.',

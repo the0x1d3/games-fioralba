@@ -241,7 +241,7 @@ U.toast = function(msg, tipo, itemId){
   if(itemId){
     const gia = box.querySelector('.toast.oggetto[data-item="'+CSS.escape(itemId)+'"]:not(.out)');
     if(gia){
-      gia.querySelector('.toast-testo').textContent = msg;
+      gia.querySelector('.toast-testo').innerHTML = msg;
       gia.classList.remove('ripeti');
       void gia.offsetWidth;                    // forza il riavvio dell'animazione
       gia.classList.add('ripeti');
@@ -258,7 +258,11 @@ U.toast = function(msg, tipo, itemId){
   }
   const s = document.createElement('span');
   s.className = 'toast-testo';
-  s.textContent = msg;
+  /* innerHTML come il prompt, le lettere e i dialoghi: qualche messaggio
+     porta un grassetto — «Hai imparato: <b>Caccia</b>» — e con textContent
+     il tag si leggeva. I testi sono tutti nostri, scritti in DATA e nei
+     moduli: qui non arriva niente che abbia scritto il giocatore. */
+  s.innerHTML = msg;
   el.appendChild(s);
   box.appendChild(el);
   riarmaTimer(el, msg);
@@ -483,7 +487,67 @@ $('#modal-wrap').addEventListener('click', e=>{ if(e.target.id==='modal-wrap') U
 /* ===================================================================
    DIALOGO
    =================================================================== */
-let dlgCoda = [], dlgAttivo = false, dlgFine = null, dlgTyping = null;
+let dlgCoda = [], dlgAttivo = false, dlgFine = null, dlgTyping = null, dlgPassi = null;
+
+/* I tag che si chiudono da soli: non vanno rimessi in piedi a ogni passo */
+const TAG_VUOTI = { br:1, hr:1, img:1, wbr:1 };
+
+/* La macchina da scrivere lavora su HTML, non su testo.
+
+   Prima scriveva con `textContent +=`, un carattere per volta, e nei
+   dialoghi ci sono i grassetti: «Prima cosa: <b>mettitelo in mano</b>»
+   arrivava a schermo con i tag in chiaro, letti come parole. Succedeva
+   solo nei dialoghi perché lettere e finestre usano `innerHTML`.
+
+   Qui la riga si spezza in passi: ogni passo è quello che si è svelato
+   fin lì, **coi tag ancora aperti richiusi in fondo**. Senza quelle
+   chiusure il browser le mette da sé a ogni fotogramma, e il grassetto
+   si allarga e si restringe mentre la frase si scrive. Un tag non
+   consuma un battito — appare insieme al carattere che protegge — e
+   un'entità (`&egrave;`) ne consuma uno solo, come la lettera che è. */
+function passiDiRiga(html){
+  const passi = [], aperti = [];
+  let out = '';
+  const conChiusure = ()=>{
+    let s = out;
+    for(let k=aperti.length-1;k>=0;k--) s += '</'+aperti[k]+'>';
+    return s;
+  };
+  for(let i=0;i<html.length;){
+    const c = html[i];
+    if(c==='<'){
+      const fine = html.indexOf('>', i);
+      /* dev'essere un tag per davvero, non un minore che ha la sfortuna
+         di avere un maggiore più avanti nella frase: «3 < 5 e 7 > 2» non
+         è markup, e senza questo controllo si mangerebbe mezza riga in un
+         battito solo */
+      const tag = fine > i ? html.slice(i, fine+1) : '';
+      if(tag && /^<\/?[a-zA-Z][\w-]*(\s[^<>]*)?\/?>$/.test(tag)){
+        const m = tag.match(/^<\s*(\/?)\s*([a-zA-Z][\w-]*)/);
+        out += tag;
+        if(m){
+          const nome = m[2].toLowerCase();
+          if(m[1]){ const j = aperti.lastIndexOf(nome); if(j>=0) aperti.splice(j,1); }
+          else if(!/\/\s*>$/.test(tag) && !TAG_VUOTI[nome]) aperti.push(nome);
+        }
+        i = fine+1;
+        continue;
+      }
+    }
+    if(c==='&'){
+      const fine = html.indexOf(';', i);
+      if(fine > i && fine-i <= 10){
+        out += html.slice(i, fine+1); i = fine+1;
+        passi.push(conChiusure());
+        continue;
+      }
+    }
+    out += c; i++;
+    passi.push(conChiusure());
+  }
+  if(!passi.length) passi.push(html);
+  return passi;
+}
 
 U.dialogo = function(npcId, righe, opzioni){
   opzioni = opzioni || {};
@@ -526,13 +590,14 @@ function prossimaRiga(){
     return;
   }
   d.querySelector('.dlg-next').style.display='';
-  const riga = dlgCoda.shift();
+  const riga = String(dlgCoda.shift());
   // effetto macchina da scrivere
-  txt.textContent='';
+  dlgPassi = passiDiRiga(riga);
+  txt.innerHTML='';
   let i=0;
   dlgTyping = setInterval(()=>{
-    if(i>=riga.length){ clearInterval(dlgTyping); dlgTyping=null; return; }
-    txt.textContent += riga[i++];
+    if(i>=dlgPassi.length){ clearInterval(dlgTyping); dlgTyping=null; return; }
+    txt.innerHTML = dlgPassi[i++];
     if(i%3===0) SND.play('menu');
   }, 16);
 }
@@ -542,8 +607,13 @@ U.avanzaDialogo = function(){
   const d = $('#dialogue');
   const txt = d.querySelector('.dlg-text');
   if(dlgTyping){
-    // completa subito la riga
+    /* Il commento diceva «completa subito la riga» e il codice invece
+       spegneva soltanto il timer: la frase restava dov'era arrivata, a
+       metà parola, e da fuori sembrava che al testo mancasse un pezzo.
+       Chi legge in fretta premeva sempre, e si perdeva mezza storia
+       credendo fosse scritta così. Completare vuol dire scriverla. */
     clearInterval(dlgTyping); dlgTyping=null;
+    if(dlgPassi && dlgPassi.length) txt.innerHTML = dlgPassi[dlgPassi.length-1];
     return true;
   }
   if(d.querySelector('.dlg-choices').children.length) return true;
@@ -553,6 +623,7 @@ U.avanzaDialogo = function(){
 
 U.chiudiDialogo = function(){
   dlgAttivo=false;
+  dlgPassi=null;
   if(dlgTyping){ clearInterval(dlgTyping); dlgTyping=null; }
   $('#dialogue').classList.add('hidden');
   const f=dlgFine; dlgFine=null;
