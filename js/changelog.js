@@ -16,6 +16,18 @@
 
 window.CHANGELOG = [
   {
+    v: '1.7',
+    data: 'agosto 2026',
+    titolo: 'Il ponte serve davvero',
+    voci: [
+      { tipo:'fix',    t:'Il burrone chiude la radura', d:'Il ponte del bosco costa 3000 monete, 100 legna e 40 pietra, ed è la missione che apre la storia. Solo che il burrone che avrebbe dovuto renderlo obbligatorio finiva a metà: bastava scendere qualche passo più a ovest ed eri nella radura a piedi asciutti. Tutte e 153 le caselle erano raggiungibili senza costruire niente. Adesso il burrone gira anche a sud, e c\'è un cartello che dice cos\'è. Chi ha già una partita se lo vede richiudere al primo caricamento, con le casse eventualmente traslocate sulla riva giusta.' },
+      { tipo:'meglio', t:'Gli obiettivi dicono anche dove', d:'«Fatti costruire il ponte» diceva da chi ordinarlo, non dove sarebbe spuntato. Adesso lo dicono sia l\'obiettivo che Serafina che Tobia.' },
+      { tipo:'nuovo',  t:'Dalla cassa prendi quante ne vuoi', d:'Cliccare una pila la prendeva tutta: con 282 legna e una cassa da costruire che ne vuole 20, toccava portarsi via il mucchio, costruire, e rimettere dentro il resto. Adesso chiede quante, in tutti e due i versi, con le scorciatoie per 1, 10, 50, metà e tutte.' },
+      { tipo:'fix',    t:'Due casse vicine non si accavallano più', d:'I nomi si sovrapponevano e non si leggeva né l\'uno né l\'altro. Adesso le targhette si scansano a vicenda.' },
+      { tipo:'meglio', t:'«Non c\'è nessuno» dice anche quando tornare', d:'Trovare la fucina vuota senza sapere a che ora Tobia ci sia voleva dire riprovare a caso. L\'orario è ricavato dalle giornate degli abitanti, quindi resta vero anche se cambiano.' }
+    ]
+  },
+  {
     v: '1.6',
     data: 'agosto 2026',
     titolo: 'Si caccia, e i traguardi lo dicono',

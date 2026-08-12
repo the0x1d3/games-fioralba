@@ -1339,3 +1339,40 @@ kbd{
 @media (max-width:620px){
   .lp-valle{ grid-template-columns:1fr; padding:0 14px; gap:14px; }
 }
+
+/* =================== QUANTE NE PRENDI ===================
+   Cliccare una pila prendeva tutto: con 282 legna e una cassa da 20
+   toccava portarsi via il mucchio, costruire e rimettere dentro il
+   resto. Questo si ancora alla casella e chiede il numero. */
+#modal-body{ position:relative; }
+.quanti{
+  position:absolute; z-index:5; min-width:214px;
+  background:var(--paper); border:3px solid var(--wood-2); border-radius:12px;
+  box-shadow:0 12px 28px rgba(0,0,0,.4); padding:11px 12px;
+}
+.quanti-tit{
+  font-weight:800; font-size:12px; letter-spacing:.4px; text-transform:uppercase;
+  color:var(--ink-soft); margin-bottom:8px;
+}
+.quanti-riga{ display:flex; gap:6px; align-items:center; margin-bottom:8px; }
+.quanti-b{
+  flex:none; width:32px; height:32px; font-size:19px; font-weight:800; cursor:pointer;
+  color:var(--paper); background:linear-gradient(180deg,var(--wood-3),var(--wood-2));
+  border:2px solid var(--wood-edge); border-radius:8px;
+}
+.quanti-b:hover{ filter:brightness(1.12); }
+.quanti-n{
+  flex:1; min-width:0; text-align:center; font:inherit; font-size:17px; font-weight:800;
+  color:var(--ink); background:#fffdf7;
+  border:2px solid var(--wood-3); border-radius:8px; padding:5px 4px;
+}
+.quanti-n:focus{ outline:none; border-color:var(--gold-d); box-shadow:0 0 0 3px rgba(242,193,78,.28); }
+.quanti-scorc{ display:flex; flex-wrap:wrap; gap:5px; margin-bottom:9px; }
+.quanti-chip{
+  cursor:pointer; font:inherit; font-size:12px; font-weight:700; color:var(--ink);
+  background:var(--paper-2); border:2px solid var(--wood-3); border-radius:14px;
+  padding:3px 9px;
+}
+.quanti-chip:hover{ background:#fff; border-color:var(--gold-d); }
+.quanti-az{ display:flex; gap:6px; }
+.quanti-az .btn{ flex:1; padding:6px 8px; font-size:13px; }

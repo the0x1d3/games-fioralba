@@ -596,9 +596,20 @@ function buildBosco(){
     if(libero(m,x,y)) m.deco.push({t:'erbe',x,y,v:(R()*4)|0});
   }
 
-  /* --- RADURA DEGLI SPIRITI (oltre il ponte) --- */
-  // burrone che la separa
-  fill(m, 30,24, 16,3, 'roccia');
+  /* --- RADURA DEGLI SPIRITI (oltre il ponte) ---
+
+     Il burrone che la separa. Correva solo da x=30 al bordo est, e
+     bastava scendere qualche passo più a ovest per entrare nella radura
+     a piedi asciutti: il ponte da 3000 monete era un souvenir, e la
+     missione che porta a costruirlo non chiudeva niente.
+
+     Ora il burrone gira anche a sud e chiude la conca su tre lati (il
+     quarto è il bordo della mappa): o si passa dal ponte, o non si
+     passa. Il fianco ovest del bosco e lo stagno restano fuori dal
+     recinto, perché lì si pesca fin dal primo giorno. */
+  m.burrone = [ {x:27, y:24, w:19, h:3},    // braccio est-ovest
+                {x:27, y:27, w:3,  h:15} ]; // braccio nord-sud, chiude il fianco
+  for(const b of m.burrone) fill(m, b.x, b.y, b.w, b.h, 'roccia');
   fill(m, 30,27, 16,15, 'erba');
   fill(m, 33,24, 3,3, 'vuoto');   // punto dove andrà il ponte
   m.pontePos = {x:33, y:24, w:3, h:3};
@@ -624,8 +635,16 @@ function buildBosco(){
     else if(r<0.86) m.deco.push({t:'sassolini', x, y, v:(R()*3)|0});
     else setObj(m,x,y,{t:'fiori', v:(R()*4)|0});
   }
-  // sentiero di lastre dal ponte al santuario
-  linea(m, 34,26, 38,30, 2, 'sentiero');
+  /* Sentiero di lastre dal ponte al santuario. Partiva da (34,26), cioè
+     da *dentro* il varco del ponte, e ci scavava un ripiano di lastre:
+     restava una sola riga di vuoto a reggere tutto il burrone, e a
+     vederlo sembrava un ponte già mezzo costruito. Parte da sotto. */
+  linea(m, 34,27, 38,30, 2, 'sentiero');
+  // e il varco torna un buco pulito, qualunque cosa ci abbia disegnato sopra
+  fill(m, m.pontePos.x, m.pontePos.y, m.pontePos.w, m.pontePos.h, 'vuoto');
+  // chi arriva al burrone deve capire cosa sta guardando e cosa gli manca
+  m.deco.push({t:'cartello', x:32, y:23,
+               testo:'Il burrone. Di là c\'è la Radura degli Spiriti: serve un ponte.'});
   // lucciole permanenti
   for(let i=0;i<14;i++) m.deco.push({t:'lucciola', x:32+R()*13, y:29+R()*11, f:R()*6.28});
 
@@ -1290,6 +1309,47 @@ W.crea = function(){
 };
 
 /* ---- costruzione di un edificio sbloccato ---- */
+/* Il burrone è paesaggio, non roba del giocatore, ma il terreno del
+   bosco viaggia nel salvataggio: nei salvataggi fatti prima che il
+   burrone girasse a sud c'è ancora quello corto, e chi carica si
+   ritrova la radura aperta di fianco col ponte ridotto di nuovo a un
+   souvenir da 3000 monete. Quindi dopo aver riletto la mappa lo si
+   ristampa.
+
+   La casella del ponte non si tocca: lì il salvataggio ha ragione lui,
+   sa se il ponte c'è o no. Casse e macchinari finiti dentro al nuovo
+   tracciato traslocano invece di sparire — è successo una volta con un
+   letto, basta. */
+W.ristampaBurrone = function(m){
+  if(!m || !m.burrone) return;
+  const p = m.pontePos;
+  const nelPonte = (x,y) => p && x>=p.x && x<p.x+p.w && y>=p.y && y<p.y+p.h;
+  const sfrattati = [];
+
+  for(const b of m.burrone){
+    for(let y=b.y; y<b.y+b.h; y++) for(let x=b.x; x<b.x+b.w; x++){
+      if(!W.dentro(m,x,y) || nelPonte(x,y)) continue;
+      const i = W.idx(m,x,y);
+      m.g[i] = ti('roccia');
+      if(m.suolo) m.suolo[i] = null;
+      const o = m.obj[i];
+      if(o && (o.t==='macchina' || o.t==='mobile')) sfrattati.push(o);
+      m.obj[i] = null;
+    }
+  }
+
+  /* Si trasloca a *nord* del burrone, sulla riva da cui si arriva: di
+     là si passa solo col ponte, e una cassa che si può riaprire solo
+     dopo aver speso 3000 monete è persa uguale. */
+  let ax = p ? p.x : 33, ay = p ? p.y - 2 : 22;
+  for(const o of sfrattati){
+    const q = W.vicinoLibero(m, ax, ay);
+    if(!q || m.obj[W.idx(m,q.x,q.y)]) continue;
+    m.obj[W.idx(m,q.x,q.y)] = o;
+    ax = q.x; ay = q.y - 1;      // il prossimo cerca da un'altra parte
+  }
+};
+
 W.costruisci = function(maps, id){
   const m = maps.podere;
   const sp = m.spazi[id==='casa2'?null:id];

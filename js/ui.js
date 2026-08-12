@@ -348,7 +348,99 @@ U.spiegaPesca = function(poi){
   }, ()=>{ if(typeof poi === 'function') poi(); });
 };
 
+/* ===================================================================
+   QUANTE NE PRENDI
+
+   Cliccare una pila prendeva tutto. Con 282 legna nella cassa e una
+   cassa da costruire che ne vuole 20, toccava portarsi via tutto il
+   mucchio, costruire, e rimettere dentro il resto: tre gesti per farne
+   uno.
+
+   Il clic su una pila da uno resta immediato — non c'è niente da
+   scegliere — e su una pila più grande si apre questo, ancorato alla
+   casella: qualche scorciatoia per i casi soliti e un campo per i
+   numeri che non sono soliti.
+   =================================================================== */
+let quantiAperto = null;
+
+function chiudiQuanti(){
+  if(quantiAperto){ quantiAperto.remove(); quantiAperto = null; }
+}
+U.chiudiQuanti = chiudiQuanti;
+
+/* `cella` è l'elemento a cui ancorarsi, `max` quante ce ne sono,
+   `poi(n)` che fare col numero scelto. */
+function chiediQuanti(cella, max, etichetta, verbo, poi){
+  chiudiQuanti();
+  const box = document.createElement('div'); box.className = 'quanti';
+  box.innerHTML = '<div class="quanti-tit">'+verbo+' '+etichetta+' — quante?</div>';
+
+  const riga = document.createElement('div'); riga.className = 'quanti-riga';
+  const meno = document.createElement('button'); meno.className='quanti-b'; meno.textContent='−';
+  const campo = document.createElement('input');
+  campo.type='number'; campo.className='quanti-n'; campo.min='1'; campo.max=String(max);
+  campo.value = String(Math.min(max, 20) || 1);
+  const piu = document.createElement('button'); piu.className='quanti-b'; piu.textContent='+';
+  const limita = ()=>{
+    let v = parseInt(campo.value,10);
+    if(!isFinite(v)) v = 1;
+    campo.value = String(Math.max(1, Math.min(max, v)));
+  };
+  meno.onclick = ()=>{ campo.value = String(Math.max(1, (parseInt(campo.value,10)||1) - 1)); };
+  piu.onclick  = ()=>{ campo.value = String(Math.min(max, (parseInt(campo.value,10)||0) + 1)); };
+  campo.oninput = limita;
+  campo.onkeydown = e=>{
+    e.stopPropagation();
+    if(e.key==='Enter'){ limita(); const n=parseInt(campo.value,10); chiudiQuanti(); poi(n); }
+    if(e.key==='Escape') chiudiQuanti();
+  };
+  riga.appendChild(meno); riga.appendChild(campo); riga.appendChild(piu);
+  box.appendChild(riga);
+
+  const scorciatoie = document.createElement('div'); scorciatoie.className='quanti-scorc';
+  const chip = (testo, n)=>{
+    if(n < 1 || n > max) return;
+    const b=document.createElement('button'); b.className='quanti-chip'; b.textContent=testo;
+    b.onclick=()=>{ chiudiQuanti(); poi(n); };
+    scorciatoie.appendChild(b);
+  };
+  chip('1', 1); chip('10', 10); chip('50', 50);
+  if(max > 3) chip('metà ('+Math.floor(max/2)+')', Math.floor(max/2));
+  chip('tutte ('+max+')', max);
+  box.appendChild(scorciatoie);
+
+  const az = document.createElement('div'); az.className='quanti-az';
+  const ok = document.createElement('button'); ok.className='btn gold'; ok.textContent=verbo;
+  ok.onclick = ()=>{ limita(); const n=parseInt(campo.value,10); chiudiQuanti(); poi(n); };
+  const no = document.createElement('button'); no.className='btn'; no.textContent='Annulla';
+  no.onclick = chiudiQuanti;
+  az.appendChild(ok); az.appendChild(no);
+  box.appendChild(az);
+
+  document.getElementById('modal-body').appendChild(box);
+  quantiAperto = box;
+
+  /* Si ancora alla casella. Le coordinate sono quelle di `offsetTop`,
+     non del rettangolo sullo schermo: `#modal-body` è il genitore
+     posizionato, quindi sono già le stesse in cui vive il riquadro, e
+     non c'è da rincorrere né lo scorrimento né il bordo — un primo giro
+     fatto con getBoundingClientRect lo piazzava 17px più su, addosso
+     alla casella cliccata. */
+  const corpo = document.getElementById('modal-body');
+  const bw = box.offsetWidth, bh = box.offsetHeight;
+  let left = cella.offsetLeft + cella.offsetWidth/2 - bw/2;
+  let top  = cella.offsetTop + cella.offsetHeight + 6;
+  left = Math.max(4, Math.min(corpo.clientWidth - bw - 4, left));
+  // se sotto non ci sta, si ribalta sopra la casella
+  if(top + bh > corpo.scrollTop + corpo.clientHeight)
+    top = Math.max(4, cella.offsetTop - bh - 6);
+  box.style.left = Math.round(left)+'px';
+  box.style.top  = Math.round(top)+'px';
+  campo.focus(); campo.select();
+}
+
 U.chiudiModal = function(){
+  chiudiQuanti();
   if(!modalAperta) return;
   $('#modal-wrap').classList.add('hidden');
   const cb = modalAperta.onClose;
@@ -360,6 +452,8 @@ U.modalAperta = ()=> !!modalAperta;
 
 U.aggiorna = function(){
   if(!modalAperta) return;
+  // il riquadro delle quantità vive dentro al corpo: si svuota con lui
+  quantiAperto = null;
   const body = $('#modal-body');
   const sc = body.scrollTop;
   body.innerHTML='';
@@ -1853,7 +1947,7 @@ U.cassa = function(G, obj, ox, oy){
     body.appendChild(barra);
 
     const n=document.createElement('div'); n.className='muted'; n.style.marginBottom='10px';
-    n.textContent='Clicca un oggetto per spostarlo dentro o fuori. Trascina per riordinare.';
+    n.textContent='Clicca un oggetto per spostarlo dentro o fuori: se la pila è di più pezzi ti chiede quanti. Trascina per riordinare.';
     body.appendChild(n);
 
     const t1=document.createElement('div'); t1.className='sectitle'; t1.textContent='Nella cassa';
@@ -1869,9 +1963,15 @@ U.cassa = function(G, obj, ox, oy){
         c.draggable=true;
         c.ondragstart=e=>{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain','c'+i); };
         c.onclick=()=>{
-          if(!G.puoiAggiungere(s.id,s.n)){ U.toast('Zaino pieno.','bad'); return; }
-          G.aggiungi(s.id,s.n); obj.slots[i]=null;
-          SND.play('prendi'); U.aggiorna();
+          const prendi = n=>{
+            if(!G.puoiAggiungere(s.id,n)){ U.toast('Zaino pieno.','bad'); return; }
+            G.aggiungi(s.id,n);
+            s.n -= n;
+            if(s.n<=0) obj.slots[i]=null;
+            SND.play('prendi'); U.aggiorna();
+          };
+          if(s.n<=1) prendi(1);
+          else chiediQuanti(c, s.n, IT.nome(s.id), 'Prendi', prendi);
         };
       }
       /* Il riordino dentro la cassa: stesso gesto dello zaino, così non
@@ -1913,14 +2013,16 @@ U.cassa = function(G, obj, ox, oy){
         c.ondragstart=e=>{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain', String(i)); };
         c.onclick=()=>{
           if(IT.cat(s.id)==='attrezzo'){ U.toast('Gli attrezzi restano con te.','bad'); return; }
-          // cerca slot nella cassa
-          let k=obj.slots.findIndex(x=>x&&x.id===s.id);
-          if(k<0) k=obj.slots.findIndex(x=>!x);
-          if(k<0){ U.toast('La cassa è piena.','bad'); return; }
-          if(obj.slots[k]) obj.slots[k].n += s.n; else obj.slots[k]={id:s.id,n:s.n};
-          G.inv[i]=null;
-          G.rinfrescaHotbar();
-          SND.play('prendi'); U.aggiorna();
+          const metti = n=>{
+            let k=obj.slots.findIndex(x=>x&&x.id===s.id);
+            if(k<0) k=obj.slots.findIndex(x=>!x);
+            if(k<0){ U.toast('La cassa è piena.','bad'); return; }
+            if(obj.slots[k]) obj.slots[k].n += n; else obj.slots[k]={id:s.id,n:n};
+            G.togliSlot(i, n);
+            SND.play('prendi'); U.aggiorna();
+          };
+          if(s.n>1){ chiediQuanti(c, s.n, IT.nome(s.id), 'Metti dentro', metti); return; }
+          metti(1);
         };
       }
       g2.appendChild(c);

@@ -2444,7 +2444,7 @@ function insegnaRicetta(){
 function loreSerafina(){
   const l=[];
   if(G.braci===0) l.push('La valle non è malata. È solo rimasta al buio troppo a lungo e ha preso l\'abitudine.',
-                          'Nel bosco, oltre il burrone, c\'è un santuario. Ti servirà un ponte per arrivarci: chiedi a Tobia.');
+                          'Nel bosco, a est, un burrone taglia la terra. Di là c\'è un santuario, e non ci si arriva a piedi: serve un ponte. Chiedilo a Tobia, alla fucina.');
   else if(G.braci===1) l.push('Una brace. L\'aria di primavera è già diversa, l\'hai sentito?',
                                'Ilde diceva che la prima è quella che ti convince che non sei matto.');
   else if(G.braci===2) l.push('Due. Adesso la gente in paese comincia a parlarne.',
@@ -3034,7 +3034,7 @@ G.costruisci = function(c){
   if(c.id==='ponte'){
     setTimeout(()=>UI.dialogo('serafina',[
       'Il ponte è in piedi. Tobia lavora bene quando lo si paga.',
-      'Adesso puoi arrivare alla radura. Vacci di giorno, la prima volta.'
+      'Lo trovi sul burrone, nel bosco a est: scavalcalo e sei nella radura. Vacci di giorno, la prima volta.'
     ]), 400);
   }
 };
@@ -3164,6 +3164,37 @@ G.mangia = function(idx){
   G.aggiornaHUD();
 };
 
+/* A che ora lo si trova in una certa stanza.
+
+   Sapere che Tobia non c'è serve a metà: la domanda vera è quando
+   tornare. L'orario sta già scritto nell'agenda — una fascia va dal
+   `fino` di quella prima al proprio — e basta leggerlo invece di
+   scriverlo un'altra volta a mano, che poi si scorda di aggiornarsi. */
+function oreMinuti(m){
+  const h = Math.floor(m/60), min = m%60;
+  return h + (min ? ':'+String(min).padStart(2,'0') : '');
+}
+
+G.orarioInterno = function(id, mappaId){
+  const A = DATA.AGENDE[id];
+  if(!A) return null;
+  const fasce = [];
+  let da = 0;
+  for(const f of A){
+    if(f.interno === mappaId) fasce.push([da, f.fino]);
+    da = f.fino;
+  }
+  if(!fasce.length) return null;
+  // fasce attaccate: si leggono come una sola
+  const unite = [fasce[0]];
+  for(let i=1;i<fasce.length;i++){
+    const u = unite[unite.length-1];
+    if(fasce[i][0] === u[1]) u[1] = fasce[i][1];
+    else unite.push(fasce[i]);
+  }
+  return unite.map(([a,b])=>'dalle '+oreMinuti(a)+' alle '+oreMinuti(b)).join(' e ');
+};
+
 /* Dove si trova adesso uno che non è nella stanza in cui sei entrato.
    Serve a distinguere «è chiuso» da «è rotto». */
 function doveSta(id){
@@ -3194,7 +3225,9 @@ function chiCeDentro(m){
     return nomi.slice(0,-1).join(', ') + ' ' + e + ' ' + ultimo + ' sono qui.';
   }
   const padrone = m.npcInterno[0];
-  return 'Non c\'è nessuno: ' + DATA.NPCS[padrone].nome + ' ' + doveSta(padrone) + '.';
+  const orario = G.orarioInterno(padrone, m.id);
+  return 'Non c\'è nessuno: ' + DATA.NPCS[padrone].nome + ' ' + doveSta(padrone) + '.' +
+         (orario ? ' Lo trovi qui ' + orario + '.' : '');
 }
 
 /* ===================================================================
@@ -4249,6 +4282,11 @@ function applicaSalvataggio(raw){
   if(d.maps){
     for(const k in d.maps) if(G.maps[k]) deserializzaMappa(G.maps[k], d.maps[k]);
   }
+  /* Il terreno del bosco è appena tornato dal salvataggio, burrone
+     compreso: se il salvataggio è di prima della correzione, il burrone
+     è ancora quello corto e la radura resta aggirabile a piedi. Il
+     burrone lo decidiamo noi, non il giocatore, quindi si ristampa. */
+  WORLD.ristampaBurrone(G.maps.bosco);
   G.p.look = G.look;
   G.p.px = d.px||8*T+16;
   G.p.py = d.py||10*T+16;

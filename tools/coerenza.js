@@ -234,6 +234,76 @@ verifica('in ogni livello di miniera si cammina, senza dover bucare', () => {
   return problemi;
 });
 
+/* Il ponte del bosco costa 3000 monete, 100 legna e 40 pietra, ed è la
+   missione che apre la storia. Solo che il burrone che avrebbe dovuto
+   rendere obbligatorio il ponte copriva mezza fascia: si scendeva
+   qualche passo più a ovest e si entrava nella radura a piedi asciutti.
+   Tutte e 153 le caselle della radura erano raggiungibili senza aver
+   costruito niente.
+
+   Una barriera si controlla in un modo solo: camminandoci contro. Il
+   BFS qui sotto usa 8 vicini, cioè è più permissivo del movimento vero,
+   così se dice «chiuso» è chiuso davvero. */
+verifica('nella radura degli spiriti ci si arriva solo col ponte', () => {
+  const problemi = [];
+
+  const cammina = (m, sx, sy) => {
+    const visto = new Set([sx+','+sy]);
+    const q = [[sx,sy]];
+    while (q.length) {
+      const [x,y] = q.pop();
+      for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]) {
+        const nx=x+dx, ny=y+dy, k=nx+','+ny;
+        if (visto.has(k) || !WORLD.dentro(m,nx,ny) || WORLD.solido(m,nx,ny)) continue;
+        visto.add(k); q.push([nx,ny]);
+      }
+    }
+    return visto;
+  };
+
+  const conta = (m) => {
+    const r = cammina(m, 19, 0);            // si entra nel bosco da nord
+    let tot = 0, ragg = 0;
+    for (let y=27; y<m.h; y++) for (let x=30; x<m.w; x++) {
+      if (WORLD.solido(m,x,y)) continue;
+      tot++; if (r.has(x+','+y)) ragg++;
+    }
+    const pi = m.obj.findIndex(o => o && o.t==='porta' && o.azione==='santuario');
+    const px = pi % m.w, py = (pi/m.w)|0;
+    const santuario = [[px,py+1],[px,py-1],[px+1,py],[px-1,py]]
+      .some(([a,b]) => !WORLD.solido(m,a,b) && r.has(a+','+b));
+    return { tot, ragg, santuario, soglia: r.has('34,' + (m.pontePos.y-1)) };
+  };
+
+  const senza = conta(WORLD.crea().bosco);
+  if (senza.ragg > 0)
+    problemi.push(`senza ponte si entra lo stesso nella radura: ${senza.ragg}/${senza.tot} caselle`);
+  if (senza.santuario)
+    problemi.push('senza ponte si arriva comunque alla porta del santuario');
+  if (!senza.soglia)
+    problemi.push('non si arriva nemmeno davanti al ponte: la sponda nord è irraggiungibile');
+
+  const mapsP = WORLD.crea();
+  WORLD.costruisci(mapsP, 'ponte');
+  const con = conta(mapsP.bosco);
+  if (con.ragg < con.tot)
+    problemi.push(`col ponte costruito la radura resta in parte chiusa: ${con.ragg}/${con.tot}`);
+  if (!con.santuario)
+    problemi.push('col ponte costruito il santuario resta irraggiungibile');
+
+  /* E la stessa cosa deve valere per chi carica un salvataggio vecchio,
+     dove il terreno del burrone è quello di prima. */
+  const vecchio = WORLD.crea().bosco;
+  for (let y=24; y<vecchio.h; y++) for (let x=27; x<30; x++)
+    vecchio.g[WORLD.idx(vecchio,x,y)] = WORLD.ti('erba');
+  WORLD.ristampaBurrone(vecchio);
+  const dopo = conta(vecchio);
+  if (dopo.ragg > 0)
+    problemi.push(`da un salvataggio vecchio la radura resta aggirabile: ${dopo.ragg}/${dopo.tot} caselle`);
+
+  return problemi;
+});
+
 /* Il tetto di un edificio è disegnato più in alto del suo ingombro — la
    locanda di quasi due caselle — e quelle caselle erano calpestabili:
    ci si camminava dentro e si finiva col mezzobusto nel tetto. Adesso la

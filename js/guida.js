@@ -70,12 +70,12 @@ const PASSI = [
 
   { id:'ponte', icona:'lingotto_ferro',
     titolo:'Fatti costruire il ponte del bosco',
-    come:'Da <b>Tobia</b>, alla fucina in paese. Costa 3000 monete, 100 legna e 40 pietra: è la strada per il Santuario, il cuore della storia.',
+    come:'Si ordina da <b>Tobia</b>, alla fucina in paese: 3000 monete, 100 legna e 40 pietra. Il ponte nasce da solo dov\'è il <b>burrone</b>, nel bosco: entra da nord, prendi il sentiero che piega a <b>est</b> e poi scendi. È la strada per il Santuario, il cuore della storia.',
     fatto: G => !!G.costruzioni.ponte },
 
   { id:'brace', icona:'brace_primavera',
     titolo:'Accendi la prima brace',
-    come:'Oltre il ponte, nella radura, c\'è il <b>Santuario</b>. Fiammella ti chiede i frutti di una stagione: portali e la Lanterna comincia a riaccendersi.',
+    come:'Oltre il ponte, nella radura chiusa dal burrone a <b>sud-est del bosco</b>, c\'è il <b>Santuario</b>. Fiammella ti chiede i frutti di una stagione: portali e la Lanterna comincia a riaccendersi.',
     fatto: G => (G.braci||0) >= 1 }
 ];
 

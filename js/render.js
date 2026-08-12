@@ -133,18 +133,40 @@ function terrenoAttorno(m, gx, gy){
    il font del sistema e non a pixel: a questa misura un alfabeto
    disegnato a mano sarebbe illeggibile, e una targhetta che non si
    legge non serve a niente. */
+/* Le targhette messe in questo fotogramma, per non pestarsi fra loro.
+   Due casse affiancate hanno i coperchi a trentadue pixel di distanza e
+   le targhette sono larghe il triplo: si sovrapponevano e non si leggeva
+   nessuna delle due. Quella che arriva dopo sale finché trova posto. */
+let targhettePoste = [];
+const ALTA_T = 13, SALTO_T = 15;
+
 function targhetta(testo, cx, cy){
   const s = String(testo).slice(0, 18);
   sx.font = 'bold 9px system-ui, sans-serif';
   sx.textAlign = 'center';
   sx.textBaseline = 'middle';
   const w = Math.ceil(sx.measureText(s).width) + 8;
+  let x0 = Math.round(cx - w/2), y0 = Math.round(cy - 7);
+
+  /* si alza di un gradino per volta finché non tocca più nessuno; dopo
+     quattro tentativi si arrende e si sovrappone, che è meglio di una
+     targhetta finita fuori dallo schermo */
+  for(let giro=0; giro<4; giro++){
+    let libero = true;
+    for(const t of targhettePoste){
+      if(x0 < t.x+t.w && x0+w > t.x && y0 < t.y+ALTA_T && y0+ALTA_T > t.y){ libero = false; break; }
+    }
+    if(libero) break;
+    y0 -= SALTO_T;
+  }
+  targhettePoste.push({ x:x0, y:y0, w });
+
   const I = PAL.c.interno;
-  ART.px(sx, Math.round(cx-w/2), Math.round(cy-7), w, 13, I.legnoOmbra);
-  ART.px(sx, Math.round(cx-w/2)+1, Math.round(cy-6), w-2, 11, I.legno);
-  ART.px(sx, Math.round(cx-w/2)+1, Math.round(cy-6), w-2, 1, I.legnoLuce);
+  ART.px(sx, x0, y0, w, ALTA_T, I.legnoOmbra);
+  ART.px(sx, x0+1, y0+1, w-2, ALTA_T-2, I.legno);
+  ART.px(sx, x0+1, y0+1, w-2, 1, I.legnoLuce);
   sx.fillStyle = '#2a1d12';
-  sx.fillText(s, Math.round(cx), Math.round(cy)+1);
+  sx.fillText(s, Math.round(x0 + w/2), y0 + 7);
   sx.textAlign = 'start';
   sx.textBaseline = 'alphabetic';
 }
@@ -428,6 +450,7 @@ R.disegna = function(G){
 
   sx.clearRect(0,0,VW,VH);
   sx.fillStyle = m.sfondo; sx.fillRect(0,0,VW,VH);
+  targhettePoste.length = 0;      // le targhette del fotogramma prima non contano
 
   const x0 = Math.max(0, Math.floor(cam.x/T)-1);
   const y0 = Math.max(0, Math.floor(cam.y/T)-1);
