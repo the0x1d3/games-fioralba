@@ -467,26 +467,73 @@ U.lettera = function(key, dopo){
 /* ===================================================================
    INVENTARIO
    =================================================================== */
+/* ===================================================================
+   LO ZAINO
+
+   Era una colonna sola: ventiquattro caselle indistinte, e sotto le
+   abilità, in una finestra lunga il doppio dello schermo. Due cose
+   sbagliate insieme.
+
+   La prima: le prime nove caselle *non sono* come le altre — sono la
+   barra che si vede sempre, quella che hai in mano. Erano disegnate
+   uguali alle altre e messe in fila con loro, quindi non si capiva.
+   Adesso stanno per conto loro, in una riga con la sua cornice e il suo
+   titolo, e sotto ci sono le due righe del deposito vero.
+
+   La seconda: le abilità non c'entrano niente con gli oggetti, e stando
+   sotto obbligavano a scorrere per vedere le une o gli altri. Sono
+   passate a destra, dove c'era spazio vuoto.
+   =================================================================== */
 U.inventario = function(G, presoIniziale){
   U.modal('Zaino', body=>{
-    // statistiche rapide
-    const head = document.createElement('div');
-    head.className='muted';
-    head.style.marginBottom='12px';
-    head.innerHTML = `<b>${G.nomeGiocatore}</b> · ${G.oro} monete · `+
-      `${G.inv.filter(s=>s).length}/${G.invMax} caselle`;
-    body.appendChild(head);
+    const cols=document.createElement('div'); cols.className='zaino-cols';
+    const sx=document.createElement('div'); cols.appendChild(sx);
+    const dx=document.createElement('div'); dx.className='zaino-dx'; cols.appendChild(dx);
+    body.appendChild(cols);
 
-    const t1=document.createElement('div'); t1.className='sectitle'; t1.textContent='Oggetti';
-    body.appendChild(t1);
+    /* --- colonna destra: chi sei e cosa sai fare --- */
+    const scheda=document.createElement('div'); scheda.className='zaino-scheda';
+    scheda.innerHTML =
+      `<div class="zs-nome">${G.nomeGiocatore}</div>`+
+      `<div class="zs-riga"><span>Monete</span><b>${G.oro}</b></div>`+
+      `<div class="zs-riga"><span>Caselle usate</span><b>${G.inv.filter(s=>s).length}/${G.invMax}</b></div>`+
+      `<div class="zs-riga"><span>Energia</span><b>${Math.round(G.energia)}/${G.energiaMax}</b></div>`;
+    dx.appendChild(scheda);
+
+    const tAb=document.createElement('div'); tAb.className='sectitle'; tAb.textContent='Abilità';
+    dx.appendChild(tAb);
+    for(const k in DATA.SKILLS){
+      const liv = G.livello(k);
+      const xp = G.skills[k]||0;
+      const cur = DATA.XP_LIV[liv]||0;
+      const next = DATA.XP_LIV[liv+1] || (cur+1);
+      const pct = liv>=10 ? 100 : Math.round((xp-cur)/(next-cur)*100);
+      const d=document.createElement('div'); d.className='skill';
+      d.innerHTML = `<div class="skill-top"><span>${DATA.SKILLS[k].nome}</span><span>Liv. ${liv}</span></div>`+
+                    `<div class="skill-bar"><i style="width:${pct}%"></i></div>`+
+                    `<div class="muted" style="font-size:11.5px;margin-top:2px">${DATA.SKILLS[k].desc}</div>`;
+      dx.appendChild(d);
+    }
+
+    /* --- colonna sinistra: la barra, poi il deposito --- */
+    const tBarra=document.createElement('div'); tBarra.className='sectitle';
+    tBarra.innerHTML = 'In mano <span class="sec-nota">— la barra che vedi sempre, tasti 1-9</span>';
+    sx.appendChild(tBarra);
+    const gBarra=document.createElement('div'); gBarra.className='invgrid invgrid-9 grid-barra';
+    sx.appendChild(gBarra);
+
+    const tDep=document.createElement('div'); tDep.className='sectitle';
+    tDep.innerHTML = 'Nello zaino <span class="sec-nota">— trascina per spostare</span>';
+    sx.appendChild(tDep);
+    const gDep=document.createElement('div'); gDep.className='invgrid invgrid-9';
+    sx.appendChild(gDep);
 
     const aiuto=document.createElement('div'); aiuto.className='muted';
-    aiuto.style.cssText='font-size:12px;margin:-6px 0 8px';
-    aiuto.innerHTML='Trascina per spostare. Le prime nove caselle sono la barra in basso: '+
-                    'quello che metti lì lo hai in mano.';
-    body.appendChild(aiuto);
+    aiuto.style.cssText='font-size:12px;margin:8px 0 0';
+    sx.appendChild(aiuto);
 
-    const g=document.createElement('div'); g.className='invgrid';
+    // una sola griglia logica: le celle vanno nell'una o nell'altra
+    const g={ children:[], appendChild(c){ this.children.push(c); (this.children.length<=9?gBarra:gDep).appendChild(c); } };
     /* Lo spostamento funziona in due modi apposta. Trascinare è quello
        che uno prova per primo; ma il trascinamento è anche il gesto che
        riesce peggio — parte per sbaglio, si perde a metà, e su un
@@ -496,7 +543,7 @@ U.inventario = function(G, presoIniziale){
     let preso = (typeof presoIniziale==='number' && G.inv[presoIniziale]) ? presoIniziale : -1;
     const ridisegna = ()=>{ U.chiudiModal(); U.inventario(G); };
     const marca = ()=>{
-      [...g.children].forEach((c,i)=>c.classList.toggle('presa', i===preso));
+      g.children.forEach((c,i)=>c.classList.toggle('presa', i===preso));
       aiuto.innerHTML = preso>=0
         ? '<b>'+IT.nome(G.inv[preso].id)+'</b> in mano: clicca la casella dove vuoi metterlo. '+
           '(Le prime nove sono la barra in basso.)'
@@ -548,24 +595,7 @@ U.inventario = function(G, presoIniziale){
       };
       g.appendChild(c);
     }
-    body.appendChild(g);
     marca();
-
-    /* abilità */
-    const t2=document.createElement('div'); t2.className='sectitle'; t2.textContent='Abilità';
-    body.appendChild(t2);
-    for(const k in DATA.SKILLS){
-      const liv = G.livello(k);
-      const xp = G.skills[k];
-      const cur = DATA.XP_LIV[liv]||0;
-      const next = DATA.XP_LIV[liv+1] || (cur+1);
-      const pct = liv>=10 ? 100 : Math.round((xp-cur)/(next-cur)*100);
-      const d=document.createElement('div'); d.className='skill';
-      d.innerHTML = `<div class="skill-top"><span>${DATA.SKILLS[k].nome}</span><span>Liv. ${liv}</span></div>`+
-                    `<div class="skill-bar"><i style="width:${pct}%"></i></div>`+
-                    `<div class="muted" style="font-size:11.5px;margin-top:2px">${DATA.SKILLS[k].desc}</div>`;
-      body.appendChild(d);
-    }
   });
 };
 

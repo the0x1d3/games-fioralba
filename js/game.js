@@ -44,7 +44,7 @@ function statoIniziale(){
     giorno:1, stagioneIdx:0, anno:1, giornoTot:0,
     ora:360,
     meteo:'sereno', meteoDomani:'sereno',
-    invMax:24,
+    invMax:27,
     inv:[
       {id:'zappa',n:1},{id:'annaffiatoio',n:1},{id:'ascia',n:1},
       {id:'piccone',n:1},{id:'falce',n:1},{id:'canna',n:1},
@@ -993,7 +993,12 @@ function normalizzaStato(){
   G.energiaMax = ENERGIA_BASE + G.energiaBonus;
   if(typeof G.energia !== 'number' || !isFinite(G.energia)) G.energia = G.energiaMax;
   G.energia = Math.min(G.energia, G.energiaMax);
-  if(typeof G.invMax!=='number' || G.invMax<1) G.invMax=24;
+  /* Ventisette e non ventiquattro: lo zaino si legge come una riga di
+     barra più due righe di deposito, e tre righe da nove tornano.
+     Le partite già cominciate salgono a ventisette invece di restare
+     con una riga monca. */
+  if(typeof G.invMax!=='number' || G.invMax<1) G.invMax=27;
+  if(G.invMax < 27) G.invMax = 27;
   while(G.inv.length < G.invMax) G.inv.push(null);
   // giocatore incastrato in un solido dopo il caricamento → sblocca (una tantum)
   const p=G.p, m=(G.maps && G.maps[G.mappaId]) ? G.maps[G.mappaId] : null;
@@ -3982,6 +3987,37 @@ function deserializzaMappa(m, d){
     ? (d.w === m.w && d.h === m.h)
     : (Array.isArray(d.g) && d.g.length === m.g.length);   // salvataggi vecchi: si deduce
   if(!stessaMisura) return;
+
+  /* Le stanze sono *scritte*, non costruite dal giocatore: il letto sta
+     dove l'abbiamo messo noi, e non c'è motivo di rileggerlo da un
+     salvataggio. Rileggerlo anzi fa danno, e l'ha fatto: chi ha caricato
+     la partita nella finestra fra l'allargamento delle stanze e la
+     correzione si è visto riscrivere nel salvataggio l'arredamento
+     sbagliato, con le misure nuove. Da lì in poi le misure combaciano e
+     il controllo qui sopra non se ne accorge più: il letto resta dietro
+     al camino per sempre.
+
+     Quindi degli interni si tiene solo quello che ci ha messo il
+     giocatore — casse e macchinari — e il resto lo rifà la stanza. Chi
+     ha il salvataggio guasto guarisce da solo alla prima apertura. */
+  if(m.interno){
+    const miei = [];
+    for(const k in d.obj){
+      const o = d.obj[k];
+      if(o && (o.t==='macchina' || o.t==='mobile')) miei.push([k|0, o]);
+    }
+    for(const [i, o] of miei){
+      let dove = i;
+      if(m.obj[dove] || WORLD.solido(m, dove%m.w, (dove/m.w)|0)){
+        // la casella di allora adesso è occupata: si cerca lì vicino
+        const p = WORLD.vicinoLibero(m, dove%m.w, (dove/m.w)|0);
+        dove = p ? WORLD.idx(m, p.x, p.y) : -1;
+        if(dove>=0 && m.obj[dove]) dove = -1;
+      }
+      if(dove>=0) m.obj[dove] = o;
+    }
+    return;
+  }
 
   if(d.g && d.g.length===m.g.length) m.g = Uint8Array.from(d.g);
   for(let i=0;i<m.obj.length;i++){

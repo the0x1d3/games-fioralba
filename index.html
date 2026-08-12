@@ -90,12 +90,17 @@
       </div>
     </div>
 
+    <!-- Sono cinque icone senza scritte: da fuori non si capisce cosa
+         facciano. Il `title` del browser esiste ma compare dopo un
+         secondo e mezzo e in un carattere che non è quello del gioco,
+         quindi ognuno porta la sua etichetta, che scorre fuori al
+         passaggio del mouse. -->
     <div id="quickbtns">
-      <button id="btn-inv"   title="Inventario (I)">🎒</button>
-      <button id="btn-craft" title="Artigianato (C)">🔨</button>
-      <button id="btn-quest" title="Diario (J)">📖</button>
-      <button id="btn-map"   title="Mappa (M)">🗺️</button>
-      <button id="btn-menu"  title="Menu (Esc)">⚙️</button>
+      <button id="btn-inv"   data-eti="Zaino"       data-tasto="I">🎒</button>
+      <button id="btn-craft" data-eti="Artigianato" data-tasto="C">🔨</button>
+      <button id="btn-quest" data-eti="Diario"      data-tasto="J">📖</button>
+      <button id="btn-map"   data-eti="Mappa"       data-tasto="M">🗺️</button>
+      <button id="btn-menu"  data-eti="Menu"        data-tasto="Esc">⚙️</button>
     </div>
   </div>
 

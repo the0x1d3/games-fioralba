@@ -1251,3 +1251,59 @@ kbd{
   margin-top:3px; padding-left:9px; border-left:2px solid rgba(201,146,43,.5);
 }
 .rserve b{ color:var(--wood-2); }
+
+/* =================== ETICHETTE DEI PULSANTI RAPIDI ===================
+   Cinque icone senza scritte non dicono cosa fanno. Il `title` del
+   browser arriva dopo un secondo e mezzo, in un carattere che non è
+   quello del gioco e in un angolo che non è quello giusto: qui
+   l'etichetta esce di fianco al pulsante, subito, e col tasto scritto
+   accanto — che è la cosa che uno vuole imparare. */
+#quickbtns button{ position:relative; }
+#quickbtns button::after{
+  content:attr(data-eti) ' · ' attr(data-tasto);
+  position:absolute; right:calc(100% + 10px); top:50%;
+  transform:translateY(-50%) translateX(6px);
+  white-space:nowrap; pointer-events:none;
+  font-size:13px; font-weight:800; letter-spacing:.2px;
+  color:var(--paper); background:rgba(28,18,10,.95);
+  border:2px solid rgba(242,193,78,.55); border-radius:9px;
+  padding:5px 11px; box-shadow:0 4px 12px rgba(0,0,0,.45);
+  opacity:0; transition:opacity .12s ease, transform .12s ease;
+}
+#quickbtns button:hover::after,
+#quickbtns button:focus-visible::after{ opacity:1; transform:translateY(-50%) translateX(0); }
+@media (prefers-reduced-motion:reduce){
+  #quickbtns button::after{ transition:none; }
+}
+
+/* =================== ZAINO A DUE COLONNE ===================
+   Gli oggetti a sinistra, chi sei e cosa sai fare a destra: prima era
+   tutto in colonna e la finestra veniva lunga il doppio dello schermo,
+   con le abilità raggiungibili solo scorrendo. */
+.zaino-cols{ display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,1fr); gap:22px; }
+.zaino-dx{ min-width:0; }
+.zaino-scheda{
+  background:var(--paper-2); border:2px solid var(--wood-3);
+  border-radius:10px; padding:10px 13px; margin-bottom:14px;
+}
+.zs-nome{ font-weight:800; font-size:16px; color:var(--wood-1); margin-bottom:5px; }
+.zs-riga{
+  display:flex; justify-content:space-between; gap:12px;
+  font-size:13.5px; padding:3px 0;
+}
+.zs-riga span{ color:var(--ink-soft); }
+
+/* nove colonne fisse: una riga = una riga della barra */
+.invgrid-9{ grid-template-columns:repeat(9, minmax(0,1fr)); }
+
+/* La barra si vede che è un'altra cosa dal deposito: sta dentro una
+   cornice sua, col fondo scuro come quello vero in fondo allo schermo. */
+.grid-barra{
+  background:rgba(58,36,22,.16); border:2px solid var(--gold-d);
+  border-radius:11px; padding:8px; margin-bottom:4px;
+}
+.sec-nota{ font-weight:400; font-size:12px; color:var(--ink-soft); text-transform:none; letter-spacing:0; }
+
+@media (max-width:900px){
+  .zaino-cols{ grid-template-columns:minmax(0,1fr); gap:6px; }
+}
