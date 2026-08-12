@@ -612,16 +612,21 @@ U.inventario = function(G, presoIniziale){
 
     const tAb=document.createElement('div'); tAb.className='sectitle'; tAb.textContent='Abilità';
     dx.appendChild(tAb);
+    /* il conto lo fa LIV.progresso, non più questa funzione per conto suo:
+       le due percentuali — qui e nel diario — arrotondavano in modo
+       diverso e la stessa abilità risultava al 61% di là e al 62% di qua */
     for(const k in DATA.SKILLS){
-      const liv = G.livello(k);
-      const xp = G.skills[k]||0;
-      const cur = DATA.XP_LIV[liv]||0;
-      const next = DATA.XP_LIV[liv+1] || (cur+1);
-      const pct = liv>=10 ? 100 : Math.round((xp-cur)/(next-cur)*100);
+      const p = LIV.progresso(k);
       const d=document.createElement('div'); d.className='skill';
-      d.innerHTML = `<div class="skill-top"><span>${DATA.SKILLS[k].nome}</span><span>Liv. ${liv}</span></div>`+
-                    `<div class="skill-bar"><i style="width:${pct}%"></i></div>`+
-                    `<div class="muted" style="font-size:11.5px;margin-top:2px">${DATA.SKILLS[k].desc}</div>`;
+      d.innerHTML = `<div class="skill-top"><span>${DATA.SKILLS[k].nome}</span><span>${p.massimo?'MAX':'Liv. '+p.liv}</span></div>`+
+                    `<div class="skill-bar"><i style="width:${Math.round(p.perc)}%"></i></div>`+
+                    `<div class="muted" style="font-size:11.5px;margin-top:2px">`+
+                    (p.massimo ? DATA.SKILLS[k].desc
+                               : 'ancora '+p.mancano.toLocaleString('it-IT')+' → liv. '+(p.liv+1))+
+                    `</div>`;
+      d.style.cursor='pointer';
+      d.title='Apri i livelli';
+      d.onclick=()=>U.diario(G,'livelli');
       dx.appendChild(d);
     }
 
@@ -1187,7 +1192,10 @@ U.diario = function(G, tabIniziale){
   U.modal('Diario', body=>{
     const tabs=document.createElement('div'); tabs.className='tabs';
     const nRich=(G.richieste||[]).filter(r=>!r.fatta).length;
-    for(const [k,lab] of [['obiettivi','Obiettivi'],['richieste','Richieste'+(nRich?' ('+nRich+')':'')],['collezione','Collezione'],['abitanti','Abitanti'],['lettere','Lettere'],['stats','Podere']]){
+    // il pallino sui Livelli quando c'è un premio da ritirare: senza,
+    // un oggetto rimasto fuori dallo zaino resterebbe lì per sempre
+    const nPremi = (window.LIV && LIV.sospesi()) || 0;
+    for(const [k,lab] of [['obiettivi','Obiettivi'],['livelli','Livelli'+(nPremi?' •':'')],['richieste','Richieste'+(nRich?' ('+nRich+')':'')],['collezione','Collezione'],['abitanti','Abitanti'],['lettere','Lettere'],['stats','Podere']]){
       const b=document.createElement('button');
       b.className='tab'+(tab===k?' on':'');
       b.textContent=lab; b.onclick=()=>{ tab=k; U.aggiorna(); };
@@ -1303,6 +1311,10 @@ U.diario = function(G, tabIniziale){
         }
         body.appendChild(box);
       }
+    }
+    else if(tab==='livelli'){
+      // il contenuto sta in livelli.js: qui c'è solo la finestra che lo ospita
+      LIV.scheda(body);
     }
     else if(tab==='richieste'){
       const intro=document.createElement('div'); intro.className='muted'; intro.style.marginBottom='12px';
@@ -1487,30 +1499,12 @@ U.diario = function(G, tabIniziale){
       }
     }
     else {
-      // --- ABILITÀ ---
-      const sa=document.createElement('div'); sa.className='sectitle'; sa.textContent='Abilità';
-      body.appendChild(sa);
-      const skIco={agricoltura:'zappa', raccolta:'falce', estrazione:'piccone', pesca:'canna'};
-      for(const k of ['agricoltura','raccolta','estrazione','pesca']){
-        const lv=G.livello(k), xp=G.skills[k]||0;
-        const cur=DATA.XP_LIV[lv]||0, next=DATA.XP_LIV[lv+1];
-        const perc = next? Math.max(2,Math.round((xp-cur)/(next-cur)*100)) : 100;
-        const bonus = {
-          agricoltura:'Raccolti +'+(lv*3)+'% di valore · raccolto doppio ~'+(lv*2)+'%',
-          raccolta:'Legna e foraggio extra ~'+(lv*4)+'%',
-          estrazione:'Rocce più fragili · minerali extra ~'+Math.round((0.25+lv*0.03)*100)+'%',
-          pesca:'Barra di pesca +'+(lv*7)+'px · pesci più stanchi'
-        }[k];
-        const row=document.createElement('div'); row.className='row';
-        row.appendChild(ico(skIco[k]));
-        const info=document.createElement('div'); info.className='rinfo';
-        info.innerHTML=`<div class="rname">${DATA.SKILLS[k].nome} — Liv. ${lv}/10</div>`+
-          `<div class="rdesc">${bonus}</div>`+
-          `<div class="skbar"><div class="skfill" style="width:${perc}%"></div><span>${next?perc+'% → Liv. '+(lv+1):'MASSIMO'}</span></div>`;
-        row.appendChild(info);
-        body.appendChild(row);
-      }
-
+      /* Le abilità stavano qui, in coda alle statistiche, scritte a mano
+         e ferme a quattro su cinque: della Caccia non diceva niente, e i
+         bonus erano frasi ricopiate che avevano già smesso di combaciare
+         coi numeri veri (prometteva 7px di barra da pesca, il gioco ne
+         dava 8). Adesso hanno una scheda loro — LIV.scheda, che legge
+         DATA.BONUS_TESTO — e qui restano solo i numeri del podere. */
       const st=G.statistiche();
       const s=document.createElement('div'); s.className='sectitle'; s.textContent='Il podere in numeri';
       body.appendChild(s);

@@ -284,13 +284,136 @@ D.UPG_NOMI = ['Semplice','di Rame','di Ferro','d\'Oro'];
    ABILITÀ
    ------------------------------------------------------------------ */
 D.SKILLS = {
-  agricoltura:{ nome:'Agricoltura', desc:'I raccolti valgono di più.' },
-  raccolta:   { nome:'Raccolta',    desc:'Più legna, più fibra, più fortuna nel bosco.' },
-  estrazione: { nome:'Estrazione',  desc:'Le rocce cedono più in fretta.' },
-  pesca:      { nome:'Pesca',       desc:'La barra si allarga, i pesci si stancano.' },
-  caccia:     { nome:'Caccia',      desc:'Le prede si accorgono di te più tardi, e rendono di piu.' }
+  agricoltura:{ nome:'Agricoltura', icona:'zappa',  desc:'I raccolti valgono di più.' },
+  raccolta:   { nome:'Raccolta',    icona:'falce',  desc:'Più legna, più fibra, più fortuna nel bosco.' },
+  estrazione: { nome:'Estrazione',  icona:'piccone',desc:'Le rocce cedono più in fretta.' },
+  pesca:      { nome:'Pesca',       icona:'canna',  desc:'La barra si allarga, i pesci si stancano.' },
+  caccia:     { nome:'Caccia',      icona:'arco',   desc:'Le prede si accorgono di te più tardi, e rendono di più.' }
 };
 D.XP_LIV = [0,100,260,500,850,1350,2000,2850,3900,5200,6800];
+
+/* I coefficienti dei bonus, in un posto solo perché li leggono in due:
+   il gioco per applicarli e la scheda delle abilità per raccontarli.
+
+   Erano scritti due volte — il numero vero sparso fra game.js e pesca.js,
+   la frase in ui.js — e le due copie avevano già cominciato a divergere:
+   la scheda prometteva «barra di pesca +7px per livello» mentre pesca.js
+   ne dava 8, e della Caccia non diceva niente perché l'elenco a mano si
+   era fermato a quattro abilità su cinque. Adesso chi cambia il numero
+   cambia anche la frase, che è l'unico modo perché restino d'accordo. */
+D.BONUS = {
+  agricoltura:{ valore:0.03, doppio:0.02 },
+  raccolta:   { valore:0.03, foraggio:0.04, fibra:0.04, legnaOgni:3 },
+  estrazione: { valore:0.02, extraBase:0.25, extra:0.03, pietraDa:5 },
+  pesca:      { valore:0.03, barra:8, guadagno:0.03, spazzatura:0.012 },
+  /* `uditoMax` è il tetto, e sta qui e non solo in mobs.js perché senza di
+     lui la frase e il codice tornerebbero d'accordo solo per combinazione:
+     0.06 × 10 livelli fa esattamente 0.6, ma basta alzare `udito` a 0.08
+     perché la scheda prometta l'80% mentre le prede si fermano al 60%. */
+  caccia:     { mira:0.035, udito:0.06, uditoMax:0.6 }
+};
+
+/* Come si legge un bonus, a parole. Una riga per effetto: la scheda le
+   mostra tutte, e quelle che a livello 0 non fanno niente le mostra
+   spente — vedere cosa *arriverà* è metà del motivo per salire. */
+D.BONUS_TESTO = {
+  agricoltura: lv => [
+    ['Raccolti più preziosi', '+' + Math.round(lv*D.BONUS.agricoltura.valore*100) + '% sul prezzo'],
+    ['Raccolto doppio',       Math.round(lv*D.BONUS.agricoltura.doppio*100) + '% di probabilità']
+  ],
+  raccolta: lv => [
+    ['Foraggio e fibra in più', Math.round(lv*D.BONUS.raccolta.foraggio*100) + '% di probabilità'],
+    ['Legna per albero',        '+' + Math.floor(lv/D.BONUS.raccolta.legnaOgni) + ' ceppi'],
+    ['Foraggio più prezioso',   '+' + Math.round(lv*D.BONUS.raccolta.valore*100) + '% sul prezzo']
+  ],
+  estrazione: lv => [
+    ['Minerale in più',   Math.round((D.BONUS.estrazione.extraBase + lv*D.BONUS.estrazione.extra)*100) + '% di probabilità'],
+    ['Pietra in più',     lv >= D.BONUS.estrazione.pietraDa ? 'sì, da livello ' + D.BONUS.estrazione.pietraDa : 'da livello ' + D.BONUS.estrazione.pietraDa],
+    ['Minerali più cari', '+' + Math.round(lv*D.BONUS.estrazione.valore*100) + '% sul prezzo']
+  ],
+  pesca: lv => [
+    ['Barra più alta',   '+' + (lv*D.BONUS.pesca.barra) + ' px'],
+    ['Presa più salda',  '+' + Math.round(lv*D.BONUS.pesca.guadagno*100) + '% di velocità'],
+    ['Meno spazzatura',  '−' + Math.round(lv*D.BONUS.pesca.spazzatura*100) + '% di scarpe vecchie'],
+    ['Pesci più cari',   '+' + Math.round(lv*D.BONUS.pesca.valore*100) + '% sul prezzo']
+  ],
+  caccia: lv => [
+    ['Mira più ferma',   '+' + Math.round(lv*D.BONUS.caccia.mira*100) + '% di probabilità'],
+    ['Passo più leggero','le prede ti sentono ' +
+      Math.round(Math.min(D.BONUS.caccia.uditoMax, lv*D.BONUS.caccia.udito)*100) + '% più tardi']
+  ]
+};
+
+/* I premi di ogni salita di livello. L'indice è il livello RAGGIUNTO,
+   quindi la casella 0 è vuota: a zero non si è salito niente.
+
+   Salgono di valore con la fatica — i primi livelli arrivano in un
+   pomeriggio, il decimo è la fine di una stagione — e ognuno regala roba
+   del mestiere che l'ha guadagnato: chi zappa riceve semi, chi scava
+   riceve lingotti. La `chiave` dei livelli 5 e 10 è quella che vale: uno
+   strumento o un materiale che da soli non si troverebbero tanto presto. */
+D.PREMI_LIVELLO = {
+  agricoltura: [ null,
+    { oro:120,  item:'seme_patata',   n:6  },
+    { oro:220,  item:'concime',       n:8  },
+    { oro:380,  item:'seme_mais',     n:6  },
+    { oro:600,  item:'concime_acqua', n:8  },
+    { oro:900,  item:'spaventapasseri', n:1, chiave:true },
+    { oro:1300, item:'seme_melone',   n:8  },
+    { oro:1800, item:'arnia',         n:1  },
+    { oro:2500, item:'seme_zucca',    n:10 },
+    { oro:3400, item:'seme_uva',      n:10 },
+    { oro:5000, item:'seme_cristallia', n:3, chiave:true }
+  ],
+  raccolta: [ null,
+    { oro:120,  item:'fibra',        n:15 },
+    { oro:220,  item:'legna',        n:20 },
+    { oro:380,  item:'cassa',        n:2  },
+    { oro:600,  item:'argilla',      n:12 },
+    { oro:900,  item:'botte',        n:1, chiave:true },
+    { oro:1300, item:'linfa',        n:10 },
+    { oro:1800, item:'miele',        n:8  },
+    { oro:2500, item:'lanterna',     n:2  },
+    { oro:3400, item:'pelle',        n:6  },
+    { oro:5000, item:'vaso_lucciole', n:1, chiave:true }
+  ],
+  estrazione: [ null,
+    { oro:120,  item:'pietra',        n:20 },
+    { oro:220,  item:'rame',          n:12 },
+    { oro:380,  item:'carbone',       n:10 },
+    { oro:600,  item:'ferro',         n:10 },
+    { oro:900,  item:'fornace',       n:1, chiave:true },
+    { oro:1300, item:'lingotto_rame', n:6  },
+    { oro:1800, item:'quarzo',        n:6  },
+    { oro:2500, item:'lingotto_ferro', n:5 },
+    { oro:3400, item:'ametista',      n:4  },
+    { oro:5000, item:'gemma_luna',    n:2, chiave:true }
+  ],
+  pesca: [ null,
+    { oro:120,  item:'pane_miele',    n:3 },
+    { oro:220,  item:'fibra',         n:12 },
+    { oro:380,  item:'pesce_arrosto', n:3 },
+    { oro:600,  item:'barattoliera',  n:1 },
+    { oro:900,  item:'vaso_lucciole', n:1, chiave:true },
+    { oro:1300, item:'tisana',        n:4 },
+    { oro:1800, item:'crostata',      n:3 },
+    { oro:2500, item:'lanterna',      n:2 },
+    { oro:3400, item:'geode',         n:5 },
+    { oro:5000, item:'gemma_luna',    n:2, chiave:true }
+  ],
+  caccia: [ null,
+    { oro:120,  item:'fibra',        n:12 },
+    { oro:220,  item:'pelle',        n:3  },
+    { oro:380,  item:'spezzatino',   n:2  },
+    { oro:600,  item:'pelle',        n:6  },
+    { oro:900,  item:'forno',        n:1, chiave:true },
+    { oro:1300, item:'corno_cervo',  n:2  },
+    { oro:1800, item:'pesce_arrosto', n:4 },
+    { oro:2500, item:'corno_cervo',  n:4  },
+    { oro:3400, item:'lingotto_oro', n:2  },
+    { oro:5000, item:'medaglione',   n:1, chiave:true }
+  ]
+};
 
 /* ------------------------------------------------------------------
    PERSONAGGI

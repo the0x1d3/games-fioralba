@@ -861,6 +861,60 @@ verifica('chi lavora al chiuso ha una stanza che lo ospita', () => {
   return problemi;
 });
 
+/* I premi dei livelli sono cinquanta righe scritte a mano che nominano
+   oggetti: basta un id sbagliato — «lingotto_argento», che non esiste —
+   perché salire di livello regali il nulla, e non se ne accorge nessuno
+   finché qualcuno non arriva a quel livello lì, cioè settimane dopo. */
+verifica('ogni premio di livello esiste e ha un senso', () => {
+  const problemi = [];
+  const attese = DATA.XP_LIV.length - 1;      // livelli veri, senza lo zero
+
+  for (const k in DATA.SKILLS) {
+    const scala = DATA.PREMI_LIVELLO[k];
+    if (!scala) { problemi.push(`l'abilità «${k}» non ha una scala di premi`); continue; }
+    if (scala.length !== attese + 1)
+      problemi.push(`«${k}» ha ${scala.length - 1} premi invece di ${attese}`);
+    if (scala[0] !== null) problemi.push(`«${k}»: la casella 0 dovrebbe essere vuota (a zero non si sale)`);
+
+    let oroPrec = 0;
+    for (let i = 1; i < scala.length; i++) {
+      const P = scala[i];
+      if (!P) { problemi.push(`«${k}» livello ${i}: premio mancante`); continue; }
+      if (!DATA.ITEMS[P.item])
+        problemi.push(`«${k}» livello ${i} regala «${P.item}», che non è fra gli oggetti`);
+      if (!(P.n > 0))   problemi.push(`«${k}» livello ${i}: quantità non valida (${P.n})`);
+      if (!(P.oro > 0)) problemi.push(`«${k}» livello ${i}: monete non valide (${P.oro})`);
+      // salire deve pagare sempre di più: un livello che rende meno del
+      // precedente è quasi sempre una riga copiata e non aggiornata
+      if (P.oro <= oroPrec)
+        problemi.push(`«${k}» livello ${i}: ${P.oro} monete, non più del livello prima (${oroPrec})`);
+      oroPrec = P.oro;
+    }
+  }
+
+  // e ogni abilità deve saper raccontare i propri bonus, a ogni livello
+  for (const k in DATA.SKILLS) {
+    if (typeof DATA.BONUS_TESTO[k] !== 'function') { problemi.push(`«${k}» non ha BONUS_TESTO`); continue; }
+    if (!DATA.BONUS[k]) problemi.push(`«${k}» non ha coefficienti in BONUS`);
+    for (let lv = 0; lv <= attese; lv++) {
+      let righe;
+      try { righe = DATA.BONUS_TESTO[k](lv); }
+      catch (e) { problemi.push(`BONUS_TESTO['${k}'](${lv}) è esploso: ${e.message}`); break; }
+      if (!Array.isArray(righe) || !righe.length) { problemi.push(`BONUS_TESTO['${k}'](${lv}) non dice niente`); break; }
+      for (const r of righe)
+        if (!Array.isArray(r) || r.length !== 2 || !r[0] || r[1] == null || /NaN|undefined/.test(String(r[1])))
+          problemi.push(`BONUS_TESTO['${k}'](${lv}) ha una riga storta: ${JSON.stringify(r)}`);
+    }
+  }
+
+  // la scala dell'esperienza deve salire, o G.livello non saprebbe dove fermarsi
+  for (let i = 1; i < DATA.XP_LIV.length; i++)
+    if (DATA.XP_LIV[i] <= DATA.XP_LIV[i-1])
+      problemi.push(`XP_LIV non cresce fra il livello ${i-1} e il ${i}`);
+
+  return problemi;
+});
+
 /* Nasce dallo spacchettamento di game.js: titolo.js, salvataggio.js e
    pesca.js sono usciti da lì, e ognuno andava anche aggiunto a mano in
    index.html. Un file scritto e mai caricato non fa rumore — non è un

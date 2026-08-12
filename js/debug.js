@@ -404,6 +404,60 @@ function costruisciStoria(){
 }
 
 /* --------------------------------------------------------------- */
+/* ESPERIENZA E LIVELLI                                            */
+/* --------------------------------------------------------------- */
+function costruisciLivelli(){
+  const g = sezione('Esperienza');
+
+  /* Passa da G.xp e non da G.skills[k] += n: è G.xp che accorge la
+     salita, paga il premio e fa partire la carta. Scrivere l'esperienza
+     a mano proverebbe soltanto che si sa scrivere in un oggetto. */
+  for(const k in DATA.SKILLS){
+    bottone(g, DATA.SKILLS[k].nome + ' +50', ()=>{
+      G.xp(k, 50);
+      const p = LIV.progresso(k);
+      nota(DATA.SKILLS[k].nome + ': liv. ' + p.liv + (p.massimo ? ' (massimo)' : ', mancano ' + p.mancano));
+    });
+  }
+
+  const s = sezione('Livelli');
+  bottone(s, 'Un livello a caso', ()=>{
+    const chiavi = Object.keys(DATA.SKILLS).filter(k=>G.livello(k) < 10);
+    if(!chiavi.length){ nota('sono già tutte al massimo', false); return; }
+    const k = chiavi[(Math.random()*chiavi.length)|0];
+    G.xp(k, LIV.progresso(k).mancano);
+    nota(DATA.SKILLS[k].nome + ' sale');
+  });
+  bottone(s, 'Salta 3 livelli in una volta', ()=>{
+    const k = Object.keys(DATA.SKILLS).find(x=>G.livello(x) <= 7) || 'agricoltura';
+    const liv = G.livello(k);
+    const meta = Math.min(10, liv+3);
+    G.xp(k, DATA.XP_LIV[meta] - (G.skills[k]||0));
+    nota(DATA.SKILLS[k].nome + ': da ' + liv + ' a ' + G.livello(k) + ' — le carte si mettono in fila');
+  });
+  bottone(s, 'Tutte al livello 9', ()=>{
+    for(const k in DATA.SKILLS) G.skills[k] = DATA.XP_LIV[9];
+    nota('tutte a 9: il prossimo colpo di ognuna dà il premio grosso');
+  });
+  bottone(s, 'Azzera esperienza', ()=>{
+    for(const k in DATA.SKILLS) G.skills[k] = 0;
+    G.energiaBonus = 0;
+    G.energiaMax = 260;
+    G.premiSospesi = [];
+    nota('esperienza a zero, energia com\'era all\'inizio');
+  }, 'rosso');
+  bottone(s, 'Premi in sospeso: provali', ()=>{
+    /* riempie lo zaino apposta e poi fa salire di livello: è l'unico
+       modo per vedere il ramo in cui il premio non ci sta */
+    for(let i=0;i<G.inv.length;i++) if(!G.inv[i]) G.inv[i] = { id:'pietra', n:999 };
+    const k = Object.keys(DATA.SKILLS).find(x=>G.livello(x) < 10) || 'agricoltura';
+    G.xp(k, LIV.progresso(k).mancano);
+    nota('zaino riempito e livello preso: il premio dovrebbe essere in attesa (' + LIV.sospesi() + ')');
+  });
+  bottone(s, 'Apri la scheda Livelli', ()=>{ UI.diario(G,'livelli'); nota('scheda aperta'); });
+}
+
+/* --------------------------------------------------------------- */
 /* PROGRESSI                                                       */
 /* --------------------------------------------------------------- */
 function costruisciProgressi(){
@@ -516,6 +570,7 @@ function monta(){
   costruisciOggetti();
   costruisciTempo();
   costruisciLuoghi();
+  costruisciLivelli();
   costruisciStoria();
   costruisciProgressi();
   costruisciSalvataggio();

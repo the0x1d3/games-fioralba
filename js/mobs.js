@@ -440,6 +440,14 @@ M.aggiorna = function(G, dt){
   /* --- aggiornamento --- */
   const distPl = (b)=>Math.hypot(b.x-G.p.px, b.y-G.p.py);
 
+  /* Quanto ci lasciano avvicinare. Il raggio è della specie — il coniglio
+     a due passi, il cervo a quattro, come dice Oreste nella lezione — ma
+     la Caccia lo stringe: è il «vai piano, non correre» che insegna, reso
+     in un numero. Prima il livello serviva solo a centrare il bersaglio, e
+     la metà della caccia di cui parla lui, arrivarci vicino, non
+     migliorava mai. */
+  const udito = 1 - Math.min(DATA.BONUS.caccia.uditoMax, G.livello('caccia') * DATA.BONUS.caccia.udito);
+
   for(let i=mobs.length-1; i>=0; i--){
     const b = mobs[i];
     const S = SPECIE[b.tipo];
@@ -452,7 +460,7 @@ M.aggiorna = function(G, dt){
     if(d > 620 || b.vita<=0){ mobs.splice(i,1); continue; }
 
     /* fuga */
-    if(S.timido && d < S.timido && b.stato!=='fugge'){
+    if(S.timido && d < S.timido*udito && b.stato!=='fugge'){
       b.stato='fugge'; b.t=900+Math.random()*700;
       const a = Math.atan2(b.y-G.p.py, b.x-G.p.px);
       b.vx = Math.cos(a)*S.vel*2.1;

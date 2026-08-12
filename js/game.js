@@ -66,7 +66,7 @@ function statoIniziale(){
            piatti:0, regali:0, richiesteFatte:0, sagre:0, venduto:0,
            visitatoBosco:false, visitatoGrotta:false, visitatoPaese:false},
     guidaAperta:true, guidaNascosta:false,
-    mercato:null, gelo:false, richieste:[], richiestaSeq:0,
+    mercato:null, gelo:false, richieste:[], richiestaSeq:0, premiSospesi:[],
     obiettiviRiscossi:{}, sagra:null, mercante:{presente:false, giorno:-1, stock:[]},
     visitati:{podere:true}, collezione:{},
     trame:{ torta:{avviata:false, segreto:false, fatta:false},
@@ -344,24 +344,72 @@ G.controllaTraguardi = function(annuncia){
 /* quando si carica una partita, quello che è già fatto non è una notizia */
 G.azzeraTraguardi = function(){ traguardiFatti = null; G.controllaTraguardi(false); };
 
+/* Il monte energia che ogni livello aggiunge. Era scritto come cinque
+   `if` uno sotto l'altro, e l'agricoltura ne dava 8 mentre le altre 6
+   senza che niente dicesse perché: resta com'era, ma detto una volta. */
+const ENERGIA_PER_LIVELLO = { agricoltura:8, raccolta:6, estrazione:6, pesca:6, caccia:6 };
+
+/* Salire di livello paga: monete e un oggetto del mestiere che l'ha
+   guadagnato (DATA.PREMI_LIVELLO). Se lo zaino è pieno l'oggetto NON si
+   perde — finisce in `G.premiSospesi` e si ritira dalla scheda delle
+   abilità. Buttarlo sarebbe il modo peggiore di festeggiare, e succede
+   proprio quando succede: si sale di livello raccogliendo, cioè con lo
+   zaino pieno di roba appena raccolta. */
+function premiaLivello(k, liv){
+  const P = (DATA.PREMI_LIVELLO[k]||[])[liv];
+  if(!P) return null;
+  const dato = { oro:P.oro||0, item:P.item, n:P.n||0, chiave:!!P.chiave, sospeso:false };
+  if(P.oro){ G.oro += P.oro; G.registraVendita(0); }
+  if(P.item && P.n){
+    if(G.puoiAggiungere(P.item, P.n)) G.aggiungi(P.item, P.n);
+    else {
+      G.premiSospesi.push({ item:P.item, n:P.n, da:k, liv });
+      dato.sospeso = true;
+    }
+  }
+  return dato;
+}
+
 G.xp = function(k, n){
   G.progresso();
   const prima = G.livello(k);
   G.skills[k] = (G.skills[k]||0) + n;
   const dopo = G.livello(k);
-  if(dopo>prima){
-    SND.play('livello');
-    UI.toast(DATA.SKILLS[k].nome+' — livello '+dopo+'!','gold');
-    if(k==='agricoltura'){ G.energiaBonus += 8; }
-    if(k==='raccolta'){ G.energiaBonus += 6; }
-    if(k==='estrazione'){ G.energiaBonus += 6; }
-    if(k==='pesca'){ G.energiaBonus += 6; }
-    if(k==='caccia'){ G.energiaBonus += 6; }
+
+  /* Un colpo solo può valere più di un livello — la lezione di Oreste ne
+     dà 40 in un pezzo, e a inizio partita bastano. Si sale uno alla volta
+     e ognuno paga il suo premio, altrimenti saltare da 0 a 2 farebbe
+     sparire il premio del primo. */
+  if(dopo > prima){
+    const saliti = [];
+    for(let l = prima+1; l <= dopo; l++){
+      G.energiaBonus += ENERGIA_PER_LIVELLO[k] || 6;
+      saliti.push({ skill:k, liv:l, premio:premiaLivello(k, l) });
+    }
     G.energiaMax = ENERGIA_BASE + G.energiaBonus;
-    G.energia = Math.min(G.energiaMax, G.energia+20);
+    G.energia = Math.min(G.energiaMax, G.energia + 20);
+    G.stats.livelli = (G.stats.livelli||0) + saliti.length;
+
     particelleTesto(G.p.px, G.p.py-40, 'LIVELLO '+dopo, '#ffe270');
+    festaLivello();
+    for(const s of saliti) LIV.annuncia(s);
+  } else {
+    LIV.guadagno(k, n);          // la barretta che compare e scompare
   }
+  G.aggiornaHUD();
 };
+
+/* la cascata di stelle attorno al giocatore: sta qui e non in livelli.js
+   perché le particelle sono del mondo, non del pannello */
+function festaLivello(){
+  const cx = G.p.px, cy = G.p.py - 22;
+  for(let i=0;i<46;i++){
+    const a = Math.random()*6.283, v = 0.5+Math.random()*2.1;
+    G.particelle.push({ t:'stella', x:cx, y:cy,
+      vx:Math.cos(a)*v, vy:Math.sin(a)*v-0.5, g:0.006,
+      vita:900+Math.random()*500, vitaMax:1400, c:i%3?'#ffe270':'#fff6d0' });
+  }
+}
 
 /* --- inventario --- */
 G.conta = function(id){
@@ -458,10 +506,12 @@ G.registraVendita = function(monete){
 G.prezzoVendita = function(id){
   let p = IT.prezzo(id);
   const c = IT.cat(id);
-  if(c==='raccolto') p = Math.round(p * (1 + G.livello('agricoltura')*0.03));
-  if(c==='foraggio') p = Math.round(p * (1 + G.livello('raccolta')*0.03));
-  if(c==='pesce')    p = Math.round(p * (1 + G.livello('pesca')*0.03));
-  if(c==='minerale') p = Math.round(p * (1 + G.livello('estrazione')*0.02));
+  // i coefficienti stanno in DATA.BONUS: da lì li legge anche la scheda
+  const B = DATA.BONUS;
+  if(c==='raccolto') p = Math.round(p * (1 + G.livello('agricoltura')*B.agricoltura.valore));
+  if(c==='foraggio') p = Math.round(p * (1 + G.livello('raccolta')*B.raccolta.valore));
+  if(c==='pesce')    p = Math.round(p * (1 + G.livello('pesca')*B.pesca.valore));
+  if(c==='minerale') p = Math.round(p * (1 + G.livello('estrazione')*B.estrazione.valore));
   // mercato dinamico: oggi un prodotto è più richiesto
   if(G.mercato && G.mercato.item===id) p = Math.round(p * G.mercato.mult);
   return p;
@@ -647,7 +697,7 @@ function guardiaGiocatore(){
 function normalizzaStato(){
   const A = k => { if(!Array.isArray(G[k])) G[k]=[]; };
   const O = k => { if(!G[k] || typeof G[k]!=='object') G[k]={}; };
-  ['inv','richieste','cassaConsegna','animali'].forEach(A);
+  ['inv','richieste','cassaConsegna','animali','premiSospesi'].forEach(A);
   ['skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
    'lettere','ricetteNote','stats','obiettiviRiscossi','visitati','collezione','regaloRicevuto',
    'parlatoOggi','regalatoOggi','mercato'].forEach(O);
@@ -1011,7 +1061,7 @@ function usaOggetto(){
       o.hp -= 1 + liv*0.6;
       if(o.hp<=0){
         SND.play('albero');
-        const bonus = 1 + Math.floor(G.livello('raccolta')/3);
+        const bonus = 1 + Math.floor(G.livello('raccolta')/DATA.BONUS.raccolta.legnaOgni);
         if(o.t==='ceppo'){
           m.obj[i]=null;
           G.aggiungi('legna', 3+bonus);
@@ -1071,9 +1121,10 @@ function usaOggetto(){
         m.obj[i]=null;
         const lv=G.livello('estrazione');
         let drop, q=1;
+        const BE = DATA.BONUS.estrazione;
         if(o.carbone){ drop='carbone'; q=1+(Math.random()<0.3?1:0); }
-        else if(o.kind==='pietra'){ drop='pietra'; q=1+((Math.random()*2)|0)+(lv>=5?1:0); }
-        else { drop=o.kind; q=1+(Math.random()<0.25+lv*0.03?1:0); }
+        else if(o.kind==='pietra'){ drop='pietra'; q=1+((Math.random()*2)|0)+(lv>=BE.pietraDa?1:0); }
+        else { drop=o.kind; q=1+(Math.random()<BE.extraBase+lv*BE.extra?1:0); }
         G.aggiungi(drop,q);
         UI.toast('+'+q+' '+IT.nome(drop),'good',drop);
         G.xp('estrazione', o.kind==='pietra'?4:12);
@@ -1097,7 +1148,7 @@ function usaOggetto(){
       if(!o){ nonSiPuo('La falce taglia erbacce, fiori e cespugli.'); return; }
       if(o.t==='erbaccia'||o.t==='fiori'){
         m.obj[i]=null; SND.play('zappa'); p.usoT=200;
-        const n = 1 + (Math.random()< (0.25+G.livello('raccolta')*0.04) ? 1:0);
+        const n = 1 + (Math.random()< (0.25+G.livello('raccolta')*DATA.BONUS.raccolta.fibra) ? 1:0);
         G.aggiungi('fibra',n);
         G.xp('raccolta',2);
         for(let k=0;k<6;k++) G.particelle.push({t:'foglia',
@@ -1239,7 +1290,7 @@ function raccogliColtura(tx,ty,suolo){
   let n = 1;
   const lv = G.livello('agricoltura');
   if(suolo.concime==='concime' && Math.random()<0.35) n++;
-  if(Math.random() < lv*0.02) n++;
+  if(Math.random() < lv*DATA.BONUS.agricoltura.doppio) n++;
   if(C.forma==='bacca'||C.forma==='grappolo') n += (Math.random()<0.4?1:0);
 
   if(!G.puoiAggiungere(suolo.crop.id,n)){ UI.toast('Zaino pieno!','bad'); SND.play('errore'); return; }
@@ -1267,7 +1318,7 @@ function raccogliColtura(tx,ty,suolo){
 function raccogliForaggio(tx,ty,o){
   const m=G.mappa();
   const lv=G.livello('raccolta');
-  let n = 1 + (Math.random()<lv*0.04?1:0);
+  let n = 1 + (Math.random()<lv*DATA.BONUS.raccolta.foraggio?1:0);
   if(!G.puoiAggiungere(o.item,n)){ UI.toast('Zaino pieno!','bad'); return; }
   m.obj[WORLD.idx(m,tx,ty)]=null;
   G.aggiungi(o.item,n);
@@ -2029,7 +2080,7 @@ function colpisce(distanza){
   const liva = G.attrezziLiv.arco || 0;
   const portata = GITTATA + liva*55;
   const vicinanza = 1 - (distanza / portata);          // 1 addosso, 0 al limite
-  const prob = 0.42 + vicinanza*0.40 + liv*0.035 + liva*0.05;
+  const prob = 0.42 + vicinanza*0.40 + liv*DATA.BONUS.caccia.mira + liva*0.05;
   return Math.random() < Math.min(0.95, prob);
 }
 

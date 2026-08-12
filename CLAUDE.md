@@ -69,6 +69,7 @@ caricato non fa rumore — non è un errore di sintassi e non è un test rosso.
 | `PESCA`    | pesca.js      | il minigioco: lancio, abboccata, lotta                  |
 | `STORIE`   | storie.js     | la lezione di Oreste, la torta di Ilde, il Pesce Luna   |
 | `SOLSTIZIO`| solstizio.js  | atto secondo: le sei memorie, la verità, la veglia      |
+| `LIV`      | livelli.js    | barretta, carta del livello, scheda delle abilità       |
 | `REND`     | render.js     | il disegno di un fotogramma                             |
 | `G`        | game.js       | stato di gioco, input, sistemi (il file più grosso)     |
 | `DEBUG`    | debug.js      | il pannello di prova (dopo game.js: legge `G` subito)   |
@@ -175,6 +176,42 @@ npm run check      # tsc --noEmit sui JSDoc
 npm run verifica   # test + check
 npm run serve      # http://localhost:8123, senza cache
 ```
+
+### I livelli
+
+Cinque abilità, dieci livelli, e **un solo posto per ogni numero**:
+
+- `DATA.XP_LIV` — le soglie
+- `DATA.BONUS` — i coefficienti veri, letti sia da chi li applica
+  (`game.js`, `pesca.js`, `mobs.js`) sia da chi li racconta
+- `DATA.BONUS_TESTO[k](liv)` — le frasi, calcolate da `DATA.BONUS`
+- `DATA.PREMI_LIVELLO[k][liv]` — monete e oggetto di ogni salita
+- `G.xp(k, n)` — l'unica porta: accorge la salita, paga, annuncia
+- `LIV.progresso(k)` — «a che punto sono», per tutti e tre i posti che lo mostrano
+
+**Non scrivere un numero di bilanciamento in due posti.** Questa sezione
+nasce da una divergenza già avvenuta: la scheda prometteva «barra di pesca
++7px per livello» mentre `pesca.js` ne dava 8, e della Caccia non diceva
+niente perché l'elenco a mano si era fermato a quattro abilità su cinque.
+Un controllo in `tools/coerenza.js` adesso verifica che ogni premio esista
+fra gli oggetti, che le monete crescano di livello in livello e che nessuna
+frase contenga `NaN`.
+
+Se aggiungi un bonus a `BONUS_TESTO`, **implementalo**: «Passo più leggero»
+è nato così — la frase c'era, l'effetto no, e le prede continuavano a
+scappare alla stessa distanza. Ora `mobs.js` stringe il raggio di fuga, col
+tetto (`uditoMax`) scritto in `DATA` e non nel codice, perché con `udito` a
+0.08 la scheda avrebbe promesso l'80% e il gioco si sarebbe fermato al 60%.
+
+Se lo zaino è pieno l'oggetto **non si perde**: va in `G.premiSospesi`, si
+ritira dalla scheda, e viaggia nel salvataggio. È il caso normale, non
+quello raro: si sale di livello raccogliendo, cioè con lo zaino pieno.
+
+Le carte di livello si mettono **in coda** (un colpo può valere più livelli:
+la lezione di Oreste ne dà 40 in una volta). Fra una carta e l'altra passano
+260 ms di schermo vuoto: per sapere se la coda è finita usa `LIV.inCoda()`,
+non «esiste `.liv-velo`?» — quella domanda risponde male proprio in quei
+260 ms, ed è già costata un giro di verifica.
 
 ### Il pannello di prova
 

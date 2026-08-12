@@ -118,7 +118,7 @@ function scegliPesce(){
     return true;
   });
   if(!pool.length) pool=['carpa'];
-  if(Math.random() < 0.14 - G.livello('pesca')*0.012){
+  if(Math.random() < 0.14 - G.livello('pesca')*DATA.BONUS.pesca.spazzatura){
     return ['scarpa_vecchia','alga','lattina'][(Math.random()*3)|0];
   }
   return pool[(Math.random()*pool.length)|0];
@@ -146,7 +146,7 @@ function aggiornaPesca(dt){
   }
   if(pesca.fase==='gioco'){
     const lvl = G.livello('pesca');
-    const altezzaBarra = ALTEZZA_BARRA + lvl*8;
+    const altezzaBarra = ALTEZZA_BARRA + lvl*DATA.BONUS.pesca.barra;
     const corsaBarra = PISTA - altezzaBarra;     // quanto può scorrere la barra
     const corsaPesce = PISTA - PESCE;            // il pesce è più piccolo: corre di più
 
@@ -184,7 +184,7 @@ function aggiornaPesca(dt){
     const dentro = centro >= pesca.barra - MARGINE &&
                    centro <= pesca.barra + altezzaBarra + MARGINE;
 
-    pesca.prog += dentro ? GUADAGNO*dt*(1+lvl*0.03) : -PERDITA*dt;
+    pesca.prog += dentro ? GUADAGNO*dt*(1+lvl*DATA.BONUS.pesca.guadagno) : -PERDITA*dt;
     pesca.prog = Math.max(0, Math.min(100, pesca.prog));
 
     // DOM
