@@ -276,10 +276,19 @@ verifica('la notte del solstizio si può ricostruire', () => {
 /* Una lettera scritta e mai consegnata è lavoro buttato, e una lettera
    consegnata che non esiste è una finestra vuota in faccia al
    giocatore. Le due liste stanno in file diversi — il testo in data.js,
-   la condizione in game.js, che qui non si può caricare perché vuole il
-   DOM — quindi gli id si leggono dal sorgente. */
+   la condizione nel codice, che qui non si può caricare perché vuole il
+   DOM — quindi gli id si leggono dal sorgente.
+
+   Il sorgente è tutto `js/`, non più il solo game.js: quando l'atto
+   secondo è uscito in solstizio.js si è portato dietro le consegne di
+   «verita» e «veglia», e questo controllo è diventato rosso senza che
+   il gioco avesse niente di rotto. Cercare in un file solo voleva dire
+   legare un controllo sui dati a dove sta scritto il codice. */
 verifica('ogni lettera esiste ed è consegnata da qualcosa', () => {
   const problemi = [];
+  const dir = path.join(RADICE, 'js');
+  const tutto = fs.readdirSync(dir).filter(n => n.endsWith('.js'))
+    .map(n => fs.readFileSync(path.join(dir, n), 'utf8')).join('\n');
   const src = fs.readFileSync(path.join(RADICE, 'js/game.js'), 'utf8');
 
   const posta = [];
@@ -295,8 +304,8 @@ verifica('ogni lettera esiste ed è consegnata da qualcosa', () => {
      e le due dell'atto secondo, che le consegnano la verità e la veglia */
   const altre = new Set(['intro', 'ricetta_ilde', 'verita', 'veglia']);
   for (const k of ['verita', 'veglia'])
-    if (!new RegExp('G\\.lettere\\.' + k + '\\s*=\\s*true').test(src))
-      problemi.push(`la lettera «${k}» non viene mai consegnata da game.js`);
+    if (!new RegExp('G\\.lettere\\.' + k + '\\s*=\\s*true').test(tutto))
+      problemi.push(`la lettera «${k}» non viene mai consegnata da nessun file`);
   for (const b of DATA.SANTUARIO) altre.add(b.id);
 
   for (const id in DATA.LETTERE) {

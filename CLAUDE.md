@@ -47,7 +47,8 @@ tutto, `game.js` per ultimo.
 ```
 data.js  palette.js  art.js  fx.js  audio.js  world.js  mobs.js
 ui.js  demo.js  changelog.js  landing.js  titolo.js  salvataggio.js
-pesca.js  tutorial.js  guida.js  render.js  game.js
+pesca.js  storie.js  solstizio.js  tutorial.js  guida.js
+render.js  game.js
 ```
 
 Questa lista non va tenuta a mente: un controllo in `tools/coerenza.js`
@@ -66,34 +67,58 @@ caricato non fa rumore — non è un errore di sintassi e non è un test rosso.
 | `TITOLO`   | titolo.js     | la scena animata dietro la schermata iniziale           |
 | `SALVA`    | salvataggio.js| localStorage, backup, esporta/importa in `.json`        |
 | `PESCA`    | pesca.js      | il minigioco: lancio, abboccata, lotta                  |
+| `STORIE`   | storie.js     | la lezione di Oreste, la torta di Ilde, il Pesce Luna   |
+| `SOLSTIZIO`| solstizio.js  | atto secondo: le sei memorie, la verità, la veglia      |
 | `REND`     | render.js     | il disegno di un fotogramma                             |
 | `G`        | game.js       | stato di gioco, input, sistemi (il file più grosso)     |
 
-`game.js` è ~4000 righe e quasi tutte le sue funzioni sono **private al modulo**.
+`game.js` è ~3500 righe e quasi tutte le sue funzioni sono **private al modulo**.
 Solo quelle appese a `G.` si chiamano da fuori. Se ti serve provare una funzione
 privata dalla console, o la esponi apposta (`G.postaDovuta` nasce così) oppure
 la raggiungi dal percorso vero degli eventi.
 
 ### Cosa serve per staccare un pezzo di game.js
 
-Ne sono usciti tre, e si è misurato prima quali si potevano staccare davvero:
-per ogni sezione, quante funzioni private di `game.js` usa e da chi è chiamata.
-`titolo.js` non ne usava **nessuna** (solo `ART`), `salvataggio.js` due,
-`pesca.js` tre. Le sezioni che sembravano peggio legate — `TITOLO` con 17
-dipendenze, `LA POSTA` con 13 — lo erano perché ospitavano funzioni che non
-c'entravano: `nuovaPartita` stava sotto l'intestazione del titolo, `nuovoGiorno`
-sotto quella della posta. **Prima di spostare, guarda cosa c'è davvero dentro
-una sezione, non come si chiama.**
+Ne sono usciti cinque, e si è misurato prima quali si potevano staccare
+davvero: per ogni sezione, quante funzioni private di `game.js` usa e da chi è
+chiamata. `titolo.js` e `storie.js` non ne usavano **nessuna**,
+`salvataggio.js` e `solstizio.js` due, `pesca.js` tre.
+
+**Prima di spostare, guarda cosa c'è davvero dentro una sezione, non come si
+chiama.** Le sezioni che sembravano peggio legate — `TITOLO` con 17 dipendenze,
+`LA POSTA` con 13 — lo erano perché ospitavano funzioni che non c'entravano:
+`nuovaPartita` stava sotto l'intestazione del titolo, `nuovoGiorno` sotto quella
+della posta. Al contrario, `PESCA` risultava dipendere da `passo` e `LA LEZIONE
+DI ORESTE` pure: erano **omonimie**, `const passo` dentro un ciclo e
+`passoLezione`, e in italiano la parola torna nei commenti. Un elenco di
+dipendenze si legge, non si crede.
+
+E guarda anche il contrario: cosa di quella sezione serve *fuori*. Con l'atto
+secondo se ne stava andando `FASCE_VEGLIA`, che è una memo usata solo da
+`G.fasciaAgenda` — l'avrebbe lasciata senza. È rimasta in `game.js`, accanto a
+`FASCE_SAGRA` che fa la stessa identica cosa.
 
 Il prezzo di ogni stacco è nominabile: le funzioni che restano in `game.js` e
-servono al file nuovo vanno appese a `G.` (`G.statoIniziale`, `G.normalizzaStato`,
-`G.spendi`, `G.schizzo`, `G.particelleTesto`). Se l'elenco cresce troppo, la
-sezione non era staccabile.
+servono al file nuovo vanno appese a `G.` — finora `G.statoIniziale`,
+`G.normalizzaStato`, `G.spendi`, `G.schizzo`, `G.particelleTesto`, `G.finale`.
+Se l'elenco cresce troppo, la sezione non era staccabile.
 
 I file nuovi si caricano **prima** di `game.js` e quindi non possono toccare `G`
 al caricamento: lo usano solo dentro le funzioni. Per questo è `game.js` a
-riappendere `G.salva`, `G.esporta`, `G.importaTesto`, `G.importaDaFile` a
-`SALVA`, e non il contrario.
+riappendere `G.salva` e compagnia a `SALVA`, e `G.eSeraDiVeglia` e compagnia a
+`SOLSTIZIO`, e non il contrario.
+
+Dopo una rinomina meccanica di punti di chiamata, la prova che vale è questa,
+dalla console: prende dal sorgente ogni `MODULO.funzione` che `game.js` chiama e
+controlla che esista davvero. Un nome storto, altrimenti, si scopre solo quando
+il giocatore clicca proprio quella scelta lì.
+
+```js
+fetch('js/game.js').then(r=>r.text()).then(src=>{
+  for(const m of src.matchAll(/\b(STORIE|SOLSTIZIO|PESCA|SALVA|TITOLO)\.(\w+)/g))
+    if(typeof window[m[1]][m[2]] !== 'function') console.warn('manca', m[0]);
+});
+```
 
 ### Firme che sorprendono
 
