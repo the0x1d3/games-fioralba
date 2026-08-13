@@ -1743,3 +1743,112 @@ Object.assign(window.LINGUA_EN, {
 "La barra degli attrezzi era larga 466 pixel dentro uno schermo da 375: il primo e l'ultimo attrezzo stavano fuori. Le celle dello zaino erano 21 pixel, la crocetta per chiudere le finestre 29. Adesso la barra ci sta, le finestre si aprono a tutto schermo, e ogni cosa che si tocca è grande almeno quanto un polpastrello. C'è anche il rispetto della tacca dell'iPhone e della barra di casa.":
   'The tool bar was 466 pixels wide inside a 375-pixel screen: the first and last tool sat off the edge. The backpack cells were 21 pixels, the cross that closes a window 29. Now the bar fits, windows open full-screen, and everything you touch is at least as big as a fingertip. The iPhone notch and home bar are respected too.'
 });
+
+/* ===================================================================
+   LE PARTITE SUL SERVER
+   Il selettore, il codice, la migrazione di chi arriva da ieri, e i due
+   casi in cui qualcosa non torna. Il censimento non vede queste frasi —
+   passano da `T(...)` dentro ai textContent, non dal primo argomento di
+   UI.modal — quindi vanno tenute allineate a mano.
+   Una nota di tono: in italiano si dà del tu e si dice «apparecchio»
+   per non ripetere «computer o telefono» ogni volta; in inglese
+   «device» fa lo stesso mestiere e non suona tecnico.
+   =================================================================== */
+Object.assign(window.LINGUA_EN, {
+/* --- il codice --- */
+'La tua partita è questa': 'This is your game',
+'Il codice di questa partita': 'This game’s code',
+'Ho segnato il codice, si comincia': 'Code written down — let’s begin',
+"<b>Segnatelo.</b> Con questo codice riprendi la partita da qualunque computer o telefono. Su questo apparecchio resta in elenco, quindi qui non dovrai riscriverlo. <b>Chi ha il codice ha la partita</b>: non darlo in giro.":
+  '<b>Write it down.</b> With this code you pick the game up on any computer or phone. On this device it stays in the list, so you will not have to type it again here. <b>Whoever has the code has the game</b>: do not pass it around.',
+'Scrivi questo codice su un altro computer o telefono per riprendere di là esattamente da qui. <b>Chi ha il codice ha la partita</b>: non darlo in giro.':
+  'Type this code on another computer or phone to carry on from exactly here. <b>Whoever has the code has the game</b>: do not pass it around.',
+'Questa partita non è ancora sul server.': 'This game is not on the server yet.',
+'Cambia partita': 'Switch game',
+
+/* --- il selettore --- */
+'Quale partita riprendi?': 'Which game are you picking up?',
+'Riprendi una partita': 'Pick up a game',
+'Su questo apparecchio non risulta nessuna partita. Se ne hai una altrove, scrivi qui il suo codice: lo trovi nel Menu del gioco, sull\'altro computer.':
+  'There is no game on record on this device. If you have one elsewhere, type its code here: you will find it in the game Menu, on the other computer.',
+'Oppure scrivi il codice di un\'altra partita:': 'Or type the code of another game:',
+'Il codice della partita:': 'The game code:',
+'Partita senza nome': 'Unnamed game',
+'non ancora giocata': 'not played yet',
+'monete': 'coins',
+'Trovata. Si comincia.': 'Found it. Here we go.',
+'Non riesco ad aprirla.': 'I cannot open it.',
+
+/* --- il server che non risponde --- */
+'Il server non risponde': 'The server is not answering',
+'Non riesco a raggiungere il server.': 'I cannot reach the server.',
+'Le partite di Fioralba stanno sul server: senza collegamento non si può cominciare né riprendere. Riprova fra un momento.':
+  'Fioralba games live on the server: without a connection you can neither start nor resume one. Try again in a moment.',
+'Riprova': 'Try again',
+'Sto parlando col server.': 'Talking to the server.',
+'Un momento…': 'One moment…',
+'Preparo la valle…': 'Preparing the valley…',
+'Nessuna partita aperta.': 'No game is open.',
+"Non c'è niente da mandare.": 'There is nothing to send.',
+'Invio non riuscito.': 'Sending failed.',
+'Non riesco a creare la partita sul server.': 'I cannot create the game on the server.',
+'Non riesco a salvare adesso: riprovo da solo.': 'I cannot save right now — I will keep trying on my own.',
+'Il salvataggio non è leggibile.': 'The save cannot be read.',
+'Il salvataggio non si è potuto aprire.': 'The save could not be opened.',
+
+/* --- il menu --- */
+'Partita': 'Game',
+'Salva adesso': 'Save now',
+'Partita salvata sul server.': 'Game saved to the server.',
+'Esci al titolo': 'Quit to title',
+'Salvo…': 'Saving…',
+
+/* --- il cassetto rimasto indietro --- */
+"C'è del gioco non mandato": 'There is unsent play here',
+'Su questo apparecchio era rimasto un pezzo di partita che non è mai arrivato al server — probabilmente è caduta la rete. Nel frattempo la stessa partita è stata giocata altrove, quindi le due non combaciano più.':
+  'A piece of play was left on this device that never reached the server — the connection probably dropped. Meanwhile the same game has been played elsewhere, so the two no longer match.',
+'Rimasta qui': 'Left here',
+'Tengo quella rimasta qui': 'Keep the one left here',
+
+/* --- due apparecchi sulla stessa partita --- */
+'Qualcuno sta giocando la stessa partita': 'Somebody else is playing this game',
+'Questa partita è stata salvata da un altro apparecchio mentre giocavi qui. Tenerne una vuol dire <b>perdere l\'altra</b>: guarda a che punto sono e scegli.':
+  'This game was saved from another device while you were playing here. Keeping one means <b>losing the other</b>: look at where each has got to and choose.',
+'Quella che stai giocando': 'The one you are playing',
+'Quella sul server': 'The one on the server',
+
+/* --- la migrazione di chi arriva da ieri --- */
+'La tua partita si sposta sul server': 'Your game is moving to the server',
+'Fino a ieri Fioralba teneva la partita dentro a questo browser, dove bastava svuotare la cronologia per perderla. Adesso le partite stanno sul server e si riprendono con un codice, da qualunque apparecchio. La tua è ancora qui: la porto di là adesso.':
+  'Until yesterday Fioralba kept your game inside this browser, where clearing the history was enough to lose it. Now games live on the server and are picked up with a code, from any device. Yours is still here: I will move it across now.',
+'La partita che hai qui': 'The game you have here',
+'Spostala e dammi il codice': 'Move it and give me the code',
+'la sto spostando…': 'moving it…',
+"Finché non riesce, la partita resta dov'è: non si perde niente.":
+  'Until it succeeds the game stays where it is: nothing is lost.',
+
+/* --- il piede della landing --- */
+'La partita si salva sul server, da sola, e si riprende con un codice: dal computer, dal telefono, da dove ti pare.':
+  'The game saves itself to the server and is picked up with a code: on your computer, on your phone, wherever you like.'
+});
+
+/* --- versione 2.4 (changelog.js il censimento lo salta: a mano) --- */
+Object.assign(window.LINGUA_EN, {
+'Le partite stanno sul server, e si aprono con un codice':
+  'Games live on the server, and open with a code',
+'La sincronizzazione partiva una volta sola': 'Syncing happened once and never again',
+'Chi collegava la partita la vedeva salire sul server, e poi non saliva più: mesi di gioco restavano fermi al giorno del collegamento. Da fuori sembrava che su alcune partite non partisse mai. Partiva sempre, e non ripartiva mai — la funzione che manda esisteva e non la chiamava nessuno.':
+  'If you linked your game you saw it go up to the server, and then it never went up again: months of play stayed frozen on the day you linked it. From the outside it looked as though some games never synced at all. They always did, once — and never again, because the function that sends existed and nobody called it.',
+'Una partita sola, e sta di là': 'One game, and it lives over there',
+"Prima ce n'erano due: una nel browser e una copia sul server, che potevano scostarsi e ogni tanto ti chiedevano quale tenere. Adesso la partita è una e vive sul server: si salva da sé mentre giochi, e non c'è più niente da allineare. Del browser si serve solo un cassetto, per le volte che cade la rete: appena torna, quello che era rimasto parte da solo.":
+  'There used to be two: one in the browser and a copy on the server, which could drift apart and now and then asked you which to keep. Now there is one game and it lives on the server: it saves itself while you play, and there is nothing left to keep in step. All it needs from the browser is a drawer, for the times the connection drops — as soon as it comes back, whatever was left goes up on its own.',
+'«Continua» ti chiede quale partita': '«Continue» asks which game',
+"Questo apparecchio si ricorda i codici che ha visto, e te li mostra con nome, stagione e monete: si tocca quello giusto e si riparte. Se non ne conosce nessuno — perché sei su un computer nuovo — chiede il codice, che è l'unica cosa da sapere per ritrovare la tua valle da qualunque parte.":
+  'This device remembers the codes it has seen and shows them to you with name, season and coins: touch the right one and off you go. If it knows none — because you are on a new computer — it asks for the code, which is the only thing you need to know to find your valley again from anywhere.',
+'Cominciarne una nuova non cancella più niente': 'Starting a new one no longer erases anything',
+"Ogni partita ha il suo codice, quindi quella di prima resta dov'è. È sparito l'avviso «cominciandone una nuova la perdi», che era vero solo finché la partita stava dentro a un browser.":
+  'Every game has its own code, so the previous one stays where it is. The warning «start a new one and you lose this» is gone — it was only true while the game lived inside a browser.',
+'Niente più file .json da esportare e importare': 'No more .json files to export and import',
+"Erano il modo di spostare una partita quando la partita stava nel browser. Adesso ci si sposta col codice: dodici caratteri invece di centoquaranta chilobyte, e nessun file da ritrovare nella cartella dei download. Chi aveva ancora la partita nel browser se la vede spostare di là alla prima apertura, e riceve il suo codice.":
+  'They were how you moved a game when the game lived in the browser. Now you move with the code: twelve characters instead of a hundred and forty kilobytes, and no file to hunt for in your downloads folder. Anyone still holding a game in the browser will see it moved across on first opening, and be given their code.'
+});

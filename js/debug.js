@@ -565,7 +565,6 @@ function costruisciSalvataggio(){
   bottone(g, 'Salva adesso', ()=>{
     nota(G.salva() ? 'salvato' : 'non è riuscito a salvare', G.salva());
   });
-  bottone(g, 'Esporta in .json', ()=>{ G.esporta(); nota('scaricato'); });
   bottone(g, 'Ricarica la pagina', ()=>{ location.reload(); });
 
   /* Chiede conferma perché è l'unico comando del pannello che distrugge

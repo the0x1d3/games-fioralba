@@ -132,95 +132,55 @@ function collegaLanding(){
 
   if(window.LANDING) LANDING.init();
 
-  const haSalvato = !!caricaGrezzo();
+  /* «Continua» apre il selettore delle partite: questo dispositivo si
+     ricorda i codici che ha visto, e li mostra invece di chiederli. Se
+     non ne conosce nessuno la stessa finestra chiede il codice, che è
+     la sola cosa che serve sapere per riprendere da qualunque parte.
+
+     Prima il pulsante si abilitava guardando `fioralba_save_v1`: era
+     spento per chiunque arrivasse da un altro computer — cioè proprio
+     per chi una partita ce l'aveva. Adesso è sempre acceso, perché la
+     domanda «ce l'hai una partita?» la sa solo il server. */
   document.querySelectorAll('.lp-continue').forEach(b=>{
-    if(!haSalvato){ b.disabled = true; b.title = 'Nessuna partita salvata'; }
+    b.disabled = false; b.removeAttribute('title');
     b.addEventListener('click', ()=>{
       SND.resume(); SND.play('menu');
-      if(carica()) avviaGioco(false); else nuovaPartita();
+      UI.scegliPartita();
     });
   });
   document.querySelectorAll('.lp-new').forEach(b=>{
     b.addEventListener('click', ()=>{
       SND.resume(); SND.play('menu');
-      chiediNuovaPartita();     // se c'è già una partita, prima si avverte
-    });
-  });
-  /* L'import stava solo nel menu del titolo, che la landing nasconde
-     (`title-inner` sparisce qui sopra): per importare bisognava prima
-     entrare in partita, cioè averne già una. Dalla landing invece si
-     parte con un salvataggio portato da un altro computer. Il resto del
-     giro esiste già: importaDaFile valida, scrive e ricarica, e al
-     ritorno collegaTitolo vede il segnale in sessionStorage e riprende
-     la partita da solo. */
-  document.querySelectorAll('.lp-import').forEach(b=>{
-    b.addEventListener('click', ()=>{
-      SND.resume(); SND.play('menu');
-      G.importaDaFile();
+      cominciaNuova();
     });
   });
 
-  /* Riprendere col codice, dalla landing. Prima si poteva solo dal Menu
-     del gioco — cioè bisognava avere una partita per poter recuperare
-     una partita. Chi arriva da un altro computer non ce l'ha, ed era
-     esattamente la persona a cui serviva. */
-  const campo = $('#lp-codice');
-  if(campo){
-    /* il gioco ascolta la tastiera su window e non guarda da dove
-       arriva il tasto: senza fermarlo qui, scrivere il codice
-       farebbe camminare il giocatore */
-    for(const ev of ['keydown','keyup','keypress']) campo.addEventListener(ev, e=>e.stopPropagation());
-    campo.addEventListener('keydown', e=>{ if(e.key==='Enter') riprendiColCodice(); });
-  }
-  document.querySelectorAll('.lp-usa-codice').forEach(b=>{
-    b.addEventListener('click', ()=>{ SND.resume(); riprendiColCodice(); });
-  });
-
-  /* Aprendosi il blocco cresce di ~370px, e la hero è centrata: la parte
-     bassa finisce sotto la barra fissa in fondo alla landing (`.lp-bar`,
-     absolute bottom:0, z-index 2). Misurato su una finestra 1280×720: il
-     campo del codice usciva a y=684 e sopra ci stava la barra, quindi il
-     click ci finiva contro. Portarlo in vista al momento dell'apertura
-     risolve entrambe le strade — il rimando dal piede e il click diretto
-     sul titoletto — mentre farlo solo nel rimando ne copriva una sola. */
-  const blocco = document.querySelector('.lp-riprendi');
-  if(blocco) blocco.addEventListener('toggle', ()=>{
-    if(blocco.open) blocco.scrollIntoView({ behavior:'smooth', block:'center' });
-  });
-
-  /* il rimando dal piede: apre il blocco (e il `toggle` qui sopra ci
-     porta sopra), invece di lasciare che uno lo cerchi risalendo */
-  const vai = document.querySelector('.lp-vai-riprendi');
-  if(vai) vai.addEventListener('click', e=>{
-    e.preventDefault();
-    if(!blocco) return;
-    if(blocco.open) blocco.scrollIntoView({ behavior:'smooth', block:'center' });
-    else blocco.open = true;
-  });
+  /* Chi apriva Fioralba ieri ha ancora la partita dentro al browser.
+     Non deve accorgersi di niente: la si manda sul server, si prende un
+     codice, e si continua. La chiave vecchia si cancella solo a
+     conferma arrivata — se il server non risponde, quello che c'era
+     c'è ancora, e si riprova al prossimo avvio. */
+  if(window.SINC && SINC.daMigrare() && UI.proponiMigrazione) UI.proponiMigrazione();
 }
 
-function riprendiColCodice(){
-  const campo = $('#lp-codice');
-  if(!campo || !window.SINC) return;
-  const grezzo = campo.value.trim();
-  if(!grezzo) return;
-  const eco = $('#lp-codice-esito');
-  /* `T` in questo file è la misura della casella (32), non la
-     traduzione: qui la si chiama per esteso */
-  const tr = s => (window.LINGUA ? LINGUA.t(s) : s);
-  const dillo = (t, male)=>{ if(eco){ eco.textContent = tr(t); eco.className = 'lp-riprendi-esito' + (male ? ' male' : ''); } };
+/* Una partita nuova non cancella più niente: ogni partita ha il suo
+   codice, e quella di prima resta dov'è. Sparisce con questo tutto
+   l'avviso «cominciandone una nuova la perdi» — che era vero finché la
+   partita stava nel browser e ce n'era una sola. */
+function cominciaNuova(){
+  if(!window.SINC){ nuovaPartita(); return; }
+  UI.attesaServer('Preparo la valle…');
+  SINC.nuova().then(r=>{
+    if(!r.ok){ UI.erroreServer(r.errore); return; }
+    /* Il codice PRIMA della partita, e non dopo.
 
-  dillo('Cerco la partita…');
-  SINC.usaCodice(grezzo).then(r=>{
-    if(!r.ok){ dillo(r.errore || 'Codice non valido.', true); return; }
-    if(r.scheda && r.scheda.vuota){ dillo('Quel codice esiste, ma non ha ancora nessuna partita dentro.', true); return; }
-    dillo('Trovata! La sto scaricando…');
-    return SINC.scarica().then(s=>{
-      if(!s.ok){ dillo(s.errore || 'Non riesco a scaricarla, riprova fra un momento.', true); return; }
-      dillo('Fatto. Riparto…');
-      try{ sessionStorage.setItem('fioralba_import','1'); }catch(e){}
-      setTimeout(()=>location.reload(), 700);
-    });
+       Facendolo dopo, `nuovaPartita()` chiama `avviaGioco(true)` che a
+       700 ms apre la lettera di Nonna Ilde a tutto schermo: il codice
+       finiva sotto, e il primo gesto di chi comincia sarebbe stato
+       chiudere una finestra senza leggerla. Qui invece la finestra del
+       codice è l'ultima cosa che si vede prima della valle, non ha
+       crocetta, e il suo unico pulsante fa cominciare. */
+    UI.mostraCodice(r.codice, true, ()=>nuovaPartita());
   });
 }
 
@@ -231,89 +191,16 @@ function riprendiColCodice(){
    legata a mezzo gioco: erano queste quattro funzioni ad esserlo — la
    scena animata (ora in titolo.js) non chiamava niente.
    =================================================================== */
+/* Il menu del titolo: la landing lo nasconde (`title-inner` sparisce
+   in collegaLanding), ma resta la strada di chi entra col gioco già
+   avviato. Le due porte fanno la stessa cosa della landing, e non due
+   cose simili — averle diverse è come sono nate metà delle stranezze
+   di questo file. */
 function collegaTitolo(){
-  const salvato = caricaGrezzo();
-  if(salvato) $('#btn-continue').classList.remove('hidden');
-
-  $('#btn-new').onclick = ()=>{
-    SND.resume(); SND.play('menu');
-    chiediNuovaPartita();
-  };
-  $('#btn-continue').onclick = ()=>{
-    SND.resume(); SND.play('menu');
-    if(carica()) avviaGioco(false);
-    else nuovaPartita();
-  };
-  $('#btn-howto').onclick = ()=>{ SND.resume(); UI.comeSiGioca(); };
-  const bImp = $('#btn-import');
-  if(bImp) bImp.onclick = ()=>{ SND.resume(); SND.play('menu'); G.importaDaFile(); };
-
-  // se torniamo qui subito dopo un import, riprendi la partita importata
-  let autoImport = false;
-  try{
-    autoImport = sessionStorage.getItem('fioralba_import')==='1';
-    if(autoImport) sessionStorage.removeItem('fioralba_import');
-  }catch(e){}
-  if(autoImport && salvato && carica()){ avviaGioco(false); }
-}
-
-/* Cominciare da capo cancella quello che c'era, e finora non lo diceva
-   nessuno: bastava un clic di troppo sul menu per perdere una stagione
-   di lavoro. Adesso si chiede, e prima di rispondere si vede cosa c'è
-   in ballo — che giorno è, quante monete, quanto si è guadagnato. */
-function chiediNuovaPartita(){
-  const grezzo = caricaGrezzo();
-  if(!grezzo){ nuovaPartita(); return; }
-
-  let d = null;
-  try{ d = JSON.parse(grezzo); }catch(e){}
-  if(!d){ nuovaPartita(); return; }
-
-  const st = (DATA.SEASONS[d.stagioneIdx] || DATA.SEASONS[0]).nome;
-  const giorni = (d.giornoTot|0) + 1;
-
-  UI.modal('Ricominciare da capo?', body=>{
-    const avviso = document.createElement('div');
-    avviso.className = 'avviso-grave';
-    avviso.innerHTML = 'Hai una partita in corso. Cominciandone una nuova <b>la perdi</b>, '+
-                       'e non si torna indietro.';
-    body.appendChild(avviso);
-
-    const scheda = document.createElement('div'); scheda.className = 'salva-scheda';
-    scheda.innerHTML =
-      '<div class="ss-riga"><span>Contadino</span><b>'+(d.nomeGiocatore||'—')+'</b></div>'+
-      '<div class="ss-riga"><span>A che punto</span><b>'+st+' '+(d.giorno||1)+', anno '+(d.anno||1)+'</b></div>'+
-      '<div class="ss-riga"><span>Giorni giocati</span><b>'+giorni+'</b></div>'+
-      '<div class="ss-riga"><span>Monete</span><b>'+(d.oro||0)+'</b></div>'+
-      '<div class="ss-riga"><span>Guadagnate in tutto</span><b>'+((d.stats&&d.stats.guadagno)||0)+'</b></div>';
-    body.appendChild(scheda);
-
-    const consiglio = document.createElement('div');
-    consiglio.className = 'muted'; consiglio.style.margin = '10px 0 14px';
-    consiglio.innerHTML = 'Se ci tieni, prima <b>esportala in un file</b>: la ritrovi quando vuoi, '+
-                          'anche su un altro computer.';
-    body.appendChild(consiglio);
-
-    const az = document.createElement('div');
-    az.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
-
-    const bEsp = document.createElement('button'); bEsp.className = 'btn';
-    bEsp.textContent = 'Esporta la partita';
-    bEsp.onclick = ()=>{ G.esporta(); };
-    az.appendChild(bEsp);
-
-    const bAnn = document.createElement('button'); bAnn.className = 'btn blue';
-    bAnn.textContent = 'Lascia stare';
-    bAnn.onclick = ()=>UI.chiudiModal();
-    az.appendChild(bAnn);
-
-    const bOk = document.createElement('button'); bOk.className = 'btn red';
-    bOk.textContent = 'Cancella e ricomincia';
-    bOk.onclick = ()=>{ UI.chiudiModal(); nuovaPartita(); };
-    az.appendChild(bOk);
-
-    body.appendChild(az);
-  });
+  $('#btn-continue').classList.remove('hidden');
+  $('#btn-new').onclick      = ()=>{ SND.resume(); SND.play('menu'); cominciaNuova(); };
+  $('#btn-continue').onclick = ()=>{ SND.resume(); SND.play('menu'); UI.scegliPartita(); };
+  $('#btn-howto').onclick    = ()=>{ SND.resume(); UI.comeSiGioca(); };
 }
 
 function nuovaPartita(){
@@ -3680,21 +3567,22 @@ G.statistiche = function(){
 };
 
 /* ===================================================================
-   SALVATAGGIO — sta in salvataggio.js.
-   Qui resta solo l'aggancio: i pulsanti del menu e l'autosave chiamano
-   G.salva / G.esporta / G.importaTesto / G.importaDaFile, e quel file
-   si carica prima che G esista, quindi non può appenderveli da sé.
-   =================================================================== */
-G.salva         = SALVA.salva;
-G.esporta       = SALVA.esporta;
-G.importaTesto  = SALVA.importaTesto;
-G.importaDaFile = SALVA.importaDaFile;
+   SALVATAGGIO — sta in salvataggio.js, e finisce sul server.
+   Qui resta solo l'aggancio: l'autosave e il menu chiamano G.salva, e
+   quel file si carica prima che G esista, quindi non può appendercelo
+   da sé.
 
-/* dichiarate come funzioni e non come const: collegaTitolo e collegaLanding
-   le chiamano, e sono scritte molto più in su di questa riga. Con const
-   basterebbe spostare l'avvio di un pelo perché diventino una zona morta. */
-function caricaGrezzo(){ return SALVA.grezzo(); }
-function carica(){ return SALVA.carica(); }
+   Erano quattro: `esporta`, `importaTesto` e `importaDaFile` se ne sono
+   andati col file .json. Il giro «esporta un file, portalo sull'altro
+   computer, importalo» era il modo di spostare una partita quando la
+   partita stava nel browser; adesso sta sul server e ci si sposta col
+   codice, che sono dodici caratteri invece di centoquaranta chilobyte.
+   =================================================================== */
+G.salva = SALVA.salva;
+/* Il selettore delle partite sta in ui.js e deve poter far cominciare
+   quella scelta: è il prezzo, nominato, di avere le finestre di là e
+   l'avvio di qua. */
+G.avvia = avviaGioco;
 
 
 /* ===================================================================
@@ -3724,7 +3612,7 @@ function collegaInput(){
     }
     // modali
     if(UI.modalAperta()){
-      if(k==='escape'||k==='i'||k==='c'||k==='j'||k==='m') UI.chiudiModal();
+      if(k==='escape'||k==='i'||k==='c'||k==='j'||k==='m') UI.chiudiModal(true);
       return;
     }
     // pesca

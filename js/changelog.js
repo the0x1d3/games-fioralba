@@ -16,6 +16,18 @@
 
 window.CHANGELOG = [
   {
+    v: '2.4',
+    data: 'agosto 2026',
+    titolo: 'Le partite stanno sul server, e si aprono con un codice',
+    voci: [
+      { tipo:'fix',    t:'La sincronizzazione partiva una volta sola', d:'Chi collegava la partita la vedeva salire sul server, e poi non saliva più: mesi di gioco restavano fermi al giorno del collegamento. Da fuori sembrava che su alcune partite non partisse mai. Partiva sempre, e non ripartiva mai — la funzione che manda esisteva e non la chiamava nessuno.' },
+      { tipo:'nuovo',  t:'Una partita sola, e sta di là', d:'Prima ce n\'erano due: una nel browser e una copia sul server, che potevano scostarsi e ogni tanto ti chiedevano quale tenere. Adesso la partita è una e vive sul server: si salva da sé mentre giochi, e non c\'è più niente da allineare. Del browser si serve solo un cassetto, per le volte che cade la rete: appena torna, quello che era rimasto parte da solo.' },
+      { tipo:'nuovo',  t:'«Continua» ti chiede quale partita', d:'Questo apparecchio si ricorda i codici che ha visto, e te li mostra con nome, stagione e monete: si tocca quello giusto e si riparte. Se non ne conosce nessuno — perché sei su un computer nuovo — chiede il codice, che è l\'unica cosa da sapere per ritrovare la tua valle da qualunque parte.' },
+      { tipo:'nuovo',  t:'Cominciarne una nuova non cancella più niente', d:'Ogni partita ha il suo codice, quindi quella di prima resta dov\'è. È sparito l\'avviso «cominciandone una nuova la perdi», che era vero solo finché la partita stava dentro a un browser.' },
+      { tipo:'meglio', t:'Niente più file .json da esportare e importare', d:'Erano il modo di spostare una partita quando la partita stava nel browser. Adesso ci si sposta col codice: dodici caratteri invece di centoquaranta chilobyte, e nessun file da ritrovare nella cartella dei download. Chi aveva ancora la partita nel browser se la vede spostare di là alla prima apertura, e riceve il suo codice.' }
+    ]
+  },
+  {
     v: '2.3',
     data: 'agosto 2026',
     titolo: 'Fioralba si gioca dal telefono',

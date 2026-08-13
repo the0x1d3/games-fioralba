@@ -1,87 +1,108 @@
 /* ===================================================================
    FIORALBA — sincronizza.js
-   La partita che ti segue dal fisso al portatile.
+   Le partite stanno sul server. Questo file è l'unico che ci parla.
 
-   IL LOCALE RESTA LA VERITÀ. Il gioco salva su localStorage esattamente
-   come ha sempre fatto — offline compreso, senza chiedere niente a
-   nessuno — e questo file tiene allineata una copia sul server. Se il
-   server è giù, chi gioca non se ne accorge: nessuna funzione del gioco
-   aspetta la rete, e un errore di collegamento non è mai un errore di
-   gioco. Non è prudenza eccessiva: fino a ieri Fioralba funzionava in
-   aereo, e deve continuare.
+   PRIMA ERA IL CONTRARIO, e non funzionava. Il localStorage era la
+   verità e il server ne teneva una copia: due partite che potevano
+   divergere, un conflitto da far decidere al giocatore ogni volta che
+   divergevano davvero, e — per un anno intero — una copia che non si
+   aggiornava mai, perché `programmaInvio` non la chiamava nessuno.
+   Adesso c'è una partita sola e sta sul server: un codice, una partita,
+   nessuna copia con cui litigare.
 
-   NIENTE ACCOUNT: un codice, e basta. Si genera al primo collegamento,
-   si legge nel menu, e sul secondo computer si digita una volta. Chi ha
-   il codice ha la partita — è una chiave, non un nome utente, ed è
-   scritto anche nel menu perché non sia una sorpresa.
+   RESTA UNA COSA IN LOCALE, E UNA SOLA: il **cassetto**. È l'ultimo
+   salvataggio che non è ancora riuscito ad arrivare sul server — Wi-Fi
+   caduto, scheda chiusa a metà invio, treno in galleria. Non è una
+   seconda partita: non ci si può giocare, non compare da nessuna parte,
+   e sparisce nell'istante in cui il server conferma di averlo preso.
+   Senza, un pacchetto perso costa una giornata di gioco, e questo è il
+   genere di cosa che non si perdona a un gioco di fattoria.
 
-   I CONFLITTI LI DECIDE IL GIOCATORE. Se le versioni non tornano il
-   server rifiuta la scrittura, e qui si apre una finestra che mostra le
-   due partite — giorno, stagione, monete, quando sono state salvate — e
-   chiede quale tenere. Nessuna regola automatica: «vince il più
-   recente» butta via una sessione senza dirlo, ed è il modo peggiore di
-   rompere la fiducia in una funzione che dovrebbe darne.
+   NIENTE ACCOUNT: un codice, e basta. Chi ha il codice ha la partita —
+   è una chiave, non un nome utente. Questo dispositivo si ricorda i
+   codici che ha visto, così «Continua» può mostrarli invece di
+   chiederli; ma è un elenco di chiavi, non di partite, e cancellarlo
+   non cancella niente.
    =================================================================== */
 (function(){
 
 const S = {};
 window.SINC = S;
 
-const CHIAVE = 'fioralba_sinc';
-const RITARDO_INVIO = 4000;      // si aspetta un attimo: salvare è frequente
+const CH_ATTIVA   = 'fioralba_sinc';       // { codice, versione }
+const CH_ELENCO   = 'fioralba_partite';    // [ { codice, scheda, visto } ]
+const CH_CASSETTO = 'fioralba_cassetto';   // { codice, versione, dati, quando }
+const RITARDO     = 3000;                  // quiete prima di mandare: salvare è frequente
 
 /* --------------------------------------------------------------- */
-/* quello che ricordiamo di noi                                    */
+/* quello che questo dispositivo ricorda                            */
 /* --------------------------------------------------------------- */
 let stato = { codice:null, versione:0, ultimo:null, esito:null };
 
-function leggiStato(){
-  try{
-    const s = JSON.parse(localStorage.getItem(CHIAVE) || 'null');
-    if(s && typeof s.codice === 'string') stato = Object.assign(stato, s);
-  }catch(e){}
+function leggi(chiave, ripiego){
+  try{ const v = JSON.parse(localStorage.getItem(chiave) || 'null'); return v === null ? ripiego : v; }
+  catch(e){ return ripiego; }
 }
-function scriviStato(){
-  try{ localStorage.setItem(CHIAVE, JSON.stringify({ codice:stato.codice, versione:stato.versione })); }
-  catch(e){}
+function scrivi(chiave, valore){
+  try{ localStorage.setItem(chiave, JSON.stringify(valore)); return true; }
+  catch(e){ return false; }
 }
-leggiStato();
+function butta(chiave){ try{ localStorage.removeItem(chiave); }catch(e){} }
+
+(function(){
+  const s = leggi(CH_ATTIVA, null);
+  if(s && typeof s.codice === 'string') stato = Object.assign(stato, s);
+})();
+
+function scriviAttiva(){ scrivi(CH_ATTIVA, { codice:stato.codice, versione:stato.versione }); }
 
 S.stato = ()=> Object.assign({}, stato);
 S.collegato = ()=> !!stato.codice;
+S.codice = ()=> stato.codice;
 
 /* --------------------------------------------------------------- */
-/* parlare col server                                              */
+/* l'elenco dei codici visti qui                                    */
+/* --------------------------------------------------------------- */
+/* Serve a «Continua»: senza, chi torna sul suo computer dovrebbe
+   ridigitare dodici caratteri che ha già digitato. La scheda salvata
+   accanto (nome, giorno, stagione, monete) serve a disegnare la carta
+   PRIMA che il server risponda: la finestra si apre già piena e poi si
+   aggiorna, invece di mostrare tre rettangoli vuoti per un secondo. */
+S.elenco = function(){
+  const l = leggi(CH_ELENCO, []);
+  return Array.isArray(l) ? l.filter(v => v && typeof v.codice === 'string') : [];
+};
+S.ricorda = function(codice, scheda){
+  if(!codice) return;
+  const l = S.elenco().filter(v => v.codice !== codice);
+  l.unshift({ codice, scheda: scheda || null, visto: Date.now() });
+  scrivi(CH_ELENCO, l.slice(0, 12));      // dodici è già più di chiunque
+};
+S.dimentica = function(codice){
+  scrivi(CH_ELENCO, S.elenco().filter(v => v.codice !== codice));
+  if(stato.codice === codice){ stato = { codice:null, versione:0, ultimo:null, esito:null }; butta(CH_ATTIVA); }
+};
+
+/* --------------------------------------------------------------- */
+/* parlare col server                                               */
 /* --------------------------------------------------------------- */
 /* Ogni chiamata può fallire, e fallire è normale: si torna un oggetto
    con `ok:false` invece di lanciare, così nessun percorso del gioco può
    rompersi perché la rete non c'era. */
-async function chiama(metodo, percorso, corpo){
+async function chiama(metodo, percorso, corpo, opzioni){
   try{
-    const r = await fetch(percorso, {
+    const r = await fetch(percorso, Object.assign({
       method: metodo,
       headers: corpo ? { 'Content-Type':'application/json' } : {},
       body: corpo ? JSON.stringify(corpo) : undefined
-    });
+    }, opzioni || {}));
     let dati = null;
     try{ dati = await r.json(); }catch(e){}
     return { ok:r.ok, stato:r.status, dati:dati||{} };
   }catch(e){
-    return { ok:false, stato:0, dati:{ errore:'niente rete' } };
+    return { ok:false, stato:0, dati:{ errore:'Non riesco a raggiungere il server.' } };
   }
 }
-
-/* --------------------------------------------------------------- */
-/* collegare e scollegare                                          */
-/* --------------------------------------------------------------- */
-S.collega = async function(){
-  const r = await chiama('POST', '/api/partita');
-  if(!r.ok) return { ok:false, errore: r.dati.errore || 'non riesco a collegarmi' };
-  stato.codice = r.dati.codice;
-  stato.versione = 0;
-  scriviStato();
-  return { ok:true, codice: stato.codice };
-};
 
 /* Il codice si detta a voce e si scrive a mano: si accettano minuscole,
    spazi al posto dei trattini, e il prefisso dimenticato. Rifiutare un
@@ -94,154 +115,217 @@ S.normalizza = function(grezzo){
   return 'FIORALBA-' + c.slice(0,4) + '-' + c.slice(4,8) + '-' + c.slice(8,12);
 };
 
-S.usaCodice = async function(grezzo){
+/* --------------------------------------------------------------- */
+/* il cassetto                                                      */
+/* --------------------------------------------------------------- */
+/* Si scrive PRIMA di provare a mandare, non dopo il fallimento: se la
+   scheda si chiude nel mezzo della fetch non c'è nessun `catch` che
+   giri, e quello che non è stato scritto prima non si scrive più. */
+function metti(dati){
+  scrivi(CH_CASSETTO, { codice:stato.codice, versione:stato.versione, dati, quando:Date.now() });
+}
+function svuota(){ butta(CH_CASSETTO); }
+S.cassetto = function(){
+  const c = leggi(CH_CASSETTO, null);
+  return (c && typeof c.dati === 'string' && c.codice) ? c : null;
+};
+S.svuotaCassetto = svuota;
+
+/* --------------------------------------------------------------- */
+/* aprire una partita                                               */
+/* --------------------------------------------------------------- */
+/* La scheda leggera di un codice, per il selettore. */
+S.scheda = async function(codice){
+  const r = await chiama('GET', '/api/partita/' + codice + '/stato');
+  if(!r.ok) return null;
+  return r.dati;
+};
+S.schede = function(codici){
+  return Promise.all(codici.map(c => S.scheda(c).then(s => s ? Object.assign({codice:c}, s) : null)));
+};
+
+/* Una partita nuova: il codice lo dà il server, e da quel momento è la
+   partita. Non si sovrascrive niente — ogni partita ha il suo codice, e
+   quella di prima resta dov'è. */
+S.nuova = async function(){
+  const r = await chiama('POST', '/api/partita');
+  if(!r.ok) return { ok:false, errore: r.dati.errore || 'Non riesco a creare la partita sul server.' };
+  stato.codice = r.dati.codice;
+  stato.versione = r.dati.versione || 0;
+  stato.esito = 'ok';
+  scriviAttiva();
+  S.ricorda(stato.codice, null);
+  svuota();                        // il cassetto di un'altra partita non c'entra
+  return { ok:true, codice: stato.codice };
+};
+
+/* Apre un codice: lo scarica e lo installa. È l'unico modo di cominciare
+   a giocare una partita che esiste già. */
+S.apri = async function(grezzo){
   const codice = S.normalizza(grezzo);
   if(!codice) return { ok:false, errore:'Il codice non ha la forma giusta: dodici lettere e numeri.' };
-  const r = await chiama('GET', '/api/partita/' + codice + '/stato');
+
+  const r = await chiama('GET', '/api/partita/' + codice);
   if(r.stato === 404) return { ok:false, errore:'Nessuna partita con questo codice.' };
-  if(!r.ok) return { ok:false, errore: r.dati.errore || 'non riesco a raggiungere il server' };
+  if(!r.ok) return { ok:false, errore: r.dati.errore || 'Non riesco a raggiungere il server.' };
+  if(!r.dati.dati) return { ok:false, vuota:true, codice, errore:'Quel codice esiste, ma non ha ancora nessuna partita dentro.' };
+
+  const esito = SALVA.applicaTesto(r.dati.dati);
+  if(!esito.ok) return { ok:false, errore: esito.err };
+
   stato.codice = codice;
-  stato.versione = 0;          // non sappiamo ancora niente: la prossima mossa decide
-  scriviStato();
-  return { ok:true, scheda: r.dati };
+  stato.versione = r.dati.versione;
+  stato.ultimo = Date.now();
+  stato.esito = 'ok';
+  scriviAttiva();
+  S.ricorda(codice, r.dati);
+
+  /* Il cassetto di QUESTA partita, rimasto da una sessione che non è
+     riuscita a mandare: se il server è ancora dov'era quando l'abbiamo
+     riempito, quella roba è più recente di quella appena scaricata e va
+     rimessa in cima. Se il server è andato avanti, non si decide da
+     soli: si dice che c'è e si lascia scegliere. */
+  const c = S.cassetto();
+  if(c && c.codice === codice){
+    if(c.versione === r.dati.versione){
+      const e2 = SALVA.applicaTesto(c.dati);
+      if(e2.ok) return { ok:true, codice, versione:stato.versione, dalCassetto:true };
+    } else {
+      return { ok:true, codice, versione:stato.versione, cassettoInSospeso:c };
+    }
+  }
+  return { ok:true, codice, versione:stato.versione };
 };
 
-S.scollega = function(){
+S.chiudi = function(){
   stato = { codice:null, versione:0, ultimo:null, esito:null };
-  try{ localStorage.removeItem(CHIAVE); }catch(e){}
+  butta(CH_ATTIVA);
 };
 
 /* --------------------------------------------------------------- */
-/* mandare e prendere                                              */
+/* mandare                                                          */
 /* --------------------------------------------------------------- */
-/* Manda il salvataggio locale. Se il server ha qualcosa di più nuovo
-   non insiste: torna `conflitto` con la scheda dell'altro, e decide il
-   giocatore. */
-S.invia = async function(forza){
-  if(!stato.codice) return { ok:false, errore:'non collegato' };
-  const dati = SALVA.grezzo();
-  if(!dati) return { ok:false, errore:'niente da mandare' };
+/* `forza` salta il controllo di versione: lo usa solo chi ha appena
+   guardato in faccia le due partite e ha scelto la sua. */
+S.invia = async function(forza, opzioni){
+  if(!stato.codice) return { ok:false, errore:'Nessuna partita aperta.' };
+  const dati = SALVA.testo();
+  if(!dati) return { ok:false, errore:'Non c\'è niente da mandare.' };
 
   let meta = {};
   try{ meta = JSON.parse(dati); }catch(e){}
 
   const r = await chiama('PUT', '/api/partita/' + stato.codice, {
     dati,
-    versione: forza ? undefined : stato.versione,   // senza versione il server non controlla
+    versione: forza ? undefined : stato.versione,
     giornoTot: meta.giornoTot || 0,
     nome: meta.nomeGiocatore || null,
-    /* quattro numeri per far riconoscere la partita dall'altro
-       dispositivo senza scaricarne centoquaranta chilobyte */
+    /* quattro numeri per far riconoscere la partita nel selettore senza
+       scaricarne centoquaranta chilobyte */
     sommario: {
       oro: meta.oro,
       giorno: meta.giorno,
       anno: meta.anno,
       stagione: (DATA.SEASONS[meta.stagioneIdx] || {}).nome
     }
-  });
+  }, opzioni);
 
   if(r.stato === 409){
     stato.esito = 'conflitto';
-    return { ok:false, conflitto:true, server:r.dati.server, locale:schedaLocale() };
+    return { ok:false, conflitto:true, server:r.dati.server, locale:S.schedaViva() };
   }
-  if(!r.ok){ stato.esito = 'errore'; return { ok:false, errore: r.dati.errore || 'invio non riuscito' }; }
+  if(!r.ok){ stato.esito = 'errore'; return { ok:false, errore: r.dati.errore || 'Invio non riuscito.' }; }
 
   stato.versione = r.dati.versione;
   stato.ultimo = Date.now();
   stato.esito = 'ok';
-  scriviStato();
+  scriviAttiva();
+  S.ricorda(stato.codice, r.dati);
+  svuota();                        // è arrivato: il cassetto non serve più
   return { ok:true, versione: stato.versione };
 };
 
-/* Prende la partita dal server e la installa al posto di quella locale.
-   Passa dalla stessa validazione dell'import da file: un salvataggio
-   che non sapremmo rileggere non deve entrare neanche da qui. */
-S.scarica = async function(){
-  if(!stato.codice) return { ok:false, errore:'non collegato' };
-  const r = await chiama('GET', '/api/partita/' + stato.codice);
-  if(!r.ok) return { ok:false, errore: r.dati.errore || 'non riesco a scaricare' };
-  if(!r.dati.dati) return { ok:false, errore:'sul server non c\'è ancora niente' };
-
-  const esito = G.importaTesto(r.dati.dati);
-  if(!esito.ok) return { ok:false, errore: esito.err };
-
-  stato.versione = r.dati.versione;
-  stato.ultimo = Date.now();
-  stato.esito = 'ok';
-  scriviStato();
-  return { ok:true, versione: stato.versione };
-};
-
-/* la carta d'identità della partita che abbiamo qui, per il confronto */
-function schedaLocale(){
+/* la carta d'identità della partita che si sta giocando adesso */
+S.schedaViva = function(){
   try{
-    const d = JSON.parse(SALVA.grezzo() || 'null');
+    const d = JSON.parse(SALVA.testo() || 'null');
     if(!d) return null;
     return { giornoTot:d.giornoTot||0, nome:d.nomeGiocatore, oro:d.oro,
              stagione:(DATA.SEASONS[d.stagioneIdx]||{}).nome, giorno:d.giorno, anno:d.anno };
   }catch(e){ return null; }
-}
-S.schedaLocale = schedaLocale;
+};
 
 /* --------------------------------------------------------------- */
-/* l'invio pigro                                                   */
+/* l'invio, chiamato da SALVA.salva a ogni salvataggio              */
 /* --------------------------------------------------------------- */
-/* Il gioco salva spesso — a ogni autosave, a ogni cambio scheda. Mandare
-   140 KB ogni volta sarebbe sciocco: si aspetta qualche secondo di
-   quiete e si manda una volta sola. */
+/* Due tempi. Il cassetto si riempie SUBITO e in modo sincrono, così se
+   il browser muore un istante dopo il salvataggio è comunque al sicuro.
+   L'invio invece aspetta qualche secondo di quiete: il gioco salva a
+   ogni autosave e a ogni cambio di scheda, e mandare 140 KB ogni volta
+   sarebbe sciocco. */
 let attesa = null;
+let inVolo = false;
 S.programmaInvio = function(){
   if(!stato.codice) return;
+  const dati = SALVA.testo();
+  if(!dati) return;
+  metti(dati);
+
   clearTimeout(attesa);
   attesa = setTimeout(()=>{
+    if(inVolo){ S.programmaInvio(); return; }     // uno alla volta, in fila
+    inVolo = true;
     S.invia().then(r=>{
-      if(r.conflitto && window.UI) UI.toast('La partita sul server è diversa: apri il Menu per decidere.','bad');
-    });
-  }, RITARDO_INVIO);
+      inVolo = false;
+      if(r.conflitto && window.UI && UI.conflittoSinc)
+        UI.conflittoSinc(G, r.locale, r.server);
+      else if(!r.ok && window.UI && UI.segnalaSinc) UI.segnalaSinc(r.errore);
+      else if(window.UI && UI.segnalaSinc) UI.segnalaSinc(null);
+    }).catch(()=>{ inVolo = false; });
+  }, RITARDO);
 };
 
-/* --------------------------------------------------------------- */
-/* la migrazione, che passa da chi importa un file                 */
-/* --------------------------------------------------------------- */
-/* Chi importa un salvataggio da file È, quasi per definizione, chi sta
-   spostando la partita da un posto a un altro: o dal vecchio indirizzo,
-   o dal fisso al portatile. È il momento in cui la sincronizzazione gli
-   serve davvero, e l'unico in cui gliela si può offrire senza
-   interrompere niente — sta già aspettando che il gioco si riavvii.
+/* Chiudere la scheda non deve costare gli ultimi tre secondi.
+   `keepalive` fa sopravvivere la richiesta alla pagina che se ne va —
+   è l'unico modo, perché una `fetch` normale viene troncata. Il
+   cassetto c'è comunque, ma arrivare subito è meglio che arrivare al
+   prossimo avvio. */
+function primaDiAndarsene(){
+  if(!stato.codice || !G || !G.inGioco) return;
+  clearTimeout(attesa);
+  const dati = SALVA.testo();
+  if(!dati) return;
+  metti(dati);
+  S.invia(false, { keepalive:true });
+}
+window.addEventListener('pagehide', primaDiAndarsene);
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) primaDiAndarsene(); });
 
-   Quindi il file appena importato sale sul server e si prende un codice.
-   È così che i salvataggi locali passano nel database uno per volta,
-   senza una migrazione in blocco che nessuno saprebbe fare: migra chi
-   si presenta.
-
-   Se il browser ha già un codice non se ne inventa un altro: manda sul
-   suo, e se il server ha qualcosa di diverso lo dice invece di
-   sovrascrivere. */
-S.migraDaImport = async function(){
-  if(!S.collegato()){
-    const c = await S.collega();
-    if(!c.ok) return { ok:false, errore:c.errore };
-    const i = await S.invia();
-    if(!i.ok) return { ok:false, errore:i.errore || 'non riesco a mandare la partita' };
-    return { ok:true, codice:stato.codice, nuovo:true };
-  }
+/* --------------------------------------------------------------- */
+/* la migrazione di chi ha ancora una partita nel browser            */
+/* --------------------------------------------------------------- */
+/* Fino a ieri la partita stava in `fioralba_save_v1`. Chi apre il gioco
+   con quella chiave ancora piena e nessun codice non deve accorgersi di
+   niente: la si manda sul server, si prende un codice, e si continua.
+   Non si cancella la vecchia chiave finché il server non ha confermato:
+   se la migrazione fallisce, quello che c'era c'è ancora. */
+const CH_VECCHIA = 'fioralba_save_v1';
+S.daMigrare = function(){
+  try{
+    if(stato.codice) return null;
+    const t = localStorage.getItem(CH_VECCHIA);
+    return (t && t.length > 200) ? t : null;
+  }catch(e){ return null; }
+};
+S.migra = async function(testo){
+  const esito = SALVA.applicaTesto(testo);
+  if(!esito.ok) return { ok:false, errore: esito.err };
+  const n = await S.nuova();
+  if(!n.ok) return n;
   const i = await S.invia();
-  if(i.conflitto) return { ok:false, conflitto:true, server:i.server, locale:i.locale, codice:stato.codice };
-  if(!i.ok) return { ok:false, errore:i.errore, codice:stato.codice };
-  return { ok:true, codice:stato.codice, nuovo:false };
-};
-
-/* All'avvio: se il server è più avanti di noi, lo si dice e basta. Non
-   si scarica di nascosto — sostituire la partita di qualcuno senza
-   chiedere è esattamente quello che questa funzione non deve fare. */
-S.controllaAvvio = async function(){
-  if(!stato.codice) return null;
-  const r = await chiama('GET', '/api/partita/' + stato.codice + '/stato');
-  if(!r.ok) return null;
-  const loc = schedaLocale();
-  if(r.dati.vuota) return null;
-  if(r.dati.versione === stato.versione) return null;
-  return { server:r.dati, locale:loc };
+  if(!i.ok) return { ok:false, errore: i.errore || 'Non riesco a mandare la partita sul server.' };
+  try{ localStorage.removeItem(CH_VECCHIA); localStorage.removeItem('fioralba_save_bak'); }catch(e){}
+  return { ok:true, codice: stato.codice };
 };
 
 })();

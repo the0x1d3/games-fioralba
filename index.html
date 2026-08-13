@@ -49,6 +49,10 @@
         <div id="timetext">6:00</div>
         <div id="weatherline"><span id="weather-icon"></span><span id="weathertext"></span></div>
       </div>
+      <!-- Si accende solo quando il server non risponde: il gioco va
+           avanti e il cassetto tiene, ma lasciar credere «salvato» una
+           cosa che non è arrivata è il modo peggiore di perdere fiducia. -->
+      <div id="sinc-spia" class="hidden" title="">☁</div>
       <div id="goldbox" class="panel">
         <span class="coin"></span><span id="goldtext">500</span>
       </div>
@@ -160,7 +164,6 @@
         <button id="btn-continue" class="bigbtn hidden">Continua</button>
         <button id="btn-new" class="bigbtn">Nuova Partita</button>
         <button id="btn-howto" class="bigbtn ghost" data-t>Come si gioca</button>
-        <button id="btn-import" class="bigbtn ghost">Importa salvataggio</button>
       </div>
       <div id="title-foot"><span class="app-ver"></span> · fatto con affetto · premi <kbd>F</kbd> per schermo intero</div>
     </div>
@@ -217,46 +220,6 @@
           <button class="bigbtn lp-new" data-t>Nuova Partita</button>
           <button class="bigbtn ghost lp-continue" data-t>Continua</button>
         </div>
-
-        <!-- Riprendere una partita è una cosa diversa da cominciarne una,
-             e finché è stata il terzo di tre pulsanti identici non l'ha
-             trovata nessuno — nemmeno chi l'aveva commissionata. Adesso
-             ha un blocco suo, che dice a chi serve e cosa serve avere.
-             Le due strade stanno insieme perché rispondono alla stessa
-             domanda: «la mia partita è altrove, come la porto qui?» -->
-        <details class="lp-riprendi">
-          <summary data-t>Ho già una partita, voglio riprenderla</summary>
-          <div class="lp-riprendi-corpo">
-            <p class="lp-riprendi-nota" data-t>
-              Se giochi da un altro computer, o giocavi dal vecchio indirizzo,
-              la partita si porta qui in due modi.
-            </p>
-
-            <div class="lp-riprendi-via">
-              <div class="lp-riprendi-eti" data-t><b>Con il codice</b> — se l'hai già collegata</div>
-              <div class="lp-riprendi-riga">
-                <input type="text" class="lp-codice-inp" id="lp-codice"
-                       placeholder="FIORALBA-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false">
-                <button class="btn gold lp-usa-codice" data-t>Riprendi</button>
-              </div>
-              <div class="lp-riprendi-esito" id="lp-codice-esito"></div>
-              <div class="lp-riprendi-aiuto" data-t>
-                Il codice si trova nel Menu del gioco, sull'altro computer.
-              </div>
-            </div>
-
-            <div class="lp-riprendi-via">
-              <div class="lp-riprendi-eti" data-t><b>Con un file</b> — se l'hai esportata</div>
-              <div class="lp-riprendi-riga">
-                <button class="btn lp-import" data-t>Scegli il file .json…</button>
-              </div>
-              <div class="lp-riprendi-aiuto" data-t>
-                È il file che scarichi dal Menu con «Esporta». Importandolo qui,
-                la partita si collega da sola e ti diamo un codice.
-              </div>
-            </div>
-          </div>
-        </details>
 
         <ul class="lp-fatti">
           <li data-t>Gratis</li><li data-t>Nel browser</li><li data-t>Niente da installare</li>
@@ -338,9 +301,8 @@
           <button class="bigbtn ghost lp-continue" data-t>Continua</button>
         </div>
         <p class="lp-foot-nota" data-t>
-          La partita si salva nel tuo browser, da sola. Puoi collegarla per
-          riprenderla da un altro computer, o esportarla in un file.
-          <a href="#" class="lp-vai-riprendi">Ho già una partita altrove →</a>
+          La partita si salva sul server, da sola, e si riprende con un codice:
+          dal computer, dal telefono, da dove ti pare.
         </p>
         <div class="lp-credit">
           fatto con affetto · <span class="app-ver"></span> ·

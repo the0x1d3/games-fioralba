@@ -1145,6 +1145,61 @@ verifica('i comandi a tocco ci sono tutti, e passano dai tasti veri', () => {
   return problemi;
 });
 
+/* Le partite stanno sul server, e questa è la parte che, se si sfila,
+   non fa rumore: il gioco continua a girare, si salva, sembra tutto a
+   posto — e non arriva niente di là. È già successo per un anno intero,
+   perché `SINC.programmaInvio` era definita e non la chiamava nessuno:
+   una partita saliva una volta sola, il giorno del collegamento, e chi
+   guardava il database ci trovava dentro qualcosa e non sospettava.
+
+   Qui si tengono ferme le tre giunture che quel difetto ha attraversato,
+   e il fatto che il salvataggio locale non torni dalla finestra. */
+verifica('il salvataggio passa dal server, e non torna in locale', () => {
+  const problemi = [];
+  const senzaCommenti = f => fs.readFileSync(path.join(RADICE, 'js', f), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
+  const salva = senzaCommenti('salvataggio.js');
+  const sinc  = senzaCommenti('sincronizza.js');
+  const ui    = senzaCommenti('ui.js');
+  const game  = senzaCommenti('game.js');
+  const html  = fs.readFileSync(path.join(RADICE, 'index.html'), 'utf8');
+
+  // LA GIUNTURA CHE SI ERA SFILATA: salvare deve chiamare l'invio
+  if (!/SINC\.programmaInvio\(\)/.test(salva))
+    problemi.push('SALVA.salva non chiama più SINC.programmaInvio: le partite smetterebbero di salire sul server senza che niente lo dica');
+  if (!/programmaInvio/.test(sinc))
+    problemi.push('SINC.programmaInvio non esiste più');
+
+  // la partita non deve tornare a vivere nel browser
+  if (/localStorage\.setItem\(\s*['"]fioralba_save/.test(salva + sinc + game + ui))
+    problemi.push('qualcuno riscrive fioralba_save_* : la partita tornerebbe ad avere due padroni che divergono');
+
+  // e il giro dei file .json non deve riaprirsi
+  for (const [dove, src] of [['salvataggio.js', salva], ['ui.js', ui], ['game.js', game]])
+    if (/\.json['"]|download\s*=|importaDaFile|S\.esporta/.test(src))
+      problemi.push(dove + ' è tornato a esportare o importare file .json');
+  if (/id="btn-import"|class="[^"]*lp-import/.test(html))
+    problemi.push('index.html ha di nuovo un pulsante di import da file');
+
+  // le finestre che il giro nuovo richiede
+  for (const f of ['scegliPartita', 'mostraCodice', 'proponiMigrazione', 'cassettoInSospeso', 'conflittoSinc'])
+    if (!new RegExp('U\\.' + f + '\\s*=').test(ui)) problemi.push('manca UI.' + f);
+  if (!/G\.avvia\s*=/.test(game))
+    problemi.push('G.avvia non è più esposta: il selettore delle partite non può far cominciare quella scelta');
+  if (!/id="sinc-spia"/.test(html))
+    problemi.push('manca la spia #sinc-spia: un server che non risponde resterebbe invisibile');
+
+  /* Il cassetto si riempie PRIMA di provare a mandare. Se lo si
+     riempisse dopo il fallimento, una scheda chiusa nel mezzo della
+     fetch non eseguirebbe nessun `catch` e quel pezzo di partita non
+     verrebbe scritto da nessuna parte. */
+  const corpo = sinc.slice(sinc.indexOf('S.programmaInvio'), sinc.indexOf('S.programmaInvio') + 700);
+  if (corpo.indexOf('metti(dati)') < 0 || corpo.indexOf('metti(dati)') > corpo.indexOf('setTimeout'))
+    problemi.push('il cassetto non si riempie più prima dell\'invio: una scheda chiusa a metà perderebbe la giornata');
+
+  return problemi;
+});
+
 /* =================================================================== */
 
 const larghezza = 62;

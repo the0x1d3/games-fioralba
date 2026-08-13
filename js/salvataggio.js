@@ -1,18 +1,21 @@
 /* ===================================================================
    FIORALBA — salvataggio.js
-   La partita che va e torna dal localStorage: serializzazione delle
-   mappe, backup del salvataggio precedente, esportazione e importazione
-   in .json, validazione di quello che arriva da fuori.
+   Trasformare la partita in testo e rimetterla al suo posto: mappe in
+   RLE, oggetti per indice, validazione di quello che arriva da fuori.
+
+   NON SCRIVE PIÙ SU DISCO. Fino a ieri questo file era il padrone del
+   salvataggio: scriveva `fioralba_save_v1`, ne teneva un backup,
+   esportava e importava file .json. Adesso la partita sta sul server e
+   qui resta il mestiere vero — serializzare e deserializzare — mentre
+   dove finiscono quei byte lo decide sincronizza.js. Il motivo è che
+   due padroni della stessa partita divergono, e divergevano: il
+   giocatore si trovava a scegliere quale delle due tenere ogni volta
+   che aveva giocato da due posti.
 
    Stava in game.js. Ne è uscita perché è il pezzo che si può leggere da
-   solo: misurato, di tutto game.js gli servivano due funzioni —
-   `statoIniziale` e `normalizzaStato` — e ne rientravano due,
-   `grezzo()` e `carica()`. Quattro fili in tutto, per 270 righe che
-   nessuno vuole rileggere mentre cerca un bug della pesca.
-
-   I quattro metodi che il menu chiama — salva, esporta, importaTesto,
-   importaDaFile — stavano appesi a `G`, e lì restano: è game.js a
-   riappenderli, perché questo file si carica prima che `G` esista.
+   solo: di tutto game.js gli servono due funzioni — `statoIniziale` e
+   `normalizzaStato` — per 270 righe che nessuno vuole rileggere mentre
+   cerca un bug della pesca.
    =================================================================== */
 (function(){
 
@@ -21,8 +24,6 @@ const T = 32;
 const S = {};
 window.SALVA = S;
 
-const CHIAVE='fioralba_save_v1';
-const CHIAVE_BAK='fioralba_save_bak';
 
 function serializzaMappa(m){
   const obj={}, suolo={};
@@ -155,78 +156,32 @@ function costruisciDati(){
   };
 }
 
-S.salva = function(){
-  let testo;
-  // serializza a parte: se fallisce, NON tocchiamo il salvataggio esistente
-  try{ testo = JSON.stringify(costruisciDati()); }
-  catch(e){ console.warn('Serializzazione salvataggio fallita', e); return false; }
-  try{
-    const prec = localStorage.getItem(CHIAVE);
-    if(prec) localStorage.setItem(CHIAVE_BAK, prec);   // backup del precedente buono
-    localStorage.setItem(CHIAVE, testo);
-    /* E adesso anche sul server.
-
-       `SINC.programmaInvio()` esisteva dal primo giorno, con tanto di
-       commento sull'invio pigro — e non la chiamava NESSUNO. Grep in
-       tutto il repo: una sola occorrenza, la sua definizione. Il
-       risultato è che una partita saliva sul server esattamente una
-       volta, nel momento in cui la si collegava, e da lì in poi mai
-       più: mesi di gioco restavano fermi al giorno del collegamento, e
-       da fuori sembrava «su alcune partite la sincronizzazione non
-       parte». Partiva, e poi non ripartiva.
-
-       Sta qui e non nei singoli punti di salvataggio perché i punti
-       sono sei — autosave, dormita, menu, tutorial, cambio scheda,
-       pannello di prova — e il settimo che qualcuno aggiungerà si
-       dimenticherebbe di chiamarla, esattamente come è successo. */
-    if(window.SINC) SINC.programmaInvio();
-    return true;
-  }catch(e){ console.warn('Salvataggio non riuscito', e); return false; }
+S.testo = function(){
+  /* Serializza a parte e non tocca niente se fallisce: un salvataggio
+     mezzo scritto è peggio di uno vecchio. */
+  try{ return JSON.stringify(costruisciDati()); }
+  catch(e){ console.warn('Serializzazione salvataggio fallita', e); return null; }
 };
 
-/* ---- Esporta il salvataggio come file .json scaricabile ----
+/* Salvare vuol dire mandare al server.
 
-   Esporta LA PARTITA GIUSTA per il momento in cui viene chiamata.
-   Serializzava sempre `G`, e da lì è uscito un file di 31 byte con
-   «announdefined» nel nome: dalla landing, «Nuova Partita» con una
-   partita salvata apre l'avviso che consiglia di esportare prima — ma a
-   quel punto la partita sta solo nel localStorage, e `G` è ancora ai
-   valori di avvio. La finestra mostrava i dati veri, letti dal
-   salvataggio, e il bottone accanto esportava il vuoto.
+   Qui c'erano tre righe di localStorage — scrivi il backup, scrivi la
+   partita — e la partita del server era una copia che qualcuno teneva
+   allineata. Adesso è il contrario: c'è una partita sola e sta di là.
+   `programmaInvio` riempie il cassetto subito (sincrono, così una
+   scheda chiusa un istante dopo non costa niente) e manda dopo qualche
+   secondo di quiete.
 
-   Quindi: in gioco si esporta lo stato vivo, fuori dal gioco si esporta
-   il salvataggio scritto — che è esattamente quello che l'avviso
-   promette di mettere in salvo. E in ogni caso il file passa dalla
-   stessa validazione dell'import: un file che non riusciremmo a
-   rileggere non deve neanche partire. ---- */
-S.esporta = function(){
-  try{
-    let testo, d;
-    if(G.inGioco){
-      d = costruisciDati();
-      testo = JSON.stringify(d);
-    } else {
-      testo = caricaGrezzo();
-      if(!testo){ flashMessaggio('Non c\'è nessuna partita da esportare.', false); return false; }
-      d = JSON.parse(testo);
-    }
-    const err = validaSalvataggio(d);
-    if(err){
-      console.warn('Export rifiutato:', err);
-      flashMessaggio('Questo salvataggio è incompleto, meglio non esportarlo: ' + err, false);
-      return false;
-    }
-    const blob = new Blob([testo], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const nome = (d.nomeGiocatore||'contadino').replace(/[^a-z0-9]/gi,'_');
-    const data = new Date().toISOString().slice(0,10);
-    a.href = url;
-    a.download = `fioralba-${nome}-anno${d.anno||1}-${data}.json`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url), 1500);
-    return true;
-  }catch(e){ console.warn('Export non riuscito', e); return false; }
+   Sta qui e non nei punti che salvano perché i punti sono sei —
+   autosave, dormita, menu, tutorial, cambio scheda, pannello di prova —
+   e il settimo che qualcuno aggiungerà se la dimenticherebbe. È già
+   successo: `programmaInvio` è rimasta senza chiamanti per un anno, e
+   le partite collegate salivano sul server una volta sola. */
+S.salva = function(){
+  if(!S.testo()) return false;
+  if(!window.SINC || !SINC.collegato()) return false;
+  SINC.programmaInvio();
+  return true;
 };
 
 /* ---- Valida un testo e lo scrive come salvataggio corrente ----
@@ -258,76 +213,19 @@ function validaSalvataggio(d){
   return null;
 }
 
-S.importaTesto = function(testo){
+/* Valida un testo e lo installa come partita corrente.
+   Meglio rifiutare qui che ritrovarsi una partita che si apre ma è
+   rotta: il renderer sopravvive agli errori, il giocatore no. */
+S.applicaTesto = function(testo){
   let d;
   try{ d = JSON.parse(testo); }
-  catch(e){ return {ok:false, err:'Il file non è leggibile: non è un salvataggio valido.'}; }
+  catch(e){ return {ok:false, err:'Il salvataggio non è leggibile.'}; }
   const err = validaSalvataggio(d);
   if(err) return {ok:false, err};
-  try{ localStorage.setItem(CHIAVE, JSON.stringify(d)); }
-  catch(e){ return {ok:false, err:'Impossibile memorizzare il salvataggio (memoria locale bloccata).'}; }
+  try{ if(!applicaSalvataggio(testo)) return {ok:false, err:'Il salvataggio non si è potuto aprire.'}; }
+  catch(e){ return {ok:false, err:'Il salvataggio non si è potuto aprire: ' + e.message}; }
   return {ok:true};
 };
-
-/* ---- Apre il selettore file e importa; al successo ricarica ---- */
-S.importaDaFile = function(){
-  const inp = document.createElement('input');
-  inp.type='file'; inp.accept='.json,application/json';
-  inp.style.display='none';
-  inp.onchange = ()=>{
-    const file = inp.files && inp.files[0];
-    if(!file){ inp.remove(); return; }
-    const rd = new FileReader();
-    rd.onload = ()=>{
-      const res = S.importaTesto(String(rd.result||''));
-      if(!res.ok){
-        flashMessaggio(res.err||'Import non riuscito.', false);
-        inp.remove();
-        return;
-      }
-      inp.remove();
-      try{ sessionStorage.setItem('fioralba_import','1'); }catch(e){}
-
-      /* Chi importa un file sta spostando la partita: è il momento
-         giusto per agganciarla al server, e l'unico in cui non si
-         interrompe niente — sta già aspettando il riavvio. Se la
-         sincronizzazione non c'è o non risponde, si ricarica come
-         prima: l'import da file deve continuare a funzionare anche
-         col server spento. */
-      if(!window.SINC || !window.UI || !UI.dopoImport){
-        flashMessaggio('Salvataggio importato! Riavvio…', true);
-        setTimeout(()=>location.reload(), 800);
-        return;
-      }
-      flashMessaggio('Salvataggio importato.', true);
-      SINC.migraDaImport()
-        .then(r=>UI.dopoImport(r))
-        .catch(()=>{ setTimeout(()=>location.reload(), 800); });
-    };
-    rd.onerror = ()=>{ flashMessaggio('Non riesco a leggere il file.', false); inp.remove(); };
-    rd.readAsText(file);
-  };
-  document.body.appendChild(inp);
-  inp.click();
-};
-
-/* ---- Messaggio a comparsa indipendente dall'HUD (funziona anche al titolo) ---- */
-function flashMessaggio(testo, ok){
-  const el = document.createElement('div');
-  el.textContent = testo;
-  el.style.cssText =
-    'position:fixed;left:50%;top:22px;transform:translateX(-50%);z-index:100000;'+
-    'background:'+(ok?'rgba(79,122,66,.96)':'rgba(179,72,60,.96)')+';color:#f6e6c8;'+
-    'font-family:Nunito,system-ui,sans-serif;font-weight:800;font-size:15px;'+
-    'padding:12px 20px;border-radius:12px;border:2px solid rgba(0,0,0,.35);'+
-    'box-shadow:0 6px 18px rgba(0,0,0,.45);max-width:90vw;text-align:center;';
-  document.body.appendChild(el);
-  setTimeout(()=>{ el.style.transition='opacity .4s'; el.style.opacity='0'; setTimeout(()=>el.remove(),450); }, 2400);
-}
-
-function caricaGrezzo(){
-  try{ return localStorage.getItem(CHIAVE) || localStorage.getItem(CHIAVE_BAK); }catch(e){ return null; }
-}
 
 /* applica un salvataggio (testo JSON) allo stato. Ritorna true se riuscito. */
 function applicaSalvataggio(raw){
@@ -368,25 +266,5 @@ function applicaSalvataggio(raw){
   G.normalizzaStato();                         // salvataggi vecchi/parziali resi validi
   return true;
 }
-
-function carica(){
-  let raw=null;
-  try{ raw = localStorage.getItem(CHIAVE); }catch(e){}
-  try{ if(raw && applicaSalvataggio(raw)) return true; }
-  catch(e){ console.warn('Salvataggio principale illeggibile, provo il backup.', e); }
-  // fallback sul backup
-  let bak=null;
-  try{ bak = localStorage.getItem(CHIAVE_BAK); }catch(e){}
-  try{
-    if(bak && applicaSalvataggio(bak)){
-      if(window.UI) UI.toast('Salvataggio principale corrotto: ripristinato il backup.','bad');
-      return true;
-    }
-  }catch(e){ console.warn('Anche il backup è illeggibile.', e); }
-  return false;
-}
-
-S.grezzo = caricaGrezzo;
-S.carica = carica;
 
 })();
