@@ -2161,3 +2161,15 @@ Object.assign(window.LINGUA_EN, {
 "Una cassa o un macchinario finiti nel corridoio del ponte lo trasformavano in un vicolo cieco, e non c'era modo di capire perché: sembrava roba messa lì apposta. Poteva succedere da solo, perché il gioco sposta lì quello che trova nel burrone quando ricontrolla il terreno. Adesso quel corridoio si tiene sgombro, e una partita rimasta bloccata di qua dal burrone si sblocca da sé alla prossima apertura.":
   'A chest or a machine that ended up in the bridge corridor turned it into a dead end, and there was no way to work out why: it looked like something you had put there yourself. It could happen on its own, because the game moves whatever it finds in the ravine to that spot when it rechecks the ground. Now that corridor is kept clear, and a game left stuck on this side of the ravine unsticks itself next time you open it.'
 });
+
+/* --- il suggerimento davanti a una cosa posata --- */
+Object.assign(window.LINGUA_EN, {
+'Col <b>{0}</b> si toglie: {1}': 'Take it away with the <b>{0}</b>: {1}'
+});
+
+Object.assign(window.LINGUA_EN, {
+'Adesso il gioco dice come si tolgono staccionate e cancelletti':
+  'The game now tells you how to take fences and gates away',
+'Il <b>piccone</b> le toglie da sempre, e te le rimette intere nello zaino — ma nessuno lo diceva: stando davanti a una staccionata il gioco non scriveva niente, perché E di proposito non tocca gli arredi. Chi ci giocava ha provato e ha concluso che non si poteva. Adesso, quando ci sei davanti, in basso compare la riga che lo spiega. Serve anche a rifare un campo altrove: si smontano e si riposano dove vuoi.':
+  'The <b>pickaxe</b> has always taken them away, and puts them back in your bag intact — but nobody said so: standing in front of a fence the game wrote nothing at all, because E deliberately does not touch furniture. Somebody playing tried and concluded it could not be done. Now, when you are standing in front of one, a line at the bottom explains it. It is also how you rebuild a field somewhere else: take them down and set them up wherever you like.'
+});

@@ -1614,6 +1614,21 @@ verifica('il ponte non si tappa, e le costruzioni non seppelliscono il campo', (
   if (!/WORLD\.riservata\(/.test(game.slice(game.indexOf('function perchePuoiZappare'), game.indexOf('function usaOggetto'))))
     problemi.push('la zappa rifiuta la casella senza dire che ci andrà una costruzione');
 
+  /* E davanti a una cosa posata il gioco deve DIRE come si toglie.
+
+     Il piccone le toglie da sempre e le rimette intere nello zaino, ma
+     stando davanti a una staccionata il gioco non diceva niente: E non
+     la tocca (l'etichetta prometterebbe il falso) e nessun'altra riga
+     compariva. Chi l'ha segnalato ha provato e ha concluso che non si
+     può: «non riesce a spaccare le fence». Un verbo che esiste e che
+     nessuno nomina è, per chi gioca, un verbo che non esiste. */
+  const prompt = game.slice(game.indexOf('function promptContestuale'), game.indexOf('function idDaKind'));
+  if (!/o\.t!=='mobile'/.test(prompt) || !/UI\.prompt\(/.test(prompt))
+    problemi.push('davanti a una cosa posata non compare più il suggerimento del piccone: ' +
+                  'il modo di toglierla tornerebbe a non essere nominato da nessuna parte');
+  if (!/o\.t==='mobile'/.test(game.slice(game.indexOf("if(id==='piccone') return"), game.indexOf("if(id==='falce') return"))))
+    problemi.push('il piccone non toglie più le cose posate: il suggerimento prometterebbe il falso');
+
   return problemi;
 });
 

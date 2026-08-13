@@ -1658,7 +1658,41 @@ function promptContestuale(){
     const et = etichettaInterazione(m.obj[WORLD.idx(m,tx,ty)]);
     if(et){ UI.prompt('<kbd>E</kbd> '+et); return; }
   }
+
+  /* Gli arredi posati non rispondono a E — l'etichetta prometterebbe il
+     falso, e con E si toglievano per sbaglio camminando lungo il
+     recinto. Ma non dire NIENTE è peggio, e l'ha dimostrato una
+     segnalazione: «non riesce a spaccare le fence». Il piccone le toglie
+     da sempre, e le rimette nello zaino intere; quello che mancava era
+     la riga che lo dice, nel momento in cui uno ci sta davanti e si
+     chiede cosa farne.
+
+     Niente `<kbd>`: non è un tasto, è un attrezzo da prendere in mano, e
+     scriverlo come un tasto manderebbe a cercarlo sulla tastiera. */
+  for(const [tx,ty] of [[px+off[0],py+off[1]],[px,py]]){
+    if(!WORLD.dentro(m,tx,ty)) continue;
+    const o = m.obj[WORLD.idx(m,tx,ty)];
+    if(!o || o.t!=='mobile') continue;
+    const suo = idDaKind(o.kind);
+    /* «la togli» al femminile andava sulla staccionata e steccava sul
+       cancelletto, che è maschile. Impersonale: vale per tutti e due, e
+       non obbliga a una tabella dei generi per una riga sola. */
+    UI.prompt(fraseF('Col <b>{0}</b> si toglie: {1}', IT.nome('piccone'), IT.nome(suo)));
+    return;
+  }
   UI.prompt(null);
+}
+
+/* Esposta apposta: gira dentro al loop, e nel pannello del browser il
+   loop non parte mai — senza questa, l'unico modo di provare il
+   suggerimento è giocarci a mano e fidarsi. */
+G.promptContestuale = promptContestuale;
+
+/* i modelli con un pezzo dentro, in game.js: `T` qui è la misura della
+   casella (32), quindi la traduzione si chiama per esteso */
+function fraseF(modello, ...pezzi){
+  return window.LINGUA ? LINGUA.f(modello, ...pezzi)
+                       : modello.replace(/\{(\d+)\}/g, (_,i)=>pezzi[i]);
 }
 
 function idDaKind(kind){
