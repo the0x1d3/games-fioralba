@@ -16,6 +16,15 @@
 
 window.CHANGELOG = [
   {
+    v: '2.7',
+    data: 'agosto 2026',
+    titolo: 'Gli abitanti smettono di sembrare storti',
+    voci: [
+      { tipo:'fix',    t:'Il bordo scuro non era centrato su nessuno', d:'Ogni personaggio della valle — tu compreso — si disegna con un contorno scuro sotto, per staccarlo dallo sfondo. Quel contorno era spostato di due pixel: sporgeva di tre a destra e sotto, e mancava del tutto sopra e a sinistra. Su uno sfondo chiaro sembrava che lo sprite fosse sdoppiato o storto, senza che si riuscisse a mettere a fuoco il perché.' },
+      { tipo:'fix',    t:'A Serafina si vedeva il cappello tagliato', d:'Nel riquadro del dialogo il ritratto inquadra la testa, ma la statura del personaggio la sposta in alto: chi è alto <b>e</b> porta il cappello sbatteva contro il bordo, e la cupola veniva tranciata netta. Adesso l\'inquadratura segue la statura, e tutte e sei le facce cadono alla stessa altezza — che è poi quello che si chiede a una cornice di ritratti.' }
+    ]
+  },
+  {
     v: '2.6',
     data: 'agosto 2026',
     titolo: 'Il telefono si può girare, e i tasti smettono di coprire la valle',

@@ -727,6 +727,21 @@ R.disegna = function(G){
   /* Anche chi cammina va agganciato al pixel: le posizioni sono in
      virgola mobile, e uno sprite che sta a metà casella si ridisegna
      ogni fotogramma con i pezzi arrotondati in modo diverso. */
+  /* IL CONTORNO VA CENTRATO SUL PERSONAGGIO.
+
+     Qui e negli altri due punti (passanti, giocatore) si disegnano due
+     cose: il contorno scuro, preso dalla cache 30×40, e sopra il
+     personaggio vero. La cache tiene il personaggio con cx=15, cy=38
+     (`CH_W/2`, `CH_H-2`), e `FX.contorno` allarga la tela di un pixel
+     per lato — quindi dentro al contorno quel punto sta a (16,39), e
+     per farlo combaciare va disegnato a `px-16, py-39`.
+
+     C'era `px-14, py-37`: due pixel a destra e due in basso. Misurato
+     sovrapponendo i due riquadri, il contorno sporgeva di 3 a destra e
+     3 sotto e RIENTRAVA di 1 a sinistra e sopra, invece di sporgere di
+     1 da tutti e quattro i lati. Ogni abitante della valle aveva un
+     bordo scuro solo su due lati: da lontano lo sprite sembra storto,
+     e con lo sfondo chiaro sembra sdoppiato. */
   for(const n of G.npcVivi()){
     const px = Math.round(n.px)+ox, py = Math.round(n.py)+oy;
     if(px<-60||px>VW+60||py<-90||py>VH+60) continue;
@@ -734,7 +749,7 @@ R.disegna = function(G){
       s:()=>{ FX.ombraTerra(sx, px, py-1, 8, 3, 0.24); },
       d:()=>{
         const look = DATA.NPCS[n.id].look;
-        if(!look.spirito) sx.drawImage(FX.contorno(ART.charSprite(look, n.dir, n.frame)), (px-14)|0, (py-37)|0);
+        if(!look.spirito) sx.drawImage(FX.contorno(ART.charSprite(look, n.dir, n.frame)), (px-16)|0, (py-39)|0);
         ART.drawChar(sx, px|0, py|0, look, n.dir, n.frame, {t:t, blink:n.blink, senzaOmbra:true});
         if(n.emote) sx.drawImage(ART.emote(n.emote), (px-16)|0, (py-58)|0);
       }});
@@ -748,7 +763,7 @@ R.disegna = function(G){
     lista.push({ y:p.py,
       s:()=>{ FX.ombraTerra(sx, px, py-1, 8, 3, 0.24); },
       d:()=>{
-        sx.drawImage(FX.contorno(ART.charSprite(p.look, p.dir, p.frame||0)), (px-14)|0, (py-37)|0);
+        sx.drawImage(FX.contorno(ART.charSprite(p.look, p.dir, p.frame||0)), (px-16)|0, (py-39)|0);
         ART.drawChar(sx, px|0, py|0, p.look, p.dir, p.frame||0, {t:t, senzaOmbra:true});
       }});
   }
@@ -782,7 +797,7 @@ R.disegna = function(G){
       s:()=>{ if(!G.p.dorme) FX.ombraTerra(sx, px, py-1, 8.5, 3.2, 0.26); },
       d:()=>{
         if(G.p.dorme) return;
-        sx.drawImage(FX.contorno(ART.charSprite(G.p.look, G.p.dir, G.p.frame)), (px-14)|0, (py-37)|0);
+        sx.drawImage(FX.contorno(ART.charSprite(G.p.look, G.p.dir, G.p.frame)), (px-16)|0, (py-39)|0);
         ART.drawChar(sx, px|0, py|0, G.p.look, G.p.dir, G.p.frame,
           { attrezzo:G.p.attrezzoVisibile, uso:G.p.usoT>0, blink:G.p.blink, t:t, senzaOmbra:true });
       }});

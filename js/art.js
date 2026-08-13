@@ -780,11 +780,24 @@ A.face = function(key, look){
   x.globalAlpha=0.18;
   for(let i=0;i<40;i++) px(x,(hsh(i,0,7)*96)|0,(hsh(i,1,7)*96)|0,2,2,'#a8865c');
   x.globalAlpha=1;
-  // personaggio ingrandito (zoom sulla testa)
+  /* Personaggio ingrandito, con la testa inquadrata.
+
+     Lo spostamento verticale segue la STATURA. Era fisso a 8, e la
+     statura sposta la testa in su di `alt` pixel: a 3,4× di zoom sono
+     3,4 pixel di ritratto per ogni gradino. Serafina è alta 2 e porta
+     il cappello, e la cupola del cappello finiva a y=0 — cioè tagliata
+     netta dal bordo. Da fuori si vede un cappello schiacciato, e sembra
+     lo sprite a essere sbagliato.
+
+     Compensando, la testa cade sempre nello stesso punto qualunque sia
+     la statura: che è anche quello che si chiede a una cornice di
+     ritratti, sei facce alla stessa altezza invece di sei altezze
+     diverse. La statura si continua a vedere nel gioco, dove serve. */
+  const altezzaRitratto = Math.max(-2, Math.min(3, look.altezza|0));
   x.save();
   x.translate(48, 96);
   x.scale(3.4,3.4);
-  x.translate(0, 8);
+  x.translate(0, 8 + altezzaRitratto);
   A.drawChar(x, 0, 0, look, 0, 0, {});
   x.restore();
   // vignetta

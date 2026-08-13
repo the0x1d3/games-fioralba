@@ -1260,6 +1260,54 @@ verifica('il salvataggio passa dal server, e non torna in locale', () => {
   return problemi;
 });
 
+/* I due agganci dello sprite dei personaggi.
+
+   Sono aritmetica pura, e quando è sbagliata non si rompe niente: il
+   gioco disegna, nessuna prova diventa rossa, e gli abitanti hanno solo
+   un'aria storta che uno fatica a mettere a fuoco. Il proprietario l'ha
+   detto così — «alcune texture sono deformate» — ed erano queste due.
+
+   Il conto NON è scritto a mano qui: si legge da art.js e si verifica
+   che il renderer sia d'accordo. Se un giorno la cella cresce, questo
+   controllo cresce con lei invece di diventare una bugia. */
+verifica('il contorno e i ritratti sono agganciati dove devono', () => {
+  const problemi = [];
+  const art  = fs.readFileSync(path.join(RADICE, 'js', 'art.js'), 'utf8');
+  const rend = fs.readFileSync(path.join(RADICE, 'js', 'render.js'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
+  const fx   = fs.readFileSync(path.join(RADICE, 'js', 'fx.js'), 'utf8');
+
+  const mW = art.match(/A\.CH_W\s*=\s*(\d+)/), mH = art.match(/A\.CH_H\s*=\s*(\d+)/);
+  if (!mW || !mH) { problemi.push('non trovo A.CH_W / A.CH_H in art.js'); return problemi; }
+  const CH_W = +mW[1], CH_H = +mH[1];
+
+  /* dove sta il personaggio dentro alla cella, secondo charSprite */
+  const anc = art.match(/A\.drawChar\(x,\s*A\.CH_W\/2,\s*A\.CH_H-(\d+)/);
+  if (!anc) { problemi.push('charSprite non ancora più il personaggio a (CH_W/2, CH_H-n)'); return problemi; }
+  const cx = CH_W / 2, cy = CH_H - (+anc[1]);
+
+  /* FX.contorno allarga la tela di un pixel per lato */
+  const bordo = /c\.width\s*=\s*src\.width\+2;\s*c\.height\s*=\s*src\.height\+2/.test(fx) ? 1 : null;
+  if (bordo === null) { problemi.push('FX.contorno non allarga più di 1px per lato: il conto qui sotto non vale'); return problemi; }
+
+  const attesoX = -(cx + bordo), attesoY = -(cy + bordo);
+  const usati = [...rend.matchAll(/FX\.contorno\(ART\.charSprite\([^)]*\)\),\s*\(px([+-]\d+)\)\|0,\s*\(py([+-]\d+)\)\|0/g)];
+  if (!usati.length) problemi.push('il renderer non disegna più il contorno dei personaggi');
+  for (const u of usati) {
+    if (+u[1] !== attesoX || +u[2] !== attesoY)
+      problemi.push(`contorno disegnato a (px${u[1]}, py${u[2]}) invece di (px${attesoX}, py${attesoY}): ` +
+                    'sborda da due lati e i personaggi sembrano storti');
+  }
+
+  /* Il ritratto del dialogo inquadra la testa, ma la statura la sposta
+     in su: senza compensarla, chi è alto e porta il cappello esce dai
+     96×96. Serafina (altezza 2 + cappello) arrivava a y=0, tagliata. */
+  if (!/x\.translate\(0,\s*8\s*\+\s*altezzaRitratto\)/.test(art))
+    problemi.push('A.face non compensa più la statura: i ritratti dei personaggi alti col cappello si tagliano in cima');
+
+  return problemi;
+});
+
 /* =================================================================== */
 
 const larghezza = 62;
