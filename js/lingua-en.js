@@ -1013,3 +1013,38 @@ Object.assign(window.LINGUA_EN, {
 'Salvataggio importato.': 'Save imported.',
 'Salvataggio importato! Riavvio…': 'Save imported! Restarting…'
 });
+
+/* --- «ho già una partita, voglio riprenderla»: il blocco della landing.
+       In italiano la partita è femminile e le frasi ci girano intorno
+       («collegarla», «esportarla», «riprenderla»); in inglese non c'è
+       genere e ripetere «game» quattro volte suona da manuale, quindi
+       qui si alterna con «it» dove la frase regge da sola. --- */
+Object.assign(window.LINGUA_EN, {
+'Ho già una partita, voglio riprenderla': 'I already have a game — let me pick it up',
+'Se giochi da un altro computer, o giocavi dal vecchio indirizzo, la partita si porta qui in due modi.':
+  'If you play on another computer, or you used to play at the old address, there are two ways to bring your game over.',
+"<b>Con il codice</b> — se l'hai già collegata":
+  '<b>With the code</b> — if you have already linked it',
+'Riprendi': 'Pick it up',
+'Il codice si trova nel Menu del gioco, sull\u2019altro computer.':
+  'You will find the code in the game Menu, on the other computer.',
+'Il codice si trova nel Menu del gioco, sull\'altro computer.':
+  'You will find the code in the game Menu, on the other computer.',
+"<b>Con un file</b> — se l'hai esportata":
+  '<b>With a file</b> — if you exported it',
+'Scegli il file .json…': 'Choose the .json file…',
+'È il file che scarichi dal Menu con «Esporta». Importandolo qui, la partita si collega da sola e ti diamo un codice.':
+  'That is the file you download from the Menu with “Export”. Import it here and the game links itself: we hand you a code.',
+'La partita si salva nel tuo browser, da sola. Puoi collegarla per riprenderla da un altro computer, o esportarla in un file. <a href="#" class="lp-vai-riprendi">Ho già una partita altrove →</a>':
+  'The game saves itself in your browser. You can link it and pick it up from another computer, or export it to a file. <a href="#" class="lp-vai-riprendi">I already have a game elsewhere →</a>',
+
+/* la riga che risponde sotto il campo del codice */
+'Cerco la partita…': 'Looking for the game…',
+'Codice non valido.': 'That code is not valid.',
+'Quel codice esiste, ma non ha ancora nessuna partita dentro.':
+  'That code exists, but there is no game in it yet.',
+'Trovata! La sto scaricando…': 'Found it! Downloading…',
+'Non riesco a scaricarla, riprova fra un momento.':
+  'I cannot download it — try again in a moment.',
+'Fatto. Riparto…': 'Done. Restarting…'
+});

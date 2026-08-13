@@ -51,7 +51,12 @@ function testiDati() {
    chi la mostra. */
 const USCITE = [
   'UI\\.toast', 'UI\\.prompt', 'nonSiPuo', 'particelleTesto', 'G\\.particelleTesto',
-  'UI\\.dialogo', 'UI\\.modal', 'flashMessaggio', 'nota'
+  'UI\\.dialogo', 'UI\\.modal', 'flashMessaggio', 'nota',
+  /* la riga di risposta sotto il campo del codice, nella landing: passa
+     dentro LINGUA.t come le altre, ma da una funzione locale che questo
+     elenco non conosceva — e sei frasi che il giocatore legge di sicuro
+     risultavano tradotte quando non lo erano */
+  'dillo'
 ];
 
 function testiModuli() {

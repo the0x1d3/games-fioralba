@@ -161,6 +161,69 @@ function collegaLanding(){
       G.importaDaFile();
     });
   });
+
+  /* Riprendere col codice, dalla landing. Prima si poteva solo dal Menu
+     del gioco — cioè bisognava avere una partita per poter recuperare
+     una partita. Chi arriva da un altro computer non ce l'ha, ed era
+     esattamente la persona a cui serviva. */
+  const campo = $('#lp-codice');
+  if(campo){
+    /* il gioco ascolta la tastiera su window e non guarda da dove
+       arriva il tasto: senza fermarlo qui, scrivere il codice
+       farebbe camminare il giocatore */
+    for(const ev of ['keydown','keyup','keypress']) campo.addEventListener(ev, e=>e.stopPropagation());
+    campo.addEventListener('keydown', e=>{ if(e.key==='Enter') riprendiColCodice(); });
+  }
+  document.querySelectorAll('.lp-usa-codice').forEach(b=>{
+    b.addEventListener('click', ()=>{ SND.resume(); riprendiColCodice(); });
+  });
+
+  /* Aprendosi il blocco cresce di ~370px, e la hero è centrata: la parte
+     bassa finisce sotto la barra fissa in fondo alla landing (`.lp-bar`,
+     absolute bottom:0, z-index 2). Misurato su una finestra 1280×720: il
+     campo del codice usciva a y=684 e sopra ci stava la barra, quindi il
+     click ci finiva contro. Portarlo in vista al momento dell'apertura
+     risolve entrambe le strade — il rimando dal piede e il click diretto
+     sul titoletto — mentre farlo solo nel rimando ne copriva una sola. */
+  const blocco = document.querySelector('.lp-riprendi');
+  if(blocco) blocco.addEventListener('toggle', ()=>{
+    if(blocco.open) blocco.scrollIntoView({ behavior:'smooth', block:'center' });
+  });
+
+  /* il rimando dal piede: apre il blocco (e il `toggle` qui sopra ci
+     porta sopra), invece di lasciare che uno lo cerchi risalendo */
+  const vai = document.querySelector('.lp-vai-riprendi');
+  if(vai) vai.addEventListener('click', e=>{
+    e.preventDefault();
+    if(!blocco) return;
+    if(blocco.open) blocco.scrollIntoView({ behavior:'smooth', block:'center' });
+    else blocco.open = true;
+  });
+}
+
+function riprendiColCodice(){
+  const campo = $('#lp-codice');
+  if(!campo || !window.SINC) return;
+  const grezzo = campo.value.trim();
+  if(!grezzo) return;
+  const eco = $('#lp-codice-esito');
+  /* `T` in questo file è la misura della casella (32), non la
+     traduzione: qui la si chiama per esteso */
+  const tr = s => (window.LINGUA ? LINGUA.t(s) : s);
+  const dillo = (t, male)=>{ if(eco){ eco.textContent = tr(t); eco.className = 'lp-riprendi-esito' + (male ? ' male' : ''); } };
+
+  dillo('Cerco la partita…');
+  SINC.usaCodice(grezzo).then(r=>{
+    if(!r.ok){ dillo(r.errore || 'Codice non valido.', true); return; }
+    if(r.scheda && r.scheda.vuota){ dillo('Quel codice esiste, ma non ha ancora nessuna partita dentro.', true); return; }
+    dillo('Trovata! La sto scaricando…');
+    return SINC.scarica().then(s=>{
+      if(!s.ok){ dillo(s.errore || 'Non riesco a scaricarla, riprova fra un momento.', true); return; }
+      dillo('Fatto. Riparto…');
+      try{ sessionStorage.setItem('fioralba_import','1'); }catch(e){}
+      setTimeout(()=>location.reload(), 700);
+    });
+  });
 }
 
 /* ===================================================================
