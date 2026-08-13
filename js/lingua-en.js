@@ -1740,7 +1740,8 @@ Object.assign(window.LINGUA_EN, {
        tastiera — Spazio ed E — e non due nomi nuovi da imparare. --- */
 Object.assign(window.LINGUA_EN, {
 'Usa': 'Use',
-'Parla': 'Talk'
+'Parla': 'Talk',
+'Corri': 'Run'
 });
 
 /* --- versione 2.3, la carta della landing (il censimento salta

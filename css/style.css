@@ -1782,6 +1782,15 @@ kbd{
   background:linear-gradient(180deg, #f2c14e, var(--gold-d));
   color:#3a2416; text-shadow:0 1px 0 rgba(255,255,255,.35);
 }
+/* «Corri» è Shift tenuto premuto: senza questo tasto da telefono si
+   andava solo al passo, perché Shift sulla tastiera a schermo non
+   esiste. Azzurro e non oro: si distingue da «Usa» con la coda
+   dell'occhio, che è come lo si guarda mentre si scappa da un cervo. */
+.tocco-btn.corsa{
+  background:linear-gradient(180deg, #8fc5de, #4a86a5);
+  color:#f2f8fb; text-shadow:0 1px 0 rgba(0,0,0,.4);
+}
+
 /* `.giu` e non `:active`: il tasto si preme al touchstart e si molla al
    touchend — la pesca vuole il tenere premuto, e :active su iOS si
    comporta in modo suo appena il dito si sposta di due pixel */
@@ -2111,10 +2120,13 @@ html, body{ overscroll-behavior:none; }
   html.col-dito #prompt{ bottom:calc(90px + env(safe-area-inset-bottom)); }
 
   /* il riquadro del dialogo si prende la fascia bassa per intero, ma
-     lascia fuori i due verbi a destra */
+     lascia fuori i tasti a destra: coi tre in fila (70+56+56 più i due
+     spazi e il margine) la fila arriva a ~212px dal bordo, e con il
+     vecchio 150 il dialogo finiva sotto «Corri» — un tocco per
+     avanzare la battuta faceva partire lo scatto */
   html.col-dito #dialogue{
     bottom:calc(6px + env(safe-area-inset-bottom));
-    right:calc(150px + env(safe-area-inset-right));
+    right:calc(214px + env(safe-area-inset-right));
   }
   html.col-dito #dialogue .dlg-portrait{ transform:scale(.8); transform-origin:left center; }
 }

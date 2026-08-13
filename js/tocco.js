@@ -228,6 +228,12 @@ TOC.init = function(){
 
   collegaTasto($('#tocco-usa'),   ' ');
   collegaTasto($('#tocco-parla'), 'e');
+  /* La corsa è Shift TENUTO, e per questo passa da `collegaTasto` come
+     la pesca: un tasto a scatto («adesso corri / adesso no») avrebbe
+     lasciato il giocatore a correre da solo dopo il primo tocco. Da
+     tastiera si corre col mignolo mentre si cammina; qui col pollice
+     destro mentre il sinistro tiene il pad — stessa presa a due mani. */
+  collegaTasto($('#tocco-corri'), 'shift');
 
   /* `passive:false` sul movimento: senza `preventDefault` il trascinamento
      diventa lo scorrimento della pagina, e su Android anche il «tira per
