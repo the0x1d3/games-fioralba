@@ -155,6 +155,13 @@ D.ITEMS = {
   sentiero:   { nome:'Sentiero di Pietra', cat:'artigianato', prezzo:4, desc:'Cammini più veloce e l\'erba non ricresce.', posabile:'sentiero' },
   recinto:    { nome:'Staccionata',   cat:'artigianato', prezzo:8,  desc:'Delimita con garbo, e si aggancia da sé ai pezzi vicini. Non ci si passa attraverso: per quello serve un cancelletto. Per toglierla, una picconata.', posabile:'recinto' },
   cancelletto:{ nome:'Cancelletto',   cat:'artigianato', prezzo:14, desc:'Il varco di una staccionata. Tu passi, le bestie no. Per toglierlo, una picconata.', posabile:'cancelletto' },
+  /* Il cartello nasce da chi ci gioca: «sto dividendo il campo a zone e
+     vorrei mettere dei cartelli con scritto Pomodori, Patate». I cartelli
+     del gioco esistevano già — quello del burrone, quelli dei sentieri —
+     ma erano paesaggio, scritti da noi. Questo lo scrive il giocatore, e
+     si legge da fermi: la targhetta sta sopra al palo, come il nome di
+     una cassa, e non chiede di premere niente. */
+  cartello:   { nome:'Cartello',      cat:'artigianato', prezzo:10, desc:'Un palo e una tavoletta. Ci scrivi sopra quello che vuoi e si legge da lontano, senza doverlo toccare. Per toglierlo, una picconata.', posabile:'cartello' },
   lanterna:   { nome:'Lanterna',      cat:'artigianato', prezzo:120,desc:'Illumina la notte intorno a sé.', posabile:'lanterna' },
   cassa:      { nome:'Cassa',         cat:'artigianato', prezzo:0,  desc:'Deposito da 24 caselle.', posabile:'cassa' },
   barattoliera:{nome:'Barattoliera',  cat:'artigianato', prezzo:0,  desc:'Trasforma un raccolto in conserva (valore x2 + 50).', posabile:'barattoliera' },
@@ -204,6 +211,7 @@ D.FRUTTA = ['fragola','pomodoro','melone','uva','mirtillo','mora','melagrana','b
 D.CRAFT = [
   { id:'sentiero',      out:4, ing:{pietra:1},                          liv:0, cat:'podere' },
   { id:'recinto',       out:4, ing:{legna:2},                           liv:0, cat:'podere' },
+  { id:'cartello',      out:2, ing:{legna:3},                           liv:0, cat:'podere' },
   { id:'cancelletto',   out:1, ing:{legna:4},                           liv:0, cat:'podere' },
   { id:'concime',       out:2, ing:{fibra:4, carbone:1},                liv:1, cat:'podere' },
   { id:'concime_acqua', out:2, ing:{argilla:2, fibra:3},                liv:2, cat:'podere' },

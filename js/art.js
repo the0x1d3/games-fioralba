@@ -2260,7 +2260,7 @@ function drawIcon(x, id){
       }
       break;
     }
-    case 'recinto': case 'cancelletto': case 'spaventapasseri': case 'lanterna': case 'cassa':
+    case 'recinto': case 'cancelletto': case 'cartello': case 'spaventapasseri': case 'lanterna': case 'cassa':
     case 'barattoliera': case 'botte': case 'forno': case 'fornace': case 'arnia':
     case 'vaso_lucciole': {
       const src = A.placeable(id==='vaso_lucciole'?'lanterna':id, {attivo:true, pronto:false});

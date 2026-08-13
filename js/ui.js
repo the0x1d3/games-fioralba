@@ -3008,6 +3008,62 @@ U.demo = function(id){
 };
 
 /* ===================================================================
+   CARTELLO
+   =================================================================== */
+/* Un campo di testo e basta: chi pianta un cartello sa già cosa vuole
+   scriverci. Il testo si salva mentre lo scrivi, non con un bottone
+   «Conferma» — così com'è per il nome di una cassa, ed è la stessa
+   promessa: quello che leggi qui dentro è quello che si legge fuori.
+
+   Diciotto lettere, che è il taglio di `targhetta()` nel renderer: più
+   in là il campo accetterebbe parole che il cartello poi non mostra.
+   Il campo ferma i tasti prima di `window`, altrimenti scrivere
+   «Pomodori» farebbe camminare il giocatore e gli darebbe due zappate,
+   perché il gioco ascolta la tastiera lì e non guarda da dove arriva. */
+U.cartello = function(obj){
+  U.modal('Cartello', body=>{
+    /* Stessa riga del nome di una cassa, etichetta compresa: `.cassa-nome`
+       si allarga con `flex:1`, e da sola in mezzo alla finestra resterebbe
+       una casellina da venti caratteri buttata a sinistra. */
+    const riga=document.createElement('div'); riga.className='cassa-nome-riga';
+    const et=document.createElement('label'); et.className='cassa-et';
+    et.setAttribute('for','cartello-campo');
+    et.innerHTML = '<span class="cassa-et-ico">🪧</span>' + T('Scritta');
+    riga.appendChild(et);
+
+    const inp=document.createElement('input');
+    inp.type='text'; inp.className='cassa-nome'; inp.maxLength=18;
+    inp.id='cartello-campo';
+    inp.placeholder = T('Pomodori, Patate, Qui non zappare…');
+    inp.value = obj.testo || '';
+
+    const nota=document.createElement('div'); nota.className='cassa-nota';
+    const aggiornaNota=()=>{
+      nota.textContent = obj.testo
+        ? T('Si legge da lontano, senza doverlo toccare.')
+        : T('Scrivici sopra: quello che metti qui si legge da lontano, senza doverlo toccare.');
+      nota.classList.toggle('fatta', !!obj.testo);
+    };
+    inp.oninput = ()=>{ obj.testo = inp.value.trim().slice(0,18) || null; aggiornaNota(); };
+    inp.onkeydown = e=>{ e.stopPropagation(); if(e.key==='Enter') U.chiudiModal(); };
+    inp.onkeyup = e=>e.stopPropagation();
+    inp.onkeypress = e=>e.stopPropagation();
+
+    riga.appendChild(inp);
+    body.appendChild(riga);
+    aggiornaNota();
+    body.appendChild(nota);
+
+    const piede=document.createElement('div'); piede.className='cassa-nota';
+    piede.innerHTML = T('Per toglierlo di mezzo, una <b>picconata</b>: torna nello zaino.');
+    body.appendChild(piede);
+
+    // la tastiera del telefono si apre da sola, che è il gesto che serve
+    setTimeout(()=>{ try{ inp.focus(); inp.select(); }catch(e){} }, 30);
+  });
+};
+
+/* ===================================================================
    CASSA / DEPOSITO
    =================================================================== */
 U.cassa = function(G, obj, ox, oy){

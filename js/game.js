@@ -1323,6 +1323,11 @@ function posa(id, tx, ty){
   }
   G.togli(id,1);
   SND.play('costruisci');
+  /* Un cartello appena piantato è una tavoletta vuota, e nessuno pianta
+     un cartello per lasciarlo bianco: la finestra si apre da sola,
+     subito. Chi non ha niente da scrivere la chiude, e il cartello
+     resta lì muto finché non ci torna con E. */
+  if(kind==='cartello') UI.cartello(m.obj[i]);
 }
 
 function spendi(e){
@@ -1472,6 +1477,7 @@ function interagisci(){
        continua a cercare cos'altro c'è intorno. Per togliere una cosa
        posata ci vuole il piccone, che è un gesto che non si fa distratti. */
     if(o.t==='mobile'){
+      if(o.kind==='cartello'){ UI.cartello(o); return; }
       if(o.kind==='spaventapasseri'){ UI.toast('Fa il suo lavoro in silenzio.'); return; }
       continue;
     }
@@ -1624,8 +1630,21 @@ function etichettaInterazione(o){
     if(o.dentro)          return 'in lavorazione…';
     return 'usa: '+IT.nome(idDaKind(o.kind));
   }
-  // gli arredi con E non si toccano più: l'etichetta prometterebbe il falso
-  if(o.t==='mobile') return null;
+  /* Gli arredi con E non si toccano più: l'etichetta prometterebbe il
+     falso. Il cartello è l'eccezione, perché lì E è l'unica cosa che
+     abbia senso fare, non toglie niente per sbaglio, e apre una
+     finestra che si può chiudere senza cambiare nulla. */
+  if(o.t==='mobile'){
+    /* Tradotta qui e non da `UI.prompt`: là arriva la frase già montata
+       col `<kbd>E</kbd>` davanti, e una chiave con dentro il markup non
+       la cerca nessuno — è il motivo per cui «esamina le rune» in
+       inglese è ancora in italiano. Qui la stringa è nuda. */
+    if(o.kind==='cartello'){
+      const e = o.testo ? 'riscrivi il cartello' : 'scrivi sul cartello';
+      return window.LINGUA ? LINGUA.t(e) : e;
+    }
+    return null;
+  }
   if(o.t==='pietra_rituale') return 'esamina le rune';
   return null;
 }

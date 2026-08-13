@@ -16,6 +16,14 @@
 
 window.CHANGELOG = [
   {
+    v: '3.2',
+    data: 'agosto 2026',
+    titolo: 'I cartelli li scrivi tu',
+    voci: [
+      { tipo:'nuovo',  t:'Cartelli con sopra quello che ci scrivi', d:'I cartelli del paese («↑ Miniera», «← Podere») ce l\'hanno sempre avuto un testo, ma per leggerlo bisogna andarci accanto e premere E — per dividere un campo a zone vorrebbe dire farne il giro. Adesso il <b>Cartello</b> lo fai tu al banco da lavoro (tre legna, ne escono due), lo pianti dove vuoi e ci scrivi sopra: «Pomodori», «Patate», «Qui non zappare». La scritta sta sopra la tavoletta e si legge da fermi, da dovunque tu sia. Appena piantato si apre da solo il campo per scriverci, e con E ci torni quando cambi coltura. Per toglierlo, una picconata: torna nello zaino intero.' }
+    ]
+  },
+  {
     v: '3.1',
     data: 'agosto 2026',
     titolo: 'Il pollaio non ti mangia più il campo',

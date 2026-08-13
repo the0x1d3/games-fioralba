@@ -614,6 +614,34 @@ verifica('gli oggetti posabili corrispondono a qualcosa di costruibile', () => {
   return problemi;
 });
 
+/* Un posabile senza disegno non è un errore: si compra, si posa, e sul
+   terreno resta il vuoto — `A.placeable` cade nel `default` e restituisce
+   una tela pulita. Lo stesso vale per l'icona nello zaino, che sta in un
+   secondo elenco, dentro `A.icon`: quando ne aggiungi uno è facile
+   ricordarsi del primo e scordarsi del secondo, e il risultato è un
+   quadratino vuoto in mano al giocatore.
+
+   Si guarda il sorgente e non `ART`, perché disegnare vuole un canvas e
+   qui il `window` è finto. Il `sentiero` non ha uno sprite da posato — è
+   terreno, `posa()` lo scrive dentro `m.g` — quindi l'unico elenco che lo
+   riguarda è quello delle icone. */
+verifica('ogni oggetto posabile ha uno sprite e un\'icona', () => {
+  const src = fs.readFileSync(path.join(RADICE, 'js/art.js'), 'utf8');
+  const taglio = src.indexOf('A.icon = function');
+  if (taglio < 0) return ['in art.js non si trova più `A.icon`: questo controllo non sa più dove guardare'];
+  const casi = (testo) => new Set([...testo.matchAll(/case\s+'([a-z_]+)'\s*:/g)].map(m => m[1]));
+  const sprite = casi(src.slice(src.indexOf('A.placeable = function'), taglio));
+  const icone  = casi(src.slice(taglio));
+  const problemi = [];
+  for (const id in DATA.ITEMS) {
+    const p = DATA.ITEMS[id].posabile;
+    if (!p) continue;
+    if (p !== 'sentiero' && !sprite.has(p)) problemi.push(`«${id}» si posa come «${p}», che ART.placeable non sa disegnare`);
+    if (!icone.has(id)) problemi.push(`«${id}» si posa ma non ha icona nello zaino (manca in ART.icon)`);
+  }
+  return problemi;
+});
+
 verifica('le mappe dichiarate esistono davvero', () => {
   const costruite = Object.keys(WORLD.crea());
   const dichiarate = WORLD.MAPPE;

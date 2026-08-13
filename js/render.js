@@ -1482,6 +1482,18 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
       } else {
         sx.drawImage(img, px-8, py+T-img.height+2);
       }
+      /* Il cartello scritto dal giocatore. Quelli del paese («↑ Miniera»)
+         il testo ce l'hanno da sempre, ma si legge solo standoci accanto
+         e premendo E: per dire «qui pomodori, là patate» servirebbe fare
+         il giro del campo. Qui il testo sta sopra la tavoletta e si legge
+         da fermi — è la targhetta del nome di una cassa, stessa funzione
+         e stessa fila, perché è la stessa domanda: cosa c'è qui.
+
+         Dopo lo sprite, non prima: la targhetta appoggia sul bordo alto
+         della tavoletta, e disegnata prima ci finirebbe sotto. Un
+         cartello appena piantato non ha ancora testo, e una targhetta
+         vuota sarebbe una toppa di legno sospesa a mezz'aria. */
+      if(o.kind==='cartello' && o.testo) targhetta(o.testo, px+16, py-12);
       break;
     }
   }

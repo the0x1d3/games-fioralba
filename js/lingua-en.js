@@ -100,6 +100,18 @@ window.LINGUA_EN = {
 'Staccionata': 'Fence',
 'Cancelletto': 'Gate',
 'Lanterna': 'Lantern',
+'Cartello': 'Sign',
+'Un palo e una tavoletta. Ci scrivi sopra quello che vuoi e si legge da lontano, senza doverlo toccare. Per toglierlo, una picconata.':
+  'A post and a board. Write whatever you like on it and it reads from a distance, no need to touch it. One swing of the pickaxe takes it back.',
+'Scritta': 'Text',
+'scrivi sul cartello': 'write on the sign',
+'riscrivi il cartello': 'rewrite the sign',
+'Pomodori, Patate, Qui non zappare…': 'Tomatoes, Potatoes, Don\'t dig here…',
+'Si legge da lontano, senza doverlo toccare.': 'It reads from a distance, no need to touch it.',
+'Scrivici sopra: quello che metti qui si legge da lontano, senza doverlo toccare.':
+  'Write on it: whatever you put here reads from a distance, no need to touch it.',
+'Per toglierlo di mezzo, una <b>picconata</b>: torna nello zaino.':
+  'To get it out of the way, one <b>swing of the pickaxe</b>: it goes back in your bag.',
 'Cassa': 'Chest',
 'Barattoliera': 'Preserves Jar',
 'Botte': 'Cask',
