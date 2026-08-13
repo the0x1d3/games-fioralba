@@ -2104,3 +2104,50 @@ html, body{ overscroll-behavior:none; }
   html.col-dito #dialogue .dlg-portrait{ transform:scale(.8); transform-origin:left center; }
 }
 
+
+/* --- la riga di una partita nel selettore: la carta e il suo cestino ---
+   Due elementi affiancati e non uno dentro l'altro: un <button> dentro a
+   un <button> non è HTML valido. Il bersaglio grosso resta «apri», e
+   cancellare vuole un gesto suo, piccolo e di lato. */
+.sinc-riga-partita{ display:flex; gap:7px; align-items:stretch; }
+.sinc-riga-partita .sinc-scelta{ flex:1; min-width:0; }
+.sinc-butta{
+  flex:none; width:46px; cursor:pointer; font-size:17px; line-height:1;
+  background:linear-gradient(180deg, rgba(217,105,79,.16), rgba(217,105,79,.28));
+  border:2px solid rgba(179,72,60,.55); border-radius:11px;
+  transition:background .12s, transform .08s;
+  -webkit-tap-highlight-color:transparent;
+}
+.sinc-butta:hover{ background:linear-gradient(180deg,#d9694f,#b3483c); transform:translateY(-2px); }
+.sinc-butta:active{ transform:translateY(1px); }
+
+/* il rimando al vecchio file: piccolo apposta, serve a una minoranza
+   che si assottiglia e non deve competere con le due strade vere */
+.sinc-legacy{ margin-top:10px; }
+.sinc-legacy-link{
+  font-size:12px; font-weight:800; color:var(--ink-soft);
+  text-decoration:none; border-bottom:1px dashed rgba(122,79,48,.45);
+}
+.sinc-legacy-link:hover{ color:var(--wood-1); border-bottom-color:var(--wood-1); }
+
+@media (max-width:560px){
+  .sinc-butta{ width:52px; font-size:19px; }
+  .sinc-legacy-link{ font-size:13px; }
+}
+
+/* Col dito, OGNI pulsante dentro a una finestra arriva a 44.
+
+   La regola c'era solo dentro `.imp` (le Impostazioni), e infatti la
+   conferma di cancellazione — che è il posto dove sbagliare costa di
+   più — aveva i due pulsanti alti 39. Meglio una regola sola per tutte
+   le finestre che una per ognuna, dimenticandone sempre una.
+
+   E il rimando al vecchio .json è un link: alto 19px, cioè un bersaglio
+   che col pollice si prende per fortuna. Gli si dà il suo spazio senza
+   trasformarlo in un pulsante, che di peso non deve averne. */
+html.col-dito #modal .btn{ min-height:44px; }
+html.col-dito .sinc-legacy-link{
+  /* 12px di imbottitura davano 41: la riga di testo è 17, non 20 come
+     avevo contato a occhio. Misurato e corretto a 14. */
+  display:inline-block; padding:14px 2px; line-height:1.2;
+}

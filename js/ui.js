@@ -1933,6 +1933,9 @@ function quando(iso){
   const d = new Date(iso), ora = new Date();
   const min = Math.round((ora - d) / 60000);
   if(min < 1)  return T('adesso');
+  /* «1 minuti fa» si leggeva nella conferma di cancellazione, che è
+     esattamente il posto dove uno rilegge con attenzione */
+  if(min === 1) return T('un minuto fa');
   if(min < 60) return min + ' ' + T('minuti fa');
   const h = Math.round(min/60);
   if(h < 24) return h + (h===1 ? ' ' + T('ora fa') : ' ' + T('ore fa'));
@@ -2148,7 +2151,48 @@ U.scegliPartita = function(){
 
     const eco = document.createElement('div'); eco.className='sinc-esito';
     sez.appendChild(eco);
+
+    /* Il vecchio file .json.
+
+       Fioralba ha esportato salvataggi in .json per mesi: sono sul
+       desktop di qualcuno, in una cartella dei download, spediti a un
+       amico. Adesso non si «importano» più — non c'è un posto locale
+       dove metterli — ma si CONVERTONO: salgono sul server come partita
+       nuova, col suo codice. Porta a senso unico: si entra nel sistema
+       nuovo, non si esce.
+
+       È un rimando piccolo e non un pulsante: serve a chi ce l'ha, che è
+       una minoranza destinata ad assottigliarsi, e non deve competere
+       con le due strade che servono a tutti gli altri. */
+    const leg = document.createElement('div'); leg.className='sinc-legacy';
+    const legA = document.createElement('a');
+    legA.href = '#'; legA.className = 'sinc-legacy-link';
+    legA.textContent = T('Ho un vecchio file .json da convertire →');
+    legA.onclick = e => { e.preventDefault(); convertiVecchio(); };
+    leg.appendChild(legA);
+    sez.appendChild(leg);
     body.appendChild(sez);
+
+    function convertiVecchio(){
+      if(inCorso) return;
+      inCorso = true;
+      eco.className = 'sinc-esito';
+      eco.textContent = T('Scegli il file…');
+      SINC.daFileLegacy(r=>{
+        inCorso = false;
+        if(r.annullato){ eco.textContent = ''; return; }
+        if(!r.ok){
+          eco.className = 'sinc-esito male';
+          eco.textContent = r.errore || T('Questo file non è un salvataggio di Fioralba.');
+          return;
+        }
+        /* Il codice PRIMA della partita, come quando ne nasce una nuova:
+           è l'unica cosa che sta fra il giocatore e il salvataggio
+           appena convertito, e la lettera d'apertura lo coprirebbe. */
+        U.chiudiModal();
+        U.mostraCodice(r.codice, true, ()=>G.avvia(false));
+      });
+    }
 
     let inCorso = false;
     function vai(codice){
@@ -2175,12 +2219,22 @@ U.scegliPartita = function(){
   });
 };
 
-/* una carta cliccabile del selettore */
+/* Una riga del selettore: la carta che apre, e il cestino che cancella.
+
+   Due elementi affiancati e non un pulsante dentro l'altro — un
+   `<button>` dentro a un `<button>` non è HTML valido, e i browser lo
+   risolvono ognuno a modo suo. Così invece il bersaglio grosso resta
+   tutto «apri», e cancellare vuole un gesto suo, piccolo e di lato. */
 function cartaScelta(codice, scheda){
+  const riga = document.createElement('div');
+  riga.className = 'sinc-riga-partita';
+
   const el = document.createElement('button');
   el.className = 'sinc-scelta';
   const corpo = document.createElement('div'); corpo.className='sinc-scelta-corpo';
   el.appendChild(corpo);
+
+  let ultimaScheda = scheda;
 
   function disegna(s){
     corpo.innerHTML = '';
@@ -2203,8 +2257,92 @@ function cartaScelta(codice, scheda){
   disegna(scheda);
   el.onclick = ()=>{ if(U.scegliPartita._vai) U.scegliPartita._vai(codice); };
 
-  return { el, aggiorna: disegna };
+  const butta = document.createElement('button');
+  butta.className = 'sinc-butta';
+  butta.textContent = '🗑';
+  butta.title = T('Cancella questa partita');
+  butta.setAttribute('aria-label', T('Cancella questa partita'));
+  butta.onclick = ()=> U.confermaCancella(codice, ultimaScheda);
+
+  riga.appendChild(el); riga.appendChild(butta);
+
+  return { el: riga, aggiorna: s => { ultimaScheda = s; disegna(s); } };
 }
+
+/* ------------------------------------------------------------------
+   CANCELLARE UNA PARTITA
+
+   Non si cancella al primo clic. Quello che sta per sparire lo si fa
+   rileggere prima — nome, a che punto, monete — perché in un elenco di
+   codici che si somigliano tutti il cestino sbagliato è un gesto facile,
+   e di là non c'è cestino da cui ripescare.
+
+   E si cancella DAVVERO, sul server: togliere la partita dall'elenco di
+   questo apparecchio e lasciarla viva di là non è cancellare, è
+   nascondere — con l'aggravante che il codice continuerebbe a
+   funzionare e nessuno se lo ricorda più.
+   ------------------------------------------------------------------ */
+U.confermaCancella = function(codice, scheda){
+  const attiva = SINC.codice() === codice;
+  U.modal(T('Cancellare questa partita?'), body=>{
+    const p = document.createElement('div'); p.style.marginBottom='12px';
+    p.innerHTML = T('Sparisce dal server e <b>non si recupera</b>. Il codice smette di funzionare, ' +
+                    'anche per chi ce l\'ha su un altro apparecchio.');
+    body.appendChild(p);
+
+    const g = document.createElement('div'); g.className='sinc-confronto';
+    g.appendChild(cartaPartita(T('Stai per cancellare'), scheda, false));
+    body.appendChild(g);
+
+    const cod = document.createElement('div'); cod.className='muted imp-nota';
+    cod.style.marginTop = '8px';
+    cod.textContent = codice;
+    body.appendChild(cod);
+
+    if(attiva){
+      const av = document.createElement('div'); av.className='avviso-grave';
+      av.style.marginTop = '10px';
+      av.textContent = T('È la partita che stai giocando adesso: cancellandola si torna alla pagina iniziale.');
+      body.appendChild(av);
+    }
+
+    const eco = document.createElement('div'); eco.className='sinc-esito';
+    body.appendChild(eco);
+
+    const az = document.createElement('div');
+    az.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-top:12px';
+
+    const bNo = document.createElement('button'); bNo.className='btn blue';
+    bNo.textContent = T('Lascia stare');
+    bNo.onclick = ()=>{ U.chiudiModal(); U.scegliPartita(); };
+
+    const bSi = document.createElement('button'); bSi.className='btn red';
+    bSi.textContent = T('Cancella per sempre');
+    bSi.onclick = ()=>{
+      bSi.disabled = true; bNo.disabled = true;
+      bSi.textContent = T('cancello…');
+      SINC.cancella(codice).then(r=>{
+        if(!r.ok){
+          bSi.disabled = false; bNo.disabled = false;
+          bSi.textContent = T('Cancella per sempre');
+          eco.className = 'sinc-esito male';
+          eco.textContent = r.errore || T('Non riesco a cancellarla.');
+          return;
+        }
+        U.chiudiModal();
+        /* Se era quella aperta, il gioco sta girando su una partita che
+           non esiste più: si riparte dalla pagina iniziale invece di
+           lasciarlo camminare in una valle che non ha più dove salvarsi. */
+        if(attiva){ location.reload(); return; }
+        U.toast(T('Partita cancellata.'),'good');
+        U.scegliPartita();
+      });
+    };
+
+    az.appendChild(bNo); az.appendChild(bSi);
+    body.appendChild(az);
+  }, { senzaChiusura:true });
+};
 
 /* ------------------------------------------------------------------
    IL CASSETTO RIMASTO INDIETRO

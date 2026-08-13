@@ -16,6 +16,15 @@
 
 window.CHANGELOG = [
   {
+    v: '2.8',
+    data: 'agosto 2026',
+    titolo: 'I vecchi file .json si convertono, e le partite si cancellano',
+    voci: [
+      { tipo:'nuovo',  t:'Il tuo vecchio salvataggio .json entra nel giro nuovo', d:'Per mesi Fioralba ha esportato salvataggi in file .json, e in giro ce ne sono: sul desktop, nella cartella dei download, spediti a un amico. Adesso in fondo alla finestra di «Continua» c\'è un rimando: scegli il file, e la partita sale sul server con un codice suo. È una porta a senso unico — si entra nel sistema nuovo e non si esce — e il file di partenza non viene toccato: se qualcosa non va, non hai perso niente.' },
+      { tipo:'nuovo',  t:'Le partite si possono cancellare', d:'Accanto a ogni partita dell\'elenco c\'è un cestino. Prima di cancellare ti facciamo rileggere cosa stai buttando — nome, a che punto sei, quante monete — perché in un elenco di codici che si somigliano tutti il cestino sbagliato è un gesto facile, e di là non c\'è nessun cestino da cui ripescare. E si cancella <b>davvero</b>, dal server: toglierla solo dal proprio apparecchio non sarebbe cancellare, sarebbe nascondere, col codice che continua a funzionare e nessuno che se lo ricordi più.' }
+    ]
+  },
+  {
     v: '2.7',
     data: 'agosto 2026',
     titolo: 'Gli abitanti smettono di sembrare storti',

@@ -1953,3 +1953,41 @@ Object.assign(window.LINGUA_EN, {
 "Nel riquadro del dialogo il ritratto inquadra la testa, ma la statura del personaggio la sposta in alto: chi è alto <b>e</b> porta il cappello sbatteva contro il bordo, e la cupola veniva tranciata netta. Adesso l'inquadratura segue la statura, e tutte e sei le facce cadono alla stessa altezza — che è poi quello che si chiede a una cornice di ritratti.":
   'In the dialogue box the portrait frames the head, but a character’s height shifts it upwards: anyone tall <b>and</b> wearing a hat hit the edge, and the crown was cut clean off. Now the framing follows the height, and all six faces sit at the same level — which is what you ask of a row of portraits in the first place.'
 });
+
+/* --- convertire un vecchio .json, e cancellare una partita --- */
+Object.assign(window.LINGUA_EN, {
+'Ho un vecchio file .json da convertire →': 'I have an old .json file to convert →',
+'Scegli il file…': 'Choose the file…',
+'Questo file non è un salvataggio di Fioralba.': 'This file is not a Fioralba save.',
+'Questo file è troppo grande per essere un salvataggio di Fioralba.':
+  'This file is too big to be a Fioralba save.',
+'Non riesco a leggere il file.': 'I cannot read the file.',
+
+'Cancella questa partita': 'Delete this game',
+'Cancellare questa partita?': 'Delete this game?',
+"Sparisce dal server e <b>non si recupera</b>. Il codice smette di funzionare, anche per chi ce l'ha su un altro apparecchio.":
+  'It disappears from the server and <b>cannot be recovered</b>. The code stops working, including for anyone who has it on another device.',
+'Stai per cancellare': 'About to delete',
+'È la partita che stai giocando adesso: cancellandola si torna alla pagina iniziale.':
+  'This is the game you are playing right now: deleting it takes you back to the front page.',
+'Lascia stare': 'Leave it be',
+'Cancella per sempre': 'Delete for good',
+'cancello…': 'deleting…',
+'Partita cancellata.': 'Game deleted.',
+'Non riesco a cancellarla.': 'I cannot delete it.',
+'Nessuna partita da cancellare.': 'No game to delete.',
+'Non riesco a cancellarla: il server non risponde.': 'I cannot delete it: the server is not answering.',
+'un minuto fa': 'a minute ago'
+});
+
+/* --- versione 2.8 (changelog.js il censimento lo salta: a mano) --- */
+Object.assign(window.LINGUA_EN, {
+'I vecchi file .json si convertono, e le partite si cancellano':
+  'Old .json files can be converted, and games can be deleted',
+'Il tuo vecchio salvataggio .json entra nel giro nuovo': 'Your old .json save joins the new setup',
+"Per mesi Fioralba ha esportato salvataggi in file .json, e in giro ce ne sono: sul desktop, nella cartella dei download, spediti a un amico. Adesso in fondo alla finestra di «Continua» c'è un rimando: scegli il file, e la partita sale sul server con un codice suo. È una porta a senso unico — si entra nel sistema nuovo e non si esce — e il file di partenza non viene toccato: se qualcosa non va, non hai perso niente.":
+  'For months Fioralba exported saves as .json files, and they are out there: on the desktop, in the downloads folder, emailed to a friend. Now at the bottom of the «Continue» window there is a link: choose the file, and the game goes up to the server with a code of its own. It is a one-way door — you come into the new setup and you do not go back out — and the original file is left untouched: if anything goes wrong, you have lost nothing.',
+'Le partite si possono cancellare': 'Games can be deleted',
+"Accanto a ogni partita dell'elenco c'è un cestino. Prima di cancellare ti facciamo rileggere cosa stai buttando — nome, a che punto sei, quante monete — perché in un elenco di codici che si somigliano tutti il cestino sbagliato è un gesto facile, e di là non c'è nessun cestino da cui ripescare. E si cancella <b>davvero</b>, dal server: toglierla solo dal proprio apparecchio non sarebbe cancellare, sarebbe nascondere, col codice che continua a funzionare e nessuno che se lo ricordi più.":
+  'Next to every game in the list there is a bin. Before deleting we make you read back what you are throwing away — name, how far you have got, how many coins — because in a list of codes that all look alike, the wrong bin is an easy gesture, and on the other side there is no wastebasket to fish it out of. And it really <b>is</b> deleted, from the server: removing it only from your own device would not be deleting, it would be hiding, with the code still working and nobody left who remembers it.'
+});

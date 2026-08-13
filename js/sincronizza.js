@@ -235,6 +235,28 @@ S.chiudi = function(){
   butta(CH_ATTIVA);
 };
 
+/* Cancella la partita: prima sul server, poi da questo apparecchio.
+
+   In quest'ordine e non nell'altro. Togliendola prima dall'elenco
+   locale, se poi il server dicesse di no si resterebbe con una partita
+   viva di cui non si ha più il codice da nessuna parte — cioè persa
+   senza essere cancellata, il peggiore dei due esiti. Se il server non
+   risponde non si tocca niente e lo si dice.
+
+   Il 404 vale come riuscita: vuol dire che di là non c'è già più, e
+   l'elenco locale che la nomina è proprio la cosa da ripulire. */
+S.cancella = async function(codice){
+  if(!codice) return { ok:false, errore:'Nessuna partita da cancellare.' };
+  const r = await chiama('DELETE', '/api/partita/' + codice);
+  if(!r.ok && r.stato !== 404)
+    return { ok:false, errore: r.dati.errore || 'Non riesco a cancellarla: il server non risponde.' };
+
+  S.dimentica(codice);
+  const c = S.cassetto();
+  if(c && c.codice === codice) svuota();     // il cassetto di una partita che non c'è più
+  return { ok:true, codice };
+};
+
 /* --------------------------------------------------------------- */
 /* mandare                                                          */
 /* --------------------------------------------------------------- */
@@ -412,15 +434,59 @@ S.daMigrare = function(){
     return (t && t.length > 200) ? t : null;
   }catch(e){ return null; }
 };
-S.migra = async function(testo){
+/* `pulisci` a false quando il salvataggio arriva da un file scelto a
+   mano: quello nel browser, se c'è, non c'entra e non va buttato. */
+S.migra = async function(testo, pulisci){
   const esito = SALVA.applicaTesto(testo);
   if(!esito.ok) return { ok:false, errore: esito.err };
   const n = await S.nuova();
   if(!n.ok) return n;
   const i = await S.invia();
   if(!i.ok) return { ok:false, errore: i.errore || 'Non riesco a mandare la partita sul server.' };
-  try{ localStorage.removeItem(CH_VECCHIA); localStorage.removeItem('fioralba_save_bak'); }catch(e){}
+  if(pulisci !== false)
+    try{ localStorage.removeItem(CH_VECCHIA); localStorage.removeItem('fioralba_save_bak'); }catch(e){}
   return { ok:true, codice: stato.codice };
+};
+
+/* --------------------------------------------------------------- */
+/* il file .json di ieri                                            */
+/* --------------------------------------------------------------- */
+/* Fioralba ha esportato salvataggi in .json per mesi, e in giro ce ne
+   sono: sul desktop di qualcuno, in una cartella dei download, spediti
+   per posta a un amico. Quei file adesso non si possono più «importare»
+   nel senso di prima — non c'è più un posto locale dove metterli — ma
+   si possono CONVERTIRE: si leggono, si validano con la stessa
+   validazione di sempre, e salgono sul server come partita nuova col
+   suo codice.
+
+   È una porta a senso unico, ed è giusto così: si entra nel sistema
+   nuovo, non si esce. Il file di partenza resta dov'è e non viene
+   toccato — se la conversione fallisce non si è perso niente. */
+S.daFileLegacy = function(alFatto){
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json,application/json';
+  inp.style.display = 'none';
+  inp.onchange = ()=>{
+    const file = inp.files && inp.files[0];
+    if(!file){ inp.remove(); alFatto({ ok:false, annullato:true }); return; }
+    /* 8 MB: un salvataggio sta in 170 KB, e leggere in memoria un file
+       da mezzo giga perché qualcuno ha sbagliato a cliccare non serve a
+       nessuno. */
+    if(file.size > 8*1024*1024){
+      inp.remove();
+      alFatto({ ok:false, errore:'Questo file è troppo grande per essere un salvataggio di Fioralba.' });
+      return;
+    }
+    const rd = new FileReader();
+    rd.onload = ()=>{
+      inp.remove();
+      S.migra(String(rd.result||''), false).then(alFatto);
+    };
+    rd.onerror = ()=>{ inp.remove(); alFatto({ ok:false, errore:'Non riesco a leggere il file.' }); };
+    rd.readAsText(file);
+  };
+  document.body.appendChild(inp);
+  inp.click();
 };
 
 })();

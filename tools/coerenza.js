@@ -1205,12 +1205,44 @@ verifica('il salvataggio passa dal server, e non torna in locale', () => {
   if (/localStorage\.setItem\(\s*['"]fioralba_save/.test(salva + sinc + game + ui))
     problemi.push('qualcuno riscrive fioralba_save_* : la partita tornerebbe ad avere due padroni che divergono');
 
-  // e il giro dei file .json non deve riaprirsi
-  for (const [dove, src] of [['salvataggio.js', salva], ['ui.js', ui], ['game.js', game]])
-    if (/\.json['"]|download\s*=|importaDaFile|S\.esporta/.test(src))
-      problemi.push(dove + ' è tornato a esportare o importare file .json');
+  /* Il giro dei .json non deve riaprirsi — ma la porta a SENSO UNICO sì.
+
+     Convertire un vecchio file in una partita sul server è un'altra
+     cosa dall'esportarne uno nuovo: chi ha un .json sul desktop da
+     quando Fioralba li esportava deve poterlo portare dentro. Quello
+     che non deve tornare è l'USCITA — un file scaricabile — perché da lì
+     ricomincia la storia delle due partite che divergono.
+
+     Il controllo guarda quindi la scrittura, non la lettura: niente
+     `download=`, niente Blob salvati, niente `esporta`. */
+  for (const [dove, src] of [['salvataggio.js', salva], ['ui.js', ui], ['game.js', game],
+                             ['sincronizza.js', sinc]])
+    if (/download\s*=|createObjectURL|S\.esporta|G\.esporta/.test(src))
+      problemi.push(dove + ' è tornato a esportare la partita in un file: da lì ricominciano le due copie che divergono');
   if (/id="btn-import"|class="[^"]*lp-import/.test(html))
     problemi.push('index.html ha di nuovo un pulsante di import da file');
+
+  /* La conversione del vecchio .json, e la cancellazione. Sono due
+     strade che passano dal selettore e nessuna delle due fa rumore
+     sparendo: il selettore continua ad aprirsi e a funzionare. */
+  if (!/S\.daFileLegacy\s*=/.test(sinc))
+    problemi.push('sparita la conversione del vecchio file .json: chi ne ha uno resta fuori');
+  if (!/sinc-legacy-link/.test(ui))
+    problemi.push('il selettore non offre più di convertire un vecchio .json');
+  if (!/S\.cancella\s*=/.test(sinc) || !/U\.confermaCancella\s*=/.test(ui))
+    problemi.push('sparita la cancellazione di una partita');
+
+  /* Cancellare deve arrivare al SERVER, o non ha cancellato niente: una
+     partita tolta solo dall'elenco locale resta viva, col suo codice
+     ancora buono e nessuno che se lo ricordi. */
+  const server = fs.readFileSync(path.join(RADICE, 'server-partite.js'), 'utf8');
+  if (!/req\.method === 'DELETE'/.test(server) || !/async cancella\(/.test(server))
+    problemi.push('il server non sa più cancellare una partita: «elimina» sarebbe una bugia');
+  const corpoCanc = sinc.slice(sinc.indexOf('S.cancella'), sinc.indexOf('S.cancella') + 800);
+  if (corpoCanc.indexOf("chiama('DELETE'") < 0 ||
+      corpoCanc.indexOf("chiama('DELETE'") > corpoCanc.indexOf('S.dimentica'))
+    problemi.push('S.cancella non chiede più al server PRIMA di dimenticare: se il server dicesse di no ' +
+                  'resterebbe una partita viva di cui nessuno ha più il codice');
 
   // le finestre che il giro nuovo richiede
   for (const f of ['scegliPartita', 'mostraCodice', 'proponiMigrazione', 'cassettoInSospeso', 'conflittoSinc'])

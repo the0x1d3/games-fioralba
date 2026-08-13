@@ -77,7 +77,8 @@ function creaMemoriaVolatile(){
       dentro.set(codice, { codice, dati:null, versione:0, giorno_tot:0, nome:null,
                            aggiornato:new Date().toISOString() });
       return dentro.get(codice);
-    }
+    },
+    async cancella(codice){ return dentro.delete(codice); }
   };
 }
 
@@ -135,6 +136,10 @@ function creaMemoriaPostgres(url){
       const r = await pool.query(
         'insert into partite (codice) values ($1) returning *', [codice]);
       return r.rows[0];
+    },
+    async cancella(codice){
+      const r = await pool.query('delete from partite where codice = $1', [codice]);
+      return r.rowCount > 0;
     }
   };
 }
@@ -280,6 +285,24 @@ async function gestisci(req, res, rel){
       typeof corpo.nome === 'string' ? corpo.nome.slice(0, 40) : null,
       corpo.sommario ? JSON.stringify(corpo.sommario).slice(0, 500) : null);
     json(res, 200, scheda(salvata));
+    return true;
+  }
+
+  /* DELETE — la partita non c'è più.
+
+     Serve perché «elimina» non sia una bugia: finché la riga resta,
+     chiunque abbia il codice riapre la partita, e un elenco ripulito
+     solo sul proprio apparecchio non ha cancellato niente.
+
+     Non c'è cestino e non c'è «annulla»: chi arriva qui è passato da una
+     finestra che gli ha fatto rileggere nome, stagione e monete di
+     quello che sta buttando. Un cestino sul server vorrebbe dire
+     conservare per sempre partite che qualcuno ha chiesto di togliere,
+     ed è la scelta opposta a quella che chiede chi preme. */
+  if(req.method === 'DELETE'){
+    const cera = await memoria.cancella(codice);
+    if(!cera){ json(res, 404, { errore:'nessuna partita con questo codice' }); return true; }
+    json(res, 200, { cancellata:true, codice });
     return true;
   }
 
