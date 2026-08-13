@@ -873,3 +873,122 @@ Object.assign(window.LINGUA_EN, {
 'Tu vieni dal podere di Ilde? Mia nonna ne parlava sempre.': 'Are you from Ilde\'s farm? My grandmother talked about it all the time.'
 
 });
+
+/* ===================================================================
+   LA PAGINA DI PRESENTAZIONE
+   Le frasi lunghe portano dentro il loro grassetto: la chiave è
+   l'innerHTML intero, quindi la traduzione può mettere il <strong>
+   dove serve in inglese, che non è sempre dove sta in italiano.
+
+   «Tutto in italiano» diventa «In Italian and English»: era un vanto
+   quando la lingua era una sola, e tradotto alla lettera diventerebbe
+   una frase che si contraddice da sé nel momento in cui la leggi.
+   =================================================================== */
+Object.assign(window.LINGUA_EN, {
+
+/* --- logo e apertura --- */
+'La Lanterna del Solstizio': 'The Solstice Lantern',
+'un piccolo podere, una valle da risvegliare': 'a small farm, a valley to wake up',
+"Nonna Ilde ti ha lasciato il suo podere e una cosa che sul testamento non c'era: una <strong>lanterna spenta da dodici anni</strong>, in fondo al bosco. Coltiva, pesca, scendi in miniera, fatti voler bene dal paese — e, stagione dopo stagione, riaccendila.":
+  'Granny Ilde left you her farm, and one thing the will did not mention: a <strong>lantern that has been dark for twelve years</strong>, deep in the woods. Farm, fish, go down the mine, make the village fond of you — and, season after season, light it again.',
+
+/* --- i pulsanti --- */
+'Nuova Partita': 'New Game',
+'Continua': 'Continue',
+'Importa salvataggio': 'Import a save',
+'Come si gioca': 'How to play',
+'guarda com\'è': 'see what it looks like',
+
+/* --- i fatti in fila --- */
+'Gratis': 'Free',
+'Nel browser': 'In your browser',
+'Niente da installare': 'Nothing to install',
+'Tutto in italiano': 'In Italian and English',
+'Si salva da solo': 'Saves itself',
+
+/* --- i titoli delle sezioni --- */
+'Sei posti, una valle sola': 'Six places, one valley',
+'Cosa si fa a Fioralba': 'What you do in Fioralba',
+'Chi ci vive': 'Who lives here',
+'Quattro braci, quattro stagioni': 'Four embers, four seasons',
+"Non succede niente di spettacolare. Solo che l'erba, la mattina dopo, è di un verde che nessuno ricordava.":
+  'Nothing spectacular happens. Only that the next morning the grass is a green nobody remembered.',
+
+/* --- changelog e piede --- */
+'Vedi tutti i cambiamenti': 'See everything that changed',
+"Cos'è cambiato": 'What changed',
+'Il gioco si aggiorna da solo: basta ricaricare la pagina.':
+  'The game updates itself: just reload the page.',
+'Il podere ti aspetta.': 'The farm is waiting.',
+"La partita si salva nel tuo browser, da sola. Dal menu puoi esportarla in un file e riprenderla su un altro computer.":
+  'The game saves itself in your browser. From the menu you can export it to a file, or sync it and pick it up on another computer.',
+
+/* --- avvisi per il telefono --- */
+"<strong>💻 Fioralba si gioca da computer.</strong> Serve tastiera e mouse: da telefono o tablet i comandi non funzionano. Puoi comunque dare un'occhiata a cosa ti aspetta.":
+  '<strong>💻 Fioralba is played on a computer.</strong> It needs a keyboard and mouse: on a phone or tablet the controls do not work. You are welcome to look around anyway.',
+'Gioca dal computer': 'Play on a computer',
+"<strong>Fioralba</strong> è pensato per essere giocato da PC con tastiera e mouse. Da smartphone o tablet <strong>non funziona</strong> correttamente.":
+  '<strong>Fioralba</strong> is made to be played on a PC with a keyboard and mouse. On a phone or tablet it <strong>does not work</strong> properly.',
+'Per vivere al meglio la valle, riapri il gioco da un computer. 🏮':
+  'To see the valley at its best, open the game again on a computer. 🏮',
+'Torna indietro': 'Go back',
+
+/* --- pezzi dell'interfaccia di gioco --- */
+'Salta guida': 'Skip guide',
+'Chiudi la lettera': 'Close the letter',
+'Tieni premuto <kbd>Spazio</kbd> per salire': 'Hold <kbd>Space</kbd> to rise',
+'Primi passi': 'First steps',
+'Energia': 'Energy',
+
+/* --- la sincronizzazione, nel menu --- */
+'Partita su più computer': 'Play on more than one computer',
+'Collega la partita per riprenderla da un altro computer. Niente registrazione: si genera un codice.':
+  'Link this game to pick it up on another computer. No sign-up: it just makes you a code.',
+'Collega questa partita': 'Link this game',
+'collego…': 'linking…',
+'Hai già un codice da un altro computer?': 'Already have a code from another computer?',
+'Usa questo codice': 'Use this code',
+'Collegata. Segna il codice.': 'Linked. Write the code down.',
+'Collegata.': 'Linked.',
+'Scollegata.': 'Unlinked.',
+'Clicca per copiare': 'Click to copy',
+'Codice copiato.': 'Code copied.',
+'Copialo a mano: ': 'Copy it by hand: ',
+"Scrivi questo codice sull'altro computer per riprendere la partita. <b>Chi ha il codice ha la partita</b>: non darlo in giro.":
+  'Type this code on the other computer to pick the game up. <b>Whoever has the code has the game</b>: do not pass it around.',
+'Manda adesso': 'Send now',
+'Prendi dal server': 'Get from the server',
+'Scollega': 'Unlink',
+'La partita resta qui e resta sul server: si smette solo di allinearle.':
+  'The game stays here and stays on the server: they simply stop being kept in step.',
+'Partita mandata al server.': 'Game sent to the server.',
+'Il codice non ha la forma giusta: dodici lettere e numeri.':
+  'That code is not the right shape: twelve letters and numbers.',
+'Nessuna partita con questo codice.': 'No game with that code.',
+'La partita sul server è diversa: apri il Menu per decidere.':
+  'The game on the server is different: open the Menu to decide.',
+
+/* --- la finestra del conflitto --- */
+'Due partite diverse': 'Two different games',
+"Su questo computer e sul server ci sono due partite che non combaciano. Tenerne una vuol dire <b>perdere l'altra</b>: guarda a che punto sono e scegli.":
+  'This computer and the server have two games that do not match. Keeping one means <b>losing the other</b>: look at where each has got to, and choose.',
+'Su questo computer': 'On this computer',
+'Sul server': 'On the server',
+'Tengo questa': 'Keep this one',
+'Tengo quella del server': 'Keep the server one',
+'Decido dopo': 'Decide later',
+'Fatto: adesso vale questa.': 'Done: this one counts now.',
+'Scaricata. Ricarico la pagina…': 'Downloaded. Reloading…',
+'non riuscito': 'did not work',
+'vuota': 'empty',
+'Contadino': 'Farmer',
+'A che punto': 'How far along',
+'Giorni giocati': 'Days played',
+'Salvata': 'Saved',
+'anno': 'year',
+'adesso': 'just now',
+'minuti fa': 'minutes ago',
+'ora fa': 'hour ago',
+'ore fa': 'hours ago'
+
+});

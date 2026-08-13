@@ -56,7 +56,7 @@
 
     <div id="sidebar">
       <div id="energybox" class="panel">
-        <div class="statlabel">Energia</div>
+        <div class="statlabel" data-t>Energia</div>
         <div class="vbar"><div id="energyfill"></div><span id="energytext">100</span></div>
       </div>
     </div>
@@ -64,7 +64,7 @@
     <!-- ============ PRIMI PASSI (guida sempre a schermo) ============ -->
     <div id="guida" class="panel hidden">
       <div class="gu-head">
-        <span class="gu-titolo">Primi passi</span>
+        <span class="gu-titolo" data-t>Primi passi</span>
         <span class="gu-prog">0/11</span>
         <button class="gu-toggle" title="Apri/chiudi">▾</button>
         <button class="gu-chiudi" title="Nascondi la guida">✕</button>
@@ -91,7 +91,7 @@
           <div class="tut-foot">
             <div class="tut-dots"></div>
             <button class="tut-next hidden">Continua ▸</button>
-            <button class="tut-skip">Salta guida</button>
+            <button class="tut-skip" data-t>Salta guida</button>
           </div>
         </div>
       </div>
@@ -138,14 +138,14 @@
     <canvas id="title-art"></canvas>
     <div id="title-inner">
       <div id="logo">
-        <div class="logo-sub">La Lanterna del Solstizio</div>
+        <div class="logo-sub" data-t>La Lanterna del Solstizio</div>
         <h1>FIORALBA</h1>
-        <div class="logo-tag">un piccolo podere, una valle da risvegliare</div>
+        <div class="logo-tag" data-t>un piccolo podere, una valle da risvegliare</div>
       </div>
       <div id="title-menu">
         <button id="btn-continue" class="bigbtn hidden">Continua</button>
         <button id="btn-new" class="bigbtn">Nuova Partita</button>
-        <button id="btn-howto" class="bigbtn ghost">Come si gioca</button>
+        <button id="btn-howto" class="bigbtn ghost" data-t>Come si gioca</button>
         <button id="btn-import" class="bigbtn ghost">Importa salvataggio</button>
       </div>
       <div id="title-foot"><span class="app-ver"></span> · fatto con affetto · premi <kbd>F</kbd> per schermo intero</div>
@@ -156,7 +156,7 @@
   <div id="letter" class="hidden">
     <div class="letter-paper">
       <div class="letter-text"></div>
-      <button class="letter-btn">Chiudi la lettera</button>
+      <button class="letter-btn" data-t>Chiudi la lettera</button>
     </div>
   </div>
 
@@ -180,7 +180,7 @@
       </div>
       <div class="fish-progwrap"><div class="fish-prog"></div></div>
     </div>
-    <div class="fish-hint">Tieni premuto <kbd>Spazio</kbd> per salire</div>
+    <div class="fish-hint" data-t>Tieni premuto <kbd>Spazio</kbd> per salire</div>
   </div>
 
   <!-- ============ LANDING PAGE ============ -->
@@ -188,7 +188,7 @@
     <div class="lp-scroll">
 
       <!-- avviso onesto e SUBITO visibile: compare solo su telefono/tablet -->
-      <div class="lp-mobile">
+      <div class="lp-mobile" data-t>
         <strong>💻 Fioralba si gioca da computer.</strong>
         Serve tastiera e mouse: da telefono o tablet i comandi non funzionano.
         Puoi comunque dare un'occhiata a cosa ti aspetta.
@@ -196,26 +196,26 @@
 
       <header class="lp-hero">
         <div class="lp-logo">
-          <div class="lp-sub">La Lanterna del Solstizio</div>
+          <div class="lp-sub" data-t>La Lanterna del Solstizio</div>
           <h1>FIORALBA</h1>
-          <div class="lp-tag">un piccolo podere, una valle da risvegliare</div>
+          <div class="lp-tag" data-t>un piccolo podere, una valle da risvegliare</div>
         </div>
-        <p class="lp-intro">
+        <p class="lp-intro" data-t>
           Nonna Ilde ti ha lasciato il suo podere e una cosa che sul testamento non c'era:
           una <strong>lanterna spenta da dodici anni</strong>, in fondo al bosco.
           Coltiva, pesca, scendi in miniera, fatti voler bene dal paese —
           e, stagione dopo stagione, riaccendila.
         </p>
         <div class="lp-cta">
-          <button class="bigbtn lp-new">Nuova Partita</button>
-          <button class="bigbtn ghost lp-continue">Continua</button>
-          <button class="bigbtn ghost lp-import">Importa salvataggio</button>
+          <button class="bigbtn lp-new" data-t>Nuova Partita</button>
+          <button class="bigbtn ghost lp-continue" data-t>Continua</button>
+          <button class="bigbtn ghost lp-import" data-t>Importa salvataggio</button>
         </div>
         <ul class="lp-fatti">
-          <li>Gratis</li><li>Nel browser</li><li>Niente da installare</li>
-          <li>Tutto in italiano</li><li>Si salva da solo</li>
+          <li data-t>Gratis</li><li data-t>Nel browser</li><li data-t>Niente da installare</li>
+          <li data-t>Tutto in italiano</li><li data-t>Si salva da solo</li>
         </ul>
-        <div class="lp-scrolldown"><span>guarda com'è</span><i>▾</i></div>
+        <div class="lp-scrolldown"><span data-t>guarda com'è</span><i>▾</i></div>
       </header>
 
       <div class="lp-belowfold">
@@ -227,7 +227,7 @@
            Qui i posti si vedono tutti insieme, fermi: sono ritagli veri
            delle mappe del gioco, disegnati adesso dal motore. -->
       <section class="lp-sez lp-riv">
-        <h2 class="lp-h2">Sei posti, una valle sola</h2>
+        <h2 class="lp-h2" data-t>Sei posti, una valle sola</h2>
         <p class="lp-occhiello">
           Non sono immagini: sono le mappe vere del gioco, disegnate adesso
           nel tuo browser. Da casa tua ci arrivi a piedi, tutte quante.
@@ -237,13 +237,13 @@
 
       <!-- ---------- cosa si fa ---------- -->
       <section class="lp-sez lp-riv">
-        <h2 class="lp-h2">Cosa si fa a Fioralba</h2>
+        <h2 class="lp-h2" data-t>Cosa si fa a Fioralba</h2>
         <div class="lp-features"></div>
       </section>
 
       <!-- ---------- gli abitanti ---------- -->
       <section class="lp-sez lp-riv">
-        <h2 class="lp-h2">Chi ci vive</h2>
+        <h2 class="lp-h2" data-t>Chi ci vive</h2>
         <p class="lp-occhiello">
           Sei persone, ognuna con i suoi gusti, le sue giornate e qualcosa da
           raccontarti se passi abbastanza spesso.
@@ -254,7 +254,7 @@
       <!-- ---------- la storia ---------- -->
       <section class="lp-sez lp-riv lp-storia">
         <div class="lp-storia-in">
-          <h2 class="lp-h2">Quattro braci, quattro stagioni</h2>
+          <h2 class="lp-h2" data-t>Quattro braci, quattro stagioni</h2>
           <p>
             Oltre il burrone, nel bosco, c'è un santuario che nessuno visita più.
             Dentro ci abita <strong>Fiammella</strong>, che aspetta da dodici anni
@@ -262,7 +262,7 @@
             ciò che spunta a primavera, ciò che matura d'estate,
             l'abbondanza d'autunno, ciò che resiste al gelo.
           </p>
-          <p class="lp-storia-firma">
+          <p class="lp-storia-firma" data-t>
             Non succede niente di spettacolare. Solo che l'erba, la mattina dopo,
             è di un verde che nessuno ricordava.
           </p>
@@ -280,18 +280,18 @@
             </div>
           </div>
           <ul class="lp-chlog-anteprima" id="chlog-anteprima"></ul>
-          <button class="btn lp-chlog-apri" id="chlog-apri">Vedi tutti i cambiamenti</button>
+          <button class="btn lp-chlog-apri" id="chlog-apri" data-t>Vedi tutti i cambiamenti</button>
         </div>
       </section>
 
       <footer class="lp-foot lp-riv">
-        <p class="lp-foot-tit">Il podere ti aspetta.</p>
+        <p class="lp-foot-tit" data-t>Il podere ti aspetta.</p>
         <div class="lp-cta">
-          <button class="bigbtn lp-new">Nuova Partita</button>
-          <button class="bigbtn ghost lp-continue">Continua</button>
-          <button class="bigbtn ghost lp-import">Importa salvataggio</button>
+          <button class="bigbtn lp-new" data-t>Nuova Partita</button>
+          <button class="bigbtn ghost lp-continue" data-t>Continua</button>
+          <button class="bigbtn ghost lp-import" data-t>Importa salvataggio</button>
         </div>
-        <p class="lp-foot-nota">
+        <p class="lp-foot-nota" data-t>
           La partita si salva nel tuo browser, da sola. Dal menu puoi esportarla
           in un file e riprenderla su un altro computer.
         </p>
@@ -312,8 +312,8 @@
              interno: chi arriva e non legge italiano deve poterlo fare
              senza entrare in partita al buio -->
         <button class="btn lp-lingua" id="lp-lingua"></button>
-        <button class="btn lp-continue">Continua</button>
-        <button class="btn gold lp-new">Nuova Partita</button>
+        <button class="btn lp-continue" data-t>Continua</button>
+        <button class="btn gold lp-new" data-t>Nuova Partita</button>
       </div>
     </div>
   </div>
@@ -325,11 +325,11 @@
   <div id="chlog-wrap" class="hidden" role="dialog" aria-modal="true" aria-labelledby="chlog-titolo">
     <div id="chlog-box">
       <div id="chlog-head">
-        <h2 id="chlog-titolo">Cos'è cambiato</h2>
+        <h2 id="chlog-titolo" data-t>Cos'è cambiato</h2>
         <button id="chlog-close" class="btn" aria-label="Chiudi">✕</button>
       </div>
       <div id="chlog-body"></div>
-      <div id="chlog-piede">
+      <div id="chlog-piede" data-t>
         Il gioco si aggiorna da solo: basta ricaricare la pagina.
       </div>
     </div>
@@ -339,16 +339,16 @@
   <div id="mobile-warn">
     <div class="mw-inner">
       <div class="mw-icon">🖥️</div>
-      <h2 class="mw-title">Gioca dal computer</h2>
-      <p class="mw-text">
+      <h2 class="mw-title" data-t>Gioca dal computer</h2>
+      <p class="mw-text" data-t>
         <strong>Fioralba</strong> è pensato per essere giocato da PC con
         tastiera e mouse. Da smartphone o tablet <strong>non funziona</strong>
         correttamente.
       </p>
-      <p class="mw-text mw-text-soft">
+      <p class="mw-text mw-text-soft" data-t>
         Per vivere al meglio la valle, riapri il gioco da un computer. 🏮
       </p>
-      <button id="mw-back" class="btn">Torna indietro</button>
+      <button id="mw-back" class="btn" data-t>Torna indietro</button>
     </div>
   </div>
 

@@ -251,9 +251,20 @@ LG.testiDati = function(){
    riscrivono al cambio di lingua. Il contenuto italiano resta nel
    sorgente della pagina: chi apre index.html continua a leggere il
    gioco, e chi non ha JS vede comunque qualcosa. */
+/* La chiave di un pezzo di markup sono gli spazi COMPATTATI, non
+   l'innerHTML grezzo. Nel sorgente una frase lunga sta su tre righe
+   rientrate, e quegli a-capo finirebbero dentro la chiave: la
+   traduzione andrebbe scritta riproducendo l'indentazione esatta del
+   file, e si scollerebbe il giorno che qualcuno rientra il markup di
+   due spazi. Compattando, la chiave è la frase e nient'altro — la
+   stessa che estrae `tools/lingua.js`, che così può contarle davvero. */
+function chiaveMarkup(html){
+  return String(html).replace(/\s+/g, ' ').trim();
+}
+
 function segnaMarkup(){
   for(const e of document.querySelectorAll('[data-t]')){
-    if(!e.dataset.it) e.dataset.it = e.innerHTML;
+    if(!e.dataset.it) e.dataset.it = chiaveMarkup(e.innerHTML);
   }
 }
 
