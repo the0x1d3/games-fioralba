@@ -25,9 +25,16 @@ IT.nome = function(id){
     const [k,s] = id.split(':');
     const C = DATA.CROPS[s] || DATA.ITEMS[s];
     const n = C ? C.nome : s;
-    if(k==='conserva') return 'Conserva di '+n;
-    if(k==='vino')     return (DATA.FRUTTA.indexOf(s)>=0? 'Vino di ':'Distillato di ')+n;
-    if(k==='succo')    return 'Succo di '+n;
+    /* Il nome del prodotto si COMPONE, e comporre è la cosa che una
+       traduzione rompe per prima: in italiano il contenitore va davanti
+       («Conserva di Rapa»), in inglese dietro («Turnip Preserves»).
+       Concatenando si otteneva «Conserva di Turnip» — metà tradotto e
+       con l'ordine sbagliato. Il modello passa dal catalogo, e ogni
+       lingua mette il segnaposto dove le serve. */
+    const F = (m)=> window.LINGUA ? LINGUA.f(m, n) : m.replace('{0}', n);
+    if(k==='conserva') return F('Conserva di {0}');
+    if(k==='vino')     return F(DATA.FRUTTA.indexOf(s)>=0 ? 'Vino di {0}' : 'Distillato di {0}');
+    if(k==='succo')    return F('Succo di {0}');
     return n;
   }
   const I = DATA.ITEMS[id];
@@ -855,7 +862,7 @@ U.negozio = function(G, tipo){
     for(const [k,lab] of [['compra','Compra'],['vendi','Vendi']]){
       const b=document.createElement('button');
       b.className='tab'+(tab===k?' on':'');
-      b.textContent=lab;
+      b.textContent=T(lab);
       b.onclick=()=>{ tab=k; U.aggiorna(); };
       tabs.appendChild(b);
     }
@@ -1022,7 +1029,7 @@ U.artigianato = function(G){
     for(const [k,lab] of [['podere','Podere'],['macchine','Macchine']]){
       const b=document.createElement('button');
       b.className='tab'+(cat===k?' on':'');
-      b.textContent=lab;
+      b.textContent=T(lab);
       b.onclick=()=>{ cat=k; U.aggiorna(); };
       tabs.appendChild(b);
     }
@@ -1105,7 +1112,7 @@ U.fucina = function(G){
     for(const [k,lab] of [['attrezzi','Potenzia attrezzi'],['costruzioni','Costruzioni'],['fusione','Fusione']]){
       const b=document.createElement('button');
       b.className='tab'+(tab===k?' on':'');
-      b.textContent=lab;
+      b.textContent=T(lab);
       b.onclick=()=>{ tab=k; U.aggiorna(); };
       tabs.appendChild(b);
     }
@@ -1279,13 +1286,13 @@ U.diario = function(G, tabIniziale){
     for(const [k,lab] of [['obiettivi','Obiettivi'],['livelli','Livelli'+(nPremi?' •':'')],['richieste','Richieste'+(nRich?' ('+nRich+')':'')],['collezione','Collezione'],['abitanti','Abitanti'],['lettere','Lettere'],['stats','Podere']]){
       const b=document.createElement('button');
       b.className='tab'+(tab===k?' on':'');
-      b.textContent=lab; b.onclick=()=>{ tab=k; U.aggiorna(); };
+      b.textContent=T(lab); b.onclick=()=>{ tab=k; U.aggiorna(); };
       tabs.appendChild(b);
     }
     body.appendChild(tabs);
 
     if(tab==='obiettivi'){
-      const s=document.createElement('div'); s.className='sectitle'; s.textContent='La Lanterna del Solstizio';
+      const s=document.createElement('div'); s.className='sectitle'; s.textContent=T('La Lanterna del Solstizio');
       body.appendChild(s);
       const p=document.createElement('div'); p.className='muted';
       p.style.marginBottom='12px';
@@ -1309,7 +1316,7 @@ U.diario = function(G, tabIniziale){
 
       // --- SAGRA DI STAGIONE ---
       if(G.sagra){
-        const ss=document.createElement('div'); ss.className='sectitle'; ss.textContent='🎪 '+G.sagra.nome;
+        const ss=document.createElement('div'); ss.className='sectitle'; ss.textContent=T('🎪 ')+G.sagra.nome;
         body.appendChild(ss);
         const r=document.createElement('div'); r.className='row';
         r.appendChild(ico(G.sagra.icona));
@@ -1554,7 +1561,7 @@ U.diario = function(G, tabIniziale){
           r.appendChild(b);
           body.appendChild(r);
         }
-        const t=document.createElement('div'); t.className='sectitle'; t.textContent='Lettere';
+        const t=document.createElement('div'); t.className='sectitle'; t.textContent=T('Lettere');
         body.appendChild(t);
       }
       const chiavi = Object.keys(DATA.LETTERE).filter(k=>G.lettere[k]);
@@ -1587,7 +1594,7 @@ U.diario = function(G, tabIniziale){
          dava 8). Adesso hanno una scheda loro — LIV.scheda, che legge
          DATA.BONUS_TESTO — e qui restano solo i numeri del podere. */
       const st=G.statistiche();
-      const s=document.createElement('div'); s.className='sectitle'; s.textContent='Il podere in numeri';
+      const s=document.createElement('div'); s.className='sectitle'; s.textContent=T('Il podere in numeri');
       body.appendChild(s);
       const tbl=document.createElement('div');
       tbl.style.cssText='display:grid;grid-template-columns:1fr auto;gap:6px 18px;font-size:14px';
@@ -1909,7 +1916,7 @@ U.menu = function(G){
 
     /* lingua */
     if(window.LINGUA && LINGUA.elenco.length > 1){
-      const lt=document.createElement('div'); lt.className='sectitle'; lt.textContent='Lingua';
+      const lt=document.createElement('div'); lt.className='sectitle'; lt.textContent=T('Lingua');
       wrap.appendChild(lt);
       const riga=document.createElement('div');
       riga.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
@@ -1934,7 +1941,7 @@ U.menu = function(G){
 
     /* guida "Primi passi": si può nascondere e riaccendere quando si vuole */
     if(window.GUIDA && !GUIDA.completata()){
-      const gt=document.createElement('div'); gt.className='sectitle'; gt.textContent='Guida';
+      const gt=document.createElement('div'); gt.className='sectitle'; gt.textContent=T('Guida');
       wrap.appendChild(gt);
       const bg=document.createElement('button'); bg.className='btn blue';
       bg.textContent = GUIDA.nascosta() ? '🧭 Mostra i Primi passi' : '🧭 Nascondi i Primi passi';
@@ -1946,7 +1953,7 @@ U.menu = function(G){
       wrap.appendChild(bg);
     }
 
-    const t=document.createElement('div'); t.className='sectitle'; t.textContent='Partita';
+    const t=document.createElement('div'); t.className='sectitle'; t.textContent=T('Partita');
     wrap.appendChild(t);
 
     const bs=document.createElement('button'); bs.className='btn'; bs.textContent='Salva partita';

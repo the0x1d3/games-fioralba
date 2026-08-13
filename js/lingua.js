@@ -85,6 +85,19 @@ LG.t = function(testo){
   return testo;
 };
 
+/* Una frase composta con dei pezzi dentro: il modello si traduce, e i
+   pezzi si infilano dopo. Serve dove l'ordine delle parole cambia, ed è
+   l'unico modo di farlo senza sbagliare.
+
+   Il caso che l'ha resa necessaria: `'Conserva di ' + nome` dava «Conserva
+   di Turnip» in inglese — metà tradotta e con l'ordine italiano. Con
+   `LINGUA.f('Conserva di {0}', nome)` il catalogo dice «{0} Preserves» e
+   il nome finisce dove l'inglese lo vuole, in testa. */
+LG.f = function(modello, ...pezzi){
+  const tradotto = LG.t(modello);
+  return String(tradotto).replace(/\{(\d+)\}/g, (_, i) => pezzi[i] !== undefined ? pezzi[i] : '{'+i+'}');
+};
+
 /* Le frasi che il catalogo non conosce. Non si scrive in console a ogni
    fotogramma — un prompt ripetuto seppellirebbe tutto il resto — ma si
    tengono da parte, e il pannello di prova le sa mostrare. */

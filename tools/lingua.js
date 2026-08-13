@@ -59,6 +59,18 @@ function testiModuli() {
   const dir = path.join(RADICE, 'js');
   for (const f of fs.readdirSync(dir).filter(n => n.endsWith('.js'))) {
     if (f === 'lingua.js' || f.startsWith('lingua-')) continue;
+    /* Il changelog è un archivio, non il gioco: diciassettemila caratteri
+       di storia delle versioni. La voce più recente si traduce (è quella
+       che compare sulla landing), le vecchie restano nella lingua in cui
+       sono state scritte — un registro non si retrodata. Tenerle qui
+       dentro voleva dire un conto di «mancanti» che non scende mai, e un
+       contatore che non arriva a zero smette di dire qualcosa. */
+    if (f === 'changelog.js') continue;
+    /* Il pannello di prova non lo vede chi gioca: lo vede chi sviluppa,
+       e chi sviluppa qui legge italiano. Tradurlo sarebbe lavoro per
+       nessuno, e cinquanta righe che gonfiano il conto delle mancanti
+       facendo sembrare il gioco meno tradotto di quanto sia. */
+    if (f === 'debug.js') continue;
     const src = fs.readFileSync(path.join(dir, f), 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/^\s*\/\/.*$/gm, '');
