@@ -28,6 +28,7 @@ window.CHANGELOG = [
       { tipo:'nuovo',  t:'Si importa un salvataggio dalla pagina iniziale', d:'Prima il pulsante stava solo nel menu interno: per riprendere una partita portata da un altro computer bisognava già averne una.' },
       { tipo:'meglio', t:'La caccia si sente nei piedi, non solo nella mira', d:'«Le prede si accorgono di te più tardi» era scritto nella descrizione dell\'abilità dall\'inizio, ma non succedeva: il livello serviva solo a centrare il bersaglio. Adesso salendo di Caccia ci si può avvicinare davvero di più.' },
       { tipo:'fix',    t:'La pioggia cade uguale su ogni schermo', d:'Gocce e fiocchi avanzavano a ogni fotogramma invece che col tempo: su un monitor a 144Hz la pioggia cadeva più del doppio più veloce che su uno normale.' },
+      { tipo:'nuovo',  t:'Il gatto si lascia accarezzare', d:'C\'era dal primo giorno e non si poteva toccare: girava lì intorno e basta. Adesso si accarezza — una volta al giorno, di più non conta — e a poco a poco si avvicina: prima si sposta appena lo sfiori, alla fine ti cammina fra i piedi. A un certo punto scopri come si chiama, e non lo scegli tu.' },
       { tipo:'meglio', t:'Il gioco salva senza far scattare la partita', d:'Il salvataggio automatico si piazzava in mezzo a un fotogramma ogni due minuti, sempre mentre camminavi. Adesso aspetta un momento libero, e i file occupano un quinto in meno.' }
     ]
   },
