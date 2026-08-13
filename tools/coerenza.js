@@ -1340,6 +1340,73 @@ verifica('il contorno e i ritratti sono agganciati dove devono', () => {
   return problemi;
 });
 
+/* Nessuna battuta deve arrivare tagliata dentro al fumetto.
+
+   Queste frasi sono quasi tutte a due tempi — una premessa e una chiusa
+   — e troncare taglia sempre la chiusa: «Ilde saliva fin qui ogni
+   inverno, con una fetta di torta. Non parlava. Guardava e basta.»
+   diventava «…con una fetta di torta.», cioè un'informazione al posto
+   di un ricordo. Erano 33 su 60, il 55%, e nessuno se n'era accorto
+   perché il taglio è educato: mette i puntini e sembra una scelta.
+
+   Il modo giusto di tenere corte le battute è accorgersene mentre le si
+   scrive. Questo controllo usa la `spezza()` VERA, presa dal sorgente:
+   una copia riscritta qui misurerebbe un altro algoritmo, e il giorno
+   che quello cambia questo resterebbe verde per conto suo. */
+verifica('nessuna battuta dei fumetti arriva tagliata', () => {
+  const problemi = [];
+  const rend = fs.readFileSync(path.join(RADICE, 'js', 'render.js'), 'utf8');
+  const da = rend.indexOf('const FUM_RIGA');
+  const a  = rend.indexOf('\n}', rend.indexOf('function spezza')) + 2;
+  if (da < 0 || a < 2) { problemi.push('non trovo spezza() in render.js'); return problemi; }
+  let mod;
+  try { mod = new Function(rend.slice(da, a) + '; return { spezza, FUM_RIGA, FUM_RIGHE };')(); }
+  catch (e) { problemi.push('spezza() non si lascia leggere da qui: ' + e.message); return problemi; }
+
+  const battute = [];
+  for (const id in DATA.NPCS) {
+    const N = DATA.NPCS[id];
+    for (const b of (N.battute || [])) battute.push([id, b]);
+    for (const campo of ['stagione', 'meteo', 'ora', 'sagra', 'compleanno'])
+      if (N[campo]) for (const k in N[campo])
+        for (const b of [].concat(N[campo][k])) battute.push([id + ' (' + campo + ')', b]);
+  }
+  for (const p of (DATA.PASSANTI || [])) for (const b of (p.dice || [])) battute.push(['passante ' + p.id, b]);
+
+  /* Anche in inglese. Le stesse battute tradotte cambiano lunghezza, e
+     un controllo che guarda solo l'italiano lascerebbe passare un
+     fumetto tagliato per metà dei giocatori. Il catalogo si legge come
+     lo legge il gioco; se una frase non è tradotta resta l'italiana e
+     viene contata due volte, che non fa danno. */
+  try {
+    const sb = { window:{} };
+    require('vm').runInNewContext(
+      fs.readFileSync(path.join(RADICE, 'js', 'lingua-en.js'), 'utf8'), sb, { filename:'lingua-en.js' });
+    const cat = sb.window.LINGUA_EN || {};
+    for (const [chi, testo] of battute.slice())
+      if (cat[testo]) battute.push([chi + ' [en]', cat[testo]]);
+  } catch (e) { /* senza catalogo si controlla solo l'italiano */ }
+
+  for (const [chi, testo] of battute) {
+    const righe = mod.spezza(testo);
+    if (righe.some(r => r.endsWith('…')))
+      problemi.push(`la battuta di ${chi} non ci sta nel fumetto e verrebbe tagliata ` +
+                    `(${String(testo).length} caratteri, ce ne stanno ${mod.FUM_RIGHE * mod.FUM_RIGA}): ` +
+                    JSON.stringify(testo));
+
+    /* Una parola sola più lunga di una riga non viene troncata da
+       nessuno: `spezza` non spezza dentro le parole, quindi esce una
+       riga larga quanto la parola e il fumetto si allarga con lei.
+       Provato: una battuta di centosessanta caratteri senza spazi
+       passava indenne il controllo qui sopra. */
+    for (const r of righe)
+      if (r.length > mod.FUM_RIGA)
+        problemi.push(`la battuta di ${chi} ha una parola più lunga di una riga (${r.length} ` +
+                      `caratteri contro ${mod.FUM_RIGA}): il fumetto si allarga fuori misura`);
+  }
+  return problemi;
+});
+
 /* =================================================================== */
 
 const larghezza = 62;

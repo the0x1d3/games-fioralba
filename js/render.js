@@ -211,27 +211,56 @@ function targhetta(testo, cx, cy){
    nello stesso punto, e il giocatore non sa che vengono da due sistemi
    diversi.
 
-   Il testo si spezza a mano invece che con una misura per riga: a
-   nove pixel di corpo su una scena larga 480, una battuta lunga
-   coprirebbe mezza piazza. Tre righe da ventotto caratteri sono il
-   limite oltre il quale si smette di leggere e si comincia a guardare.
+   Il testo si spezza a mano invece che con una misura per riga: a nove
+   pixel di corpo, una battuta lunga coprirebbe mezza piazza.
+
+   IL RIQUADRO DEVE CONTENERE QUELLO CHE LA GENTE DICE. Non è un
+   dettaglio di impaginazione: queste battute sono quasi tutte a due
+   tempi — una premessa e una chiusa — e tagliare taglia sempre la
+   chiusa. «Ilde saliva fin qui ogni inverno, con una fetta di torta.
+   Non parlava. Guardava e basta.» diventava «…con una fetta di torta.»,
+   cioè un'informazione al posto di un ricordo. Misurato: 33 battute su
+   60, il 55%, arrivavano tagliate.
+
+   Il conto adesso è quattro righe da trenta, cioè 120 caratteri contro
+   gli 88 della battuta più lunga, e un controllo in `tools/coerenza.js`
+   impedisce di scriverne una che non ci sta — perché il modo giusto di
+   tenere corte le battute è accorgersene scrivendole, non troncarle
+   mentre qualcuno le legge.
    =================================================================== */
-const FUM_RIGA = 28, FUM_RIGHE = 3, FUM_ALTA = 11;
+const FUM_RIGA = 30, FUM_RIGHE = 4, FUM_ALTA = 11;
 
 function spezza(testo){
-  const parole = String(testo).split(/\s+/);
+  const parole = String(testo).split(/\s+/).filter(Boolean);
+  /* Il confronto per decidere se c'è stato un taglio si fa con la frase
+     NORMALIZZATA, non con quella grezza: spezzando si perdono gli spazi
+     doppi e gli a capo, e confrontando col grezzo una battuta scritta
+     con due spazi si sarebbe presa i puntini di sospensione senza aver
+     perso una parola. */
+  const intera = parole.join(' ');
   const righe = [];
   let r = '';
   for(const p of parole){
     if(!r.length){ r = p; continue; }
     if((r + ' ' + p).length <= FUM_RIGA){ r += ' ' + p; continue; }
-    righe.push(r); r = p;
-    if(righe.length === FUM_RIGHE - 1) break;
+    righe.push(r);
+    r = p;
+    /* Si esce quando le righe sono PIENE, non una prima.
+
+       C'era `FUM_RIGHE - 1`, e buttava via un'intera riga: usciva dal
+       giro con `r` che conteneva una parola sola — quella appena
+       traboccata — e quella parola diventava l'ultima riga. Di
+       ottantaquattro caratteri disponibili se ne usavano cinquanta, e il
+       resto della frase spariva. Nello schermo del proprietario si
+       leggeva «Ogni primavera dico che / quest'anno mi organizzo. /
+       Ogni…», dove l'ultima riga poteva contenere «Ogni primavera
+       arrivo» e la battuta sarebbe stata quasi intera. */
+    if(righe.length === FUM_RIGHE){ r = ''; break; }
   }
-  if(righe.length < FUM_RIGHE && r) righe.push(r);
-  // se non ci sta tutto, l'ultima riga si tronca con dignità
+  if(r && righe.length < FUM_RIGHE) righe.push(r);
+  // se davvero non ci sta tutto, l'ultima riga si tronca con dignità
   const detto = righe.join(' ');
-  if(detto.length < String(testo).length && righe.length){
+  if(detto.length < intera.length && righe.length){
     let u = righe[righe.length-1];
     if(u.length > FUM_RIGA - 1) u = u.slice(0, FUM_RIGA - 1);
     righe[righe.length-1] = u + '…';

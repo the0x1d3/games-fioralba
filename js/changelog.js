@@ -16,6 +16,15 @@
 
 window.CHANGELOG = [
   {
+    v: '2.9',
+    data: 'agosto 2026',
+    titolo: 'Gli abitanti finiscono le frasi',
+    voci: [
+      { tipo:'fix',    t:'Le nuvolette tagliavano la battuta a metà', d:'Più della metà di quello che la gente dice in giro per la valle arrivava troncato — 33 battute su 60 — e siccome sono quasi tutte a due tempi, veniva tagliata sempre la seconda: <b>«Ilde saliva fin qui ogni inverno, con una fetta di torta.»</b> e via il resto, che era «Non parlava. Guardava e basta.» Restava l\'informazione e spariva il ricordo. Adesso ci stanno tutte, in italiano e in inglese.' },
+      { tipo:'fix',    t:'Una riga su quattro veniva buttata via', d:'La nuvoletta smetteva di riempirsi una riga prima del dovuto: l\'ultima conteneva una parola sola e tutto il resto della frase spariva. Di ottantaquattro caratteri disponibili se ne usavano una cinquantina.' }
+    ]
+  },
+  {
     v: '2.8',
     data: 'agosto 2026',
     titolo: 'I vecchi file .json si convertono, e le partite si cancellano',

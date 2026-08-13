@@ -1991,3 +1991,14 @@ Object.assign(window.LINGUA_EN, {
 "Accanto a ogni partita dell'elenco c'è un cestino. Prima di cancellare ti facciamo rileggere cosa stai buttando — nome, a che punto sei, quante monete — perché in un elenco di codici che si somigliano tutti il cestino sbagliato è un gesto facile, e di là non c'è nessun cestino da cui ripescare. E si cancella <b>davvero</b>, dal server: toglierla solo dal proprio apparecchio non sarebbe cancellare, sarebbe nascondere, col codice che continua a funzionare e nessuno che se lo ricordi più.":
   'Next to every game in the list there is a bin. Before deleting we make you read back what you are throwing away — name, how far you have got, how many coins — because in a list of codes that all look alike, the wrong bin is an easy gesture, and on the other side there is no wastebasket to fish it out of. And it really <b>is</b> deleted, from the server: removing it only from your own device would not be deleting, it would be hiding, with the code still working and nobody left who remembers it.'
 });
+
+/* --- versione 2.9 (changelog.js il censimento lo salta: a mano) --- */
+Object.assign(window.LINGUA_EN, {
+'Gli abitanti finiscono le frasi': 'The villagers get to finish their sentences',
+'Le nuvolette tagliavano la battuta a metà': 'Speech bubbles cut the line in half',
+"Più della metà di quello che la gente dice in giro per la valle arrivava troncato — 33 battute su 60 — e siccome sono quasi tutte a due tempi, veniva tagliata sempre la seconda: <b>«Ilde saliva fin qui ogni inverno, con una fetta di torta.»</b> e via il resto, che era «Non parlava. Guardava e basta.» Restava l'informazione e spariva il ricordo. Adesso ci stanno tutte, in italiano e in inglese.":
+  'More than half of what people say around the valley arrived cut short — 33 lines out of 60 — and since they are nearly all in two beats, it was always the second one that went: <b>«Ilde came up here every winter, with a slice of cake.»</b> and away with the rest, which was «She never spoke. She just watched.» The information stayed and the memory vanished. Now they all fit, in Italian and in English.',
+'Una riga su quattro veniva buttata via': 'One line in four was thrown away',
+"La nuvoletta smetteva di riempirsi una riga prima del dovuto: l'ultima conteneva una parola sola e tutto il resto della frase spariva. Di ottantaquattro caratteri disponibili se ne usavano una cinquantina.":
+  'The bubble stopped filling one line early: the last one held a single word and all the rest of the sentence disappeared. Of eighty-four characters available, about fifty were used.'
+});
