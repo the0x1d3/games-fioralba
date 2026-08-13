@@ -1170,6 +1170,94 @@ D.COMPLEANNI = {
 };
 
 /* consigli caricamento */
+/* ------------------------------------------------------------------
+   PASSANTI — la gente che abita il paese senza avere una storia
+
+   Stanno in una tabella loro e non in D.NPCS, e non è pigrizia: un
+   controllo pretende che ogni voce di NPCS abbia battute per tutte e
+   quattro le stagioni, per il tempo che fa, per l'ora del giorno, un
+   compleanno, una casa e dei regali preferiti. È giusto che lo pretenda
+   — sono i sei che devi imparare a conoscere. Un passante non ha niente
+   di tutto questo: ha una faccia, un giro da fare e delle cose che dice
+   ad alta voce. Metterlo fra gli abitanti avrebbe voluto dire o
+   indebolire quel controllo per tutti, o inventare sei compleanni finti.
+
+   Non ci si parla: premendo E non succede niente. Sono lì per far
+   sembrare che il paese esista anche quando non stai guardando, ed è
+   tutto quello che devono fare.
+
+   `dove` è la mappa, `giro` le caselle fra cui gironzolano, `quando`
+   una funzione facoltativa che decide se oggi ci sono: la lavandaia
+   esce solo col sereno, il bambino non gira di notte.
+   ------------------------------------------------------------------ */
+D.PASSANTI = [
+  { id:'lavandaia', dove:'fioralba', giro:[[12,19],[11,18],[13,18]],
+    look:{ pelle:'#d8a878', capelli:'#6a4a30', maglia:'#8aa8c0', pant:'#5a6a7a', grembiule:'#e8e0d0',
+           corpo:'normale', altezza:0, chioma:'raccolti' },
+    quando:(G)=> G.meteo==='sereno' || G.meteo==='nuvoloso',
+    dice:[
+      'Se stendo adesso, per sera è asciutto.',
+      'Il sapone buono lo fa Serafina. Costa, ma dura.',
+      'Ho tre lenzuola e quattro figli. Fate voi il conto.',
+      'Mia madre diceva che il bucato steso al sole sa di domenica.'
+    ] },
+
+  { id:'bambino', dove:'fioralba', giro:[[21,21],[22,22],[25,18]],
+    look:{ pelle:'#e8c090', capelli:'#c9a044', maglia:'#d8724c', pant:'#4a5a6a',
+           corpo:'esile', altezza:-3, chioma:'crespi' },
+    quando:(G)=> G.ora > 480 && G.ora < 1140,
+    dice:[
+      'Ho visto un cervo! Grande così! ...forse era un cane.',
+      'Quando sarò grande faccio il fabbro. O il pescatore. O tutti e due.',
+      'Elio dice che il Pesce Luna esiste. Io gli credo.',
+      'Mia mamma dice che non devo andare nel bosco da solo. Ci vado con te?',
+      'Sai fischiare? Io no. Ci sto provando da un anno.'
+    ] },
+
+  { id:'vecchia', dove:'fioralba', giro:[[18,27],[17,26],[19,26]],
+    look:{ pelle:'#d0b098', capelli:'#dcdcdc', maglia:'#7a6a8a', pant:'#4a4050', cappello:'#5a4a68',
+           corpo:'normale', altezza:-2, chioma:'raccolti' },
+    dice:[
+      'Ilde la conoscevo da prima che fosse nonna di qualcuno.',
+      'Una volta questa piazza era piena. Adesso è piena a modo suo.',
+      'Il pozzo fa quel rumore da quarant\'anni. Non è mai stato il pozzo.',
+      'Tu sei quello del podere di sopra, vero? Si vede dalle mani.',
+      'Passa a trovarmi, che tanto sono sempre qui.'
+    ] },
+
+  { id:'pastore', dove:'piazza', giro:[[18,8],[17,7],[19,7]],
+    look:{ pelle:'#b8865a', capelli:'#3a2f24', maglia:'#6a7a4a', pant:'#4a4030', barba:true,
+           corpo:'robusto', altezza:1, chioma:'rado' },
+    quando:(G)=> G.meteo!=='temporale',
+    dice:[
+      'Scendo dai pascoli una volta a settimana. Il resto lo sanno le pecore.',
+      'Il formaggio buono vuole erba buona, e l\'erba buona vuole essere lasciata in pace.',
+      'Su in alto si sente il vento prima che arrivi qui.',
+      'Oreste? Sì, lo vedo. Ci salutiamo da lontano. Ci basta.'
+    ] },
+
+  { id:'marinaio', dove:'piazza', giro:[[28,21],[29,20],[27,22]],
+    look:{ pelle:'#c08a5a', capelli:'#2a2420', maglia:'#4a6a8a', pant:'#3a4a58', cappello:'#8a8070',
+           corpo:'robusto', altezza:0, chioma:'corti' },
+    dice:[
+      'Il mare qui è calmo. Troppo calmo. Non mi fido dei mari educati.',
+      'Ho visto porti più grandi. Nessuno più tranquillo di questo.',
+      'Quando c\'è vento da sud, il pesce si sposta al largo. Diglielo, a quel ragazzo.',
+      'Dodici anni fa da qui si vedeva una luce, la notte del solstizio. Poi più niente.'
+    ] },
+
+  { id:'ragazza', dove:'piazza', giro:[[18,19],[20,19],[22,19]],
+    look:{ pelle:'#e0b088', capelli:'#8a4f3a', maglia:'#c08ab0', pant:'#6a5a7a',
+           corpo:'esile', altezza:0, chioma:'lunghi' },
+    quando:(G)=> G.ora > 540,
+    dice:[
+      'Sto imparando a memoria i nomi dei pesci. Sono più di quanto pensassi.',
+      'Marisol mi ha promesso che mi insegna la crostata. Aspetto da marzo.',
+      'D\'estate ci si siede sul molo fino a tardi. È la cosa migliore dell\'anno.',
+      'Tu vieni dal podere di Ilde? Mia nonna ne parlava sempre.'
+    ] }
+];
+
 D.CONSIGLI = [
   'Dormi prima di mezzanotte o ti sveglierai a pezzi.',
   'La pioggia annaffia il campo al posto tuo.',

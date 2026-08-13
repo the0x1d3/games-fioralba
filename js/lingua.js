@@ -140,7 +140,8 @@ const CAMPI = [
   ['RISVEGLI',    null],
   ['CONSIGLI',    null],
   ['GIORNI_SETTIMANA', null],
-  ['UPG_NOMI',    null]
+  ['UPG_NOMI',    null],
+  ['PASSANTI',    ['dice']]      // solo quello che dicono: `id` e `dove` sono chiavi
 ];
 
 /* l'italiano originale, preso una volta sola al primo avvio: è la

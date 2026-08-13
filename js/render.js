@@ -177,6 +177,88 @@ function targhetta(testo, cx, cy){
   sx.textBaseline = 'alphabetic';
 }
 
+/* ===================================================================
+   FUMETTI — quello che la gente dice ad alta voce
+
+   Stessa idea delle targhette e stesso problema risolto allo stesso
+   modo: in piazza tre persone parlano vicine, e tre nuvolette alla
+   stessa altezza diventano una macchia. Si accodano in `targhettePoste`
+   insieme alle targhette, così si scansano anche a vicenda — un
+   fumetto sopra una cassa e una targhetta di cassa sono due scritte
+   nello stesso punto, e il giocatore non sa che vengono da due sistemi
+   diversi.
+
+   Il testo si spezza a mano invece che con una misura per riga: a
+   nove pixel di corpo su una scena larga 480, una battuta lunga
+   coprirebbe mezza piazza. Tre righe da ventotto caratteri sono il
+   limite oltre il quale si smette di leggere e si comincia a guardare.
+   =================================================================== */
+const FUM_RIGA = 28, FUM_RIGHE = 3, FUM_ALTA = 11;
+
+function spezza(testo){
+  const parole = String(testo).split(/\s+/);
+  const righe = [];
+  let r = '';
+  for(const p of parole){
+    if(!r.length){ r = p; continue; }
+    if((r + ' ' + p).length <= FUM_RIGA){ r += ' ' + p; continue; }
+    righe.push(r); r = p;
+    if(righe.length === FUM_RIGHE - 1) break;
+  }
+  if(righe.length < FUM_RIGHE && r) righe.push(r);
+  // se non ci sta tutto, l'ultima riga si tronca con dignità
+  const detto = righe.join(' ');
+  if(detto.length < String(testo).length && righe.length){
+    let u = righe[righe.length-1];
+    if(u.length > FUM_RIGA - 1) u = u.slice(0, FUM_RIGA - 1);
+    righe[righe.length-1] = u + '…';
+  }
+  return righe;
+}
+
+function fumetto(testo, cx, cy, opacita){
+  const righe = spezza(testo);
+  if(!righe.length) return;
+  sx.font = 'bold 9px Nunito, system-ui, sans-serif';
+  sx.textAlign = 'center';
+  sx.textBaseline = 'middle';
+
+  let larga = 0;
+  for(const r of righe) larga = Math.max(larga, Math.ceil(sx.measureText(r).width));
+  const w = larga + 10, h = righe.length*FUM_ALTA + 6;
+  let x0 = Math.round(cx - w/2), y0 = Math.round(cy - h);
+
+  for(let giro=0; giro<5; giro++){
+    let libero = true;
+    for(const t of targhettePoste)
+      if(x0 < t.x+t.w && x0+w > t.x && y0 < t.y+(t.h||ALTA_T) && y0+h > t.y){ libero = false; break; }
+    if(libero) break;
+    y0 -= h + 3;
+  }
+  targhettePoste.push({ x:x0, y:y0, w, h });
+
+  /* dentro lo schermo per forza: un fumetto mezzo fuori dal bordo è
+     peggio di un fumetto spostato */
+  x0 = Math.max(2, Math.min(VW - w - 2, x0));
+  y0 = Math.max(2, y0);
+
+  const a = opacita === undefined ? 1 : opacita;
+  sx.globalAlpha = a;
+  ART.px(sx, x0,   y0,   w,   h,   '#2a1d12');
+  ART.px(sx, x0+1, y0+1, w-2, h-2, '#fdf6e4');
+  // la codina che indica chi sta parlando
+  const tx = Math.max(x0+4, Math.min(x0+w-7, Math.round(cx)-2));
+  ART.px(sx, tx,   y0+h,   4, 2, '#2a1d12');
+  ART.px(sx, tx+1, y0+h-1, 2, 2, '#fdf6e4');
+  ART.px(sx, tx+1, y0+h+1, 2, 1, '#2a1d12');
+
+  sx.fillStyle = '#3a2a1a';
+  righe.forEach((r, i)=> sx.fillText(r, Math.round(x0 + w/2), y0 + 4 + i*FUM_ALTA + 4));
+  sx.globalAlpha = 1;
+  sx.textAlign = 'start';
+  sx.textBaseline = 'alphabetic';
+}
+
 /* Variante di un oggetto ricavata dalla sua casella: due alberi vicini
    prendono disegni diversi senza che il mondo debba ricordarsi niente,
    quindi i salvataggi vecchi funzionano identici. */
@@ -635,6 +717,19 @@ R.disegna = function(G){
       }});
   }
 
+  /* i passanti: stessa gente, meno storia */
+  for(const p of (G.passanti||[])){
+    if(p.mappa!==m.id) continue;
+    const px = Math.round(p.px)+ox, py = Math.round(p.py)+oy;
+    if(px<-60||px>VW+60||py<-90||py>VH+60) continue;
+    lista.push({ y:p.py,
+      s:()=>{ FX.ombraTerra(sx, px, py-1, 8, 3, 0.24); },
+      d:()=>{
+        sx.drawImage(FX.contorno(ART.charSprite(p.look, p.dir, p.frame||0)), (px-14)|0, (py-37)|0);
+        ART.drawChar(sx, px|0, py|0, p.look, p.dir, p.frame||0, {t:t, senzaOmbra:true});
+      }});
+  }
+
   for(const a of G.animali){
     if(a.mappa!==m.id) continue;
     const px=Math.round(a.px)+ox, py=Math.round(a.py)+oy;
@@ -674,6 +769,17 @@ R.disegna = function(G){
   for(const it of lista) if(it.s) it.s();
   lista.sort((a,b)=>a.y-b.y);
   for(const it of lista) it.d();
+
+  /* ---------- 8b. FUMETTI ----------
+     Dopo tutti gli sprite e fuori dall'ordinamento in profondità: una
+     nuvoletta che finisce dietro a un albero non si legge, e chi parla
+     dietro un albero è proprio quello che vale la pena sentire. */
+  if(G.chiacchiere) for(const c of G.chiacchiere){
+    if(c.mappa !== m.id) continue;
+    const px = Math.round(c.x)+ox, py = Math.round(c.y)+oy;
+    if(px<-80||px>VW+80||py<-90||py>VH+60) continue;
+    fumetto(c.testo, px, py-42, c.opacita);
+  }
 
   /* ---------- 9. PARTICELLE ---------- */
   for(const p of G.particelle) disegnaParticella(p, ox, oy);

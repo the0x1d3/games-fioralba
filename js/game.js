@@ -283,6 +283,7 @@ function avviaGioco(conIntro){
   costruisciHotbar();
   G.aggiornaHUD();
   G.progresso();
+  G.rifaiPassanti();              // il paese si ripopola prima del primo fotogramma
   aggiornaOspitiSagra();          // se si riprende proprio nel giorno di festa
   SOLSTIZIO.aggiornaOspitiVeglia();         // o proprio la sera della veglia
   G.azzeraTraguardi();            // quello che è già fatto non si annuncia
@@ -661,10 +662,14 @@ function loop(ts){
       sistema('giocatore', ()=>aggiornaGiocatore(dt));
       sistema('npc',       ()=>aggiornaNPC(dt));
       sistema('animali',   ()=>aggiornaAnimali(dt));
+      sistema('passanti',  ()=>aggiornaPassanti(dt));
       sistema('fauna',     ()=>MOBS.aggiorna(G, dt));
       sistema('guardia',   guardiaGiocatore);
     }
     if(PESCA.inCorso()) sistema('pesca', ()=>PESCA.aggiorna(dt));
+
+    // le chiacchiere girano anche a menu aperto: devono poter scadere
+    sistema('chiacchiere', ()=>aggiornaChiacchiere(dt));
 
     if(window.TUT)   sistema('tutorial', ()=>TUT.aggiorna());
     if(window.GUIDA) sistema('guida',    ()=>GUIDA.aggiorna());
@@ -2035,6 +2040,179 @@ G.aggiungiGallina = function(){
 };
 
 /* ===================================================================
+   PASSANTI E CHIACCHIERE
+
+   Il paese aveva quattro persone, ognuna ferma al suo mestiere, e in
+   piazza non c'era nessuno. Chi ci passava trovava case, insegne e
+   silenzio: sembrava un fondale, non un posto dove vive della gente.
+
+   Due pezzi. I PASSANTI sono sei figure che gironzolano e non fanno
+   altro: niente amicizia, niente regali, niente agenda. Premendo E non
+   succede niente, ed è voluto — se ci si potesse parlare diventerebbero
+   sei abitanti scritti male invece di sei persone di passaggio.
+
+   Le CHIACCHIERE sono quello che si sente dire mentre si cammina, in
+   una nuvoletta sopra la testa. Le dicono anche i sei abitanti veri, e
+   lì il testo non è nuovo: è `DATA.CONTESTO`, che già cambia con la
+   stagione, il tempo e l'ora, e che finora si leggeva solo fermandosi a
+   parlare con qualcuno. Adesso il paese lo dice da sé.
+
+   Le regole che tengono la cosa dalla parte del piacevole:
+   — parla uno per volta, e non riparte prima di sei secondi;
+   — solo chi ti è abbastanza vicino da essere sentito;
+   — chi ha appena parlato tace per un pezzo, così non è sempre lui;
+   — mai durante un dialogo, una finestra aperta, la pesca o la notte.
+     Un fumetto sopra un menù è rumore.
+   =================================================================== */
+const CHIACCHIERA_DURATA = 4200;    // quanto resta a schermo
+const CHIACCHIERA_PAUSA  = 6000;    // fra una e l'altra, in tutto il paese
+const CHIACCHIERA_RIPOSO = 42000;   // prima che la stessa persona riparli
+const CHIACCHIERA_RAGGIO = 190;     // entro cui si sente
+
+G.passanti = [];
+G.chiacchiere = [];
+let chiacchieraT = 0;
+
+/* Chi c'è oggi: la lavandaia esce col sereno, il bambino non gira di
+   notte. La condizione sta nei dati, così aggiungerne uno non tocca
+   questo codice. */
+function passantiDiOggi(){
+  return DATA.PASSANTI.filter(p => !p.quando || p.quando(G));
+}
+
+/* Si rifanno a ogni cambio di mappa e a ogni nuovo giorno: sono
+   comparse, non hanno bisogno di ricordarsi dov'erano, e non finiscono
+   nel salvataggio. */
+G.rifaiPassanti = function(){
+  G.passanti = passantiDiOggi().map(p => ({
+    id:p.id, mappa:p.dove, look:p.look, giro:p.giro, dice:p.dice,
+    px:p.giro[0][0]*T+16, py:p.giro[0][1]*T+20,
+    dir:1, frame:0, animT:0, wait:Math.random()*2500, dest:null, tacePer:0
+  }));
+};
+
+function aggiornaPassanti(dt){
+  for(const p of G.passanti){
+    if(p.mappa !== G.mappaId) continue;
+    if(p.tacePer > 0) p.tacePer -= dt;
+    p.wait -= dt;
+    if(p.wait > 0) continue;
+    if(!p.dest){
+      const m = G.maps[p.mappa];
+      const meta = p.giro[(Math.random()*p.giro.length)|0];
+      if(WORLD.dentro(m, meta[0], meta[1]) && !WORLD.solido(m, meta[0], meta[1]))
+        p.dest = { x:meta[0]*T+16, y:meta[1]*T+20 };
+      else { p.wait = 1200; continue; }
+    }
+    const dx = p.dest.x-p.px, dy = p.dest.y-p.py, d = Math.hypot(dx,dy);
+    if(d < 3){ p.dest = null; p.wait = 1800+Math.random()*4200; p.frame = 0; continue; }
+    const v = 0.28*dt/16;
+    p.px += dx/d*v; p.py += dy/d*v;
+    p.dir = Math.abs(dx) > Math.abs(dy) ? (dx<0?1:2) : (dy<0?3:0);
+    p.animT += dt;
+    p.frame = ((p.animT/170)|0) % 4;
+  }
+}
+
+/* Chi può parlare adesso: dev'essere sulla tua mappa, abbastanza vicino
+   per essere sentito, e non aver parlato da poco. */
+function chiPuoParlare(){
+  const gente = [];
+  const vicino = (x,y)=> Math.hypot(x-G.p.px, y-G.p.py) < CHIACCHIERA_RAGGIO;
+
+  for(const p of G.passanti){
+    if(p.mappa!==G.mappaId || p.tacePer>0 || !vicino(p.px,p.py)) continue;
+    gente.push({ chi:p, x:p.px, y:p.py, righe:p.dice });
+  }
+  for(const n of G.npcVivi()){
+    if(n.tacePer>0 || !vicino(n.px,n.py)) continue;
+    const righe = battuteAmbiente(n.id);
+    if(righe && righe.length) gente.push({ chi:n, x:n.px, y:n.py, righe });
+  }
+  return gente;
+}
+
+/* Quello che un abitante direbbe adesso, preso da dove sta già scritto:
+   il contesto della stagione, del tempo e dell'ora. Le battute generiche
+   restano per il dialogo vero — quelle sono la conversazione, queste
+   sono quello che ti sfugge passando. */
+function battuteAmbiente(id){
+  const C = DATA.CONTESTO && DATA.CONTESTO[id];
+  if(!C) return null;
+  const fuori = [];
+  const st = G.stagione().id;
+  if(C.stagione && C.stagione[st]) fuori.push(...C.stagione[st]);
+  if(C.meteo && C.meteo[G.meteo]) fuori.push(...C.meteo[G.meteo]);
+  if(C.ora){
+    if(G.ora < 600 && C.ora.mattina) fuori.push(...C.ora.mattina);
+    if(G.ora > 1080 && C.ora.sera)   fuori.push(...C.ora.sera);
+  }
+  return fuori;
+}
+
+/* Fa parlare qualcuno adesso, saltando la pausa e il riposo. Esiste per
+   il pannello di prova: aspettare che il caso scelga proprio quello che
+   vuoi sentire è il modo peggiore di verificare una nuvoletta. Ritorna
+   chi ha parlato, o null se non c'era nessuno abbastanza vicino. */
+G.chiacchiera = function(forzato){
+  const gente = chiPuoParlare();
+  if(!gente.length) return null;
+  const s = forzato ? (gente.find(g=>g.chi.id===forzato) || gente[0])
+                    : gente[(Math.random()*gente.length)|0];
+  const testo = s.righe[(Math.random()*s.righe.length)|0];
+  s.chi.tacePer = CHIACCHIERA_RIPOSO;
+  chiacchieraT = CHIACCHIERA_PAUSA;
+  G.chiacchiere.push({
+    chi:s.chi, mappa:G.mappaId, x:s.x, y:s.y,
+    /* niente LINGUA.t qui: le battute arrivano da DATA, e DATA è già
+       nella lingua giusta — la traduce il motore sul posto al cambio di
+       lingua. Tradurre due volte non rompeva niente, ma sporcava l'elenco
+       delle frasi mancanti con stringhe già inglesi. */
+    testo,
+    vita:CHIACCHIERA_DURATA, opacita:1
+  });
+  return { chi:s.chi.id, testo };
+};
+
+function aggiornaChiacchiere(dt){
+  // le nuvolette a schermo invecchiano comunque
+  for(let i=G.chiacchiere.length-1; i>=0; i--){
+    const c = G.chiacchiere[i];
+    c.vita -= dt;
+    if(c.vita <= 0){ G.chiacchiere.splice(i,1); continue; }
+    // seguono chi le ha dette, e sfumano in coda
+    if(c.chi){ c.x = c.chi.px; c.y = c.chi.py; }
+    c.opacita = Math.min(1, c.vita/600);
+  }
+
+  /* Niente fumetti quando l'attenzione è altrove: sopra un menù o una
+     lettera sarebbero rumore, e di notte il paese dorme. */
+  if(UI.modalAperta() || UI.dialogoAttivo() || PESCA.inCorso() || G.p.dorme) return;
+  if(!$('#letter').classList.contains('hidden')) return;
+  if(G.ora < 360 || G.ora > 1320) return;
+
+  chiacchieraT -= dt;
+  if(chiacchieraT > 0 || G.chiacchiere.length) return;
+
+  const gente = chiPuoParlare();
+  if(!gente.length){ chiacchieraT = 1500; return; }
+
+  const scelto = gente[(Math.random()*gente.length)|0];
+  const testo = scelto.righe[(Math.random()*scelto.righe.length)|0];
+  scelto.chi.tacePer = CHIACCHIERA_RIPOSO;
+  chiacchieraT = CHIACCHIERA_PAUSA;
+  G.chiacchiere.push({
+    chi:scelto.chi, mappa:G.mappaId, x:scelto.x, y:scelto.y,
+    /* niente LINGUA.t qui: le battute arrivano da DATA, e DATA è già
+       nella lingua giusta — la traduce il motore sul posto al cambio di
+       lingua. Tradurre due volte non rompeva niente, ma sporcava l'elenco
+       delle frasi mancanti con stringhe già inglesi. */
+    testo,
+    vita:CHIACCHIERA_DURATA, opacita:1
+  });
+}
+
+/* ===================================================================
    IL GATTO
 
    C'era dal primo giorno e non si poteva toccare. Girava attorno al
@@ -2558,6 +2736,7 @@ function cambiaMappa(id, tx, ty){
   G.progresso();
   mouseWorld=null;
   MOBS.reset();          // la fauna di una mappa non segue nell'altra
+  G.chiacchiere.length = 0;   // quello che si diceva di là non ci segue
   aggiornaCamera(true);
   musicaGiusta();
   SND.ambiente(ambienteGiusto());
@@ -2814,6 +2993,7 @@ function nuovoGiorno(svenuto, multa){
 
   /* --- mondo --- */
   WORLD.nuovoGiorno(G.maps, stag, (G.giornoTot*7919+13)>>>0);
+  G.rifaiPassanti();      // col tempo di domani cambia anche chi si vede in giro
 
   /* --- evento notturno casuale (applica subito l'effetto sul mondo) --- */
   const eventoNotte = tiraEventoNotte(cambioStagione);

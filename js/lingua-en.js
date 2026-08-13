@@ -826,3 +826,50 @@ Object.assign(window.LINGUA_EN, {
 'Fusione': 'Smelting'
 
 });
+
+/* ===================================================================
+   I PASSANTI
+   Gente che dice una cosa e tira dritto. In inglese devono suonare
+   come uno che parla fra sé mentre lavora, non come una didascalia.
+   =================================================================== */
+Object.assign(window.LINGUA_EN, {
+
+/* la lavandaia */
+'Se stendo adesso, per sera è asciutto.': 'If I hang it out now, it will be dry by evening.',
+'Il sapone buono lo fa Serafina. Costa, ma dura.': 'Serafina makes the good soap. Costs more, lasts longer.',
+'Ho tre lenzuola e quattro figli. Fate voi il conto.': 'I have three sheets and four children. You do the arithmetic.',
+'Mia madre diceva che il bucato steso al sole sa di domenica.': 'My mother used to say washing dried in the sun smells of Sunday.',
+
+/* il bambino */
+'Ho visto un cervo! Grande così! ...forse era un cane.': 'I saw a stag! This big! …it might have been a dog.',
+'Quando sarò grande faccio il fabbro. O il pescatore. O tutti e due.': 'When I grow up I am going to be a smith. Or a fisherman. Or both.',
+'Elio dice che il Pesce Luna esiste. Io gli credo.': 'Elio says the Moonfish is real. I believe him.',
+'Mia mamma dice che non devo andare nel bosco da solo. Ci vado con te?': 'My mum says I must not go into the woods alone. Can I come with you?',
+'Sai fischiare? Io no. Ci sto provando da un anno.': 'Can you whistle? I cannot. I have been trying for a year.',
+
+/* la vecchia */
+'Ilde la conoscevo da prima che fosse nonna di qualcuno.': 'I knew Ilde before she was anybody\'s grandmother.',
+'Una volta questa piazza era piena. Adesso è piena a modo suo.': 'This square used to be full. Now it is full in its own way.',
+"Il pozzo fa quel rumore da quarant'anni. Non è mai stato il pozzo.": 'The well has made that noise for forty years. It was never the well.',
+'Tu sei quello del podere di sopra, vero? Si vede dalle mani.': 'You are the one from the farm up the hill, are you not? I can tell by the hands.',
+'Passa a trovarmi, che tanto sono sempre qui.': 'Come and see me. I am always here anyway.',
+
+/* il pastore */
+'Scendo dai pascoli una volta a settimana. Il resto lo sanno le pecore.': 'I come down from the pastures once a week. The sheep know the rest.',
+"Il formaggio buono vuole erba buona, e l'erba buona vuole essere lasciata in pace.": 'Good cheese wants good grass, and good grass wants leaving alone.',
+'Su in alto si sente il vento prima che arrivi qui.': 'Up top you hear the wind before it gets down here.',
+'Oreste? Sì, lo vedo. Ci salutiamo da lontano. Ci basta.': 'Oreste? Yes, I see him. We wave from a distance. That does us.',
+
+/* il marinaio */
+'Il mare qui è calmo. Troppo calmo. Non mi fido dei mari educati.': 'The sea is calm here. Too calm. I do not trust a well-mannered sea.',
+'Ho visto porti più grandi. Nessuno più tranquillo di questo.': 'I have seen bigger harbours. Never a quieter one.',
+"Quando c'è vento da sud, il pesce si sposta al largo. Diglielo, a quel ragazzo.": 'When the wind is southerly the fish move offshore. Tell that lad, would you.',
+'Dodici anni fa da qui si vedeva una luce, la notte del solstizio. Poi più niente.': 'Twelve years ago you could see a light from here, on solstice night. Then nothing.',
+
+/* la ragazza */
+'Sto imparando a memoria i nomi dei pesci. Sono più di quanto pensassi.': 'I am learning the names of the fish by heart. There are more than I thought.',
+'Marisol mi ha promesso che mi insegna la crostata. Aspetto da marzo.': 'Marisol promised to teach me the tart. I have been waiting since March.',
+"D'estate ci si siede sul molo fino a tardi. È la cosa migliore dell'anno.": 'In summer we sit on the jetty until late. It is the best thing all year.',
+'Tu vieni dal podere di Ilde? Mia nonna ne parlava sempre.': 'Are you from Ilde\'s farm? My grandmother talked about it all the time.'
+
+});

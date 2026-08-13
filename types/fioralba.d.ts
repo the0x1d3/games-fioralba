@@ -198,6 +198,24 @@ interface FioLettera {
   da?: string;
 }
 
+/**
+ * Un passante: gente che abita il paese senza avere una storia. Non sta
+ * in NPCS apposta — niente amicizia, agenda, compleanno o regali — e per
+ * questo non deve soddisfare i controlli che valgono per gli abitanti.
+ */
+interface FioPassante {
+  id: string;
+  /** Su quale mappa gironzola. */
+  dove: string;
+  /** Le caselle fra cui va avanti e indietro: devono essere calpestabili. */
+  giro: number[][];
+  look: FioLook;
+  /** Cosa dice ad alta voce. Almeno due, o si ripete subito. */
+  dice: string[];
+  /** Se c'è, decide se oggi si fa vedere: meteo, ora, stagione. */
+  quando?: (G: FioGame) => boolean;
+}
+
 /** Struttura completa di window.DATA (js/data.js). */
 interface FioData {
   SEASONS: FioSeason[];
@@ -244,6 +262,8 @@ interface FioData {
   BONUS_TESTO: Record<string, (liv: number) => [string, string][]>;
   /** I premi di ogni salita: scala[0] è null, poi un premio a livello. */
   PREMI_LIVELLO: Record<string, Array<FioPremioLivello | null>>;
+  /** La gente di passaggio: nessuna storia, solo un giro e qualcosa da dire. */
+  PASSANTI: FioPassante[];
 }
 
 /* ------------------------------------------------------------------

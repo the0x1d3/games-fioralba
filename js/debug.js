@@ -378,6 +378,31 @@ function costruisciStoria(){
     nota('atto secondo da rifare');
   }, 'rosso');
 
+  const ch = sezione('Il paese che parla');
+  bottone(ch, 'Fai parlare qualcuno', ()=>{
+    const r = G.chiacchiera();
+    nota(r ? r.chi + ': «' + r.testo.slice(0,50) + '»'
+           : 'nessuno abbastanza vicino da farsi sentire', !!r);
+  });
+  bottone(ch, 'Chiamali tutti qui', ()=>{
+    let n = 0;
+    for(const p of G.passanti){
+      p.mappa = G.mappaId;
+      p.px = G.p.px + 40 + (n%3)*30; p.py = G.p.py + ((n/3)|0)*26;
+      p.dest = null; p.wait = 0; p.tacePer = 0; n++;
+    }
+    nota(n + ' passanti al tuo fianco');
+  });
+  bottone(ch, 'Tutti insieme (prova incastri)', ()=>{
+    /* tre nuvolette nello stesso punto: è il caso per cui esiste
+       l'anti-sovrapposizione, e l'unico modo per vederla lavorare */
+    for(const p of G.passanti){ p.mappa=G.mappaId; p.px=G.p.px+50; p.py=G.p.py; p.tacePer=0; }
+    let n=0;
+    for(const p of G.passanti.slice(0,3)) if(G.chiacchiera(p.id)) n++;
+    nota(n + ' fumetti nello stesso punto: devono scansarsi da soli');
+  });
+  bottone(ch, 'Zitti tutti', ()=>{ G.chiacchiere.length = 0; nota('silenzio'); });
+
   const gt = sezione('Il gatto');
   bottone(gt, 'Portalo qui', ()=>{
     const a = G.animali.find(x=>x.tipo==='gatto');

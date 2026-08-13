@@ -864,6 +864,36 @@ verifica('chi lavora al chiuso ha una stanza che lo ospita', () => {
   return problemi;
 });
 
+/* I passanti stanno fuori da DATA.NPCS apposta — non hanno agenda né
+   compleanno — ma hanno comunque un giro da fare, e un giro va su
+   caselle che esistono e su cui si può stare. Un passante piazzato
+   dentro un muro resta fermo lì per sempre, e da fuori sembra una
+   statua male orientata invece di un errore di coordinate. */
+verifica('i passanti hanno un giro percorribile', () => {
+  const maps = WORLD.crea();
+  const problemi = [];
+  const visti = new Set();
+
+  for (const p of (DATA.PASSANTI || [])) {
+    if (visti.has(p.id)) problemi.push(`due passanti si chiamano «${p.id}»`);
+    visti.add(p.id);
+    if (DATA.NPCS[p.id]) problemi.push(`«${p.id}» è anche un abitante: scegli quale dei due`);
+
+    const m = maps[p.dove];
+    if (!m) { problemi.push(`«${p.id}» sta su «${p.dove}», che non è una mappa`); continue; }
+    if (!Array.isArray(p.giro) || !p.giro.length) { problemi.push(`«${p.id}» non ha un giro da fare`); continue; }
+
+    for (const [x, y] of p.giro) {
+      if (!WORLD.dentro(m, x, y)) { problemi.push(`«${p.id}»: la casella ${x},${y} è fuori da «${p.dove}»`); continue; }
+      if (WORLD.solido(m, x, y)) problemi.push(`«${p.id}»: la casella ${x},${y} è occupata, ci resterebbe incastrato`);
+    }
+    if (!Array.isArray(p.dice) || p.dice.length < 2)
+      problemi.push(`«${p.id}» ha meno di due battute: si ripeterebbe subito`);
+    if (!p.look) problemi.push(`«${p.id}» non ha un aspetto`);
+  }
+  return problemi;
+});
+
 /* La versione si scriveva a mano in tre punti di index.html, e si era
    scollata da sola: il riquadro del changelog diceva 2.0 — quello lo
    riempie la landing leggendo js/changelog.js — mentre il piede della
