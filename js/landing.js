@@ -254,10 +254,20 @@ function collegaComparsa(){
    ------------------------------------------------------------------ */
 const ETICHETTA = { nuovo:'Nuovo', meglio:'Migliorato', fix:'Corretto' };
 
+/* La carta in fondo alla pagina mostrava la voce più recente del
+   changelog sempre in italiano, anche premendo «English»: si cambiava
+   lingua e restava lì un blocco che parlava un'altra lingua, sotto al
+   pulsante appena premuto. Si traduce **solo la versione in cima** —
+   quella che si vede senza aprire niente. L'archivio resta nella lingua
+   in cui è stato scritto: sono diciassettemila caratteri di storia
+   vecchia, e tradurli vorrebbe dire tenerli tradotti per sempre. */
+const T = s => (window.LINGUA ? LINGUA.t(s) : s);
+const F = (m, ...p)=> window.LINGUA ? LINGUA.f(m, ...p) : m.replace(/\{(\d+)\}/g, (_,i)=>p[i]);
+
 function pallino(tipo){
   const s = document.createElement('span');
   s.className = 'ch-dot ' + (ETICHETTA[tipo] ? tipo : 'meglio');
-  s.title = ETICHETTA[tipo] || 'Migliorato';
+  s.title = T(ETICHETTA[tipo] || 'Migliorato');
   return s;
 }
 
@@ -269,8 +279,8 @@ function costruisciChangelog(){
   const ultima = dati[0];
   const tag = $('#chlog-ver'), tit = $('#chlog-tit'), sub = $('#chlog-sub');
   if(tag) tag.textContent = 'v' + ultima.v;
-  if(tit) tit.textContent = ultima.titolo;
-  if(sub) sub.textContent = 'Ultimo aggiornamento · ' + ultima.data;
+  if(tit) tit.textContent = T(ultima.titolo);
+  if(sub) sub.textContent = F('Ultimo aggiornamento · {0}', T(ultima.data));
 
   const ante = $('#chlog-anteprima');
   if(ante){
@@ -278,7 +288,7 @@ function costruisciChangelog(){
     for(const v of ultima.voci.slice(0,3)){
       const li = document.createElement('li');
       li.appendChild(pallino(v.tipo));
-      const t = document.createElement('span'); t.textContent = v.t;
+      const t = document.createElement('span'); t.textContent = T(v.t);
       li.appendChild(t);
       ante.appendChild(li);
     }
@@ -286,7 +296,10 @@ function costruisciChangelog(){
       const li = document.createElement('li');
       li.style.color = 'var(--ink-soft)';
       li.style.paddingLeft = '19px';
-      li.textContent = '…e altre ' + (ultima.voci.length-3) + ' cose.';
+      /* con una voce sola diceva «…e altre 1 cose.»: capita ogni volta
+         che una versione ne ha esattamente quattro, e non è raro */
+      const resto = ultima.voci.length - 3;
+      li.textContent = resto === 1 ? T('…e un\'altra cosa.') : F('…e altre {0} cose.', resto);
       ante.appendChild(li);
     }
   }
@@ -295,18 +308,20 @@ function costruisciChangelog(){
   dati.forEach((ver, i)=>{
     const sez = document.createElement('section'); sez.className = 'ch-ver';
     const testa = document.createElement('div'); testa.className = 'ch-ver-testa';
-    const n = document.createElement('span'); n.className = 'ch-ver-n'; n.textContent = 'Versione ' + ver.v;
-    const d = document.createElement('span'); d.className = 'ch-ver-data'; d.textContent = ver.data;
+    /* solo la prima: il resto è archivio e resta com'è stato scritto */
+    const tr = i === 0 ? T : (x => x);
+    const n = document.createElement('span'); n.className = 'ch-ver-n'; n.textContent = F('Versione {0}', ver.v);
+    const d = document.createElement('span'); d.className = 'ch-ver-data'; d.textContent = tr(ver.data);
     testa.appendChild(n); testa.appendChild(d);
     sez.appendChild(testa);
-    const st = document.createElement('p'); st.className = 'ch-ver-tit'; st.textContent = ver.titolo;
+    const st = document.createElement('p'); st.className = 'ch-ver-tit'; st.textContent = tr(ver.titolo);
     sez.appendChild(st);
     for(const v of ver.voci){
       const riga = document.createElement('div'); riga.className = 'ch-voce';
       riga.appendChild(pallino(v.tipo));
       const testo = document.createElement('div');
-      const t = document.createElement('div'); t.className = 'ch-voce-t'; t.textContent = v.t;
-      const dd = document.createElement('div'); dd.className = 'ch-voce-d'; dd.textContent = v.d;
+      const t = document.createElement('div'); t.className = 'ch-voce-t'; t.textContent = tr(v.t);
+      const dd = document.createElement('div'); dd.className = 'ch-voce-d'; dd.textContent = tr(v.d);
       testo.appendChild(t); testo.appendChild(dd);
       riga.appendChild(testo);
       sez.appendChild(riga);

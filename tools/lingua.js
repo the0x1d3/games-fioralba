@@ -78,7 +78,21 @@ function testiModuli() {
     if (f === 'debug.js') continue;
     const src = fs.readFileSync(path.join(dir, f), 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/^\s*\/\/.*$/gm, '');
+      /* anche i commenti in coda a una riga, non solo quelli che la
+         cominciano: «// ordito: righe fitte, il disegno che si vede da
+         sopra» finiva dentro a un `push` di render.js e il censimento
+         chiedeva di tradurre «, il disegno». Lo spazio davanti alle due
+         barre tiene fuori `http://`. */
+      .replace(/^\s*\/\/.*$/gm, '')
+      .replace(/(^|\s)\/\/.*$/gm, '$1')
+      /* Due stringhe attaccate col `+` sono una stringa sola a runtime, e
+         la chiave del catalogo è quella intera. La lezione di Oreste è
+         scritta così per non sforare la colonna: il censimento chiedeva
+         di tradurre «Da che parte sei girato conta: » e «è metà della
+         caccia...» separate, e nessuna delle due sarebbe mai stata
+         cercata dal gioco. */
+      .replace(/'\s*\+\s*'/g, '')
+      .replace(/'\s*\+\s*\n\s*'/g, '');
 
     // il primo argomento di chi mostra testo
     const re = new RegExp('(?:' + USCITE.join('|') + ")\\(\\s*'((?:[^'\\\\]|\\\\.)*)'", 'g');
@@ -90,6 +104,27 @@ function testiModuli() {
 
     // le scelte dei dialoghi: { testo:'...' }
     for (const m of src.matchAll(/testo\s*:\s*'((?:[^'\\]|\\.)*)'/g)) aggiungi(fuori, m[1]);
+
+    /* Le battute non arrivano tutte scritte dentro la parentesi di
+       `UI.dialogo`. Due forme sfuggivano, e non a poche righe: la
+       lezione di Oreste è `testo:[ '...', '...' ]`, e Serafina e i
+       consigli di caccia costruiscono l'elenco a pezzi
+       (`l.push('...','...')`) e poi passano la variabile. Il censimento
+       diceva «826 su 826» e nel gioco in inglese Serafina parlava
+       italiano: un verde che non voleva dire niente, trovato solo
+       giocando e guardando `LINGUA.mancanti()`. */
+    /* `[:=]` e non solo `:` — `const righe = [ ... ]` è la stessa cosa di
+       `righe: [ ... ]` per chi legge, ma non per una regex, e i due
+       consigli di caccia di Oreste sono passati di lì */
+    for (const m of src.matchAll(/(?:testo|righe|scelte)\s*[:=]\s*\[([\s\S]*?)\]/g))
+      for (const s of m[1].matchAll(/'((?:[^'\\]|\\.)*)'/g)) aggiungi(fuori, s[1]);
+    /* Del `push` si prende solo quello i cui argomenti sono **soltanto**
+       stringhe: `l.push('...', '...')` è una battuta, mentre
+       `scarti.push(kind+': la tabella dice '+n)` è una diagnostica di
+       `world.js` che nessuno legge mai. Senza questa stretta il
+       censimento chiedeva di tradurre pezzi di messaggi d'errore. */
+    for (const m of src.matchAll(/\.push\(((?:\s*'(?:[^'\\]|\\.)*'\s*,?)+)\)/g))
+      for (const s of m[1].matchAll(/'((?:[^'\\]|\\.)*)'/g)) aggiungi(fuori, s[1]);
     // i titoli e le etichette dichiarate come dati nei moduli
     for (const m of src.matchAll(/(?:attesa|titolo|eti|etichetta)\s*:\s*'((?:[^'\\]|\\.)*)'/g)) aggiungi(fuori, m[1]);
   }
@@ -102,6 +137,21 @@ function aggiungi(insieme, grezza) {
   if (s.length < 2) return;
   if (/^[\w.\/#|:-]+$/.test(s)) return;             // id, chiavi, percorsi
   if (!/[a-zà-ù]/i.test(s)) return;                  // solo simboli o numeri
+  /* Tolti i tag, resta una *parola*? `'<kbd>E</kbd> '` è il prefisso di
+     un suggerimento e la parte variabile arriva concatenata dopo:
+     chiedere di tradurlo vuol dire chiedere di ricopiare markup, e la
+     voce identica che ne esce sporca il catalogo senza dire niente a
+     nessuno. Il nome di un tasto non cambia lingua.
+     Due lettere di fila e non una sola, perché il controllo qui sopra ha
+     la `i` e quindi la `E` del tasto gli sembrava già una parola: col
+     filtro a una lettera il frammento passava lo stesso.
+     E si applica **solo** a chi ha un tag dentro: senza quella guardia
+     spariva anche `', e '`, il pezzo che unisce gli ingredienti che
+     mancano — due caratteri e una lettera sola, ma da tradurre davvero
+     («, and »). Un filtro che si porta via una frase vera è peggio del
+     frammento che voleva togliere: quella frase non la chiede più
+     nessuno e resta in italiano per sempre. */
+  if (/<[^>]+>/.test(s) && !/[a-zà-ù]{2}/i.test(s.replace(/<[^>]+>/g, ' '))) return;
   insieme.add(s);
 }
 
@@ -129,10 +179,20 @@ function catalogo(codice) {
   return sandbox.window['LINGUA_' + codice.toUpperCase()] || null;
 }
 
-/* le frasi con un numero dentro stanno nel catalogo come modello */
+/* Le frasi con un numero dentro stanno nel catalogo come modello.
+
+   I `{0}` che ci sono già si lasciano stare: le frasi passate a
+   `LINGUA.f` sono modelli in partenza, e riscrivere anche quelli dava
+   `'Non ancora. {{0}}'` — una chiave che nel catalogo non ci sarà mai,
+   perché il gioco cerca `'Non ancora. {0}'`. Risultato: sei frasi
+   segnate come mancanti per sempre, e nessun modo di farle sparire se
+   non traducendo la chiave sbagliata. */
 function comeChiave(s) {
   let i = 0;
-  return s.replace(/-?\d+(?:[.,]\d+)*/g, () => '{' + (i++) + '}');
+  return s.replace(/\{(\d+)\}|-?\d+(?:[.,]\d+)*/g, (tutto, gia) => {
+    if (gia !== undefined) { i = Math.max(i, Number(gia) + 1); return tutto; }
+    return '{' + (i++) + '}';
+  });
 }
 
 function raccogliTutto() {

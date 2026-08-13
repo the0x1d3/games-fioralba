@@ -700,7 +700,7 @@ Nonna Ilde</b>` },
 
 <b>Marisol</b> alla locanda sa tutto di tutti. Ti dirà anche cose che non hai chiesto. Ascoltale lo stesso: nella valle le notizie utili viaggiano di striscio.
 
-Una cosa pratica, che di quelle vivo: davanti a casa c'è la <b>cassa di consegna</b>. Metticiquello che vuoi vendere e passano a ritirarlo di notte. Non è tanto per il prezzo — è per non doverti fare la strada del paese ogni volta che ti avanza una rapa.
+Una cosa pratica, che di quelle vivo: davanti a casa c'è la <b>cassa di consegna</b>. Mettici quello che vuoi vendere e passano a ritirarlo di notte. Non è tanto per il prezzo — è per non doverti fare la strada del paese ogni volta che ti avanza una rapa.
 
 <b>Ilde</b>` },
 

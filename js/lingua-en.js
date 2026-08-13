@@ -1048,3 +1048,667 @@ Object.assign(window.LINGUA_EN, {
   'I cannot download it — try again in a moment.',
 'Fatto. Riparto…': 'Done. Restarting…'
 });
+
+/* ===================================================================
+   LE LETTERE
+   Le diciassette lettere che arrivano nella cassetta: sedici di Ilde e
+   dei suoi (Elio, Tobia, Marisol), piu\u0300 quella che non ha mai spedito.
+   Sono la scrittura migliore del gioco e sono state tenute per ultime
+   apposta: qui non si traduce l informazione, si traduce la voce.
+   Ilde da\u0300 del tu e non addolcisce niente, e in inglese la stessa
+   ruvidezza affettuosa passa dal registro (poche contrazioni, frasi
+   corte, «brazen affection») piu\u0300 che dal lessico.
+
+   Le chiavi qui sotto non sono state ricopiate a mano: le ha generate
+   uno script leggendo DATA.LETTERE e serializzando con JSON.stringify.
+   Otto\u0300cento caratteri con a capo, apostrofi e <b> dentro si sbagliano
+   con uno spazio, e una chiave sbagliata non fa rumore — la lettera
+   resta in italiano e niente lo segnala.
+   =================================================================== */
+Object.assign(window.LINGUA_EN, {
+"Caro nipote,\n\nse stai leggendo questo foglio vuol dire che il notaio ha fatto il suo lavoro e io ho fatto il mio: me ne sono andata con calma, in una mattina di <b>Primavera</b>, con la finestra aperta.\n\nTi lascio il <b>podere</b>. Non è granché. La staccionata cede a est, il pozzo fa un rumore che non ti spiego, e nel campo grande c'è più sasso che terra.\n\nTi lascio anche una cosa che non compare sul testamento, perché i notai non hanno le parole giuste.\n\nC'è una <b>lanterna</b>, nel bosco. È spenta da dodici anni. Ho provato a riaccenderla finché le mani me lo hanno permesso.\n\nNon è un obbligo. Se vuoi vendere tutto e tornare in città, fallo senza sensi di colpa: la valle non tiene il conto.\n\nMa se una mattina ti svegli e senti che l'aria sa di terra bagnata — allora prendi la zappa. Sai già cosa fare.\n\n<b>Con affetto sfacciato,\nNonna Ilde</b>":
+  "Dear grandchild,\n\nif you are reading this page it means the solicitor did his job and I did mine: I went quietly, on a <b>Spring</b> morning, with the window open.\n\nI leave you the <b>farm</b>. It is nothing much. The fence sags on the east side, the well makes a noise I will not try to explain, and the big field has more stone in it than soil.\n\nI also leave you something that does not appear in the will, because solicitors do not have the right words for it.\n\nThere is a <b>lantern</b>, in the woods. It has been out for twelve years. I tried to light it again for as long as my hands would let me.\n\nIt is not an obligation. If you want to sell the lot and go back to the city, do it without guilt: the valley keeps no score.\n\nBut if one morning you wake up and the air smells of wet earth — then pick up the hoe. You already know what to do.\n\n<b>With brazen affection,\nGranny Ilde</b>",
+
+"Sei sceso a Fioralba. Il notaio doveva darti questa dopo, e a quanto pare ha fatto il suo lavoro anche stavolta.\n\n<b>Bruno</b> ti sembrerà scorbutico. Lo è. Tiene i conti a memoria e non sbaglia mai di una moneta, il che lo rende insopportabile quando sbagli tu.\n\n<b>Tobia</b> lavora bene e lo sa, e te lo fa pagare. Non tirare sul prezzo: si offende e poi ci mette il doppio.\n\n<b>Marisol</b> alla locanda sa tutto di tutti. Ti dirà anche cose che non hai chiesto. Ascoltale lo stesso: nella valle le notizie utili viaggiano di striscio.\n\nUna cosa pratica, che di quelle vivo: davanti a casa c'è la <b>cassa di consegna</b>. Mettici quello che vuoi vendere e passano a ritirarlo di notte. Non è tanto per il prezzo — è per non doverti fare la strada del paese ogni volta che ti avanza una rapa.\n\n<b>Ilde</b>":
+  "So you have been down to Fioralba. The solicitor was to give you this one afterwards, and it seems he did his job that time as well.\n\n<b>Bruno</b> will strike you as gruff. He is. He keeps his accounts in his head and is never a single coin out, which makes him unbearable on the days when you are.\n\n<b>Tobia</b> does good work and knows it, and makes you pay for both. Do not haggle: he takes offence, and then he takes twice as long.\n\n<b>Marisol</b> at the inn knows everything about everybody. She will tell you things you never asked about. Listen anyway: in this valley the useful news arrives sideways.\n\nOne practical thing, since practical things are what I live on: outside the house there is the <b>shipping bin</b>. Put in it whatever you want to sell and they come for it at night. It is not really about the price — it is about not having to walk into the village every time you have a turnip going spare.\n\n<b>Ilde</b>",
+
+"Se sei arrivato fin nel bosco, prima o poi incontri <b>Serafina</b>.\n\nÈ scesa dalla montagna trent'anni fa e non è mai scesa del tutto. Vive in quel cottage con più erbe secche che mobili, e parla come se ogni frase le costasse qualcosa.\n\nTi dirà del <b>burrone</b> e di cosa c'è dall'altra parte. Non farle fretta.\n\nTi dirà anche che ho provato a riaccendere la lanterna da sola. È vero. Ci ho messo undici anni a capire che non è una cosa che si fa da soli, e altri due a trovare qualcuno a cui lasciarla. Sei arrivato tardi, ma sei arrivato.\n\nPortale una <b>viola</b>, quando ne trovi una. Fa finta di niente ma se le ricorda tutte.\n\n<b>Ilde</b>":
+  "If you have got as far as the woods, sooner or later you will meet <b>Serafina</b>.\n\nShe came down from the mountain thirty years ago and has never entirely come down. She lives in that cottage with more dried herbs than furniture, and she speaks as though every sentence cost her something.\n\nShe will tell you about the <b>ravine</b> and what lies on the other side. Do not rush her.\n\nShe will also tell you that I tried to relight the lantern on my own. It is true. It took me eleven years to understand that it is not a thing one does alone, and two more to find somebody to leave it to. You came late, but you came.\n\nTake her a <b>violet</b>, when you find one. She pretends not to notice, but she remembers every single one.\n\n<b>Ilde</b>",
+
+"Quindi sei sceso in <b>miniera</b>. Bene: vuol dire che hai capito che la terra da sola non basta.\n\nTuo nonno ci passava le giornate. Tornava su nero fino ai gomiti e diceva sempre la stessa cosa: «sotto non c'è niente di magico, c'è solo roba che nessuno ha ancora tirato fuori».\n\nAveva torto, ma non di molto.\n\nTre cose, e poi ti lascio in pace.\n\nLa prima: si scende più di un livello. Le <b>scale</b> stanno in fondo, e più vai giù più le pietre valgono.\n\nLa seconda: il <b>piccone</b> si migliora da Tobia, e un piccone migliore non è un lusso, è meno fatica per lo stesso sasso.\n\nLa terza: quando sei stanco, risali. La miniera non scappa. Tu sì, ma poi ti svegli a casa senza metà di quello che avevi in tasca.\n\n<b>Ilde</b>":
+  "So you have gone down the <b>mine</b>. Good: it means you have worked out that the soil on its own is not enough.\n\nYour grandfather spent his days down there. He would come up black to the elbows and always say the same thing: «there is nothing magical down below, there is only stuff nobody has pulled out yet».\n\nHe was wrong, but not by much.\n\nThree things, and then I will leave you in peace.\n\nThe first: there is more than one level to go down. The <b>stairs</b> are at the far end, and the deeper you go the more the stones are worth.\n\nThe second: the <b>pickaxe</b> gets made better at Tobia's, and a better pickaxe is not a luxury, it is less sweat for the same rock.\n\nThe third: when you are tired, come back up. The mine is not going anywhere. You are, and then you wake up at home without half of what you had in your pockets.\n\n<b>Ilde</b>",
+
+"Il primo raccolto non è mai il migliore. Non prendertela.\n\nLa terra del campo grande è stanca — l'ho sfruttata per quarant'anni e non le ho mai chiesto scusa. Ci vuole un anno perché torni gentile.\n\nNel frattempo: <b>semina fitto</b>, annaffia ogni giorno, e non piantare fuori stagione sperando che stavolta funzioni. Non funziona. L'ho provato tre volte, con tre stagioni diverse, e tre volte il campo mi ha risposto la stessa cosa.\n\nQuando avrai qualche moneta da parte, fatti tirare su la <b>serra</b>: lì dentro le stagioni non contano e d'inverno hai qualcosa da fare che non sia guardare la neve.\n\n<b>Ilde</b>":
+  "The first harvest is never the best one. Do not take it to heart.\n\nThe soil in the big field is tired — I worked it for forty years and never once apologised to it. It takes a year for it to turn kind again.\n\nIn the meantime: <b>sow thickly</b>, water every day, and do not plant out of season hoping that this time it will work. It does not. I tried three times, in three different seasons, and three times the field gave me the same answer.\n\nWhen you have a few coins put by, have the <b>greenhouse</b> put up: in there the seasons do not count, and in winter you have something to do that is not watching the snow.\n\n<b>Ilde</b>",
+
+"È cambiata la stagione, e quindi metà del tuo campo è appassita in una notte.\n\nLo so, sembra un dispetto. Non lo è: è solo che qui le stagioni non chiedono permesso, e le piante lo sanno meglio di noi.\n\nRegola unica: <b>raccogli prima dell'ultimo giorno</b>. Se una coltura ci mette otto giorni e la stagione ne ha ventotto, l'ultima semina utile è al ventesimo. Fatti il conto, non fidarti dell'occhio — io mi sono fidata dell'occhio per quarant'anni e ho perso un campo di zucche a tre giorni dalla fine.\n\nE cambia anche quello che trovi nel bosco. Le <b>viole</b> di primavera non le rivedi fino all'anno dopo. Se te ne serve una per qualcosa, raccoglila quando la vedi.\n\n<b>Ilde</b>":
+  "The season has turned, and so half your field withered overnight.\n\nI know, it feels like spite. It is not: it is only that the seasons here do not ask permission, and the plants know that better than we do.\n\nOne rule: <b>harvest before the last day</b>. If a crop takes eight days and the season has twenty-eight, the last sowing worth making is on the twentieth. Do the arithmetic, do not trust your eye — I trusted my eye for forty years and lost a field of pumpkins three days from the end.\n\nAnd what you find in the woods changes too. The spring <b>violets</b> you will not see again until the year after. If you need one for something, pick it when you see it.\n\n<b>Ilde</b>",
+
+"Ehi.\n\nMarisol dice che hai tirato su qualcosa dall'acqua. Non chiedo cosa, tanto lo so: la prima è sempre una carpa e sempre piccola.\n\nComunque. Ti scrivo perché la gente qui pensa che pescare sia un modo di perdere tempo con stile, e invece è l'unica cosa in questa valle che ti insegna ad aspettare senza innervosirti.\n\nTre posti, tre acque diverse: il <b>fiume</b> in paese, il <b>lago</b> nel bosco, il <b>mare</b> alla Costa. Non c'è pesce che stia in due posti, e non c'è pesce che stia in tutte le stagioni. Quello che prendi oggi fra tre mesi non c'è più.\n\nSe un giorno ti capita di veder salire qualcosa di grosso in una notte di luna piena — non tirare subito. Vieni a dirmelo.\n\n<b>Elio</b>":
+  "Hey.\n\nMarisol says you pulled something out of the water. I am not asking what, because I know: the first one is always a carp and always small.\n\nAnyway. I am writing because people here think fishing is a stylish way of wasting time, when in fact it is the only thing in this valley that teaches you to wait without getting worked up about it.\n\nThree places, three different waters: the <b>river</b> in the village, the <b>lake</b> in the woods, the <b>sea</b> at the Coast. There is no fish that lives in two of them, and no fish that lives in every season. What you catch today is gone in three months.\n\nIf one day you happen to see something big come up on a full-moon night — do not strike straight away. Come and tell me.\n\n<b>Elio</b>",
+
+"Conto saldato. Ti scrivo lo stesso perché una cosa così non la faccio tutti i giorni e voglio che resti scritta da qualche parte.\n\nCento legna, quaranta pietra, tre giorni sul burrone con la fune. Il legno l'ho scelto io: castagno, non abete. L'abete costava meno e tu non l'avresti saputo, ma io sì.\n\nQuel ponte regge trent'anni. Non ci sarò per verificarlo e non ci sarai nemmeno tu, ma regge.\n\nTua nonna me l'aveva chiesto due volte. La prima non avevo l'attrezzatura, la seconda non aveva più i soldi. Non gliel'ho mai detto, ma di quelle due volte mi è rimasto un po' di magone.\n\nAdesso è in piedi. Vacci.\n\n<b>Tobia</b>":
+  "Account settled. I am writing anyway, because a job like that is not one I do every day and I want it written down somewhere.\n\nA hundred wood, forty stone, three days over the ravine on a rope. I chose the timber myself: chestnut, not fir. Fir cost less and you would never have known, but I would.\n\nThat bridge will stand for thirty years. I will not be here to check and neither will you, but it will stand.\n\nYour grandmother asked me for it twice. The first time I did not have the gear, the second time she no longer had the money. I never told her, but those two times left a lump in my throat that has not quite gone.\n\nNow it is up. Go and use it.\n\n<b>Tobia</b>",
+
+"Ti scrivo dalla locanda, che tanto sono sempre qui.\n\nVolevo dirti una cosa che nessuno ti dirà in faccia: da queste parti ci si mette del tempo a decidere se una persona resta o no. Non è cattiveria, è che ne abbiamo visti passare parecchi.\n\nTu stai restando, e si vede. Qualcuno ha cominciato a chiedermi di te — di solito è il primo segno.\n\nPassa quando vuoi. Il <b>tavolo d'angolo</b> era quello di Ilde, e da quando non c'è più nessuno ci si siede volentieri. Sarebbe ora che ci si sedesse qualcuno.\n\nCucino tutti i giorni fino a tardi. E no, non ti faccio pagare la prima volta.\n\n<b>Marisol</b>":
+  "I am writing from the inn, since I am always here anyway.\n\nI wanted to tell you something nobody will say to your face: round here it takes people a while to decide whether somebody is staying or not. It is not unkindness, it is that we have watched a fair few come and go.\n\nYou are staying, and it shows. People have started asking me about you — that is usually the first sign.\n\nCome by whenever you like. The <b>corner table</b> was Ilde's, and since she went nobody sits there willingly. It is about time somebody did.\n\nI cook every day until late. And no, I am not charging you the first time.\n\n<b>Marisol</b>",
+
+"Questa non te la manda il notaio, perché non gliel'ho mai data. L'ho tenuta nel cassetto della cucina, sotto la carta, e se sei arrivato a saperlo vuol dire che Serafina ha deciso di parlare. Ci avrà messo un po'.\n\nAllora lo dico io, che è meglio.\n\nL'ho spenta io. Non il vento, non la neve, non i dodici anni. Io, con le mani, la notte del solstizio, mentre mi dicevano che tuo nonno era morto seduto sulla riva del fiume come uno che si riposa.\n\nNon l'ho fatto per rabbia. Se fosse stata rabbia sarebbe passata in una settimana e l'avrei riaccesa a gennaio.\n\nL'ho fatto perché in quel momento non mi è venuto in mente <b>per chi</b>. È una domanda stupida e ci ho messo undici anni a capire che la risposta non era «per lui». Non è mai stata per lui. Era per la valle, e la valle il giorno dopo si è svegliata lo stesso, solo un po' più grigia, e ha continuato a svegliarsi grigia per dodici anni per colpa di una domanda che mi ero fatta al buio.\n\nHo provato a rimediare. Le mani non hanno tenuto il passo delle intenzioni, che è il modo educato di dire che sono invecchiata.\n\nAdesso c'è una cosa che devi sapere, e la scrivo qui perché a voce non la direi bene.\n\nQuella lanterna io la tenevo accesa da sola. Mi sembrava giusto: era il mio santuario, la mia valle, il mio compito. Era anche l'errore, e l'ho fatto per quarant'anni senza accorgermene.\n\nUna lanterna tenuta da una persona sola si spegne quando quella persona ha una brutta notte.\n\nNon farla come me. Chiama gente.\n\n<b>Ilde</b>":
+  "This one is not coming to you from the solicitor, because I never gave it to him. I kept it in the kitchen drawer, under the paper, and if you have come to know about it then Serafina has decided to talk. It will have taken her a while.\n\nSo I shall say it myself, which is better.\n\nI put it out. Not the wind, not the snow, not the twelve years. Me, with my hands, on the night of the solstice, while they were telling me your grandfather had died sitting on the riverbank like a man having a rest.\n\nI did not do it out of anger. Had it been anger it would have passed in a week and I would have lit it again in January.\n\nI did it because in that moment it did not occur to me <b>who for</b>. It is a stupid question and it took me eleven years to understand that the answer was not «for him». It was never for him. It was for the valley, and the valley woke up all the same the next day, only a little greyer, and went on waking up grey for twelve years because of a question I had asked myself in the dark.\n\nI tried to put it right. My hands did not keep pace with my intentions, which is the polite way of saying that I grew old.\n\nNow there is something you need to know, and I am writing it here because I would not say it well out loud.\n\nThat lantern — I kept it alight on my own. It seemed right to me: my shrine, my valley, my task. It was also the mistake, and I made it for forty years without noticing.\n\nA lantern held up by one person alone goes out the night that person has a bad one.\n\nDo not do it my way. Call people.\n\n<b>Ilde</b>",
+
+"Se stai leggendo questa vuol dire che ce l'hai fatta, e che al santuario non c'eri da solo.\n\nNon ti scrivo per congratularmi. Ti scrivo per dirti la cosa noiosa che le nonne dicono alla fine, e che è l'unica che conta.\n\nAdesso la Lanterna sta accesa senza di te.\n\nNon perché sia magica: perché siete in sette a saperla accendere, e sette persone non hanno una brutta notte tutte insieme. Se domani ti va di stare a letto, la valle non si spegne. Se ti va di andartene per un mese, non si spegne. Se un giorno decidi che questa vita non fa per te e torni in città, non si spegne.\n\nCi ho messo quarant'anni e una notte al buio per capirlo, quindi permettimi di scriverlo grosso: <b>la valle non ti tiene in ostaggio</b>. Ci stai perché ti va.\n\nIl podere ha ancora la staccionata che cede a est. Il pozzo fa ancora quel rumore. Nel campo grande adesso c'è meno sasso che terra, e quello è merito tuo.\n\nVai a dormire, che domani c'è da annaffiare.\n\n<b>Con affetto sfacciato, ancora,\nNonna Ilde</b>":
+  "If you are reading this it means you managed it, and that you were not alone at the shrine.\n\nI am not writing to congratulate you. I am writing to tell you the boring thing grandmothers say at the end, which is the only one that counts.\n\nThe Lantern is alight now without you.\n\nNot because it is magical: because there are seven of you who know how to light it, and seven people do not all have a bad night at once. If tomorrow you feel like staying in bed, the valley does not go dark. If you feel like leaving for a month, it does not go dark. If one day you decide this life is not for you and go back to the city, it does not go dark.\n\nIt took me forty years and one night in the dark to understand that, so allow me to write it large: <b>the valley is not holding you hostage</b>. You are here because you want to be.\n\nThe farm still has the fence that sags on the east side. The well still makes that noise. The big field has less stone in it than soil now, and that is your doing.\n\nGo to bed — there is watering to do tomorrow.\n\n<b>With brazen affection, still,\nGranny Ilde</b>",
+
+"Allora l'hai trovata.\n\nLa prima brace è sempre la più facile e la più difficile. Facile perché la primavera regala. Difficile perché devi <b>crederci</b> senza aver ancora visto niente.\n\nIo la accesi a ventidue anni. Avevo le mani a pezzi e nessuno che mi dicesse se stavo sbagliando.\n\nTre ancora. Non correre.\n\n<b>Ilde</b>":
+  "So you found it.\n\nThe first ember is always the easiest and the hardest. Easy, because spring gives things away. Hard, because you have to <b>believe in it</b> without having seen anything yet.\n\nI lit mine at twenty-two. My hands were in pieces and there was nobody to tell me whether I was getting it wrong.\n\nThree more. Do not rush.\n\n<b>Ilde</b>",
+
+"D'estate la valle diventa rumorosa. Grilli, api, quel vento che arriva alle quattro e sposta tutto.\n\nTi confesso una cosa: la seconda brace l'ho quasi mollata. Avevo il campo secco, un debito con il padre di Bruno e una gran voglia di andarmene.\n\nPoi Serafina — sì, era già insopportabile allora — mi disse: <b>\"Non devi salvare la valle. Devi solo non abbandonarla oggi.\"</b>\n\nFunziona anche per le persone.\n\n<b>Ilde</b>":
+  "In summer the valley turns noisy. Crickets, bees, that wind that arrives at four and moves everything about.\n\nI will admit something: I nearly gave up on the second ember. I had a dry field, a debt to Bruno's father and a great longing to leave.\n\nThen Serafina — yes, she was insufferable back then too — said to me: <b>\"You do not have to save the valley. You only have to not abandon it today.\"</b>\n\nIt works for people as well.\n\n<b>Ilde</b>",
+
+"Terza. Bravo. Non lo dico spesso, quindi rileggilo.\n\nL'autunno è la stagione onesta: ti mostra esattamente quanto hai lavorato in primavera. Niente scuse, niente miracoli.\n\nC'è una cosa che non ti ho detto. La lanterna non si spense da sola, dodici anni fa. Si spense la notte in cui morì tuo nonno.\n\nNon credo alle maledizioni. Credo che ci sia luce dove qualcuno la tiene accesa, e che quell'anno io <b>non ce l'ho fatta</b>.\n\nTu sì. Ecco perché ti ho lasciato il podere e non i soldi.\n\n<b>Ilde</b>":
+  "Third. Well done. I do not say that often, so read it twice.\n\nAutumn is the honest season: it shows you exactly how much work you put in in spring. No excuses, no miracles.\n\nThere is something I have not told you. The lantern did not go out on its own, twelve years ago. It went out the night your grandfather died.\n\nI do not believe in curses. I believe there is light where somebody keeps it lit, and that in that particular year I <b>could not manage it</b>.\n\nYou can. That is why I left you the farm and not the money.\n\n<b>Ilde</b>",
+
+"Se stai leggendo questa, vuol dire che si è deciso.\n\nNon è mio e non è tuo: è arrivato una sera d'inverno che pioveva e si è messo davanti alla stufa come se avesse pagato l'affitto. L'ho chiamato <b>Cenere</b> perché era esattamente del colore che resta quando il fuoco si spegne, e a quel tempo la battuta mi sembrava spiritosa.\n\nCi ha messo due anni a farsi toccare. Due. Io gli mettevo il latte fuori e facevo finta di niente, e lui faceva finta di niente e beveva il latte.\n\nPoi una sera mi si è seduto sulle ginocchia senza chiedere permesso, e non se n'è più andato.\n\nTi dico questo perché con le persone della valle funziona uguale, solo che nessuno te lo spiega: non devi convincerle. Devi solo esserci abbastanza volte.\n\nLui lo sa già. Per questo è rimasto anche quando non c'è rimasto nessun altro.\n\n<b>Ilde</b>":
+  "If you are reading this, it means the matter has been settled.\n\nShe is not mine and she is not yours: she turned up one rainy winter evening and sat down in front of the stove as though she had paid the rent. I called her <b>Ash</b> because she was exactly the colour of what is left when a fire goes out, and at the time I thought the joke was rather good.\n\nIt took her two years to let herself be touched. Two. I would put milk out for her and pretend not to notice, and she would pretend not to notice and drink the milk.\n\nThen one evening she sat down on my knees without asking permission, and never left again.\n\nI am telling you this because it works the same way with the people of this valley, only nobody explains it to you: you do not have to convince them. You only have to be there enough times.\n\nShe knows it already. That is why she stayed even when nobody else did.\n\n<b>Ilde</b>",
+
+"<b>Torta del Solstizio — di Nonna Ilde</b>\n\nZucca cotta e schiacciata. Uova, quelle vere, di gallina contenta. Miele fino a quando smetti di sentirti in colpa. E — non ridere — una presa di <b>lavanda</b>.\n\nIl segreto non si scrive, ma te lo scrivo lo stesso: <b>tempo</b>. Impasta, poi lasciala nel forno spento tutta la notte, a prendersi il calore che resta.\n\nLa facevo per il solstizio, dicevo. Bugia. La facevo per avere una scusa buona per vederti seduto al mio tavolo.\n\nAdesso falla tu, per qualcuno. Mi raccomando la lavanda.\n\n<b>Ilde</b>":
+  "<b>Solstice Cake — by Granny Ilde</b>\n\nPumpkin, cooked and mashed. Eggs, real ones, from a contented hen. Honey until you stop feeling guilty about it. And — do not laugh — a pinch of <b>lavender</b>.\n\nThe secret is not something one writes down, but I shall write it down for you anyway: <b>time</b>. Mix it, then leave it in the switched-off oven all night, to take up the heat that is left.\n\nI made it for the solstice, I used to say. A lie. I made it to have a decent excuse to see you sitting at my table.\n\nNow you make it, for somebody. Mind the lavender.\n\n<b>Ilde</b>",
+
+"Se sei qui, la valle è accesa.\n\nNon ti scriverò più: ho finito le cose importanti da dire, e le altre te le racconterà Serafina esagerandole.\n\nVolevo solo che sapessi che quando piantavo i semi non pensavo al raccolto. Pensavo a chi sarebbe passato di lì dopo di me, e avrebbe trovato la terra <b>già pronta</b>.\n\nAdesso tocca a te lasciarla pronta per qualcun altro.\n\nChiudi la porta piano quando esci. Cigola.\n\n<b>Ti ho voluto un bene assurdo,\nNonna Ilde</b>":
+  "If you are here, the valley is alight.\n\nI shall not write to you again: I have run out of important things to say, and the rest Serafina will tell you, exaggerating it.\n\nI only wanted you to know that when I planted seeds I was not thinking about the harvest. I was thinking about whoever would pass this way after me, and would find the ground <b>already made ready</b>.\n\nNow it is your turn to leave it ready for somebody else.\n\nClose the door gently on your way out. It creaks.\n\n<b>I loved you absurdly,\nGranny Ilde</b>"
+});
+
+/* ===================================================================
+   LE SEI MEMORIE DELLA NOTTE DEL SOLSTIZIO
+   Sei testimonianze, una per abitante, e nessuna è la risposta: ognuno
+   ha visto un pezzo di quella notte da dove stava. La traduzione deve
+   tenere due cose. La prima è che si contraddicono: se in inglese le
+   frasi si «puliscono» e concordano, il buco al centro della trama si
+   chiude da solo e il finale non ha più niente da rivelare. La seconda
+   è che ognuno parla il suo mestiere — Bruno in partita doppia,
+   Marisol in servizio di sala, Elio in acqua, Tobia in ferro battuto,
+   l'Eremita in dislivelli, Serafina in cose non dette.
+   =================================================================== */
+Object.assign(window.LINGUA_EN, {
+
+/* --- Bruno: la riga rimasta aperta nel registro --- */
+'Quella notte? Me la ricordo per via del registro, non per il resto.':
+  'That night? I remember it because of the ledger, not because of the rest.',
+"Ilde era passata tre giorni prima. Ha comprato olio da lanterna, il doppio del solito, e una coperta di lana pesante. La coperta non l'ha pagata.":
+  'Ilde had come in three days before. She bought lamp oil, twice her usual, and a heavy wool blanket. She never paid for the blanket.',
+"Non perché non avesse i soldi. Perché è uscita di fretta e io non l'ho fermata.":
+  'Not because she had no money. Because she went out in a hurry and I did not stop her.',
+"Sono dodici anni che quella riga è aperta nel registro. L'ho riscritta quattro volte, cambiando quaderno, e ogni volta l'ho ricopiata.":
+  'That line has been open in the ledger for twelve years. I have started four new books since, and every time I copied it across.',
+'Non è per i soldi. È che finché la riga è aperta la faccenda non è chiusa.':
+  'It is not about the money. It is that while the line is open, the matter is not closed.',
+
+/* --- Marisol: il cliente che non ha visto uscire --- */
+"Il solstizio d'inverno di dodici anni fa avevo la locanda piena. Si faceva sempre così: la valle mangiava qui e poi saliva al santuario.":
+  'Twelve years ago, at the winter solstice, the inn was full. That was how it always went: the valley ate here and then walked up to the shrine.',
+'Ilde è partita presto, da sola, che era ancora chiaro. Aveva da fare lassù.':
+  'Ilde left early, on her own, while it was still light. She had things to do up there.',
+"Al tavolo d'angolo è rimasto suo marito. Da solo, col cappotto addosso, che non se l'era tolto.":
+  'Her husband stayed behind at the corner table. On his own, still in his coat — he never took it off.',
+'Gli ho chiesto se aspettava qualcuno e ha detto di no. Ha bevuto mezzo bicchiere e si è messo a guardare fuori.':
+  'I asked him if he was waiting for somebody and he said no. He drank half a glass and sat looking out of the window.',
+"Poi a un certo punto non c'era più, e io ero in cucina, e non ho visto quando è uscito.":
+  'Then at some point he was not there any more, and I was in the kitchen, and I did not see him go.',
+"È l'unica sera in vent'anni in cui non ho visto uscire un cliente.":
+  'It is the only evening in twenty years when I did not see a customer leave.',
+
+/* --- Elio: la fiamma vista dall'acqua --- */
+'Ero sul lago. Di notte, al solstizio, si prende il pesce che non prendi mai.':
+  'I was out on the lake. At night, at the solstice, you catch the fish you never catch.',
+"Da lì il santuario si vede bene: sta più in alto e la luce arriva sull'acqua prima che sulla riva.":
+  'You get a clear view of the shrine from there: it sits higher up, and the light reaches the water before it reaches the bank.',
+"La lanterna era accesa. Poi si è spenta. Non è calata piano come fa una fiamma che finisce l'olio — si è spenta e basta, come una candela con sopra una mano.":
+  'The lantern was lit. Then it went out. It did not sink slowly the way a flame does when the oil runs out — it just stopped, like a candle with a hand over it.',
+"E c'erano due persone sul sentiero. Una che saliva di corsa e una ferma.":
+  'And there were two people on the path. One coming up at a run and one standing still.',
+'Ho pensato: stanno litigando, non sono affari miei. Ho tirato su la lenza e sono andato a casa.':
+  'I thought: they are having a row, it is none of my business. I pulled in the line and went home.',
+'Ci ho pensato ogni solstizio da allora. Ogni volta mi dico che avrei dovuto remare fino a riva.':
+  'I have thought about it every solstice since. Every time I tell myself I should have rowed to shore.',
+
+/* --- Tobia: il gancio rimasto nel cassetto --- */
+"Ecco. È un gancio da lanterna. Ferro battuto, con la spirale. Ilde me l'aveva ordinato quell'autunno: quello vecchio al santuario era storto e la lanterna pendeva.":
+  'There. It is a lantern hook. Wrought iron, with the spiral. Ilde ordered it from me that autumn: the old one at the shrine was bent and the lantern hung crooked.',
+"L'ho finito il giorno prima del solstizio. Volevo portarglielo di persona, che ero contento di come era venuto.":
+  'I finished it the day before the solstice. I wanted to take it to her myself, because I was pleased with how it had come out.',
+"Poi è successo quello che è successo, e portare un gancio da lanterna a una che aveva appena spento la lanterna mi è sembrato...":
+  'Then what happened happened, and carrying a lantern hook to a woman who had just put the lantern out seemed…',
+'Tienilo tu. Se lassù serve, serve. E se non serve, almeno esce da questo cassetto.':
+  'You keep it. If it is needed up there, it is needed. And if it is not, at least it gets out of this drawer.',
+
+/* --- l'Eremita: quello che si vede da duecento metri più in alto --- */
+'Dal Passo si vede tutta la valle, e la notte del solstizio non dormo mai. Vecchia abitudine.':
+  'From the Pass you can see the whole valley, and on solstice night I never sleep. Old habit.',
+'Quindi sì: ho visto. Da lassù si vede quello che dal basso non si vede.':
+  'So yes: I saw. From up there you see what you cannot see from below.',
+"C'era Ilde davanti alla nicchia. E c'era Serafina che saliva.":
+  'Ilde was standing in front of the niche. And Serafina was coming up.',
+'Serafina le ha detto qualcosa. Non ho sentito cosa, sono duecento metri di dislivello.':
+  'Serafina said something to her. I did not hear what — it is two hundred metres of drop.',
+'Poi Ilde si è girata verso la lanterna e ci ha messo sopra le mani. Tutte e due. È rimasta lì un momento.':
+  'Then Ilde turned to the lantern and put her hands over it. Both of them. She stayed like that a moment.',
+"Non l'ha spenta il vento, ragazzo. Non l'ha spenta la neve. L'ha spenta lei.":
+  'It was not the wind that put it out. It was not the snow. It was her.',
+
+/* --- Serafina: la frase che non ha ripetuto per dodici anni --- */
+'Lo sapevo che prima o poi saresti arrivato a me. Gli altri ti hanno dato i pezzi e i pezzi non tornano, vero?':
+  'I knew you would come to me sooner or later. The others gave you the pieces, and the pieces do not add up, do they?',
+"Suo marito era uscito dalla locanda ed era andato al fiume, dove andava sempre quando aveva qualcosa che non riusciva a dire. Non stava bene da un anno: il torace, la miniera, il freddo. Quell'inverno era peggiorato e non l'aveva detto a nessuno tranne che a me, perché a me si dicono le cose e poi si fa finta di niente.":
+  'Her husband had left the inn and gone down to the river, where he always went when he had something he could not say. He had not been well for a year: his chest, the mine, the cold. That winter he had got worse, and he had told nobody but me, because people tell me things and then we all pretend nothing was said.',
+"L'hanno trovato lì. Non è caduto, non è successo niente di drammatico. Si è seduto e non si è più alzato.":
+  'They found him there. He did not fall, nothing dramatic happened. He sat down and did not get up again.',
+'Sono salita io a dirglielo perché nessun altro se la sentiva.':
+  'I was the one who went up to tell her, because nobody else could face it.',
+'Lei mi ha ascoltata. Non ha pianto, non ha detto niente. Ha guardato la nicchia — mancava un frutto, uno solo, era quasi finita — e ha messo le mani sulla fiamma.':
+  'She listened to me. She did not cry, she did not say anything. She looked at the niche — one fruit short, just the one, she was almost done — and put her hands over the flame.',
+'Io le ho detto: Ilde, ci hai messo un anno. E lei mi ha risposto una cosa che non ho più ripetuto a nessuno per dodici anni.':
+  'I said to her: Ilde, it took you a year. And she answered me with something I have not repeated to anybody for twelve years.'
+});
+
+/* ===================================================================
+   LE DUE CATENE E LA LEZIONE DI ORESTE (storie.js)
+   La torta di Ilde, il Pesce Luna, e il vecchio del Passo che insegna
+   la caccia un passo per volta. Le frasi con un pezzo variabile dentro
+   passano da `LINGUA.f`: qui la chiave è il modello, e il `{0}` va
+   messo dove lo vuole l'inglese, non dove stava in italiano.
+   =================================================================== */
+Object.assign(window.LINGUA_EN, {
+
+/* --- Oreste e l'arco --- */
+"L'arco? È mio.": 'The bow? It is mine.',
+"Torna quando ci conosciamo un po' meglio. Non do archi a chi ho visto due volte.":
+  'Come back when we know each other a little better. I do not hand bows to people I have seen twice.',
+'Sei pronto.': 'You are ready.',
+'Sei pronto': 'You are ready',
+'Non ancora. {0}': 'Not yet. {0}',
+'Lezione di caccia: {0}': 'Hunting lesson: {0}',
+"Prendi l'arco dalla barra in basso.": 'Take the bow from the bar at the bottom.',
+'Trova una preda e colpiscila. Coniglio nel prato, cervo nel bosco allalba.':
+  'Find quarry and hit it. Rabbit in the meadow, deer in the woods at dawn.',
+"Trova una preda e colpiscila. Coniglio nel prato, cervo nel bosco all'alba.":
+  'Find quarry and hit it. Rabbit in the meadow, deer in the woods at dawn.',
+
+/* --- Marisol insegna le ricette --- */
+'Ti ho già insegnato tutto quello che so. Adesso tocca a te inventarne una.':
+  'I have already taught you everything I know. Now it is your turn to invent one.',
+'Le ricette non si regalano, si passano.': 'Recipes are not given away, they are handed on.',
+"Passa più spesso, mangia qui, raccontami com'è andato il campo. Poi vediamo.":
+  'Come by more often, eat here, tell me how the field is doing. Then we shall see.',
+'Allora: {0}.': 'Right then: {0}.',
+'Ti serve {0}. Poco fuoco e tanta pazienza.': 'You will need {0}. Low heat and a lot of patience.',
+'Ricetta imparata: {0}': 'Recipe learnt: {0}',
+
+/* --- Elio e i consigli di pesca --- */
+'In questa stagione? Cerca il {0}.': 'This season? Go for {0}.',
+'Quello sta al largo: vai alla Costa, oltre la Piazza, e lancia dal molo.':
+  'That one stays out in deep water: go to the Coast, past the Square, and cast from the jetty.',
+'Sta nelle acque ferme: il laghetto del podere o lo stagno del bosco.':
+  'It lives in still water: the pond on the farm or the one in the woods.',
+'Sta nella corrente. Prova il fiume del paese, dal molo.':
+  'It lives in the current. Try the river in the village, from the landing.',
+'Ah: esce solo dopo il tramonto. Portati una lanterna.':
+  'Oh, and: it only comes out after sunset. Take a lantern with you.',
+'Di giorno abbocca senza troppi problemi.': 'It bites readily enough by day.',
+
+/* --- La torta di Nonna Ilde --- */
+'Nonna Ilde... la sua torta era leggendaria. Me la portava a ogni solstizio e non mi ha mai dato la ricetta intera.':
+  'Granny Ilde… that cake of hers was legendary. She brought me one every solstice and never once gave me the whole recipe.',
+'Ho quasi tutti i pezzi. Mi mancano due cose: il suo <b>segreto</b> — quello lo sa Serafina, c’era sempre — e gli <b>ingredienti</b>.':
+  'I have nearly all the pieces. Two things are missing: her <b>secret</b> — Serafina knows that one, she was always there — and the <b>ingredients</b>.',
+"Ho quasi tutti i pezzi. Mi mancano due cose: il suo <b>segreto</b> — quello lo sa Serafina, c'era sempre — e gli <b>ingredienti</b>.":
+  'I have nearly all the pieces. Two things are missing: her <b>secret</b> — Serafina knows that one, she was always there — and the <b>ingredients</b>.',
+'Portami {0}, fatti dire il segreto da Serafina, e la facciamo insieme. Per lei.':
+  'Bring me {0}, get the secret out of Serafina, and we shall make it together. For her.',
+"La torta di Ilde? Mezzo paese ha provato a rifarla. Nessuno c'è riuscito.":
+  "Ilde's cake? Half the village has tried to make it again. Nobody has managed it.",
+'Il segreto non è un ingrediente raro. È il <b>tempo</b>: la lasciava nel forno spento tutta la notte, a prendersi il calore che restava.':
+  'The secret is not some rare ingredient. It is <b>time</b>: she left it in the switched-off oven all night, taking up the heat that was left.',
+'E una presa di <b>lavanda</b> nell’impasto. Ma non dirlo in giro, o si offende mezza valle.':
+  'And a pinch of <b>lavender</b> in the mixture. But do not go telling people, or half the valley will take offence.',
+"E una presa di <b>lavanda</b> nell'impasto. Ma non dirlo in giro, o si offende mezza valle.":
+  'And a pinch of <b>lavender</b> in the mixture. But do not go telling people, or half the valley will take offence.',
+"Aspetta... senti l'odore? È lei. È esattamente lei.":
+  'Wait… can you smell that? It is her. It is exactly her.',
+'Ho capito il vero segreto solo adesso: non la faceva per il solstizio. Faceva il solstizio per avere una scusa buona per portartela.':
+  'I have only just understood the real secret: she did not make it for the solstice. She made the solstice happen so she would have a decent excuse to bring it to you.',
+'Tieni: la ricetta, scritta di suo pugno. E la prima fetta è tua.':
+  'Here: the recipe, in her own hand. And the first slice is yours.',
+'Per la torta di Ilde manca ancora {0}.': "Ilde's cake still needs {0}.",
+', e': ', and',
+
+/* --- Il Pesce Luna --- */
+'Nuova storia: Il Pesce Luna. Pescalo di notte, nel lago.':
+  'New story: the Moonfish. Catch it at night, in the lake.',
+"Il Pesce Luna. Lo so, fai quella faccia. Ma io l'ho visto, una volta sola, da ragazzo.":
+  'The Moonfish. I know, you are pulling that face. But I saw it, just the once, when I was a boy.',
+'Grande come un piatto, con gli occhi che sembravano due lune piene. Da allora lo cerco.':
+  'Big as a dinner plate, with eyes like two full moons. I have been looking for it ever since.',
+"Se ci credi anche tu, provaci: di <b>notte</b>, nelle acque ferme del <b>lago</b>, d'estate o d'autunno. Se lo prendi, corri da me.":
+  'If you believe it too, have a go: at <b>night</b>, in the still water of the <b>lake</b>, in summer or autumn. If you land it, run to me.',
+'Fermo. Fermo lì. Quello è... no. NO. È il Pesce Luna. È vero. È VERO!':
+  'Hold on. Hold it right there. That is… no. NO. It is the Moonfish. It is real. IT IS REAL!',
+'Dodici anni che lo dico e mi ridono dietro. E tu ci sei riuscito.':
+  'Twelve years I have been saying so and they laugh behind my back. And you went and did it.',
+'Tienilo tu, mi raccomando: a me basta sapere che esiste. Prendi questa — è la colletta che tenevo da parte per chi mi avrebbe creduto. Sei tu.':
+  'You keep it, mind: knowing it exists is enough for me. Take this — it is the purse I put aside for whoever would believe me. That is you.',
+'Elio non ci crede: hai preso il Pesce Luna! +{0} monete':
+  'Elio cannot believe it: you caught the Moonfish! +{0} coins',
+"L'hai visto? No? Esce solo di <b>notte</b>, e solo nelle acque ferme del <b>lago</b>.":
+  'Seen it? No? It only comes out at <b>night</b>, and only in the still water of the <b>lake</b>.',
+"D'estate e d'autunno è più facile. Porta pazienza e una buona lanterna.":
+  'It is easier in summer and autumn. Bring patience and a good lantern.'
+});
+
+/* ===================================================================
+   I PRIMI MINUTI (tutorial.js) E LA GUIDA A SCHERMO (guida.js)
+   Qui il tono è di servizio e le parole sono le stesse dei tasti: se
+   la guida dice «Space» e la barra dice «Spazio», il giocatore cerca
+   un tasto che non c'è.
+   =================================================================== */
+Object.assign(window.LINGUA_EN, {
+'Benvenuto a Fioralba': 'Welcome to Fioralba',
+'Questo è il podere di tua nonna. Prima cosa: fai due passi. Muoviti con <b>WASD</b> o le <b>frecce</b>.':
+  'This is your grandmother’s farm. First things first: take a few steps. Move with <b>WASD</b> or the <b>arrow keys</b>.',
+"Hai già la <b>Zappa</b> in mano. Avvicinati a un pezzo d'erba libero: la casella davanti a te si illumina. Premi <b>Spazio</b> (o clic) per zapparla.":
+  'You already have the <b>Hoe</b> in hand. Step up to a clear patch of grass: the tile in front of you lights up. Press <b>Space</b> (or click) to break the soil.',
+'Ora i semi': 'Now the seeds',
+'Bravo! Adesso scegli i <b>Semi di Rapa</b> nella barra.':
+  'Well done! Now pick the <b>Turnip Seeds</b> from the bar.',
+'Mettiti sopra o accanto alla terra dissodata e premi di nuovo <b>Spazio</b> per piantare.':
+  'Stand on or next to the tilled soil and press <b>Space</b> again to plant.',
+'Serve acqua': 'Water needed',
+'Dai da bere': 'Give them a drink',
+'Bagna la terra dove hai seminato con <b>Spazio</b>. Da domani cresceranno un po’ ogni notte.':
+  'Water the soil where you sowed with <b>Space</b>. From tomorrow they will grow a little every night.',
+"Bagna la terra dove hai seminato con <b>Spazio</b>. Da domani cresceranno un po' ogni notte.":
+  'Water the soil where you sowed with <b>Space</b>. From tomorrow they will grow a little every night.',
+'Ottimo lavoro! Quando sei stanco torna a <b>casa</b> e vai a letto: la notte fa crescere le piante.<br>':
+  'Good work! When you are tired go <b>home</b> and get into bed: night is what makes the plants grow.<br>',
+
+/* i passi numerati della guida: il {0} è il numero del passo */
+"<b>{0}.</b> Scegli la <b>zappa</b> e premi <kbd>Spazio</kbd> verso l'erba: la casella davanti a te si illumina.":
+  '<b>{0}.</b> Choose the <b>hoe</b> and press <kbd>Space</kbd> facing the grass: the tile in front of you lights up.',
+'<b>{0}.</b> Scegli i <b>semi</b> e premi ancora <kbd>Spazio</kbd> sulla terra dissodata.':
+  '<b>{0}.</b> Choose the <b>seeds</b> and press <kbd>Space</kbd> again on the tilled soil.',
+"<b>{0}.</b> Con l'<b>annaffiatoio</b> bagna la terra. Se piove ci pensa il cielo.":
+  '<b>{0}.</b> Water the soil with the <b>watering can</b>. If it rains, the sky sees to it.',
+'<b>{0}.</b> Torna a casa e <b>dormi</b>: le piante crescono solo durante la notte.':
+  '<b>{0}.</b> Go home and <b>sleep</b>: plants only grow during the night.',
+'<b>{0}.</b> Quando la pianta <b>scintilla</b> è matura: raccoglila <b>a mani nude</b>.':
+  '<b>{0}.</b> When the plant <b>sparkles</b> it is ripe: pick it <b>with bare hands</b>.',
+'<b>{0}.</b> Scegli la <b>canna</b> e premi <kbd>Spazio</kbd> rivolto verso l’acqua.':
+  '<b>{0}.</b> Choose the <b>rod</b> and press <kbd>Space</kbd> facing the water.',
+"<b>{0}.</b> Scegli la <b>canna</b> e premi <kbd>Spazio</kbd> rivolto verso l'acqua.":
+  '<b>{0}.</b> Choose the <b>rod</b> and press <kbd>Space</kbd> facing the water.',
+'<b>{0}.</b> Aspetta. Quando il galleggiante fa <b>!</b> premi subito <kbd>Spazio</kbd>.':
+  '<b>{0}.</b> Wait. When the float goes <b>!</b> press <kbd>Space</kbd> at once.',
+'<b>{0}.</b> <b>Tieni premuto</b> per far salire la barra verde, <b>molla</b> per farla scendere: tienila sul pesce.':
+  '<b>{0}.</b> <b>Hold</b> to send the green bar up, <b>let go</b> to bring it down: keep it on the fish.',
+'<b>{0}.</b> La barra blu si riempie finché il pesce è dentro. Piena = pesce tuo.':
+  '<b>{0}.</b> The blue bar fills while the fish is inside it. Full = the fish is yours.',
+'<b>{0}.</b> Mettiti davanti alla <b>botte</b> e premi <kbd>E</kbd>: scegli cosa infilarci.':
+  '<b>{0}.</b> Stand in front of the <b>barrel</b> and press <kbd>E</kbd>: choose what to put in.',
+'<b>{0}.</b> Ci mette qualche giorno. Intanto fai altro: lavora anche mentre dormi.':
+  '<b>{0}.</b> It takes a few days. Get on with something else meanwhile: it works while you sleep, too.',
+"<b>{0}.</b> Quando spunta la <b>bolla</b>, premi <kbd>E</kbd> e ritira. Il vino vale <b>il triplo</b> dell'uva.":
+  '<b>{0}.</b> When the <b>bubble</b> appears, press <kbd>E</kbd> and collect. Wine is worth <b>three times</b> the grapes.',
+'<b>{0}.</b> La <b>cassa di consegna</b> è accanto a casa. Premi <kbd>E</kbd> e lasciaci dentro il raccolto.':
+  '<b>{0}.</b> The <b>shipping bin</b> is beside the house. Press <kbd>E</kbd> and leave your harvest in it.',
+'<b>{0}.</b> Durante la <b>notte</b> passano a ritirarla. Non devi fare niente.':
+  '<b>{0}.</b> They come for it during the <b>night</b>. You need do nothing.',
+"<b>{0}.</b> All'alba trovi le monete già contate. Comodo prima di andare a dormire.":
+  '<b>{0}.</b> At dawn the coins are there, already counted. Handy just before bed.',
+"Le piantine hanno sete. Scegli l'<b>Annaffiatoio</b> (tasto <b>{0}</b>).":
+  'The seedlings are thirsty. Choose the <b>Watering Can</b> (key <b>{0}</b>).'
+});
+
+/* ===================================================================
+   I CARTELLI E LE INSEGNE (world.js)
+   Sono scritti sul mondo e si leggono di sfuggita: corti, e con la
+   freccia sempre nella stessa posizione, perché è quella che si guarda.
+   =================================================================== */
+Object.assign(window.LINGUA_EN, {
+'Cassa di consegna — la ritirano di notte': 'Shipping bin — collected at night',
+'Campo grande': 'The big field',
+'Il laghetto di Ilde': "Ilde's pond",
+'→ Fioralba, il paese': '→ Fioralba, the village',
+'↓ Bosco di Fioralba': '↓ Fioralba Woods',
+'← Podere': '← Farm',
+'↑ Miniera': '↑ Mine',
+'↓ Miniera': '↓ Mine',
+'↓ Piazza': '↓ Square',
+'↑ Piazza': '↑ Square',
+'↓ Uscita': '↓ Way out',
+'↓ Giù': '↓ Down',
+'↑ Su': '↑ Up',
+'↓ Ancora giù': '↓ Further down',
+'↑ Passo': '↑ The Pass',
+'↑ Fioralba': '↑ Fioralba',
+'↓ Costa': '↓ Coast',
+'Banco del mercante': "Pedlar's stall",
+'Il burrone. Di là c’è la Radura degli Spiriti: serve un ponte.':
+  "The ravine. The Spirits' Clearing is over there: you will need a bridge.",
+"Il burrone. Di là c'è la Radura degli Spiriti: serve un ponte.":
+  "The ravine. The Spirits' Clearing is over there: you will need a bridge.",
+"«Se non ce l'ho, probabilmente non ti serviva.»":
+  '«If I have not got it, you probably did not need it.»',
+'«Il ferro va scaldato, non convinto.»': '«Iron is heated, not talked round.»',
+"«Qui si mangia e si ascolta. In quest'ordine.»":
+  '«Here we eat and we listen. In that order.»',
+'La teiera di Nonna Ilde è ancora sul tavolo.': "Granny Ilde's teapot is still on the table."
+});
+
+/* ===================================================================
+   LE CHIACCHIERE DI STAGIONE, DI METEO E DI GIORNATA
+   Sono le battute che ogni abitante cambia a seconda della stagione,
+   del tempo che fa e dell'ora, più i compleanni e la sagra. Non portano
+   informazione: portano la voce di chi le dice, ed è l'unica cosa che
+   c'è da tradurre. Bruno conta, Serafina osserva, Tobia lavora,
+   Marisol cucina, Elio pesca, Oreste sta in alto e guarda giù.
+   =================================================================== */
+Object.assign(window.LINGUA_EN, {
+
+/* --- Bruno, il negozio --- */
+'I semi di primavera vanno via che è un piacere. Se ne vuoi, muoviti.':
+  'Spring seeds are flying off the shelf. If you want any, get a move on.',
+"Ogni primavera dico che quest'anno mi organizzo. Ogni primavera arrivo impreparato.":
+  'Every spring I say that this year I shall get organised. Every spring I turn up unprepared.',
+'Con questo caldo la gente compra e scappa. Nessuno chiacchiera più.':
+  'In this heat people buy and run. Nobody stops to talk any more.',
+"Tengo i semi di melone all'ombra. L'anno scorso mi sono germogliati in negozio.":
+  'I keep the melon seeds in the shade. Last year they sprouted in the shop.',
+"L'autunno è la mia stagione: si vende tutto e si lavora la metà.":
+  'Autumn is my season: everything sells and there is half the work.',
+'Zucche. Ogni anno mi sommergono di zucche. E ogni anno le ricompro.':
+  'Pumpkins. Every year they bury me in pumpkins. And every year I buy them again.',
+"D'inverno vendo tre cose in croce e parlo con chiunque entri. Compreso te.":
+  'In winter I sell next to nothing and I talk to whoever walks in. You included.',
+'Il magazzino è pieno e il paese è vuoto. Fa un certo effetto.':
+  'The storeroom is full and the village is empty. It is a strange feeling.',
+'Con la pioggia entra gente solo per asciugarsi. Non compra niente, ma almeno parla.':
+  'When it rains people come in only to dry off. They buy nothing, but at least they talk.',
+"Ho staccato l'insegna prima che la portasse via il vento. È già successo.":
+  'I took the sign down before the wind could carry it off. It has happened before.',
+'Con la neve la gente compra il doppio del necessario. Non ho mai capito perché.':
+  'When it snows people buy twice what they need. I have never understood why.',
+
+/* --- Serafina, il bosco --- */
+'Il bosco si sta svegliando adesso. Cammina piano, i primi giorni.':
+  'The woods are waking up just now. Walk slowly, the first few days.',
+"Le viole sono uscite tutte insieme, come se si fossero messe d'accordo.":
+  'The violets all came out together, as though they had agreed on it.',
+"D'estate il sottobosco profuma di resina. Respira, invece di correre.":
+  'In summer the undergrowth smells of resin. Breathe, instead of hurrying.',
+'La lavanda va colta al mattino, prima che il sole se la beva.':
+  'Lavender should be picked in the morning, before the sun drinks it up.',
+'Adesso il bosco dà tutto quello che ha. Prendine metà e lascia il resto.':
+  'Now the woods give everything they have. Take half and leave the rest.',
+'Sotto la neve non è morto niente. Sta solo contando i giorni.':
+  'Nothing has died under the snow. It is only counting the days.',
+"D'inverno il bosco è più onesto: si vede la forma delle cose.":
+  'In winter the woods are more honest: you can see the shape of things.',
+'La pioggia è la voce del bosco. Sta dicendo qualcosa, se ti fermi.':
+  'Rain is the voice of the woods. It is saying something, if you stand still.',
+'I temporali fanno crescere le piante più in fretta. Non chiedermi perché, so solo che è così.':
+  'Storms make the plants grow faster. Do not ask me why, I only know that they do.',
+'Nella neve si leggono le impronte. Oggi è passata una volpe, prima di te.':
+  'Tracks can be read in the snow. A fox came through today, before you did.',
+"Il vento porta i semi lontano. È l'unico modo che hanno di viaggiare.":
+  'The wind carries seeds a long way. It is the only way they have of travelling.',
+"A quest'ora il bosco è ancora di chi ci vive. Sei ospite: comportati bene.":
+  'At this hour the woods still belong to those who live in them. You are a guest: behave.',
+'Sta per farsi buio. Se torni al podere, prendi il sentiero, non la scorciatoia.':
+  'It is nearly dark. If you are going back to the farm, take the path, not the short cut.',
+
+/* --- Tobia, la fucina --- */
+'Primavera: tutti si ricordano che gli attrezzi sono da aggiustare.':
+  'Spring: everybody suddenly remembers their tools need mending.',
+"Il legno umido non tiene. Aspetta l'estate per la staccionata.":
+  'Damp timber will not hold. Wait for summer to do the fence.',
+"Con la fucina accesa e questo caldo, io d'estate mi sciolgo.":
+  'With the forge lit and this heat, I melt in summer.',
+"Lavoro all'alba e al tramonto. Nel mezzo, sto all'ombra come un gatto.":
+  'I work at dawn and at dusk. In between I lie in the shade like a cat.',
+'Se hai lingotti da parte, adesso è il momento di portarmeli.':
+  'If you have ingots put by, now is the time to bring them to me.',
+"La fucina d'inverno è il posto più caldo del paese. Passa quando vuoi.":
+  'In winter the forge is the warmest place in the village. Come by whenever you like.',
+'Il freddo rende il metallo capriccioso. Ci vuole più pazienza.':
+  'Cold makes metal awkward. It wants more patience.',
+"Sento i tuoni nel petto prima che nelle orecchie. È l'incudine.":
+  'I feel thunder in my chest before I hear it. That is the anvil.',
+'Con questo vento la forgia tira troppo. Brucio il doppio del carbone.':
+  'In this wind the forge draws too hard. I burn twice the charcoal.',
+'Chiudo bottega e vado alla locanda. Ci vediamo là, se ti va.':
+  'I am shutting up shop and going to the inn. See you there, if you fancy it.',
+
+/* --- Marisol, la locanda --- */
+'Serafina mi porta le viole e io ci faccio uno sciroppo che non ti dico.':
+  'Serafina brings me violets and I make a syrup out of them that I shall not even try to describe.',
+"D'estate si mangia fuori, sotto il pergolato. Passa una sera.":
+  'In summer we eat outside, under the pergola. Come by one evening.',
+"Il pomodoro d'estate non ha bisogno di niente. Nemmeno di me.":
+  'A summer tomato needs nothing at all. Not even me.',
+'Autunno: zucca, funghi, castagne. La cucina si scrive da sola.':
+  'Autumn: pumpkin, mushrooms, chestnuts. The menu writes itself.',
+"D'inverno tengo il camino acceso tutto il giorno. Vieni a scaldarti.":
+  'In winter I keep the fire going all day. Come and get warm.',
+"Le conserve d'estate si aprono adesso. È come riaprire luglio.":
+  'The summer preserves get opened now. It is like opening July again.',
+'Coi tuoni la gente resta a tavola più a lungo. E ordina il dolce.':
+  'When it thunders people stay at the table longer. And order pudding.',
+'Ho messo la zuppa sul fuoco alle sei. Con questa neve, sparirà entro mezzogiorno.':
+  'I put the soup on at six. With this snow it will be gone by midday.',
+'Il vento fa sbattere le imposte e i clienti si spaventano. Poi ordinano vino.':
+  'The wind bangs the shutters and the customers jump. Then they order wine.',
+"È l'ora buona: c'è gente, c'è rumore, c'è odore di cena. Siediti.":
+  'This is the good hour: people, noise, the smell of dinner. Sit down.',
+
+/* --- Elio, la riva --- */
+"D'estate si pesca all'alba o non si pesca. Il resto è stare al sole.":
+  'In summer you fish at dawn or you do not fish. The rest is sitting in the sun.',
+"Al largo, d'estate, l'acqua è così ferma che si vede il fondo.":
+  'Out in the deep, in summer, the water is so still you can see the bottom.',
+"L'autunno è per il luccio. Grosso, cattivo, e non molla mai.":
+  'Autumn is for pike. Big, mean, and it never gives up.',
+'Con le foglie in acqua abbocca meno. Bisogna avere pazienza.':
+  'With leaves in the water they bite less. You have to be patient.',
+"D'inverno le mani si spaccano e i pesci stanno sotto. Ma io vado lo stesso.":
+  'In winter your hands crack and the fish stay deep. But I go out all the same.',
+'Quando piove i pesci salgono. È il momento migliore e nessuno ci crede.':
+  'When it rains the fish come up. It is the best time and nobody believes it.',
+"Sotto la neve l'acqua è nera e ferma. Un po' mi mette soggezione.":
+  'Under snow the water is black and still. It puts me in awe of it, a little.',
+"Sono qui da prima dell'alba. I pesci non aspettano chi dorme.":
+  'I have been here since before dawn. Fish do not wait for people who sleep in.',
+"Di notte, al molo, l'acqua fa un rumore diverso. Più profondo. Provaci.":
+  'At night, off the jetty, the water makes a different sound. Deeper. Give it a try.',
+
+/* --- Oreste, il Passo --- */
+'Quassù la primavera arriva con un mese di ritardo. Non si offende nessuno.':
+  'Up here spring arrives a month late. Nobody takes offence.',
+'La neve si ritira e sotto trovo le cose che avevo perso a novembre.':
+  'The snow pulls back and underneath I find the things I lost in November.',
+"L'autunno dura tre giorni e poi è già inverno. Fai in fretta.":
+  'Autumn lasts three days and then it is winter already. Be quick.',
+'Sto mettendo via legna. Ne serve sempre più di quanto pensi.':
+  'I am putting firewood by. You always need more of it than you think.',
+'I temporali di montagna arrivano di sotto in su. Guarda la valle, non il cielo.':
+  'Mountain storms come from below upwards. Watch the valley, not the sky.',
+
+/* --- la sagra --- */
+'Guarda quanta gente. E pensare che di solito parlo con le casse.':
+  'Look at all these people. And to think I usually talk to the crates.',
+'Sono scesa dal bosco apposta. Non succede spesso: segnatelo.':
+  'I came down out of the woods on purpose. It does not happen often: make a note of it.',
+"Ilde non ne saltava una. Stava lì, in quell'angolo, a guardare tutti.":
+  'Ilde never missed one. She would stand right there, in that corner, watching everybody.',
+'Oggi la fucina è fredda e io ho le mani pulite. Mi sento strano.':
+  'Today the forge is cold and my hands are clean. It feels odd.',
+'Ho portato le panche nuove. Tre giorni di lavoro, per un pomeriggio.':
+  'I brought the new benches. Three days of work, for one afternoon.',
+'Ho cucinato per settanta persone. Settanta, in un paese di dodici.':
+  'I have cooked for seventy people. Seventy, in a village of twelve.',
+'Assaggia tutto e non dirmi cosa preferisci: mi offendo comunque.':
+  'Taste everything, and do not tell me which you liked best: I shall take offence either way.',
+"Alla sagra dell'anno scorso ho raccontato del Pesce Luna. Ridono ancora.":
+  'At last year’s fair I told them about the Moonfish. They are still laughing.',
+
+/* --- i compleanni --- */
+"Oggi? Compleanno. Non l'ho detto a nessuno e voi ve lo ricordate tutti. Misterioso.":
+  'Today? Birthday. I told nobody and the lot of you remember it. Mysterious.',
+'Compio gli anni oggi. Li conto ancora, sì. Mi sembra una cortesia verso il tempo.':
+  'It is my birthday today. Yes, I still count them. It seems a courtesy towards time.',
+"Compleanno. Mio padre me lo festeggiava battendo l'incudine dodici volte. Rumoroso, ma sincero.":
+  'Birthday. My father used to mark it by striking the anvil twelve times. Loud, but sincere.',
+'È il mio compleanno e sto cucinando per gli altri. Non lo cambierei con niente.':
+  'It is my birthday and I am cooking for everybody else. I would not swap it for anything.',
+'Oggi compio gli anni. Da ragazzo pescavo per festeggiare. Oggi... pesco lo stesso.':
+  'It is my birthday. As a boy I would go fishing to celebrate. Today… I am fishing anyway.',
+'Compleanno. Quassù non lo sa nessuno. Che tu sia salito oggi è una coincidenza notevole.':
+  'Birthday. Nobody up here knows. That you should have climbed up today is a remarkable coincidence.',
+
+/* --- due consigli e un passo della guida --- */
+"Metti una Lanterna vicino al campo: di notte è tutta un'altra cosa.":
+  'Put a Lantern near the field: at night it is a different place altogether.',
+'Regala qualcosa agli abitanti: due volte a settimana bastano.':
+  'Give the villagers a present: twice a week is plenty.',
+'Dissoda la terra': 'Break the soil'
+});
+
+/* ===================================================================
+   QUELLO CHE IL CENSIMENTO NON VEDEVA
+   Ventinove frasi che risultavano tradotte e non lo erano: la lezione
+   di Oreste (scritta come `testo:[...]`), il racconto di Serafina sulle
+   braci e i consigli di caccia (costruiti con `l.push(...)` e passati
+   come variabile), e i nove suggerimenti d'esplorazione di game.js.
+   Il censimento diceva «826 su 826»; nel gioco in inglese Serafina
+   parlava italiano. Trovate giocando e leggendo `LINGUA.mancanti()`,
+   non leggendo il verde. Adesso lo strumento le vede — ma la lezione
+   è che un elenco di frasi mancanti va tarato come qualsiasi prova.
+   =================================================================== */
+Object.assign(window.LINGUA_EN, {
+
+/* --- i suggerimenti che compaiono quando ci si ferma (game.js) --- */
+'Prova a zappare la terra, pianta un seme e annaffialo: la fattoria nasce così. 🌱':
+  'Try breaking the soil, plant a seed and water it: that is how a farm begins. 🌱',
+"Hai una canna: lanciala nell'acqua del fiume o del lago e tieni premuto Spazio. 🎣":
+  'You have a rod: cast it into the river or the lake and hold Space. 🎣',
+"Con l'ascia abbatti gli alberi del bosco e fai scorta di legna. 🪓":
+  'With the axe you fell trees in the woods and lay in a store of wood. 🪓',
+"A ovest c'è il paese di Fioralba: da Bruno compri semi e vendi il raccolto. 🏘️":
+  'Fioralba village lies to the west: at Bruno’s you buy seeds and sell your harvest. 🏘️',
+"A sud si apre il bosco: funghi, foraggio e l'erborista Serafina ti aspettano. 🌲":
+  'The woods open to the south: mushrooms, forage and Serafina the herbalist await you. 🌲',
+"A nord del paese c'è la miniera: col piccone trovi minerali e gemme. ⛏️":
+  'North of the village is the mine: with the pickaxe you find ore and gems. ⛏️',
+"Fai un regalo agli abitanti: ognuno ha i suoi gusti e l'amicizia cresce. 🎁":
+  'Give the villagers a present: each has their own taste, and friendship grows. 🎁',
+'Il fabbro Tobia può costruirti il ponte per la radura del Santuario. 🌉':
+  'Tobia the blacksmith can build you the bridge to the Shrine clearing. 🌉',
+'In cucina combini gli ingredienti in piatti che danno più energia. 🍳':
+  'In the kitchen you combine ingredients into dishes that give more energy. 🍳',
+
+/* --- la lezione di Oreste --- */
+"Questo? Un arco. Corno di cervo e tendine, l'ho fatto io d'inverno che non c'era altro da fare.":
+  'This? A bow. Deer horn and sinew — I made it one winter when there was nothing else to do.',
+'Se vuoi te ne do uno. Ma un arco senza sapere dove puntarlo è un bastone storto: prima la lezione.':
+  'I will give you one if you want. But a bow without knowing where to point it is a bent stick: the lesson comes first.',
+'Bene. Adesso ascolta, perché è la parte che conta.':
+  'Good. Now listen, because this is the part that matters.',
+"Si tira <b>davanti a sé</b>, non dove guarda il tuo dito. Da che parte sei girato conta: è metà della caccia. L'altra metà è arrivarci vicino senza farti sentire.":
+  'You shoot <b>straight ahead of you</b>, not where your finger points. Which way you are facing matters: that is half of hunting. The other half is getting close without being heard.',
+'Ecco. Adesso lo sai.': 'There. Now you know.',
+'Non sprecare niente: la carne si mangia, la pelle si concia, il corno lo tiene Tobia. E non tirare a quello che non ti serve — allo scoiattolo, al riccio. Non sono cacciagione, sono vicini.':
+  'Waste nothing: the meat is eaten, the hide is tanned, Tobia takes the horn. And do not shoot what you have no use for — the squirrel, the hedgehog. They are not game, they are neighbours.',
+'Te la cavi. Adesso ti sentono più tardi, e quello che porti a casa rende di più.':
+  'You are getting the hang of it. They hear you later now, and what you carry home is worth more.',
+'Ilde diceva che un bosco senza cacciatori si ammala. Non esagerare, però.':
+  'Ilde used to say a wood with no hunters falls ill. Do not overdo it, though.',
+
+/* --- Serafina, brace per brace --- */
+"La valle non è malata. È solo rimasta al buio troppo a lungo e ha preso l'abitudine.":
+  'The valley is not ill. It has simply been in the dark too long and got into the habit.',
+"Nel bosco, a est, un burrone taglia la terra. Di là c'è un santuario, e non ci si arriva a piedi: serve un ponte. Chiedilo a Tobia, alla fucina.":
+  'In the woods, to the east, a ravine cuts the land in two. There is a shrine on the far side, and you cannot walk to it: you need a bridge. Ask Tobia, at the forge.',
+"Una brace. L'aria di primavera è già diversa, l'hai sentito?":
+  'One ember. The spring air is different already — have you noticed?',
+'Ilde diceva che la prima è quella che ti convince che non sei matto.':
+  'Ilde used to say the first one is what convinces you that you are not mad.',
+'Due. Adesso la gente in paese comincia a parlarne.':
+  'Two. Now people in the village are starting to talk about it.',
+'Bruno finge di non crederci ma ha ricominciato a tenere aperto fino a tardi.':
+  'Bruno pretends not to believe it, but he has started staying open late again.',
+"Tre. Manca l'inverno, che è sempre la più difficile.":
+  'Three. Winter is left, which is always the hardest.',
+"Non perché serva chissà cosa. Perché d'inverno è più facile smettere.":
+  'Not because it takes anything remarkable. Because in winter it is easier to stop.',
+"L'hai riaccesa.": 'You have lit it again.',
+'Sai cosa mi ha detto Fiammella ieri? Che aveva dimenticato il proprio colore.':
+  'Do you know what Fiammella told me yesterday? That she had forgotten her own colour.',
+'Adesso lo ricorda. Grazie a te. Non fare quella faccia modesta.':
+  'She remembers it now. Because of you. Do not pull that modest face.',
+
+/* --- i due pezzi che entrano nell'elenco di cosa manca alla torta --- */
+'il segreto (parla con Serafina, nel bosco)': 'the secret (talk to Serafina, in the woods)',
+'gli ingredienti ({0})': 'the ingredients ({0})',
+
+/* --- la chiusa del tutorial, che nel sorgente è spezzata in due --- */
+'Ottimo lavoro! Quando sei stanco torna a <b>casa</b> e vai a letto: la notte fa crescere le piante.<br>Poi metti il raccolto nella <b>cassa di consegna</b> per venderlo, parla con gli <b>abitanti</b>, esplora il <b>bosco</b> — e un giorno riaccendi la <b>Lanterna</b>.':
+  'Good work! When you are tired go <b>home</b> and get into bed: night is what makes the plants grow.<br>Then put your harvest in the <b>shipping bin</b> to sell it, talk to the <b>villagers</b>, explore the <b>woods</b> — and one day, light the <b>Lantern</b> again.'
+});
+
+/* --- i due consigli di caccia, che stavano in `const righe = [...]`:
+       una forma che il censimento non guardava, e che ha lasciato
+       Oreste a parlare italiano in inglese per due battute --- */
+Object.assign(window.LINGUA_EN, {
+"Il coniglio sta nel prato e nel bosco, di giorno. Il cervo solo nel bosco, all'alba o sul tardi, e non tutti i giorni.":
+  'The rabbit is in the meadow and in the woods, by day. The deer only in the woods, at dawn or late on, and not every day.',
+"Più sei vicino, più è facile. Non c'è altro segreto.":
+  'The closer you are, the easier it is. There is no other secret.'
+});
+
+/* ===================================================================
+   LA CARTA «COS'È CAMBIATO» SULLA PAGINA INIZIALE
+   Solo la voce in cima: è quella che si legge senza aprire niente, e
+   restava in italiano anche premendo «English» — un blocco in un'altra
+   lingua proprio sotto al pulsante appena premuto. L'archivio delle
+   versioni vecchie resta com'è stato scritto, per scelta: sono
+   diciassettemila caratteri di storia passata e tradurli vorrebbe dire
+   tenerli tradotti per sempre. Queste voci il censimento non le vede
+   (salta changelog.js apposta): quando esce una versione nuova, le sue
+   frasi vanno aggiunte qui a mano.
+   =================================================================== */
+Object.assign(window.LINGUA_EN, {
+'Ultimo aggiornamento · {0}': 'Last updated · {0}',
+'…e altre {0} cose.': '…and {0} more.',
+"…e un'altra cosa.": '…and one more.',
+'Versione {0}': 'Version {0}',
+'Nuovo': 'New',
+'Migliorato': 'Improved',
+'Corretto': 'Fixed',
+'Cambia lingua': 'Change language',
+'agosto 2026': 'August 2026',
+
+/* --- versione 2.2 --- */
+"Fioralba parla inglese, e la partita ti segue da un computer all'altro":
+  'Fioralba speaks English, and your game follows you from one computer to another',
+'Il gioco, tutto, anche in inglese': 'The whole game, in English too',
+"Non solo i menu: le quindici lettere di Nonna Ilde, le sei testimonianze della notte del solstizio, la lezione di caccia di Oreste, le chiacchiere che ogni abitante cambia con la stagione, col tempo che fa e con l'ora. Ottocentocinquantasei frasi. Si cambia lingua dalla pagina iniziale o dal menu, in qualsiasi momento, senza perdere niente.":
+  'Not just the menus: Granny Ilde’s fifteen letters, the six accounts of solstice night, Oreste’s hunting lesson, the small talk every villager changes with the season, the weather and the hour. Eight hundred and fifty-six phrases. You can switch language from the front page or from the menu, at any point, without losing anything.',
+'La stessa partita dal fisso e dal portatile': 'The same game on the desktop and the laptop',
+"La partita si collega e riceve un codice. Su un altro computer si apre Fioralba, si scrive il codice, e si riprende da dov'era. Se le due parti hanno lavorato tutte e due, il gioco non sceglie da solo: fa vedere le due partite — giorno, stagione, monete — e decidi tu quale vale.":
+  'You link the game and it is given a code. On another computer you open Fioralba, type the code in, and pick up where you left off. If both sides have been played, the game does not choose for you: it shows you both — day, season, coins — and you decide which one counts.',
+'«Ho già una partita, voglio riprenderla»': '«I already have a game — let me pick it up»',
+"Il pulsante per importare un salvataggio stava in fila con «Gioca» e «Come si gioca», tre pulsanti identici, e non lo trovava nessuno: non diceva né a chi serviva né cosa bisognava avere in mano. Adesso sulla pagina iniziale c'è un riquadro che si apre e spiega le due strade — col codice, se la partita è già collegata; col file .json, se l'hai esportata — e dice dove trovare l'uno e l'altro. Importando un file la partita si collega da sola e ti dà il codice.":
+  'The button for importing a save sat in a row with «Play» and «How to play» — three identical buttons — and nobody found it: it said neither who it was for nor what you needed to have in hand. Now the front page has a panel that opens and explains the two routes — with the code, if the game is already linked; with the .json file, if you exported it — and tells you where to find each. Import a file and the game links itself and hands you the code.',
+'Il tasto «English» adesso cambia anche la pagina iniziale':
+  'The «English» button now changes the front page as well',
+"Cambiava la lingua del gioco ma non quella della presentazione: si restava a leggere l'italiano premendo un pulsante inglese.":
+  'It changed the language of the game but not of the presentation: you went on reading Italian after pressing an English button.'
+});

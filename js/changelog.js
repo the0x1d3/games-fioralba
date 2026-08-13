@@ -16,6 +16,17 @@
 
 window.CHANGELOG = [
   {
+    v: '2.2',
+    data: 'agosto 2026',
+    titolo: 'Fioralba parla inglese, e la partita ti segue da un computer all\'altro',
+    voci: [
+      { tipo:'nuovo',  t:'Il gioco, tutto, anche in inglese', d:'Non solo i menu: le quindici lettere di Nonna Ilde, le sei testimonianze della notte del solstizio, la lezione di caccia di Oreste, le chiacchiere che ogni abitante cambia con la stagione, col tempo che fa e con l\'ora. Ottocentocinquantasei frasi. Si cambia lingua dalla pagina iniziale o dal menu, in qualsiasi momento, senza perdere niente.' },
+      { tipo:'nuovo',  t:'La stessa partita dal fisso e dal portatile', d:'La partita si collega e riceve un codice. Su un altro computer si apre Fioralba, si scrive il codice, e si riprende da dov\'era. Se le due parti hanno lavorato tutte e due, il gioco non sceglie da solo: fa vedere le due partite — giorno, stagione, monete — e decidi tu quale vale.' },
+      { tipo:'nuovo',  t:'«Ho già una partita, voglio riprenderla»', d:'Il pulsante per importare un salvataggio stava in fila con «Gioca» e «Come si gioca», tre pulsanti identici, e non lo trovava nessuno: non diceva né a chi serviva né cosa bisognava avere in mano. Adesso sulla pagina iniziale c\'è un riquadro che si apre e spiega le due strade — col codice, se la partita è già collegata; col file .json, se l\'hai esportata — e dice dove trovare l\'uno e l\'altro. Importando un file la partita si collega da sola e ti dà il codice.' },
+      { tipo:'fix',    t:'Il tasto «English» adesso cambia anche la pagina iniziale', d:'Cambiava la lingua del gioco ma non quella della presentazione: si restava a leggere l\'italiano premendo un pulsante inglese.' }
+    ]
+  },
+  {
     v: '2.1',
     data: 'agosto 2026',
     titolo: 'I livelli si vedono, e i dialoghi si leggono per intero',

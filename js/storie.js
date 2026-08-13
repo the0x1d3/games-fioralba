@@ -19,6 +19,19 @@
 const S = {};
 window.STORIE = S;
 
+/* Le frasi che si compongono con un pezzo variabile dentro non si
+   incollano con `+`: in inglese l'ordine delle parole cambia e verrebbe
+   fuori metà frase tradotta con la grammatica italiana — è già successo
+   con «Vino di Grapes». `F` passa dal modello, e nel catalogo il {0}
+   finisce dove l'inglese lo vuole. */
+const F = (modello, ...pezzi)=> window.LINGUA
+  ? LINGUA.f(modello, ...pezzi)
+  : modello.replace(/\{(\d+)\}/g, (_,i)=>pezzi[i]);
+/* i pezzi che entrano in un modello vanno tradotti prima: `UI.dialogo`
+   traduce quello che riceve, ma quello che riceve è già la frase
+   composta, e dentro ci sarebbe rimasto l'italiano */
+const T = s => (window.LINGUA ? LINGUA.t(s) : s);
+
 /* ===================================================================
    LA LEZIONE DI ORESTE
 
@@ -81,7 +94,13 @@ function offriLezioneCaccia(cuori){
 function riprendiLezioneCaccia(){
   const p = passoLezione();
   if(!p){ G.lezioneCaccia = null; return; }
-  UI.dialogo('eremita', [p.attesa ? 'Non ancora. ' + p.attesa.replace(/^./, c=>c.toLowerCase()) : 'Sei pronto.']);
+  /* `p.attesa` è già una frase tradotta e comincia in maiuscola: in
+     italiano si sminuzza la prima lettera per incollarla dopo «Non
+     ancora. », in inglese pure. Il modello tiene insieme le due metà,
+     così il catalogo può anche invertirle. */
+  UI.dialogo('eremita', [p.attesa
+    ? F('Non ancora. {0}', T(p.attesa).replace(/^./, c=>c.toLowerCase()))
+    : 'Sei pronto.']);
 }
 
 /* Chiude il passo corrente e apre il successivo. Chiamata da chi il
@@ -109,7 +128,7 @@ function avanzaLezioneCaccia(fatto){
     G.sacaccia = true;
     UI.dialogo('eremita', LEZIONE_CACCIA[i].testo.concat(LEZIONE_CACCIA[i].fine));
   }
-  if(prossimo.attesa) UI.toast('Lezione di caccia: '+prossimo.attesa);
+  if(prossimo.attesa) UI.toast(F('Lezione di caccia: {0}', T(prossimo.attesa)));
 }
 
 function consigliCaccia(){
@@ -141,12 +160,13 @@ function insegnaRicetta(){
   const r = nuove[0];
   G.ricetteNote[r.id]=true;
   UI.dialogo('marisol',[
-    'Allora: '+IT.nome(r.id)+'.',
-    'Ti serve '+Object.keys(r.ing).map(k=>IT.nome(k)+' ×'+r.ing[k]).join(', ')+'. Poco fuoco e tanta pazienza.',
+    F('Allora: {0}.', IT.nome(r.id)),
+    F('Ti serve {0}. Poco fuoco e tanta pazienza.',
+      Object.keys(r.ing).map(k=>IT.nome(k)+' ×'+r.ing[k]).join(', ')),
     'Segnatela. Non te la ripeto.'
   ]);
   SND.play('regalo');
-  UI.toast('Ricetta imparata: '+IT.nome(r.id),'gold',r.id);
+  UI.toast(F('Ricetta imparata: {0}', IT.nome(r.id)),'gold',r.id);
 }
 
 function loreSerafina(){
@@ -170,7 +190,7 @@ function consigliPesca(){
     DATA.ITEMS[k].stagioni.indexOf(st)>=0);
   const n = pesci[(Math.random()*pesci.length)|0];
   UI.dialogo('elio',[
-    'In questa stagione? Cerca il '+DATA.ITEMS[n].nome+'.',
+    F('In questa stagione? Cerca il {0}.', DATA.ITEMS[n].nome),
     DATA.ITEMS[n].luogo==='mare' ? 'Quello sta al largo: vai alla Costa, oltre la Piazza, e lancia dal molo.'
       : DATA.ITEMS[n].luogo==='lago' ? 'Sta nelle acque ferme: il laghetto del podere o lo stagno del bosco.'
                                      : 'Sta nella corrente. Prova il fiume del paese, dal molo.',
@@ -191,7 +211,7 @@ function avviaTortaIlde(){
   UI.dialogo('marisol',[
     'Nonna Ilde... la sua torta era leggendaria. Me la portava a ogni solstizio e non mi ha mai dato la ricetta intera.',
     'Ho quasi tutti i pezzi. Mi mancano due cose: il suo <b>segreto</b> — quello lo sa Serafina, c\'era sempre — e gli <b>ingredienti</b>.',
-    'Portami '+ingLista(TORTA_ING)+', fatti dire il segreto da Serafina, e la facciamo insieme. Per lei.'
+    F('Portami {0}, fatti dire il segreto da Serafina, e la facciamo insieme. Per lei.', ingLista(TORTA_ING))
   ]);
   UI.toast('Nuova storia: La torta di Nonna Ilde.','gold');
 }
@@ -223,10 +243,12 @@ function tortaMarisol(){
     return;
   }
   const mancano=[];
-  if(!t.segreto) mancano.push('il segreto (parla con Serafina, nel bosco)');
+  /* i due pezzi entrano dentro a un modello e da lì non passano più da
+     nessun traduttore: si traducono qui, uno per uno */
+  if(!t.segreto) mancano.push(T('il segreto (parla con Serafina, nel bosco)'));
   const im = Object.keys(TORTA_ING).filter(k=>G.conta(k)<TORTA_ING[k]).map(k=>IT.nome(k)+' ×'+TORTA_ING[k]);
-  if(im.length) mancano.push('gli ingredienti ('+im.join(', ')+')');
-  UI.dialogo('marisol',['Per la torta di Ilde manca ancora '+mancano.join(', e ')+'.']);
+  if(im.length) mancano.push(F('gli ingredienti ({0})', im.join(', ')));
+  UI.dialogo('marisol',[F('Per la torta di Ilde manca ancora {0}.', mancano.join(T(', e ')))]);
 }
 
 /* --- Il Pesce Luna (Elio) --- */
@@ -246,7 +268,7 @@ function pescelunaElio(){
     G.amicizia.elio = Math.max(0,(G.amicizia.elio||0)+150);
     const premio = 2200; G.oro += premio; G.stats.guadagno += premio;
     SND.play('livello');
-    UI.toast('Elio non ci crede: hai preso il Pesce Luna! +'+premio+' monete','gold','pesce_luna');
+    UI.toast(F('Elio non ci crede: hai preso il Pesce Luna! +{0} monete', premio),'gold','pesce_luna');
     UI.dialogo('elio',[
       'Fermo. Fermo lì. Quello è... no. NO. È il Pesce Luna. È vero. È VERO!',
       'Dodici anni che lo dico e mi ridono dietro. E tu ci sei riuscito.',
