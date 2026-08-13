@@ -164,6 +164,22 @@ S.salva = function(){
     const prec = localStorage.getItem(CHIAVE);
     if(prec) localStorage.setItem(CHIAVE_BAK, prec);   // backup del precedente buono
     localStorage.setItem(CHIAVE, testo);
+    /* E adesso anche sul server.
+
+       `SINC.programmaInvio()` esisteva dal primo giorno, con tanto di
+       commento sull'invio pigro — e non la chiamava NESSUNO. Grep in
+       tutto il repo: una sola occorrenza, la sua definizione. Il
+       risultato è che una partita saliva sul server esattamente una
+       volta, nel momento in cui la si collegava, e da lì in poi mai
+       più: mesi di gioco restavano fermi al giorno del collegamento, e
+       da fuori sembrava «su alcune partite la sincronizzazione non
+       parte». Partiva, e poi non ripartiva.
+
+       Sta qui e non nei singoli punti di salvataggio perché i punti
+       sono sei — autosave, dormita, menu, tutorial, cambio scheda,
+       pannello di prova — e il settimo che qualcuno aggiungerà si
+       dimenticherebbe di chiamarla, esattamente come è successo. */
+    if(window.SINC) SINC.programmaInvio();
     return true;
   }catch(e){ console.warn('Salvataggio non riuscito', e); return false; }
 };
