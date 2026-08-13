@@ -374,7 +374,7 @@ Object.assign(window.LINGUA_EN, {
 'La falce taglia erbacce, fiori e cespugli.': 'The scythe cuts weeds, flowers and bushes.',
 'I semi vanno sulla terra dissodata: prima passa la zappa.': 'Seeds go on tilled soil: use the hoe first.',
 'Qui sta già crescendo qualcosa.': 'Something is already growing here.',
-'Non è la stagione giusta per': 'This is not the season for',
+'Non è la stagione giusta per {0}.': 'This is not the season for {0}.',
 'Il concime va sulla terra dissodata.': 'Fertiliser goes on tilled soil.',
 'Questa terra è già stata concimata.': 'This ground has already been fertilised.',
 'Terreno migliorato.': 'Soil improved.',
@@ -387,7 +387,7 @@ Object.assign(window.LINGUA_EN, {
 'Argilla!': 'Clay!',
 "Linfa d'acero!": 'Maple sap!',
 'Gemma di Luna!': 'Moonstone!',
-'Un corvo ti ha beccato': 'A crow got you',
+'Un corvo ti ha beccato {0}! Servirebbe uno spaventapasseri.': 'A crow got your {0}! A scarecrow would help.',
 
 /* --- posare e spostare --- */
 "Scegli dove metterlo. Esc per rimetterlo dov'era.": 'Choose where to put it. Esc to leave it where it was.',
@@ -417,7 +417,7 @@ Object.assign(window.LINGUA_EN, {
 'La freccia passa alta. Sono già lontani.': 'The arrow goes high. They are already gone.',
 "L'acqua è gelata: niente pesca oggi.": 'The water is frozen: no fishing today.',
 'Abbocca! Premi <kbd>Spazio</kbd>': 'A bite! Press <kbd>Space</kbd>',
-'Hai preso:': 'You caught:',
+'Hai preso: {0}!': 'You caught: {0}!',
 'Il Pesce Luna! Corri a mostrarlo a Elio.': 'The Moonfish! Run and show Elio.',
 "Se n'è andato.": 'It got away.',
 'Ti è scappato.': 'You lost it.',
@@ -428,16 +428,16 @@ Object.assign(window.LINGUA_EN, {
 'In lavorazione…': 'Working…',
 
 /* --- giornata, meteo, eventi --- */
-"📬 C'è posta per te: una lettera da": '📬 There is post for you: a letter from',
-'Ti sei svegliato dolorante. Qualcuno ti ha riportato a casa (−': 'You woke up aching. Somebody carried you home (−',
-'È arrivata la': 'It is',
+"📬 C'è posta per te: una lettera da {0}.": '📬 There is post for you: a letter from {0}.',
+'Ti sei svegliato dolorante. Qualcuno ti ha riportato a casa (−{0} monete).': 'You woke up aching. Somebody carried you home (−{0} coins).',
+'È arrivata la {0}.': '{0} has arrived.',
 'Gelata forte: fiume e pozzo sono ghiacciati per oggi.': 'Hard frost: the river and the well are frozen for the day.',
-'Mercato di oggi:': 'Today at market:',
+'Mercato di oggi: {0} vale ×{1} da Bruno e alla cassa.': "Today at market: {0} is worth ×{1} at Bruno's and in the shipping bin.",
 '📋 Nuove richieste degli abitanti: guarda il Diario (J).': '📋 New requests from the villagers: check the Journal (J).',
-'🎪 È tempo della': '🎪 It is time for the',
+'🎪 È tempo della {0}: consegna i prodotti di stagione dal Diario!': '🎪 It is time for the {0}: hand in the seasonal produce from the Journal!',
 '🛒 Il mercante ambulante è in paese, oggi alla Locanda.': '🛒 The travelling pedlar is in the village, at the Inn today.',
-'🎂 Oggi è il compleanno di': '🎂 Today is the birthday of',
-'🎪 Oggi è il giorno della': '🎪 Today is the day of the',
+'🎂 Oggi è il compleanno di {0}. Un regalo, oggi, vale il triplo.': '🎂 Today is {0}\'s birthday. A gift today is worth triple.',
+'🎪 Oggi è il giorno della {0}: il paese è tutto in piazza a Fioralba.': '🎪 Today is the day of the {0}: the whole village is in the square at Fioralba.',
 
 /* --- porte chiuse --- */
 "La porta è socchiusa, ma Serafina è fuori, nell'orto.": 'The door is ajar, but Serafina is outside, in the garden.',
@@ -491,7 +491,8 @@ Object.assign(window.LINGUA_EN, {
 'Accendi tutte e quattro le braci': 'Light all four embers',
 'Scopri perché la Lanterna si è spenta': 'Find out why the Lantern went out',
 'La veglia al Santuario': 'The vigil at the Shrine',
-'Traguardo compiuto:': 'Milestone reached:',
+'Traguardo compiuto: {0}': 'Milestone reached: {0}',
+'Traguardo compiuto: {0} — {1} monete da riscuotere': 'Milestone reached: {0} — {1} coins to collect',
 
 /* --- livelli --- */
 'Premi ritirati.': 'Rewards collected.',
@@ -514,15 +515,18 @@ Object.assign(window.LINGUA_EN, {
 'Salvataggio esportato.': 'Save exported.',
 
 /* --- atto secondo, i pezzi cuciti --- */
-'Serve più confidenza:': 'You need to know them better:',
-'Memoria raccolta (': 'Memory gathered (',
+'Serve più confidenza: {0} cuori con {1}.': 'You need to know them better: {0} hearts with {1}.',
+'Memoria raccolta ({0}/{1}): {2}': 'Memory gathered ({0}/{1}): {2}',
+'Ricevuto: {0}': 'Received: {0}',
+'Ritirati {0}, ne restano {1}: libera lo zaino.': 'Collected {0}, {1} still waiting: make room in your backpack.',
+'✔ {0}': '✔ {0}',
 'Invita i sei abitanti alla veglia al Santuario.': 'Invite the six villagers to the vigil at the Shrine.',
-'Hanno detto di sì in': 'Said yes so far:',
+'Hanno detto di sì in {0} su {1}.': 'Said yes so far: {0} of {1}.',
 'Ci sono tutti. La veglia è domani sera al Santuario, dal tramonto.': 'Everyone is coming. The vigil is tomorrow evening at the Shrine, from sundown.',
 'La Lanterna è accesa, ma non tiene. Fiammella ha qualcosa da dirti.': 'The Lantern is lit, but it will not hold. Fiammella has something to tell you.',
 'Nuova storia: la notte del solstizio. Parla con i sei abitanti.': 'New story: the night of the solstice. Talk to the six villagers.',
-'Sei a': 'You are at',
-'Ne mancano': 'You are still missing',
+'Sei a {0} su {1}. Vai avanti: quando ci sono tutte capisci da solo.': 'You are at {0} of {1}. Keep going: when you have them all you will see it yourself.',
+'Ne mancano {0}. Vai a chiamarli: non comincio senza.': '{0} still missing. Go and call them: I will not begin without.',
 '. Vai avanti: quando ci sono tutte capisci da solo.': '. Keep going: when you have them all, you will work it out yourself.',
 '. Vai a chiamarli: non comincio senza.': '. Go and call them: I am not starting without them.',
 
@@ -535,8 +539,9 @@ Object.assign(window.LINGUA_EN, {
 'La torta di Nonna Ilde è pronta.': "Granny Ilde's cake is ready.",
 
 /* --- prompt contestuali --- */
-'<kbd>E</kbd> parla con': '<kbd>E</kbd> talk to',
-'<kbd>E</kbd> accarezza': '<kbd>E</kbd> stroke',
+'<kbd>E</kbd> parla con {0}': '<kbd>E</kbd> talk to {0}',
+'qualcuno': 'somebody',
+'<kbd>E</kbd> accarezza {0}': '<kbd>E</kbd> stroke {0}',
 'il gatto': 'the cat',
 'Cenere': 'Ash',
 
@@ -1291,7 +1296,10 @@ Object.assign(window.LINGUA_EN, {
 'Tieni: la ricetta, scritta di suo pugno. E la prima fetta è tua.':
   'Here: the recipe, in her own hand. And the first slice is yours.',
 'Per la torta di Ilde manca ancora {0}.': "Ilde's cake still needs {0}.",
-', e': ', and',
+/* Con gli spazi: è la giuntura fra gli ingredienti che mancano, e il
+   gioco la chiede così com'è scritta. Senza, la chiave non la trovava
+   nessuno e in inglese si leggeva «Sugar, e Butter». */
+', e ': ', and ',
 
 /* --- Il Pesce Luna --- */
 'Nuova storia: Il Pesce Luna. Pescalo di notte, nel lago.':

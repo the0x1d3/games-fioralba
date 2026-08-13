@@ -17,6 +17,19 @@ window.GUIDA = GU;
 
 const $ = s=>document.querySelector(s);
 
+/* Il titolo del passo va tradotto **prima** di entrare nel modello: da
+   dentro non lo guarda più nessuno, e `UI.toast` riceveva «✔ Passa la
+   prima notte» già montato — chiave che nel catalogo non c'è, mentre il
+   titolo da solo sì. Risultato: la spunta dei primi passi in inglese
+   restava in italiano. Come `fraseF` in game.js. */
+function fraseF(modello, ...pezzi){
+  return window.LINGUA ? LINGUA.f(modello, ...pezzi)
+                       : modello.replace(/\{(\d+)\}/g, (_,i)=>pezzi[i]);
+}
+function frase(testo){
+  return window.LINGUA ? LINGUA.t(testo) : testo;
+}
+
 /* ------------------------------------------------------------------
    I PASSI
    `fatto(G)` legge lo stato: nessun passo ha bisogno di essere
@@ -244,7 +257,7 @@ function festeggia(nuovi, completati){
     UI.toast('Primi passi completati: sai muoverti a Fioralba. Da qui in poi guarda il Diario (J).','gold');
     return;
   }
-  nuovi.forEach((p,k)=> setTimeout(()=>UI.toast('✔ '+p.titolo,'good'), k*450));
+  nuovi.forEach((p,k)=> setTimeout(()=>UI.toast(fraseF('✔ {0}', frase(p.titolo)),'good'), k*450));
 }
 
 /* rimette in vista la guida (dal menu) */

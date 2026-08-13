@@ -1749,6 +1749,63 @@ verifica('«dove si trova» è tradotto per intero', () => {
   return problemi;
 });
 
+/* Il censimento deve conoscere tutte le strozzature della traduzione.
+
+   `tools/lingua.js` non legge «ogni stringa italiana»: parte da chi
+   parla col giocatore, e tiene l'elenco in `USCITE`. Il buco è che una
+   strozzatura nuova non fa rumore — non è un errore, non è un test
+   rosso, è solo un pezzo di gioco che il conto smette di guardare.
+
+   `T` ci è stato fuori a lungo, e il danno era doppio e invisibile: il
+   censimento diceva «862 su 862, zero mancanti» mentre 102 frasi non
+   le aveva mai viste, e le loro traduzioni — che c'erano — finivano
+   nell'elenco delle orfane, 384 invece di 282. Due contatori che si
+   confermavano a vicenda e sbagliavano insieme.
+
+   Qui non si controlla come è scritto `USCITE`, ma cosa fa: si ricostruisce
+   la stessa regex del censimento e le si dà in pasto una chiamata finta
+   per ogni strozzatura trovata nel sorgente. Se non la riconosce, quella
+   strozzatura è cieca. */
+verifica('il censimento delle lingue conosce ogni strozzatura', () => {
+  const problemi = [];
+  const dir = path.join(RADICE, 'js');
+
+  /* Le strozzature, nelle due forme in cui sono scritte: `const X = … =>`
+     e `function X(…)`. Cercare solo la prima è il modo di rifare lo
+     stesso buco un piano più sotto — `fraseF` è dichiarata `function`, e
+     un controllo che guardava le sole freccie la dava per coperta.
+     Solo `t` e `f`, non `n`: `NUM` passa numeri, non frasi, e nel
+     catalogo non ci va. La finestra corta fra la dichiarazione e la
+     chiamata tiene dentro le due righe di `F`, che va a capo dopo
+     `window.LINGUA`. */
+  const nomi = new Set();
+  for (const f of fs.readdirSync(dir).filter(n => n.endsWith('.js'))) {
+    if (f === 'lingua.js' || f.startsWith('lingua-')) continue;
+    const src = fs.readFileSync(path.join(dir, f), 'utf8');
+    for (const m of src.matchAll(/const\s+(\w+)\s*=\s*(?:\([^)]*\)|\w+)\s*=>[\s\S]{0,120}?LINGUA\.[tf]\(/g))
+      nomi.add(m[1]);
+    for (const m of src.matchAll(/function\s+(\w+)\s*\([^)]*\)\s*\{[\s\S]{0,120}?LINGUA\.[tf]\(/g))
+      nomi.add(m[1]);
+  }
+  if (nomi.size < 2) { problemi.push(`trovo solo ${nomi.size} strozzature nei js: la lettura del sorgente non funziona più`); return problemi; }
+
+  const sorgente = fs.readFileSync(path.join(RADICE, 'tools', 'lingua.js'), 'utf8');
+  const mU = sorgente.match(/const USCITE = \[([\s\S]*?)\n\];/);
+  if (!mU) { problemi.push('non trovo USCITE in tools/lingua.js'); return problemi; }
+  /* i commenti prima dei letterali: dentro ci sono apostrofi italiani
+     («l'oggetto») che un cercatore di stringhe leggerebbe come virgolette */
+  const zona = mU[1].replace(/\/\*[\s\S]*?\*\//g, '');
+  const uscite = [...zona.matchAll(/'((?:[^'\\]|\\.)*)'/g)].map(m => m[1].replace(/\\\\/g, '\\'));
+  if (!uscite.length) { problemi.push('USCITE risulta vuoto: la lettura di tools/lingua.js non funziona più'); return problemi; }
+
+  const re = new RegExp('(?:' + uscite.join('|') + ")\\(\\s*'");
+  for (const n of nomi)
+    if (!re.test(n + "('ciao')"))
+      problemi.push(`la strozzatura ${n}(...) non è in USCITE (tools/lingua.js): le sue frasi non vengono censite e in inglese restano in italiano`);
+
+  return problemi;
+});
+
 /* Due passaggi che, tappandosi, non fanno rumore.
 
    Il primo è il corridoio del ponte: `ristampaBurrone` sfratta casse e

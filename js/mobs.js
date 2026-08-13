@@ -12,6 +12,16 @@ window.MOBS = M;
 const T = 32;
 const px = (c,x,y,w,h,col)=>{ c.fillStyle=col; c.fillRect(x|0,y|0,w|0,h|0); };
 
+/* Il nome della coltura va **dentro** la frase, non incollato davanti:
+   `UI.toast` traduce quello che riceve, e riceveva già montato
+   «Un corvo ti ha beccato Turnip!» — una chiave che nel catalogo non
+   c'è e non ci sarà mai, quindi in inglese restava tutta in italiano
+   tranne il nome. Come `fraseF` in game.js, e qui pure `T` è 32. */
+function fraseF(modello, ...pezzi){
+  return window.LINGUA ? LINGUA.f(modello, ...pezzi)
+                       : modello.replace(/\{(\d+)\}/g, (_,i)=>pezzi[i]);
+}
+
 /* ===================================================================
    SPRITE
    =================================================================== */
@@ -601,7 +611,7 @@ function rubaRaccolto(G, b){
   // riporta la pianta indietro di una fase (o la toglie se non ricresce)
   if(C.ricresce){ s.crop.stage = Math.max(0, C.fasi.length-1); s.crop.gg=0; }
   else s.crop = null;
-  UI.toast('Un corvo ti ha beccato '+C.nome+'! Servirebbe uno spaventapasseri.','bad');
+  UI.toast(fraseF('Un corvo ti ha beccato {0}! Servirebbe uno spaventapasseri.', C.nome),'bad');
   SND.play('errore');
   for(let k=0;k<8;k++) G.particelle.push({t:'foglia',
     x:t.wx+(Math.random()-0.5)*16, y:t.wy-6,

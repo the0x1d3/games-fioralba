@@ -60,7 +60,32 @@ const USCITE = [
   /* `F(...)` è il modello con i pezzi dentro, in ui.js e in storie.js.
      Con la parola intera davanti: senza il confine, `IF(`, `OF(` e
      qualunque nome che finisce per F entrerebbero nel conto. */
-  '\\bF'
+  '\\bF',
+  /* `T(...)` è la strozzatura gemella di `F`, quella senza pezzi
+     variabili: `const T = s => LINGUA.t(s)` in ui.js, e ricopiata in
+     storie.js, livelli.js e game.js. Mancava, e mancando faceva danno
+     al contrario di come sembra: il conto diceva «862 su 862, zero
+     mancanti» mentre diciannove frasi passate a `T` non stavano nel
+     catalogo e in inglese restavano in italiano — fra queste «Lo zaino
+     era pieno: l'oggetto ti aspetta nella scheda delle abilità.» e
+     tutti gli avvisi del salvataggio sul server. Un contatore a zero
+     che non vuol dire niente è peggio di un contatore alto.
+     Stesso confine di parola di `F`, e per lo stesso motivo: senza,
+     `GET(`, `SORT(` e ogni nome che finisce per T entrerebbero nel
+     conto. (Misurato: oggi in `js/` l'unico nome che finisce per T e
+     apre con una stringa è `T` stesso, ma il confine costa zero e
+     tiene fermo il giorno che ne nasca un altro.) */
+  '\\bT',
+  /* `fraseF` e `frase` sono le stesse due strozzature, scritte per
+     esteso nei file dove `T` è già la misura della casella (32):
+     game.js, mobs.js, pesca.js, solstizio.js. Il nome lungo sfugge a
+     `\bF` e a `\bT` — davanti alla `F` di `fraseF` non c'è nessun
+     confine di parola — e quindi queste frasi non le contava nessuno.
+     Non è un buco nuovo: `'Col <b>{0}</b> si toglie: {1}'` sta in
+     game.js da prima di questo giro e nel censimento non è mai entrata.
+     `frase` prima o dopo non cambia: `fraseF(` non lo può prendere,
+     perché dopo `frase` vuole la parentesi subito. */
+  '\\bfraseF', '\\bfrase'
 ];
 
 function testiModuli() {
@@ -135,12 +160,38 @@ function testiModuli() {
   return [...fuori];
 }
 
+/* Qui dentro si distingue la frase **vera** — quella che il gioco passerà
+   a `LINGUA.t`, e che quindi è la chiave del catalogo — da come la si
+   guarda per decidere se tenerla. Sono due cose diverse, e per un po'
+   sono state la stessa: si tagliavano gli spazi ai bordi e si teneva il
+   risultato. Ma questi letterali stanno nel codice, e nel codice lo
+   spazio al bordo è voluto: `T(', e ')` unisce gli ingredienti che
+   mancano, `T('Copialo a mano: ')` si porta dietro lo spazio perché
+   subito dopo si incolla il codice della partita.
+
+   Tagliando, la chiave censita non era più quella cercata, e sbagliava
+   nei due versi opposti: `'Copialo a mano: '` risultava mancante mentre
+   la traduzione c'era, e `', e '` risultava tradotto mentre a schermo
+   non lo era — il catalogo aveva `', e'` senza spazi, il gioco chiedeva
+   `', e '` con gli spazi, e in inglese si leggeva «Sugar, e Butter».
+   Quest'ultimo il conto non l'ha mai visto: l'ha trovato il traduttore
+   vero, in pagina, che è il motivo per cui non ci si ferma al conto.
+
+   Adesso si filtra sul testo nudo e si tiene quello intero. */
 function aggiungi(insieme, grezza) {
-  const s = grezza.replace(/\\'/g, "'").replace(/\\\\/g, '\\').trim();
-  if (!s) return;
-  if (s.length < 2) return;
-  if (/^[\w.\/#|:-]+$/.test(s)) return;             // id, chiavi, percorsi
-  if (!/[a-zà-ù]/i.test(s)) return;                  // solo simboli o numeri
+  const s = grezza.replace(/\\'/g, "'").replace(/\\\\/g, '\\');
+  const nudo = s.trim();
+  if (!nudo) return;
+  if (nudo.length < 2) return;
+  /* id, chiavi, percorsi — ma solo se la stringa non ha spazi ai bordi.
+     Un id non finisce con uno spazio; `'Ricevuto: '` sì, ed è l'inizio
+     di una frase a cui il gioco incolla il nome dell'oggetto. Con la
+     guardia di prima («tolti gli spazi, resta una sola parola?») quella
+     riga risultava una chiave e spariva dal conto: il toast della
+     memoria consegnata è rimasto in italiano per tutte le lingue senza
+     che nessun contatore lo dicesse. */
+  if (s === nudo && /^[\w.\/#|:-]+$/.test(nudo)) return;
+  if (!/[a-zà-ù]/i.test(nudo)) return;               // solo simboli o numeri
   /* Tolti i tag, resta una *parola*? `'<kbd>E</kbd> '` è il prefisso di
      un suggerimento e la parte variabile arriva concatenata dopo:
      chiedere di tradurlo vuol dire chiedere di ricopiare markup, e la
@@ -155,7 +206,7 @@ function aggiungi(insieme, grezza) {
      («, and »). Un filtro che si porta via una frase vera è peggio del
      frammento che voleva togliere: quella frase non la chiede più
      nessuno e resta in italiano per sempre. */
-  if (/<[^>]+>/.test(s) && !/[a-zà-ù]{2}/i.test(s.replace(/<[^>]+>/g, ' '))) return;
+  if (/<[^>]+>/.test(nudo) && !/[a-zà-ù]{2}/i.test(nudo.replace(/<[^>]+>/g, ' '))) return;
   insieme.add(s);
 }
 

@@ -25,6 +25,14 @@
 
 const $ = s=>document.querySelector(s);
 
+/* I conti dentro alla frase, non incollati col `+`: `UI.toast` traduce
+   quello che riceve, e riceveva «Ritirati 2, ne restano 3: …» già
+   montato, che nel catalogo non c'è. Come `fraseF` in game.js. */
+function fraseF(modello, ...pezzi){
+  return window.LINGUA ? LINGUA.f(modello, ...pezzi)
+                       : modello.replace(/\{(\d+)\}/g, (_,i)=>pezzi[i]);
+}
+
 const L = {};
 window.LIV = L;
 
@@ -286,7 +294,7 @@ L.ritira = function(){
   }
   G.premiSospesi = resto;
   if(presi && !resto.length) UI.toast('Premi ritirati.','gold');
-  else if(presi)             UI.toast('Ritirati ' + presi + ', ne restano ' + resto.length + ': libera lo zaino.','bad');
+  else if(presi)             UI.toast(fraseF('Ritirati {0}, ne restano {1}: libera lo zaino.', presi, resto.length),'bad');
   else                       UI.toast('Zaino pieno: non c\'è posto per i premi.','bad');
   G.rinfrescaHotbar(); G.aggiornaHUD();
   return presi;

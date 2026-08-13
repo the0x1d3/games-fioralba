@@ -25,6 +25,17 @@
 const V = {};
 window.SOLSTIZIO = V;
 
+/* I conti dell'atto secondo vanno dentro alla frase, non incollati:
+   `UI.toast` e `UI.dialogo` traducono quello che ricevono, e ricevevano
+   «Sei a 3 su 6. Vai avanti…» già montato. Il catalogo la chiave coi
+   numeri dentro non ce l'ha — `LINGUA.t` sa rimetterceli, ma solo se la
+   frase gli arriva come modello — quindi in inglese l'intera veglia
+   parlava italiano. Come `fraseF` in game.js. */
+function fraseF(modello, ...pezzi){
+  return window.LINGUA ? LINGUA.f(modello, ...pezzi)
+                       : modello.replace(/\{(\d+)\}/g, (_,i)=>pezzi[i]);
+}
+
 function veglia(){ return G.trame.veglia; }
 
 const memorieAvute = function(){
@@ -54,18 +65,21 @@ function raccontaMemoria(npcId){
       'Di quella notte non mi va di parlare.',
       'Non con chiunque, almeno. Torna quando ci conosciamo meglio.'
     ]);
-    UI.toast('Serve più confidenza: ' + M.cuori + ' cuori con ' + DATA.NPCS[npcId].nome + '.','hint');
+    UI.toast(fraseF('Serve più confidenza: {0} cuori con {1}.', M.cuori, DATA.NPCS[npcId].nome),'hint');
     return;
   }
   veglia().memorie[M.id] = true;
   UI.dialogo(npcId, M.testo, { fine:()=>{
     if(M.dona && G.puoiAggiungere(M.dona,1)){
       G.aggiungi(M.dona,1);
-      UI.toast('Ricevuto: ' + IT.nome(M.dona),'gold',M.dona);
+      UI.toast(fraseF('Ricevuto: {0}', IT.nome(M.dona)),'gold',M.dona);
     }
     const n = memorieAvute();
     SND.play('regalo');
-    UI.toast('Memoria raccolta (' + n + '/' + DATA.MEMORIE.length + '): ' + M.titolo,'gold');
+    /* il titolo **non** si ritraduce qui: `LINGUA.applicaDati` ha già
+       riscritto `DATA.MEMORIE` nella lingua scelta, e passarlo di nuovo
+       da `t()` lo lascerebbe uguale ma lo segnerebbe come mancante */
+    UI.toast(fraseF('Memoria raccolta ({0}/{1}): {2}', n, DATA.MEMORIE.length, M.titolo),'gold');
     G.progresso();
     if(n >= DATA.MEMORIE.length) setTimeout(laVerita, 900);
   }});
@@ -127,7 +141,7 @@ function invitaAllaVeglia(npcId){
   UI.dialogo(npcId, RISPOSTE_INVITO[npcId] || ['Ci sono.'], { fine:()=>{
     const n = invitatiAllaVeglia(), tot = DATA.MEMORIE.length;
     SND.play('regalo');
-    if(n < tot){ UI.toast('Hanno detto di sì in ' + n + ' su ' + tot + '.','gold'); G.progresso(); return; }
+    if(n < tot){ UI.toast(fraseF('Hanno detto di sì in {0} su {1}.', n, tot),'gold'); G.progresso(); return; }
     /* Ci sono tutti: la veglia è domani sera. Non stasera — a una cosa
        così la gente ci si prepara, e il giocatore deve poterci arrivare
        apposta invece di trovarsela addosso mentre fa altro. */
@@ -216,13 +230,13 @@ function apriSantuario(){
       return;
     }
     if(!v.verita){
-      UI.dialogo('fiammella', ['Sei a ' + memorieAvute() + ' su ' + DATA.MEMORIE.length +
-        '. Vai avanti: quando ci sono tutte capisci da solo.']);
+      UI.dialogo('fiammella', [fraseF('Sei a {0} su {1}. Vai avanti: quando ci sono tutte capisci da solo.',
+        memorieAvute(), DATA.MEMORIE.length)]);
       return;
     }
     if(!v.fatta && !v.giorno){
-      UI.dialogo('fiammella', ['Ne mancano ' +
-        (DATA.MEMORIE.length - invitatiAllaVeglia()) + '. Vai a chiamarli: non comincio senza.']);
+      UI.dialogo('fiammella', [fraseF('Ne mancano {0}. Vai a chiamarli: non comincio senza.',
+        DATA.MEMORIE.length - invitatiAllaVeglia())]);
       return;
     }
     if(!v.fatta){

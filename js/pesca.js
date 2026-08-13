@@ -14,6 +14,16 @@
 const T = 32;
 const $ = s=>document.querySelector(s);
 
+/* Il nome del pesce dentro alla frase, non incollato davanti: `UI.toast`
+   traduce quello che riceve, e riceveva «Hai preso: Trout!» già montato
+   — chiave che nel catalogo non c'è, quindi in inglese si leggeva il
+   nome tradotto dentro a una frase italiana. Come `fraseF` in game.js,
+   e anche qui `T` è la misura della casella. */
+function fraseF(modello, ...pezzi){
+  return window.LINGUA ? LINGUA.f(modello, ...pezzi)
+                       : modello.replace(/\{(\d+)\}/g, (_,i)=>pezzi[i]);
+}
+
 const P = {};
 window.PESCA = P;
 
@@ -228,7 +238,7 @@ function finePesca(ok, msg){
     const I=DATA.ITEMS[id];
     if(G.aggiungi(id,1)){
       SND.play('pesceOk');
-      UI.toast('Hai preso: '+I.nome+'!', I.spazzatura?'':'gold', id);
+      UI.toast(fraseF('Hai preso: {0}!', I.nome), I.spazzatura?'':'gold', id);
       if(!I.spazzatura){
         G.xp('pesca', 12 + (I.diff||1)*6);
         G.stats.pesci++;

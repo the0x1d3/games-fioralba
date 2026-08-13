@@ -298,7 +298,8 @@ G.controllaTraguardi = function(annuncia){
     for(const o of ora){
       if(!o.fatto || traguardiFatti.has(o.id)) continue;
       SND.play('livello');
-      UI.toast('Traguardo compiuto: '+o.nome+(o.premio? ' — '+o.premio+' monete da riscuotere':''),
+      UI.toast(o.premio ? fraseF('Traguardo compiuto: {0} — {1} monete da riscuotere', o.nome, o.premio)
+                        : fraseF('Traguardo compiuto: {0}', o.nome),
                'gold', o.icona);
       particelleTesto(G.p.px, G.p.py-52, 'TRAGUARDO!', '#ffe270');
     }
@@ -1280,7 +1281,7 @@ function usaOggetto(){
     const C = DATA.CROPS[cropId];
     const inSerra = G.mappaId==='podere' && dentroSerra(tx,ty);
     if(!inSerra && C.stagioni.indexOf(G.stagione().id)<0){
-      UI.toast('Non è la stagione giusta per '+C.nome+'.','bad');
+      UI.toast(fraseF('Non è la stagione giusta per {0}.', C.nome),'bad');
       SND.play('errore');
       return;
     }
@@ -1695,13 +1696,13 @@ function promptContestuale(){
   for(const n of G.npcVivi()){
     if(Math.hypot(n.px-p.px, n.py-p.py) < 46){
       const N = DATA.NPCS[n.id];
-      UI.prompt('<kbd>E</kbd> parla con '+(N ? N.nome : 'qualcuno'));
+      UI.prompt(fraseF('<kbd>E</kbd> parla con {0}', N ? N.nome : frase('qualcuno')));
       return;
     }
   }
 
   if(gattoVicino()){
-    UI.prompt('<kbd>E</kbd> accarezza ' + (G.nomeGatto() || 'il gatto'));
+    UI.prompt(fraseF('<kbd>E</kbd> accarezza {0}', G.nomeGatto() || frase('il gatto')));
     return;
   }
 
@@ -1747,6 +1748,12 @@ G.promptContestuale = promptContestuale;
 function fraseF(modello, ...pezzi){
   return window.LINGUA ? LINGUA.f(modello, ...pezzi)
                        : modello.replace(/\{(\d+)\}/g, (_,i)=>pezzi[i]);
+}
+/* e il pezzo da solo, per quando è lui a finire dentro a un modello:
+   `fraseF('<kbd>E</kbd> parla con {0}', ...)` riceve o il nome di un
+   abitante — che non si traduce — oppure «qualcuno», che sì. */
+function frase(testo){
+  return window.LINGUA ? LINGUA.t(testo) : testo;
 }
 
 function idDaKind(kind){
@@ -3003,7 +3010,7 @@ function consegnaPosta(ritardo){
   G.lettere[id] = true;
   const da = DATA.LETTERE[id].da || 'Nonna Ilde';
   setTimeout(()=>{
-    UI.toast('📬 C\'è posta per te: una lettera da ' + da + '.','gold');
+    UI.toast(fraseF('📬 C\'è posta per te: una lettera da {0}.', da),'gold');
     SND.play('regalo');
     setTimeout(()=>UI.lettera(id), 900);
   }, ritardo||0);
@@ -3162,10 +3169,10 @@ function nuovoGiorno(svenuto, multa){
       aggiornaCamera(true);
 
       if(svenuto){
-        UI.toast('Ti sei svegliato dolorante. Qualcuno ti ha riportato a casa (−'+multa+' monete).','bad');
+        UI.toast(fraseF('Ti sei svegliato dolorante. Qualcuno ti ha riportato a casa (−{0} monete).', multa),'bad');
       }
       if(cambioStagione){
-        UI.toast('È arrivata la '+G.stagione().nome+'.','gold');
+        UI.toast(fraseF('È arrivata la {0}.', G.stagione().nome),'gold');
       }
       if(uova) UI.toast(uova+' uovo/a dal pollaio.','good','uovo');
 
@@ -3174,25 +3181,25 @@ function nuovoGiorno(svenuto, multa){
       // evento della notte
       if(eventoNotte) setTimeout(()=>UI.toast(eventoNotte.msg, eventoNotte.tipo||undefined, eventoNotte.icona), 1000);
       // mercato del giorno
-      if(G.mercato) setTimeout(()=>UI.toast('Mercato di oggi: '+IT.nome(G.mercato.item)+' vale ×'+G.mercato.mult+' da Bruno e alla cassa.','gold', G.mercato.item), 1400);
+      if(G.mercato) setTimeout(()=>UI.toast(fraseF('Mercato di oggi: {0} vale ×{1} da Bruno e alla cassa.', IT.nome(G.mercato.item), G.mercato.mult),'gold', G.mercato.item), 1400);
       // bacheca delle richieste
       if(richInfo && richInfo.nuove)   setTimeout(()=>UI.toast('📋 Nuove richieste degli abitanti: guarda il Diario (J).','gold'), 1800);
       if(richInfo && richInfo.scadute) setTimeout(()=>UI.toast(richInfo.scadute+(richInfo.scadute===1?' richiesta è scaduta.':' richieste sono scadute.'),'bad'), 2100);
       // sagra e mercante
-      if(nuovaSagra) setTimeout(()=>UI.toast('🎪 È tempo della '+G.sagra.nome+': consegna i prodotti di stagione dal Diario!','gold'), 2400);
+      if(nuovaSagra) setTimeout(()=>UI.toast(fraseF('🎪 È tempo della {0}: consegna i prodotti di stagione dal Diario!', G.sagra.nome),'gold'), 2400);
       if(G.mercante && G.mercante.presente) setTimeout(()=>UI.toast('🛒 Il mercante ambulante è in paese, oggi alla Locanda.','gold'), 2700);
       // la posta arriva col mattino, una lettera per volta
       consegnaPosta(3300);
       // compleanni: una casella del calendario che prima era vuota
       const festeggiato = G.festeggiatoOggi();
-      if(festeggiato) setTimeout(()=>UI.toast('🎂 Oggi è il compleanno di '+DATA.NPCS[festeggiato].nome+
-        '. Un regalo, oggi, vale il triplo.','gold'), 3000);
+      if(festeggiato) setTimeout(()=>UI.toast(fraseF('🎂 Oggi è il compleanno di {0}. Un regalo, oggi, vale il triplo.',
+        DATA.NPCS[festeggiato].nome),'gold'), 3000);
       // il giorno della festa il paese si raduna in piazza
       aggiornaOspitiSagra();
       // e la sera della veglia si raduna alla radura
       SOLSTIZIO.aggiornaOspitiVeglia();
-      if(G.eGiornoDiSagra()) setTimeout(()=>UI.toast('🎪 Oggi è il giorno della '+G.sagra.nome+
-        ': il paese è tutto in piazza a Fioralba.','gold'), 3300);
+      if(G.eGiornoDiSagra()) setTimeout(()=>UI.toast(fraseF('🎪 Oggi è il giorno della {0}: il paese è tutto in piazza a Fioralba.',
+        G.sagra.nome),'gold'), 3300);
 
       if(voci.length){
         setTimeout(()=>UI.riepilogo(G, voci, tot, dopoRisveglio), 500);
