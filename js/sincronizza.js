@@ -54,11 +54,22 @@ function butta(chiave){ try{ localStorage.removeItem(chiave); }catch(e){} }
   if(s && typeof s.codice === 'string') stato = Object.assign(stato, s);
 })();
 
-function scriviAttiva(){ scrivi(CH_ATTIVA, { codice:stato.codice, versione:stato.versione }); }
+/* `ultimo` viaggia col resto: senza, «ultimo salvataggio sul server» si
+   azzerava a ogni ricarica e diceva «mai» a chi aveva appena salvato —
+   che è il modo più sicuro di far credere rotta una cosa che funziona. */
+function scriviAttiva(){
+  scrivi(CH_ATTIVA, { codice:stato.codice, versione:stato.versione, ultimo:stato.ultimo });
+}
 
 S.stato = ()=> Object.assign({}, stato);
 S.collegato = ()=> !!stato.codice;
 S.codice = ()=> stato.codice;
+S.ultimoInvio = ()=> stato.ultimo || null;
+/* C'è qualcosa di giocato che non è ancora arrivato di là? */
+S.inSospeso = function(){
+  const c = S.cassetto();
+  return !!(c && c.codice === stato.codice);
+};
 
 /* --------------------------------------------------------------- */
 /* l'elenco dei codici visti qui                                    */
@@ -123,8 +134,12 @@ S.normalizza = function(grezzo){
    giri, e quello che non è stato scritto prima non si scrive più. */
 function metti(dati){
   scrivi(CH_CASSETTO, { codice:stato.codice, versione:stato.versione, dati, quando:Date.now() });
+  if(S.aggiornaGuardia) S.aggiornaGuardia();
 }
-function svuota(){ butta(CH_CASSETTO); }
+function svuota(){
+  butta(CH_CASSETTO);
+  if(S.aggiornaGuardia) S.aggiornaGuardia();
+}
 S.cassetto = function(){
   const c = leggi(CH_CASSETTO, null);
   return (c && typeof c.dati === 'string' && c.codice) ? c : null;
@@ -155,7 +170,13 @@ S.nuova = async function(){
   stato.esito = 'ok';
   scriviAttiva();
   S.ricorda(stato.codice, null);
-  svuota();                        // il cassetto di un'altra partita non c'entra
+  /* Il cassetto NON si butta.
+
+     C'era `svuota()` con scritto «il cassetto di un'altra partita non
+     c'entra», e non c'entra davvero — `inSospeso()` lo ignora perché
+     controlla il codice — ma buttarlo vuol dire buttare l'ultima
+     giornata di una partita che non era ancora riuscita a salire. Resta
+     lì: se si riapre quel codice, `apri()` lo ritrova e lo propone. */
   return { ok:true, codice: stato.codice };
 };
 
@@ -187,7 +208,19 @@ S.apri = async function(grezzo){
      soli: si dice che c'è e si lascia scegliere. */
   const c = S.cassetto();
   if(c && c.codice === codice){
-    if(c.versione === r.dati.versione){
+    /* PRIMA di tutto: il cassetto è uguale a quello che c'è sul server?
+
+       Capita a ogni ricarica normale. Uscendo si riempie il cassetto e
+       si manda con `keepalive`: la richiesta arriva, ma la pagina è già
+       morta e nessuno esegue lo svuotamento. Al rientro il cassetto è
+       lì, pieno, con dentro esattamente quello che il server ha già —
+       e senza questo confronto il gioco diceva «c'è del gioco non
+       ancora arrivato», accendeva la spia e faceva chiedere al browser
+       «vuoi davvero uscire?» a chi non aveva niente in sospeso.
+       Confrontare i due testi è esatto, e ce li abbiamo già in mano. */
+    if(c.dati === r.dati.dati){ svuota(); }
+    else if(c.versione === r.dati.versione){
+      /* il server è fermo dov'eravamo: quella roba non è mai partita */
       const e2 = SALVA.applicaTesto(c.dati);
       if(e2.ok) return { ok:true, codice, versione:stato.versione, dalCassetto:true };
     } else {
@@ -300,6 +333,68 @@ function primaDiAndarsene(){
 }
 window.addEventListener('pagehide', primaDiAndarsene);
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) primaDiAndarsene(); });
+
+/* --------------------------------------------------------------- */
+/* il battito dei cinque minuti                                     */
+/* --------------------------------------------------------------- */
+/* Non è una seconda copia dell'autosave: è il RITENTATIVO.
+
+   L'invio parte da `SALVA.salva`, quindi se un invio fallisce — rete
+   caduta, server che tossisce — non lo riprova nessuno finché il gioco
+   non salva di nuovo. E se in quel momento si smette di giocare (si
+   guarda il campo, si va a prendere un caffè, si resta fermi dentro a
+   una casa), non salva più niente e il cassetto resta lì pieno fino al
+   prossimo avvio.
+
+   Ogni cinque minuti quindi si guarda se c'è qualcosa di non mandato, e
+   se c'è si riprova. Quando non c'è, questo giro non fa niente e non
+   costa niente: nessuna richiesta, nessun byte. */
+const BATTITO = 5 * 60 * 1000;
+/* Una funzione con un nome, e non un corpo anonimo dentro a
+   `setInterval`: così la si può chiamare da una prova senza aspettare
+   cinque minuti veri, che è l'unico modo di sapere se fa quello che
+   dice. Torna cosa ha deciso, per la stessa ragione. */
+S.battito = function(){
+  if(!stato.codice) return 'nessuna partita aperta';
+  if(!window.G || !G.inGioco || G.p.dorme) return 'non si sta giocando';
+  if(!S.inSospeso()) return 'niente da mandare';
+  S.programmaInvio();
+  return 'riprovo';
+};
+setInterval(S.battito, BATTITO);
+S.BATTITO = BATTITO;
+
+/* --------------------------------------------------------------- */
+/* l'avviso di chi esce con qualcosa ancora in mano                 */
+/* --------------------------------------------------------------- */
+/* `beforeunload` è l'unico modo che il browser dà per fermare chi sta
+   chiudendo, ma ha un prezzo: una pagina che ce l'ha registrato non
+   entra nella cache avanti/indietro, e su telefono viene emesso in modo
+   inaffidabile. Il prezzo si paga solo quando serve — il gestore si
+   attacca quando il cassetto si riempie e si stacca appena si svuota —
+   così nel caso normale, che è «tutto arrivato», la pagina resta com'era.
+
+   Il testo non lo decidiamo noi: i browser mostrano da anni una frase
+   loro e ignorano quella dell'autore. Quello che conta è che la domanda
+   compaia. */
+let guardiaAttaccata = false;
+function guardia(e){
+  if(!S.inSospeso()) return;
+  e.preventDefault();
+  e.returnValue = '';               // i browser vecchi vogliono ancora questo
+  return '';
+}
+function aggiornaGuardia(){
+  const serve = S.inSospeso();
+  if(serve && !guardiaAttaccata){
+    window.addEventListener('beforeunload', guardia);
+    guardiaAttaccata = true;
+  } else if(!serve && guardiaAttaccata){
+    window.removeEventListener('beforeunload', guardia);
+    guardiaAttaccata = false;
+  }
+}
+S.aggiornaGuardia = aggiornaGuardia;
 
 /* --------------------------------------------------------------- */
 /* la migrazione di chi ha ancora una partita nel browser            */

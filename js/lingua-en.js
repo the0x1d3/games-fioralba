@@ -1852,3 +1852,78 @@ Object.assign(window.LINGUA_EN, {
 "Erano il modo di spostare una partita quando la partita stava nel browser. Adesso ci si sposta col codice: dodici caratteri invece di centoquaranta chilobyte, e nessun file da ritrovare nella cartella dei download. Chi aveva ancora la partita nel browser se la vede spostare di là alla prima apertura, e riceve il suo codice.":
   'They were how you moved a game when the game lived in the browser. Now you move with the code: twelve characters instead of a hundred and forty kilobytes, and no file to hunt for in your downloads folder. Anyone still holding a game in the browser will see it moved across on first opening, and be given their code.'
 });
+
+/* ===================================================================
+   LE IMPOSTAZIONI
+   La sezione che risponde alla domanda che uno si fa prima di chiudere
+   — «la mia partita è al sicuro?» — e il nome della partita, che fino a
+   ieri non si poteva scegliere. Il censimento non vede queste frasi:
+   passano da `T(...)` dentro ai textContent, non dal primo argomento di
+   UI.modal, quindi vanno tenute allineate a mano.
+   =================================================================== */
+Object.assign(window.LINGUA_EN, {
+'Impostazioni': 'Settings',
+'La partita': 'The game',
+'Il salvataggio': 'Saving',
+
+/* --- il nome --- */
+'Come ti chiami?': 'What is your name?',
+'Rinomina': 'Rename',
+'Cambiato. Lo mando al server…': 'Changed. Sending it to the server…',
+'Fatto.': 'Done.',
+'Il nome è cambiato qui, ma non è ancora arrivato al server.':
+  'The name has changed here, but has not reached the server yet.',
+'braci accese': 'embers lit',
+
+/* --- lo stato del salvataggio --- */
+'Tutto salvato sul server.': 'Everything is saved on the server.',
+'Ultimo salvataggio:': 'Last saved:',
+"C'è del gioco non ancora arrivato al server.": 'Some play has not reached the server yet.',
+'Ultimo salvataggio riuscito:': 'Last successful save:',
+'Nessun salvataggio riuscito, per ora.': 'No successful save so far.',
+'Non è ancora stato mandato niente.': 'Nothing has been sent yet.',
+'Succede al primo salvataggio.': 'That happens at the first save.',
+'Il gioco salva da solo mentre giochi, e riprova ogni cinque minuti se qualcosa non passa.':
+  'The game saves itself while you play, and tries again every five minutes if something does not get through.',
+'Prima faccio arrivare al server quello che manca.':
+  'First let me get what is missing to the server.',
+"Non riesco a salvare: se esci adesso perdi l'ultimo pezzo.":
+  'I cannot save: if you leave now you lose the last stretch.',
+
+/* --- da quanto tempo --- */
+'un minuto fa': 'a minute ago',
+"un'ora fa": 'an hour ago',
+'ieri': 'yesterday',
+'giorni fa': 'days ago',
+
+/* --- la guida, che era rimasta in italiano nel menu --- */
+'🧭 Mostra i Primi passi': '🧭 Show First steps',
+'🧭 Nascondi i Primi passi': '🧭 Hide First steps',
+'Guida di nuovo a schermo.': 'Guide back on screen.',
+'Guida nascosta.': 'Guide hidden.',
+'Musica': 'Music',
+'Effetti': 'Effects'
+});
+
+/* --- versione 2.5 (changelog.js il censimento lo salta: a mano) --- */
+Object.assign(window.LINGUA_EN, {
+'Impostazioni rifatte, e la partita ha un nome': 'Settings rebuilt, and your game has a name',
+'Dai un nome alla tua partita': 'Give your game a name',
+"Fino a ieri il contadino si chiamava «Contadino» e non c'era modo di cambiarlo — nessuno l'aveva mai chiesto. Adesso il nome si sceglie quando la partita nasce, e si cambia quando vuoi dalle Impostazioni. Serve anche a te: nel selettore di «Continua» tre partite che si chiamano tutte allo stesso modo non aiutano a capire quale riprendere.":
+  'Until yesterday the farmer was called «Farmer» and there was no way to change it — nobody had ever been asked. Now you choose the name when the game is created, and change it whenever you like in Settings. It helps you too: in the «Continue» picker, three games all called the same thing do not help you work out which to resume.',
+'Le Impostazioni dicono se la partita è al sicuro': 'Settings tell you whether your game is safe',
+"La domanda che uno si fa prima di chiudere non compariva da nessuna parte. Adesso è la prima cosa che si legge: <b>tutto salvato sul server</b> e da quanto, oppure che c'è ancora qualcosa per strada. Verde quando è arrivato, ambra mentre sta andando — perché i tre secondi dopo ogni mossa non sono un guasto.":
+  'The question you ask yourself before closing appeared nowhere at all. Now it is the first thing you read: <b>everything saved on the server</b> and how long ago, or that something is still on its way. Green when it has arrived, amber while it is going — because the three seconds after every move are not a fault.',
+'Un menu a sezioni invece di un elenco': 'A menu in sections instead of a list',
+"Era una fila piatta in cui tutto pesava uguale. Adesso è diviso: la partita, il salvataggio, l'audio, la lingua, la guida. I cursori del volume dicono anche a quanto stanno, che prima si trascinavano alla cieca.":
+  'It was a flat row in which everything weighed the same. Now it is split up: the game, saving, audio, language, guide. The volume sliders also say where they are, which before you dragged blind.',
+'Riprova da solo ogni cinque minuti': 'It tries again on its own every five minutes',
+"Se un salvataggio non riesce ad arrivare — rete caduta, server che tossisce — prima non lo riprovava nessuno finché non salvavi di nuovo. E se in quel momento smettevi di giocare, restava lì fino al riavvio. Adesso ogni cinque minuti il gioco guarda se c'è qualcosa rimasto indietro e lo rimanda. Quando non c'è niente, non fa nulla e non costa nulla.":
+  'If a save failed to get through — connection dropped, server coughing — nobody used to try again until you saved once more. And if you stopped playing at that moment, it sat there until the next start. Now every five minutes the game looks for anything left behind and sends it again. When there is nothing, it does nothing and costs nothing.',
+'Se esci con qualcosa non salvato, te lo dice': 'If you leave with something unsaved, it says so',
+'Il browser ti chiede conferma prima di chiudere, ma solo quando serve davvero: se è tutto arrivato non ti disturba, e la pagina resta veloce come prima.':
+  'The browser asks you to confirm before closing, but only when it really matters: if everything has arrived it leaves you alone, and the page stays as quick as before.',
+'Ricaricare non sembra più aver perso qualcosa': 'Reloading no longer looks like it lost something',
+"Uscendo, il gioco manda l'ultima partita mentre la pagina si chiude: arrivava, ma nessuno faceva in tempo a segnarselo. Al rientro il gioco diceva «c'è del gioco non ancora salvato» di una cosa già salvata, accendeva l'avviso e faceva chiedere conferma per uscire. Adesso confronta e si accorge da sé che era tutto a posto.":
+  'On the way out the game sends your last play as the page closes: it arrived, but nobody was around long enough to note it down. Coming back, the game said «some play has not been saved yet» about something already saved, lit the warning and made the browser ask you to confirm before leaving. Now it compares, and works out for itself that all was well.'
+});

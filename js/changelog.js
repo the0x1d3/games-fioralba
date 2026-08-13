@@ -16,6 +16,19 @@
 
 window.CHANGELOG = [
   {
+    v: '2.5',
+    data: 'agosto 2026',
+    titolo: 'Impostazioni rifatte, e la partita ha un nome',
+    voci: [
+      { tipo:'nuovo',  t:'Dai un nome alla tua partita', d:'Fino a ieri il contadino si chiamava «Contadino» e non c\'era modo di cambiarlo — nessuno l\'aveva mai chiesto. Adesso il nome si sceglie quando la partita nasce, e si cambia quando vuoi dalle Impostazioni. Serve anche a te: nel selettore di «Continua» tre partite che si chiamano tutte allo stesso modo non aiutano a capire quale riprendere.' },
+      { tipo:'nuovo',  t:'Le Impostazioni dicono se la partita è al sicuro', d:'La domanda che uno si fa prima di chiudere non compariva da nessuna parte. Adesso è la prima cosa che si legge: <b>tutto salvato sul server</b> e da quanto, oppure che c\'è ancora qualcosa per strada. Verde quando è arrivato, ambra mentre sta andando — perché i tre secondi dopo ogni mossa non sono un guasto.' },
+      { tipo:'meglio', t:'Un menu a sezioni invece di un elenco', d:'Era una fila piatta in cui tutto pesava uguale. Adesso è diviso: la partita, il salvataggio, l\'audio, la lingua, la guida. I cursori del volume dicono anche a quanto stanno, che prima si trascinavano alla cieca.' },
+      { tipo:'nuovo',  t:'Riprova da solo ogni cinque minuti', d:'Se un salvataggio non riesce ad arrivare — rete caduta, server che tossisce — prima non lo riprovava nessuno finché non salvavi di nuovo. E se in quel momento smettevi di giocare, restava lì fino al riavvio. Adesso ogni cinque minuti il gioco guarda se c\'è qualcosa rimasto indietro e lo rimanda. Quando non c\'è niente, non fa nulla e non costa nulla.' },
+      { tipo:'nuovo',  t:'Se esci con qualcosa non salvato, te lo dice', d:'Il browser ti chiede conferma prima di chiudere, ma solo quando serve davvero: se è tutto arrivato non ti disturba, e la pagina resta veloce come prima.' },
+      { tipo:'fix',    t:'Ricaricare non sembra più aver perso qualcosa', d:'Uscendo, il gioco manda l\'ultima partita mentre la pagina si chiude: arrivava, ma nessuno faceva in tempo a segnarselo. Al rientro il gioco diceva «c\'è del gioco non ancora salvato» di una cosa già salvata, accendeva l\'avviso e faceva chiedere conferma per uscire. Adesso confronta e si accorge da sé che era tutto a posto.' }
+    ]
+  },
+  {
     v: '2.4',
     data: 'agosto 2026',
     titolo: 'Le partite stanno sul server, e si aprono con un codice',

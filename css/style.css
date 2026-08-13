@@ -1897,3 +1897,59 @@ html, body{ overscroll-behavior:none; }
   .sinc-scelta{ padding:13px; }
   .sinc-scelta-nome{ font-size:16px; }
 }
+
+/* ===================================================================
+   IMPOSTAZIONI
+   Era un elenco piatto in cui la domanda che uno si fa davvero prima di
+   chiudere — «la mia partita è al sicuro?» — non compariva da nessuna
+   parte. Adesso è la prima cosa dopo il nome, e ha un colore.
+   =================================================================== */
+.imp{ display:flex; flex-direction:column; gap:2px; }
+.imp-sez{ display:flex; flex-direction:column; gap:9px; margin-bottom:4px; }
+.imp-riga{ display:flex; gap:7px; flex-wrap:wrap; align-items:center; }
+.imp-nota{ font-size:12.5px; line-height:1.5; }
+.imp-eco{ min-height:15px; font-size:12px; font-weight:800; color:var(--green-d); }
+.imp-eco.male{ color:#b3483c; }
+
+/* il nome della partita */
+.imp-nome-inp{
+  flex:1; min-width:150px; box-sizing:border-box;
+  font-family:inherit; font-weight:800; font-size:14px;
+  color:var(--ink); background:var(--paper);
+  border:2px solid var(--wood-3); border-radius:8px; padding:9px 11px;
+}
+.imp-nome-inp:focus{ outline:none; border-color:var(--gold-d); }
+
+/* La riga che risponde a «è al sicuro?». Tre stati e non due: il terzo
+   è «non ancora», che capita per tre secondi dopo ogni mossa e non deve
+   sembrare un guasto — per questo è ambra e non rossa. */
+.imp-stato{
+  border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.45;
+  border:2px solid transparent;
+}
+.imp-stato b{ font-size:13.5px; }
+.imp-stato span{ opacity:.85; }
+.imp-stato.bene  { background:rgba(127,176,105,.18); border-color:rgba(79,122,66,.5); color:#2f4a26; }
+.imp-stato.attesa{ background:rgba(242,193,78,.22); border-color:var(--gold-d); color:#5b3a24; }
+.imp-stato.mai   { background:rgba(122,79,48,.12); border-color:rgba(122,79,48,.35); color:var(--ink); }
+
+/* i cursori dell'audio, col numero: senza, si trascina alla cieca */
+.imp-cursore{ display:flex; align-items:center; gap:10px; font-size:14px; font-weight:700; }
+.imp-cursore span{ width:66px; flex:none; }
+.imp-cursore input{ flex:1; }
+.imp-cursore b{ width:42px; text-align:right; flex:none; color:var(--ink-soft); font-size:13px; }
+
+.imp-fondo{
+  display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;
+  padding-top:12px; border-top:2px solid rgba(122,79,48,.25);
+}
+.imp-fondo .btn{ flex:1; min-width:130px; }
+
+@media (max-width:560px){
+  .imp-cursore span{ width:56px; }
+  .imp-nome-inp{ font-size:16px; }   /* sotto i 16px iOS ingrandisce la pagina al focus */
+  /* misurati a 375: «Rinomina» e «Salva adesso» stavano a 39px, sotto
+     la soglia comoda per un polpastrello, e sono i due che si premono */
+  .imp .btn{ min-height:44px; }
+  .imp-cursore input{ height:32px; }   /* il cursore si prende col dito, non col puntatore */
+}

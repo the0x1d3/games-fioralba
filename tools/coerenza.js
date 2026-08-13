@@ -1197,6 +1197,35 @@ verifica('il salvataggio passa dal server, e non torna in locale', () => {
   if (corpo.indexOf('metti(dati)') < 0 || corpo.indexOf('metti(dati)') > corpo.indexOf('setTimeout'))
     problemi.push('il cassetto non si riempie più prima dell\'invio: una scheda chiusa a metà perderebbe la giornata');
 
+  /* Il ritentativo dei cinque minuti. L'invio parte da `SALVA.salva`:
+     se fallisce, non lo riprova nessuno finché il gioco non salva di
+     nuovo — e se in quel momento si smette di giocare, il cassetto
+     resta pieno fino al prossimo avvio. */
+  if (!/S\.battito\s*=/.test(sinc) || !/setInterval\(\s*S\.battito/.test(sinc))
+    problemi.push('è sparito il ritentativo periodico: un invio fallito non verrebbe più ripreso finché non si salva di nuovo');
+  if (!/5\s*\*\s*60\s*\*\s*1000/.test(sinc))
+    problemi.push('il battito non è più di cinque minuti');
+
+  /* L'avviso a chi esce con qualcosa in mano. `beforeunload` costa la
+     cache avanti/indietro, quindi il gestore si attacca solo quando il
+     cassetto è pieno e si stacca quando si svuota: se qualcuno lo
+     registrasse una volta per tutte, il prezzo si pagherebbe sempre. */
+  if (!/addEventListener\('beforeunload'/.test(sinc))
+    problemi.push('sparito l\'avviso di chi esce senza aver salvato sul server');
+  if (!/removeEventListener\('beforeunload'/.test(sinc))
+    problemi.push('il gestore beforeunload non si stacca più: la pagina perderebbe sempre la cache avanti/indietro');
+
+  /* Il confronto che evita l'allarme falso a ogni ricarica: uscendo si
+     manda con `keepalive`, la richiesta arriva ma la pagina è già morta
+     e nessuno svuota il cassetto. Senza questo confronto, al rientro il
+     gioco dice «non ancora arrivato» di una cosa arrivata. */
+  if (!/c\.dati\s*===\s*r\.dati\.dati/.test(sinc))
+    problemi.push('sparito il confronto cassetto/server in apri(): ogni ricarica sembrerebbe avere del gioco non salvato');
+
+  // il nome della partita si deve poter cambiare
+  if (!/G\.nomeGiocatore\s*=/.test(ui))
+    problemi.push('il nome della partita non è più modificabile dalle Impostazioni');
+
   return problemi;
 });
 

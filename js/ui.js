@@ -2031,11 +2031,49 @@ U.mostraCodice = function(codice, appenaNato, poi){
     body.appendChild(n);
 
     if(appenaNato){
+      /* Il nome si chiede qui e non più tardi.
+
+         Fino a ieri non si chiedeva mai: `statoIniziale()` metteva
+         'Contadino' e nessuno lo cambiava. Finché la partita era una
+         sola non importava a nessuno; adesso il nome è quello che si
+         legge nel selettore per capire quale delle tre riprendere, e
+         tre carte che dicono «Contadino» non aiutano nessuno.
+
+         Non è obbligatorio: chi salta scrive «Contadino» e lo cambia
+         dalle Impostazioni quando gli va. Un campo che blocca la
+         partita di uno che vuole solo giocare è peggio di un nome
+         generico. */
+      const et = document.createElement('div'); et.className='sectitle';
+      et.style.marginTop = '16px';
+      et.textContent = T('Come ti chiami?');
+      body.appendChild(et);
+
+      const riga = document.createElement('div'); riga.className='imp-riga';
+      const inp = document.createElement('input');
+      inp.type='text'; inp.className='imp-nome-inp';
+      inp.maxLength = 24;
+      inp.placeholder = T('Contadino');
+      /* Il gioco ascolta la tastiera su window e non guarda da dove
+         arriva il tasto: senza fermarlo qui, scrivere il proprio nome
+         farebbe camminare il giocatore. */
+      for(const ev of ['keydown','keyup','keypress']) inp.addEventListener(ev, e=>e.stopPropagation());
+      riga.appendChild(inp);
+      body.appendChild(riga);
+
       const b = document.createElement('button'); b.className='btn gold';
       b.style.cssText='width:100%;margin-top:14px';
       b.textContent = T('Ho segnato il codice, si comincia');
-      b.onclick = ()=>{ U.chiudiModal(); if(poi) poi(); };
+      b.onclick = ()=>{
+        const n = inp.value.trim().replace(/\s+/g,' ');
+        U.chiudiModal();
+        if(poi) poi();
+        /* dopo `poi()`, che è quello che crea o apre la partita:
+           prima non ci sarebbe niente su cui scrivere il nome */
+        if(n && window.G){ G.nomeGiocatore = n; G.aggiornaHUD(); G.salva(); }
+      };
+      inp.addEventListener('keydown', e=>{ if(e.key==='Enter') b.click(); });
       body.appendChild(b);
+      setTimeout(()=>{ try{ inp.focus(); }catch(e){} }, 60);
     }
   }, appenaNato ? { senzaChiusura:true } : undefined);
 };
@@ -2324,8 +2362,100 @@ U.segnalaSinc = function(errore){
   if(errore) el.title = errore;
 };
 
-/* Il pannello dentro al Menu: il codice, e come cambiare partita. */
-function pannelloSinc(G){
+
+
+/* ===================================================================
+   IL MENU
+
+   Era un elenco piatto: una riga di stato, i due cursori dell'audio, il
+   pannello della sincronia, la lingua, la guida, e in fondo quattro
+   pulsanti — fra cui «Salva partita», «Esporta» e «Importa» — tutti
+   dello stesso peso. Dentro non si trovava niente, e soprattutto non
+   c'era da nessuna parte la domanda che uno si fa davvero prima di
+   chiudere: **la mia partita è al sicuro?**
+
+   Adesso è a sezioni, e la prima è quella. Il resto scende per
+   frequenza d'uso: si cambia lingua una volta nella vita, l'audio
+   qualche volta, il salvataggio lo si guarda ogni sera.
+   =================================================================== */
+
+/* Da quanto tempo, detto come lo direbbe una persona. `quando()` qui
+   sopra fa lo stesso mestiere ma parte da una data ISO del server;
+   questo parte da un millisecondo nostro. */
+function daQuanto(ms){
+  if(!ms) return null;
+  const min = Math.floor((Date.now() - ms) / 60000);
+  if(min < 1)  return T('adesso');
+  if(min === 1) return T('un minuto fa');
+  if(min < 60) return min + ' ' + T('minuti fa');
+  const h = Math.floor(min/60);
+  if(h === 1) return T('un\'ora fa');
+  if(h < 24) return h + ' ' + T('ore fa');
+  const g = Math.floor(h/24);
+  return g === 1 ? T('ieri') : g + ' ' + T('giorni fa');
+}
+
+/* --- il nome della partita ---------------------------------------
+   Non è mai stato chiedibile: `statoIniziale()` metteva 'Contadino' e
+   nessuno lo cambiava più. Con le partite sul server il nome smette di
+   essere un dettaglio: è quello che si legge nel selettore per capire
+   quale delle tre riprendere, e «Contadino, Contadino, Contadino» non
+   aiuta nessuno. */
+function rigaNome(G){
+  const box = document.createElement('div');
+  box.className = 'imp-nome';
+
+  const inp = document.createElement('input');
+  inp.type = 'text'; inp.className = 'imp-nome-inp';
+  inp.value = G.nomeGiocatore || '';
+  inp.maxLength = 24;
+  inp.placeholder = T('Come ti chiami?');
+  /* Il gioco ascolta la tastiera su window e non guarda da dove arriva
+     il tasto: senza fermare l'evento qui, scrivere il proprio nome
+     farebbe camminare il giocatore e aprirebbe lo zaino sulla «i». */
+  for(const ev of ['keydown','keyup','keypress']) inp.addEventListener(ev, e=>e.stopPropagation());
+
+  const b = document.createElement('button');
+  b.className = 'btn'; b.textContent = T('Rinomina');
+  b.disabled = true;
+
+  const eco = document.createElement('div'); eco.className = 'imp-eco';
+
+  const pulito = ()=> inp.value.trim().replace(/\s+/g, ' ');
+  inp.addEventListener('input', ()=>{
+    b.disabled = !pulito() || pulito() === G.nomeGiocatore;
+    eco.textContent = '';
+  });
+  inp.addEventListener('keydown', e=>{ if(e.key==='Enter' && !b.disabled) b.click(); });
+
+  b.onclick = ()=>{
+    const n = pulito();
+    if(!n) return;
+    G.nomeGiocatore = n;
+    b.disabled = true;
+    eco.className = 'imp-eco';
+    eco.textContent = T('Cambiato. Lo mando al server…');
+    /* Si manda subito e non al prossimo autosave: il nome serve nel
+       selettore, e il selettore legge la scheda del server. Rinominare
+       e non vedere il nome cambiato di là è il genere di cosa che fa
+       ricliccare il pulsante tre volte. */
+    SINC.invia().then(r=>{
+      if(r.ok){ eco.textContent = T('Fatto.'); }
+      else if(r.conflitto){ eco.textContent = ''; U.conflittoSinc(G, r.locale, r.server); }
+      else { eco.className = 'imp-eco male'; eco.textContent = T('Il nome è cambiato qui, ma non è ancora arrivato al server.'); }
+      G.aggiornaHUD();
+    });
+  };
+
+  const riga = document.createElement('div'); riga.className = 'imp-riga';
+  riga.appendChild(inp); riga.appendChild(b);
+  box.appendChild(riga);
+  box.appendChild(eco);
+  return box;
+}
+
+/* --- lo stato del salvataggio ------------------------------------ */
+function pannelloSalvataggio(G){
   const box = document.createElement('div');
   const codice = SINC.codice();
 
@@ -2336,6 +2466,26 @@ function pannelloSinc(G){
     return box;
   }
 
+  /* La riga che risponde a «è al sicuro?». Tre stati e non due: sì,
+     no, e «non ancora» — che è quello che capita per tre secondi dopo
+     ogni mossa e non deve spaventare nessuno. */
+  const stato = document.createElement('div');
+  const sospeso = SINC.inSospeso();
+  const ultimo = daQuanto(SINC.ultimoInvio());
+  stato.className = 'imp-stato ' + (sospeso ? 'attesa' : (ultimo ? 'bene' : 'mai'));
+  stato.innerHTML =
+    sospeso
+      ? '<b>' + T('C\'è del gioco non ancora arrivato al server.') + '</b><br>' +
+        '<span>' + (ultimo ? T('Ultimo salvataggio riuscito:') + ' ' + ultimo : T('Nessun salvataggio riuscito, per ora.')) + '</span>'
+      : (ultimo
+        ? '<b>' + T('Tutto salvato sul server.') + '</b><br><span>' + T('Ultimo salvataggio:') + ' ' + ultimo + '</span>'
+        : '<b>' + T('Non è ancora stato mandato niente.') + '</b><br><span>' + T('Succede al primo salvataggio.') + '</span>');
+  box.appendChild(stato);
+
+  const nota = document.createElement('div'); nota.className='muted imp-nota';
+  nota.textContent = T('Il gioco salva da solo mentre giochi, e riprova ogni cinque minuti se qualcosa non passa.');
+  box.appendChild(nota);
+
   const cod = document.createElement('div'); cod.className='sinc-codice';
   cod.textContent = codice;
   cod.title = T('Clicca per copiare');
@@ -2345,66 +2495,92 @@ function pannelloSinc(G){
   };
   box.appendChild(cod);
 
-  const nota = document.createElement('div'); nota.className='muted'; nota.style.margin='6px 0 10px';
-  nota.innerHTML = T('Scrivi questo codice su un altro computer o telefono per riprendere di là esattamente da qui. ' +
-                     '<b>Chi ha il codice ha la partita</b>: non darlo in giro.');
-  box.appendChild(nota);
+  const nota2 = document.createElement('div'); nota2.className='muted imp-nota';
+  nota2.innerHTML = T('Scrivi questo codice su un altro computer o telefono per riprendere di là esattamente da qui. ' +
+                      '<b>Chi ha il codice ha la partita</b>: non darlo in giro.');
+  box.appendChild(nota2);
 
-  const az = document.createElement('div');
-  az.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
+  const az = document.createElement('div'); az.className='imp-riga';
+
+  const bSalva = document.createElement('button'); bSalva.className='btn gold';
+  bSalva.textContent = T('Salva adesso');
+  bSalva.onclick = ()=>{
+    bSalva.disabled = true; bSalva.textContent = T('Salvo…');
+    G.salva();                       // riempie il cassetto con lo stato di adesso
+    SINC.invia().then(r=>{
+      bSalva.disabled = false; bSalva.textContent = T('Salva adesso');
+      if(r.ok) U.toast(T('Partita salvata sul server.'),'good');
+      else if(r.conflitto) U.conflittoSinc(G, r.locale, r.server);
+      else U.toast(r.errore || T('Non riesco a salvare adesso: riprovo da solo.'),'bad');
+      U.aggiorna();
+    });
+  };
+  az.appendChild(bSalva);
 
   const bAltra = document.createElement('button'); bAltra.className='btn blue';
   bAltra.textContent = T('Cambia partita');
-  bAltra.onclick = ()=>{ U.chiudiModal(); U.scegliPartita(); };
+  bAltra.onclick = ()=>{
+    if(SINC.inSospeso()){
+      U.toast(T('Prima faccio arrivare al server quello che manca.'),'bad');
+      SINC.invia().then(()=>{ U.chiudiModal(); U.scegliPartita(); });
+      return;
+    }
+    U.chiudiModal(); U.scegliPartita();
+  };
   az.appendChild(bAltra);
 
   box.appendChild(az);
   return box;
 }
 
+function sezione(wrap, titolo){
+  const t = document.createElement('div'); t.className='sectitle'; t.textContent = T(titolo);
+  wrap.appendChild(t);
+  const b = document.createElement('div'); b.className='imp-sez';
+  wrap.appendChild(b);
+  return b;
+}
 
 U.menu = function(G){
-  U.modal('Menu', body=>{
-    const wrap=document.createElement('div');
-    wrap.style.cssText='display:flex;flex-direction:column;gap:10px';
+  U.modal(T('Impostazioni'), body=>{
+    const wrap=document.createElement('div'); wrap.className='imp';
 
-    const info=document.createElement('div'); info.className='muted';
-    info.innerHTML=`<b>${G.nomeGiocatore}</b> · ${G.stagione().nome} ${G.giorno}, Anno ${G.anno}<br>`+
-                   `${G.oro} monete · ${G.braci}/4 braci accese`;
-    wrap.appendChild(info);
+    /* ---- 1. LA PARTITA ---- */
+    const s1 = sezione(wrap, 'La partita');
+    s1.appendChild(rigaNome(G));
+    const info=document.createElement('div'); info.className='muted imp-nota';
+    info.innerHTML = G.stagione().nome + ' ' + G.giorno + ', ' + T('anno') + ' ' + G.anno +
+                     ' · ' + (window.LINGUA ? LINGUA.n(G.oro) : G.oro) + ' ' + T('monete') +
+                     ' · ' + G.braci + '/4 ' + T('braci accese');
+    s1.appendChild(info);
 
-    /* volumi */
-    const vol=document.createElement('div');
-    vol.innerHTML='<div class="sectitle" style="margin-top:6px">Audio</div>';
+    /* ---- 2. IL SALVATAGGIO ---- */
+    if(window.SINC){
+      const s2 = sezione(wrap, 'Il salvataggio');
+      s2.appendChild(pannelloSalvataggio(G));
+    }
+
+    /* ---- 3. AUDIO ---- */
+    const s3 = sezione(wrap, 'Audio');
     for(const [lab,key,val] of [['Musica','m',SND.volMusica],['Effetti','s',SND.volSfx]]){
-      const r=document.createElement('div');
-      r.style.cssText='display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:14px;font-weight:700';
-      const l=document.createElement('span'); l.textContent=lab; l.style.width='70px';
+      const r=document.createElement('div'); r.className='imp-cursore';
+      const l=document.createElement('span'); l.textContent=T(lab);
       const inp=document.createElement('input');
       inp.type='range'; inp.min=0; inp.max=100; inp.value=Math.round(val*100);
-      inp.style.flex='1';
+      const n=document.createElement('b'); n.textContent=Math.round(val*100)+'%';
       inp.oninput=()=>{
         const v=inp.value/100;
+        n.textContent = inp.value + '%';
         if(key==='m') SND.setVol(v, undefined); else SND.setVol(undefined, v);
       };
-      r.appendChild(l); r.appendChild(inp);
-      vol.appendChild(r);
-    }
-    wrap.appendChild(vol);
-
-    /* sincronizzazione fra dispositivi */
-    if(window.SINC){
-      const st = document.createElement('div'); st.className='sectitle'; st.textContent=T('Partita su più computer');
-      wrap.appendChild(st);
-      wrap.appendChild(pannelloSinc(G));
+      r.appendChild(l); r.appendChild(inp); r.appendChild(n);
+      s3.appendChild(r);
     }
 
-    /* lingua */
+    /* ---- 4. LINGUA ---- */
     if(window.LINGUA && LINGUA.elenco.length > 1){
-      const lt=document.createElement('div'); lt.className='sectitle'; lt.textContent=T('Lingua');
-      wrap.appendChild(lt);
-      const riga=document.createElement('div');
-      riga.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+      const s4 = sezione(wrap, 'Lingua');
+      const riga=document.createElement('div'); riga.className='imp-riga';
       for(const l of LINGUA.elenco){
         const b=document.createElement('button');
         b.className='btn' + (LINGUA.attiva===l.id ? ' gold' : ' blue');
@@ -2421,59 +2597,44 @@ U.menu = function(G){
         };
         riga.appendChild(b);
       }
-      wrap.appendChild(riga);
+      s4.appendChild(riga);
     }
 
-    /* guida "Primi passi": si può nascondere e riaccendere quando si vuole */
+    /* ---- 5. GUIDA ---- */
     if(window.GUIDA && !GUIDA.completata()){
-      const gt=document.createElement('div'); gt.className='sectitle'; gt.textContent=T('Guida');
-      wrap.appendChild(gt);
+      const s5 = sezione(wrap, 'Guida');
       const bg=document.createElement('button'); bg.className='btn blue';
-      bg.textContent = GUIDA.nascosta() ? '🧭 Mostra i Primi passi' : '🧭 Nascondi i Primi passi';
+      bg.textContent = GUIDA.nascosta() ? T('🧭 Mostra i Primi passi') : T('🧭 Nascondi i Primi passi');
       bg.onclick=()=>{
-        if(GUIDA.nascosta()){ GUIDA.mostra(); U.toast('Guida di nuovo a schermo.','good'); }
-        else { GUIDA.nascondi(); U.toast('Guida nascosta.'); }
+        if(GUIDA.nascosta()){ GUIDA.mostra(); U.toast(T('Guida di nuovo a schermo.'),'good'); }
+        else { GUIDA.nascondi(); U.toast(T('Guida nascosta.')); }
         U.aggiorna();
       };
-      wrap.appendChild(bg);
+      s5.appendChild(bg);
     }
 
-    const t=document.createElement('div'); t.className='sectitle'; t.textContent=T('Partita');
-    wrap.appendChild(t);
-
-    /* «Salva partita» adesso vuol dire «mandala adesso invece di
-       aspettare i tre secondi»: il gioco salva da solo, e questo
-       pulsante serve solo a chi vuole vedere scritto che è andata. */
-    const bs=document.createElement('button'); bs.className='btn'; bs.textContent=T('Salva adesso');
-    bs.onclick=()=>{
-      bs.disabled = true;
-      SINC.invia().then(r=>{
-        bs.disabled = false;
-        if(r.ok) U.toast(T('Partita salvata sul server.'),'good');
-        else if(r.conflitto) U.conflittoSinc(G, r.locale, r.server);
-        else U.toast(r.errore || T('Non riesco a salvare adesso: riprovo da solo.'),'bad');
-      });
-    };
-    wrap.appendChild(bs);
-
-    /* Qui c'erano «Esporta salvataggio» e «Importa salvataggio». Se ne
-       sono andati col file .json: erano il modo di spostare una partita
-       quando la partita stava nel browser, e adesso sta sul server. Ci
-       si sposta col codice, che è qui sopra e sono dodici caratteri. */
-
+    /* ---- 6. in fondo ---- */
+    const fondo = document.createElement('div'); fondo.className='imp-fondo';
     const bh=document.createElement('button'); bh.className='btn blue'; bh.textContent=T('Come si gioca');
     bh.onclick=()=>{ U.chiudiModal(); U.comeSiGioca(); };
-    wrap.appendChild(bh);
+    fondo.appendChild(bh);
 
-    /* Uscire manda quello che c'è, e non «salva» in locale: la partita
-       che conta è di là, e uscire senza aspettare la conferma era il
-       modo più facile di perdere l'ultimo minuto. */
+    /* Uscire manda quello che c'è e ASPETTA: la partita che conta è di
+       là, e ricaricare senza attendere la conferma era il modo più
+       facile di perdere l'ultimo minuto giocato. */
     const bq=document.createElement('button'); bq.className='btn red'; bq.textContent=T('Esci al titolo');
     bq.onclick=()=>{
       bq.disabled = true; bq.textContent = T('Salvo…');
-      SINC.invia().then(()=>location.reload()).catch(()=>location.reload());
+      G.salva();
+      SINC.invia().then(r=>{
+        if(r.ok || !SINC.inSospeso()){ location.reload(); return; }
+        bq.disabled = false; bq.textContent = T('Esci al titolo');
+        U.toast(T('Non riesco a salvare: se esci adesso perdi l\'ultimo pezzo.'),'bad');
+        U.aggiorna();
+      }).catch(()=>location.reload());
     };
-    wrap.appendChild(bq);
+    fondo.appendChild(bq);
+    wrap.appendChild(fondo);
 
     body.appendChild(wrap);
   });
