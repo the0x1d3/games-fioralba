@@ -16,6 +16,15 @@
 
 window.CHANGELOG = [
   {
+    v: '3.1',
+    data: 'agosto 2026',
+    titolo: 'Il pollaio non ti mangia più il campo',
+    voci: [
+      { tipo:'fix',    t:'Le costruzioni sorgevano sopra al raccolto', d:'Segnalato da chi ci giocava: costruisci il pollaio, torni a casa per metterci dentro una gallina, e il pollaio è nato sopra al campo che avevi seminato. Il raccolto restava lì sotto — scritto nel salvataggio, invisibile, non raccoglibile — e non c\'era modo di spostare l\'edificio. Erano 20 caselle su 20 sotto il pollaio e 30 su 30 sotto la serra. Adesso la zappa non lavora il prato riservato a una costruzione, e ti dice quale ci andrà; chi ha già del raccolto sepolto se lo ritrova nello zaino alla prossima apertura.' },
+      { tipo:'fix',    t:'Il ponte non si può più tappare', d:'Una cassa o un macchinario finiti nel corridoio del ponte lo trasformavano in un vicolo cieco, e non c\'era modo di capire perché: sembrava roba messa lì apposta. Poteva succedere da solo, perché il gioco sposta lì quello che trova nel burrone quando ricontrolla il terreno. Adesso quel corridoio si tiene sgombro, e una partita rimasta bloccata di qua dal burrone si sblocca da sé alla prossima apertura.' }
+    ]
+  },
+  {
     v: '3.0',
     data: 'agosto 2026',
     titolo: 'Il Diario dice cosa serve, e le collezioni pagano',

@@ -719,6 +719,74 @@ function normalizzaStato(){
     const tx=(p.px/T)|0, ty=(p.py/T)|0;
     if(WORLD.solido(m,tx,ty)){ const s=WORLD.vicinoLibero(m,tx,ty); p.px=s.x*T+16; p.py=s.y*T+20; }
   }
+  dissotterraIlRaccolto();
+}
+
+/* --- il raccolto rimasto sotto a un edificio ---
+
+   Segnalato da chi ci giocava: «costruisco il pollaio… torno a casa
+   così ci metto dentro una gallina» e il pollaio è nato sopra al campo.
+   «Non posso neanche raccogliere il raccolto.»
+
+   Le colture restano scritte in `m.suolo` ma la casella è diventata
+   muro: invisibili, non raccoglibili, e senza modo di spostare
+   l'edificio. Adesso la zappa non lascia più seminare lì (vedi
+   `WORLD.riservata`), ma chi ce l'ha già sotto va tirato fuori — e non
+   basta cancellare il terreno: quella roba è stata seminata, annaffiata
+   e aspettata, e va restituita.
+
+   Gira a ogni caricamento perché è lì che si scopre il danno, e non fa
+   niente quando non c'è niente da fare: nessun messaggio, nessun costo. */
+function dissotterraIlRaccolto(){
+  const m = G.maps && G.maps.podere;
+  if(!m || !m.suolo) return;
+  const resi = {};
+  let quante = 0;
+  for(let i=0;i<m.suolo.length;i++){
+    const s = m.suolo[i];
+    if(!s) continue;
+    const x = i % m.w, y = (i / m.w) | 0;
+    if(!WORLD.solido(m, x, y)) continue;          // si raggiunge: non c'è niente da salvare
+    /* matura o no, il seme torna indietro: se era a metà crescita
+       restituire il raccolto sarebbe un regalo, e restituire niente un
+       furto. Il seme è quello che il giocatore aveva comprato. */
+    if(s.crop){
+      const maturo = DATA.CROPS[s.crop] && s.stage >= DATA.CROPS[s.crop].fasi.length;
+      const cosa = maturo ? s.crop : ('seme_' + s.crop);
+      if(DATA.ITEMS[cosa]){ resi[cosa] = (resi[cosa]||0) + 1; quante++; }
+    }
+    m.suolo[i] = null;
+  }
+  if(!quante) return;
+
+  const pezzi = [];
+  for(const id in resi){
+    if(G.puoiAggiungere(id, resi[id])) G.aggiungi(id, resi[id]);
+    else G.premiSospesi.push({ item:id, n:resi[id], da:'campo', liv:0 });
+    pezzi.push(resi[id] + '× ' + IT.nome(id));
+  }
+  /* Si dice, e si dice perché: trovarsi otto rape nello zaino senza
+     spiegazione è più inquietante che non trovarle. */
+  setTimeout(()=>{
+    if(!window.UI) return;
+    UI.modal('Il campo sotto la costruzione', body=>{
+      const p1=document.createElement('div'); p1.style.marginBottom='10px';
+      p1.innerHTML = 'Una costruzione era stata tirata su sopra a un pezzo di campo seminato, e '+
+                     'quel raccolto era rimasto lì sotto: non si vedeva e non si poteva raccogliere.';
+      body.appendChild(p1);
+      /* Modello e non concatenazione: `'…<b>' + roba + '</b>.'` spezza il
+         tag fra due stringhe — il controllo dei tag lo boccia, e in
+         inglese uscirebbe metà frase con la grammatica italiana. */
+      const p2=document.createElement('div'); p2.style.marginBottom='10px';
+      const modello = 'Te l\'ho tirato fuori: <b>{0}</b>. Se lo zaino era pieno ti aspetta nella scheda delle abilità.';
+      p2.innerHTML = window.LINGUA ? LINGUA.f(modello, pezzi.join(', '))
+                                   : modello.replace('{0}', pezzi.join(', '));
+      body.appendChild(p2);
+      const p3=document.createElement('div'); p3.className='muted';
+      p3.textContent = 'Da adesso la zappa non lavora più il prato riservato alle costruzioni, così non ricapita.';
+      body.appendChild(p3);
+    });
+  }, 900);
 }
 G.normalizzaStato = normalizzaStato;   // la chiama salvataggio.js, in coda al ripristino
 
@@ -903,7 +971,8 @@ function azionePossibile(id, tx, ty){
   const terr=WORLD.terreno(m,tx,ty);
   const cat=IT.cat(id);
 
-  if(id==='zappa') return m.coltivabile && !o && !suolo && (terr==='erba'||terr==='terra');
+  if(id==='zappa') return m.coltivabile && !o && !suolo && (terr==='erba'||terr==='terra')
+                        && !WORLD.riservata(m, tx, ty, G.costruzioni);
   if(id==='annaffiatoio') return (suolo && !suolo.bagnato) || terr==='acqua';
   if(id==='ascia') return !!(o && (o.t==='albero'||o.t==='ceppo'||o.t==='ramo'));
   if(id==='piccone') return !!(o && (o.t==='sasso'||o.t==='stalagmite'||o.t==='mobile')) || !!(suolo && !suolo.crop);
@@ -934,6 +1003,14 @@ function nonSiPuo(msg){
   UI.toast(msg, 'hint');
 }
 
+/* Il perché, detto con la cosa che ci andrà: «qui ci va una
+   costruzione» è un divieto, «qui ci va il pollaio» è un'informazione. */
+const NOMI_SPAZIO = {
+  pollaio: 'Questo pezzo di prato è dove sorgerà il <b>pollaio</b>: meglio non seminarci.',
+  serra:   'Questo pezzo di prato è dove sorgerà la <b>serra</b>: meglio non seminarci.',
+  silo:    'Questo pezzo di prato è dove sorgerà il <b>silo</b>: meglio non seminarci.'
+};
+
 /* perché la zappa non morde questa casella? */
 function perchePuoiZappare(m, tx, ty){
   if(!m.coltivabile) return 'Qui non si coltiva: la terra buona è al podere.';
@@ -942,6 +1019,12 @@ function perchePuoiZappare(m, tx, ty){
   if(m.obj[i])   return 'C\'è qualcosa sopra: prima libera la casella.';
   const t = WORLD.terreno(m,tx,ty);
   if(t!=='erba' && t!=='terra') return 'La zappa lavora l\'erba e la terra, non questo.';
+  /* Il terreno promesso a una costruzione: dirlo PRIMA vale molto più
+     che scusarsi dopo. Chi seminava qui, il giorno che comprava il
+     pollaio se lo vedeva costruire sopra al campo, e il raccolto
+     restava sotto al muro — scritto nel salvataggio e irraggiungibile. */
+  const ris = WORLD.riservata(m, tx, ty, G.costruzioni);
+  if(ris) return NOMI_SPAZIO[ris] || 'Qui ci andrà una costruzione: tieni la casella libera.';
   return null;
 }
 

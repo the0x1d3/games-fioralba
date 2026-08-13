@@ -212,6 +212,33 @@ function edificio(m, kind, x, y, tw, th, opt){
 }
 W.edificio = edificio;
 
+/* ------------------------------------------------------------------
+   IL TERRENO CHE UN EDIFICIO SI PRENDERÀ
+
+   Gli spazi delle costruzioni (`m.spazi`) si sgombrano una volta sola,
+   quando la mappa nasce. Ma il podere è coltivabile e niente impediva
+   di zappare lì dentro: chi seminava nel prato davanti a dove sarebbe
+   andato il pollaio, il giorno che comprava il pollaio se lo vedeva
+   costruire sopra al campo. Misurato: 20 caselle su 20 sepolte sotto il
+   pollaio, 30 su 30 sotto la serra — con le colture ancora scritte in
+   `m.suolo` ma la casella diventata muro, quindi invisibili e
+   irraggiungibili per sempre.
+
+   `W.riservata` dice se una casella è promessa a una costruzione non
+   ancora fatta. Il margine di una casella c'è perché anche lì la mappa
+   sgombra alla nascita, e perché un edificio ha bisogno di un passo
+   davanti alla porta.
+   ------------------------------------------------------------------ */
+W.riservata = function(m, x, y, costruzioni){
+  if(!m || !m.spazi) return null;
+  for(const k in m.spazi){
+    if(costruzioni && costruzioni[k]) continue;      // già costruito: il terreno è suo
+    const s = m.spazi[k];
+    if(x >= s.x-1 && x < s.x+s.w+1 && y >= s.y-1 && y < s.y+s.h+1) return k;
+  }
+  return null;
+};
+
 function warp(m, x,y,w,h, to, tx,ty, etichetta){
   m.warps.push({x,y,w,h,to,tx,ty,etichetta});
 }
@@ -1345,10 +1372,42 @@ W.ristampaBurrone = function(m){
   for(const o of sfrattati){
     const q = W.vicinoLibero(m, ax, ay);
     if(!q || m.obj[W.idx(m,q.x,q.y)]) continue;
+    /* MAI dentro al corridoio del ponte.
+
+       Si trasloca a due caselle a nord del ponte, che è la riva giusta —
+       ma `vicinoLibero` cerca la casella libera più vicina e non sa che
+       quelle sono le uniche per cui si passa. Una cassa o un macchinario
+       sono solidi: piazzato lì, il ponte diventa un vicolo cieco e non
+       c'è modo di capire perché, perché la cassa sembra roba tua messa
+       lì apposta. Il corridoio è largo tre caselle e lungo quanto il
+       ponte più due rive: si tiene sgombro tutto. */
+    if(nelCorridoio(p, q.x, q.y)) continue;
     m.obj[W.idx(m,q.x,q.y)] = o;
     ax = q.x; ay = q.y - 1;      // il prossimo cerca da un'altra parte
   }
+
+  /* E si sgombra comunque quello che ci fosse già finito: chi ha una
+     partita bloccata non deve aspettare di ricostruire il ponte. Gli
+     oggetti che si tolgono di mezzo sono solo i solidi — foraggio ed
+     erbacce non hanno mai fermato nessuno. */
+  if(p){
+    for(let y=p.y-2; y<p.y+p.h+2; y++) for(let x=p.x; x<p.x+p.w; x++){
+      if(!W.dentro(m,x,y)) continue;
+      const i = W.idx(m,x,y), o = m.obj[i];
+      if(!o || !o.solido || o.t==='muro' || o.t==='porta') continue;
+      m.obj[i] = null;
+      const q = W.vicinoLibero(m, p.x - 3, p.y - 3);
+      if(q && !m.obj[W.idx(m,q.x,q.y)] && !nelCorridoio(p, q.x, q.y))
+        m.obj[W.idx(m,q.x,q.y)] = o;      // spostato di lato, non buttato
+    }
+  }
 };
+
+/* il corridoio del ponte: le sue caselle più una riva per parte */
+function nelCorridoio(p, x, y){
+  if(!p) return false;
+  return x >= p.x && x < p.x + p.w && y >= p.y - 2 && y < p.y + p.h + 2;
+}
 
 W.costruisci = function(maps, id){
   const m = maps.podere;

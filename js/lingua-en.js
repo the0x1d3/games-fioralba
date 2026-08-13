@@ -2130,3 +2130,34 @@ Object.assign(window.LINGUA_EN, {
 
 /* la congiunzione degli elenchi: «primavera, autunno e inverno» */
 Object.assign(window.LINGUA_EN, { '{0} e {1}': '{0} and {1}' });
+
+/* --- il prato riservato alle costruzioni, e il campo che ci era finito sotto --- */
+Object.assign(window.LINGUA_EN, {
+'Questo pezzo di prato è dove sorgerà il <b>pollaio</b>: meglio non seminarci.':
+  'This patch of grass is where the <b>coop</b> will go: better not to sow here.',
+'Questo pezzo di prato è dove sorgerà la <b>serra</b>: meglio non seminarci.':
+  'This patch of grass is where the <b>greenhouse</b> will go: better not to sow here.',
+'Questo pezzo di prato è dove sorgerà il <b>silo</b>: meglio non seminarci.':
+  'This patch of grass is where the <b>silo</b> will go: better not to sow here.',
+'Qui ci andrà una costruzione: tieni la casella libera.':
+  'A building is going here: keep the tile clear.',
+
+'Il campo sotto la costruzione': 'The field under the building',
+'Una costruzione era stata tirata su sopra a un pezzo di campo seminato, e quel raccolto era rimasto lì sotto: non si vedeva e non si poteva raccogliere.':
+  'A building had been put up over a sown patch of field, and that crop was left underneath it: you could not see it and you could not harvest it.',
+"Te l'ho tirato fuori: <b>{0}</b>. Se lo zaino era pieno ti aspetta nella scheda delle abilità.":
+  'I have dug it out for you: <b>{0}</b>. If your backpack was full it is waiting in the skills page.',
+'Da adesso la zappa non lavora più il prato riservato alle costruzioni, così non ricapita.':
+  'From now on the hoe will not work the grass reserved for buildings, so it cannot happen again.'
+});
+
+/* --- versione 3.1 (changelog.js il censimento lo salta: a mano) --- */
+Object.assign(window.LINGUA_EN, {
+'Il pollaio non ti mangia più il campo': 'The coop no longer eats your field',
+'Le costruzioni sorgevano sopra al raccolto': 'Buildings went up on top of your crop',
+"Segnalato da chi ci giocava: costruisci il pollaio, torni a casa per metterci dentro una gallina, e il pollaio è nato sopra al campo che avevi seminato. Il raccolto restava lì sotto — scritto nel salvataggio, invisibile, non raccoglibile — e non c'era modo di spostare l'edificio. Erano 20 caselle su 20 sotto il pollaio e 30 su 30 sotto la serra. Adesso la zappa non lavora il prato riservato a una costruzione, e ti dice quale ci andrà; chi ha già del raccolto sepolto se lo ritrova nello zaino alla prossima apertura.":
+  'Reported by somebody playing: you build the coop, you head home to put a hen in it, and the coop has gone up on top of the field you had sown. The crop stayed under it — written in the save, invisible, unharvestable — and there was no way to move the building. That was 20 tiles out of 20 under the coop and 30 out of 30 under the greenhouse. Now the hoe will not work grass reserved for a building, and it tells you which one is coming; anyone with a crop already buried will find it in their backpack next time they open the game.',
+'Il ponte non si può più tappare': 'The bridge can no longer be blocked',
+"Una cassa o un macchinario finiti nel corridoio del ponte lo trasformavano in un vicolo cieco, e non c'era modo di capire perché: sembrava roba messa lì apposta. Poteva succedere da solo, perché il gioco sposta lì quello che trova nel burrone quando ricontrolla il terreno. Adesso quel corridoio si tiene sgombro, e una partita rimasta bloccata di qua dal burrone si sblocca da sé alla prossima apertura.":
+  'A chest or a machine that ended up in the bridge corridor turned it into a dead end, and there was no way to work out why: it looked like something you had put there yourself. It could happen on its own, because the game moves whatever it finds in the ravine to that spot when it rechecks the ground. Now that corridor is kept clear, and a game left stuck on this side of the ravine unsticks itself next time you open it.'
+});

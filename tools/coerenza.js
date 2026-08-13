@@ -1523,6 +1523,100 @@ verifica('«dove si trova» è tradotto per intero', () => {
   return problemi;
 });
 
+/* Due passaggi che, tappandosi, non fanno rumore.
+
+   Il primo è il corridoio del ponte: `ristampaBurrone` sfratta casse e
+   macchinari dal burrone e li posa a due caselle a nord del ponte, cioè
+   dentro l'unico passaggio del gioco. `vicinoLibero` cerca la casella
+   libera più vicina e non sa che quelle sono le uniche per cui si
+   passa: una cassa lì e la radura torna irraggiungibile, con l'aria di
+   essere roba messa lì apposta dal giocatore.
+
+   Il secondo è il campo sotto una costruzione: il podere è coltivabile
+   dappertutto e niente impediva di seminare dove sarebbe sorto il
+   pollaio. Misurato: 20 caselle su 20 sepolte sotto il pollaio, 30 su
+   30 sotto la serra, con le colture ancora scritte nel salvataggio ma
+   la casella diventata muro. Segnalato da chi ci giocava: «non posso
+   neanche raccogliere il raccolto». */
+verifica('il ponte non si tappa, e le costruzioni non seppelliscono il campo', () => {
+  const problemi = [];
+  const maps = WORLD.crea();
+  WORLD.costruisci(maps, 'ponte');
+  const b = maps.bosco, p = b.pontePos;
+
+  const passa = (m) => {
+    const q = m.pontePos;
+    let s = null;
+    for (let y = 2; y < q.y-1 && !s; y++)
+      for (let x = 2; x < m.w-2; x++) if (!WORLD.solido(m,x,y)) { s = [x,y]; break; }
+    const visti = new Set([s.join(',')]), coda = [s];
+    while (coda.length) {
+      const [x,y] = coda.shift();
+      for (const [dx,dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+        const nx=x+dx, ny=y+dy, k=nx+','+ny;
+        if (visti.has(k) || !WORLD.dentro(m,nx,ny) || WORLD.solido(m,nx,ny)) continue;
+        visti.add(k); coda.push([nx,ny]);
+      }
+    }
+    let sud=0, presi=0;
+    for (let y=q.y+q.h; y<m.h; y++) for (let x=0; x<m.w; x++)
+      if (!WORLD.solido(m,x,y)) { sud++; if (visti.has(x+','+y)) presi++; }
+    return { sud, presi };
+  };
+
+  /* A 4 VICINI, non a 8: la BFS a otto passa in diagonale fra due
+     angoli, quindi direbbe «si passa» anche di un varco che il
+     giocatore non attraversa. */
+  const prima = passa(b);
+  if (prima.presi < prima.sud)
+    problemi.push(`col ponte costruito si raggiunge solo ${prima.presi} delle ${prima.sud} caselle oltre il burrone`);
+
+  /* e se qualcosa ci finisce sopra, la ristampa deve sgombrarlo */
+  for (let x = p.x; x < p.x+p.w; x++)
+    b.obj[WORLD.idx(b, x, p.y+1)] = { t:'macchina', kind:'cassa', solido:true };
+  const tappato = passa(b);
+  if (tappato.presi >= tappato.sud)
+    problemi.push('tre casse in mezzo al ponte non lo tappano: questa prova non sa più distinguere');
+  WORLD.ristampaBurrone(b);
+  const dopo = passa(b);
+  if (dopo.presi < dopo.sud)
+    problemi.push('ristampaBurrone non sgombra più il corridoio del ponte: una partita può restare bloccata di là dal burrone');
+
+  /* --- il campo sotto le costruzioni --- */
+  const m = WORLD.crea().podere;
+  for (const k in m.spazi) {
+    const sp = m.spazi[k];
+    let zappabili = 0;
+    for (let y = sp.y; y < sp.y+sp.h; y++) for (let x = sp.x; x < sp.x+sp.w; x++) {
+      const i = WORLD.idx(m,x,y), t = WORLD.terreno(m,x,y);
+      if (m.coltivabile && !m.obj[i] && !m.suolo[i] && (t==='erba'||t==='terra')
+          && !WORLD.riservata(m, x, y, {})) zappabili++;
+    }
+    if (zappabili)
+      problemi.push(`si possono ancora zappare ${zappabili} caselle dentro allo spazio di «${k}»: ` +
+                    'il raccolto finirebbe sotto all\'edificio');
+  }
+  /* e il terreno torna del giocatore quando la costruzione c'è già */
+  const sp = m.spazi.pollaio;
+  if (WORLD.riservata(m, sp.x, sp.y, { pollaio:true }) === 'pollaio')
+    problemi.push('lo spazio del pollaio resta riservato anche dopo averlo costruito');
+
+  /* Fin qui si è provata la PRIMITIVA. Ma il difetto vero torna
+     togliendo la chiamata in `azionePossibile`, e quello non si vede da
+     `WORLD.riservata`: la prova resterebbe verde con la zappa che
+     ricomincia a lavorare il prato del pollaio. Tarato apposta: senza
+     queste due righe, rimettere il difetto non accendeva niente. */
+  const game = fs.readFileSync(path.join(RADICE, 'js', 'game.js'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  const zappa = game.slice(game.indexOf("if(id==='zappa') return"), game.indexOf("if(id==='zappa') return") + 260);
+  if (!/WORLD\.riservata\(/.test(zappa))
+    problemi.push('la zappa non guarda più gli spazi riservati: il raccolto tornerebbe a finire sotto agli edifici');
+  if (!/WORLD\.riservata\(/.test(game.slice(game.indexOf('function perchePuoiZappare'), game.indexOf('function usaOggetto'))))
+    problemi.push('la zappa rifiuta la casella senza dire che ci andrà una costruzione');
+
+  return problemi;
+});
+
 /* =================================================================== */
 
 const larghezza = 62;
