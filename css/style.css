@@ -758,47 +758,6 @@ kbd{
   border:2px solid rgba(242,193,78,.4);
 }
 
-/* =================== AVVISO MOBILE =================== */
-#mobile-warn{
-  display:none;              /* nascosto su desktop */
-  position:fixed; inset:0; z-index:99999;
-  align-items:center; justify-content:center; padding:26px;
-  background:
-    radial-gradient(120% 120% at 50% 0%, rgba(90,58,36,.55), rgba(8,6,4,.92)),
-    #0d0b09;
-  text-align:center;
-}
-#mobile-warn .mw-inner{
-  max-width:440px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,.10)),
-    var(--wood-2);
-  border:3px solid var(--wood-edge); border-radius:16px;
-  box-shadow: inset 0 2px 0 rgba(255,255,255,.18), inset 0 -3px 0 rgba(0,0,0,.25), var(--shadow);
-  color:var(--paper);
-  padding:32px 26px 34px;
-}
-#mobile-warn .mw-icon{
-  font-size:58px; line-height:1;
-  filter:drop-shadow(0 4px 6px rgba(0,0,0,.5));
-  margin-bottom:12px;
-}
-#mobile-warn .mw-title{
-  font-size:26px; font-weight:800; letter-spacing:.4px;
-  color:var(--gold); text-shadow:0 2px 0 rgba(0,0,0,.45);
-  margin-bottom:14px;
-}
-#mobile-warn .mw-text{
-  font-size:16px; line-height:1.5; font-weight:600;
-  color:var(--paper); margin-bottom:12px;
-}
-#mobile-warn .mw-text strong{ color:var(--gold); }
-#mobile-warn .mw-text-soft{
-  font-size:14px; opacity:.85; font-weight:600; margin-bottom:0;
-}
-/* l'avviso compare solo quando si prova a giocare da mobile (via JS) */
-#mobile-warn.show{ display:flex; }
-#mw-back{ margin-top:24px; }
 
 /* =================== LANDING PAGE ===================
    La pagina di presentazione sta sopra all'animazione del titolo, che
@@ -1039,25 +998,6 @@ kbd{
 .lp-bar-btns{ display:flex; gap:10px; }
 .lp-continue:disabled{ opacity:.45; cursor:not-allowed; filter:grayscale(.6); }
 
-/* ---------- avviso "solo da computer" ----------
-   Nascosto di default. La classe .solo-desktop la mette il JS quando
-   riconosce un telefono: così l'avviso si vede PRIMA di leggere tutta la
-   presentazione, invece di arrivare come una porta in faccia al clic. */
-.lp-mobile{ display:none; }
-#landing.solo-desktop .lp-mobile{
-  display:block;
-  max-width:760px; margin:14px auto 0;
-  background:linear-gradient(180deg, rgba(90,58,36,.96), rgba(58,36,22,.96));
-  border:2px solid var(--wood-edge); border-radius:14px;
-  box-shadow:inset 0 2px 0 rgba(255,255,255,.14), 0 5px 0 rgba(0,0,0,.25);
-  padding:14px 16px; text-align:center;
-  font-size:14px; font-weight:600; line-height:1.5; color:var(--paper);
-}
-#landing.solo-desktop .lp-mobile strong{ display:block; color:var(--gold); font-size:16px; margin-bottom:4px; }
-#landing.solo-desktop .lp-hero{ min-height:0; padding-top:26px; }
-/* i pulsanti restano visibili ma dichiarano che non porteranno da nessuna parte */
-#landing.solo-desktop .lp-new,
-#landing.solo-desktop .lp-continue{ opacity:.5; filter:grayscale(.55); }
 
 @media (max-width:520px){
   .lp-bar-title{ display:none; }
@@ -1830,3 +1770,147 @@ kbd{
   font-size:12.5px; padding:2px 0;
 }
 .sinc-riga span{ color:var(--ink-soft); }
+
+/* ===================================================================
+   SI GIOCA COL POLLICE
+
+   Misurato su 375×812 prima di scrivere una riga: la barra degli
+   attrezzi era larga 466px dentro 375 e partiva da x=−45, cioè il primo
+   e l'ultimo slot stavano fuori dallo schermo; le celle dello zaino
+   erano 21×21px (per un dito la soglia comoda è 44); il pulsante di
+   chiusura delle finestre 29×29; i tasti dell'HUD 40×40.
+
+   Due regole tenute dappertutto qui sotto: **niente :hover** come unico
+   modo di scoprire una cosa (col dito non esiste), e ogni bersaglio che
+   si tocca almeno 44px per lato — tranne gli slot della barra, che sono
+   nove in fila e in 375px non ci starebbero mai: lì si scende a 36, che
+   è il compromesso onesto, e stanno sul bordo basso dove il pollice ci
+   arriva comunque.
+   =================================================================== */
+
+/* ---------- il pad che nasce sotto il pollice ---------- */
+#tocco{ position:absolute; inset:0; pointer-events:none; z-index:40; }
+#tocco.hidden{ display:none; }
+
+/* Parte senza posizione: gliela dà il JS dove appoggi il dito. Fisso in
+   un angolo costringerebbe a guardare la levetta invece del gioco, e su
+   uno schermo alto il pollice non torna due volte nello stesso punto. */
+#tocco-pad{
+  position:absolute; width:104px; height:104px; margin:-52px 0 0 -52px;
+  border-radius:50%; pointer-events:none;
+  background:radial-gradient(circle, rgba(242,193,78,.10), rgba(242,193,78,.03) 70%, transparent 72%);
+  border:2px solid rgba(242,193,78,.28);
+  opacity:0; transition:opacity .12s;
+}
+#tocco-pad.vivo{ opacity:1; }
+.tp-perno{
+  position:absolute; left:50%; top:50%; width:44px; height:44px;
+  margin:0; border-radius:50%;
+  background:radial-gradient(circle at 38% 32%, rgba(255,240,192,.85), rgba(242,193,78,.55));
+  border:2px solid rgba(58,36,22,.55);
+  box-shadow:0 3px 10px rgba(0,0,0,.45);
+  transform:translate(-50%,-50%);
+}
+
+/* ---------- i due verbi ---------- */
+/* «Usa» è Spazio e «Parla» è E: sono esattamente i due verbi che il
+   gioco ha, e non è una semplificazione — sono i due che c'erano già
+   sulla tastiera. Stanno sopra la barra degli attrezzi, a destra, dove
+   arriva il pollice senza coprire il personaggio (che è al centro). */
+#tocco-tasti{
+  position:absolute; right:14px; bottom:112px;
+  display:flex; flex-direction:column; align-items:flex-end; gap:10px;
+  pointer-events:none;
+}
+.tocco-btn{
+  pointer-events:auto;
+  width:64px; height:64px; border-radius:50%;
+  font-family:inherit; font-weight:800; font-size:13px; letter-spacing:.2px;
+  color:var(--paper); text-shadow:0 1px 0 rgba(0,0,0,.5);
+  background:linear-gradient(180deg, var(--wood-3), var(--wood-2));
+  border:3px solid var(--wood-edge);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.22), 0 4px 0 rgba(0,0,0,.35);
+  -webkit-tap-highlight-color:transparent;
+  touch-action:none; user-select:none;
+}
+.tocco-btn.grosso{
+  width:82px; height:82px; font-size:15px;
+  background:linear-gradient(180deg, #f2c14e, var(--gold-d));
+  color:#3a2416; text-shadow:0 1px 0 rgba(255,255,255,.35);
+}
+/* `.giu` e non `:active`: il tasto si preme al touchstart e si molla al
+   touchend — la pesca vuole il tenere premuto, e :active su iOS si
+   comporta in modo suo appena il dito si sposta di due pixel */
+.tocco-btn.giu{
+  transform:translateY(3px);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.15), 0 1px 0 rgba(0,0,0,.35);
+  filter:brightness(1.12);
+}
+
+/* ------------------------------------------------------------------
+   QUANDO C'È IL DITO
+   `col-dito` la mette tocco.js sull'elemento radice. Si aggancia a
+   quella e non a una larghezza: una finestra stretta su un computer ha
+   ancora il mouse, e non deve perdere i suoi bersagli piccoli e densi.
+   ------------------------------------------------------------------ */
+html.col-dito #hotbar{ gap:3px; padding:5px; border-width:2px; border-radius:11px; }
+html.col-dito .slot{ width:36px; height:36px; border-radius:7px; }
+html.col-dito .slot canvas{ width:28px; height:28px; }
+html.col-dito .slot .key{ display:none; }        /* i numeri non li preme nessuno */
+html.col-dito .slot .qty{ font-size:10px; right:2px; }
+html.col-dito .slot:hover{ transform:none; }     /* :hover col dito resta incollato */
+html.col-dito .slot.sel{ transform:translateY(-4px); }
+
+/* i cinque tasti dell'HUD: da 46 a 52, e in colonna sopra i due verbi */
+html.col-dito #quickbtns{ right:10px; gap:9px; }
+html.col-dito #quickbtns button{ width:52px; height:52px; font-size:23px; }
+
+/* La guida «Primi passi» occupava 236×258 dentro 375: un terzo dello
+   schermo, sopra il gioco. Col dito parte ripiegata — il titolo con la
+   barretta resta, il corpo si apre toccandolo. */
+html.col-dito #guida{ width:min(214px, 58vw); top:200px; }
+html.col-dito #guida .gu-corpo{ max-height:112px; overflow-y:auto; }
+
+/* niente etichette che scorrono al passaggio del mouse: non passa nessuno */
+html.col-dito #quickbtns button::after,
+html.col-dito #quickbtns button::before{ display:none !important; }
+
+/* Le zone morte dell'iPhone: la tacca in alto e la barra di casa in
+   basso. Senza, l'orologio finisce sotto la tacca e la barra degli
+   attrezzi sotto la riga di casa — dove il tocco lo prende il sistema,
+   non il gioco. */
+html.col-dito #topbar{ top:calc(12px + env(safe-area-inset-top)); }
+html.col-dito #sidebar{ top:calc(12px + env(safe-area-inset-top)); }
+html.col-dito #hotbar-wrap{ bottom:calc(10px + env(safe-area-inset-bottom)); }
+html.col-dito #tocco-tasti{ bottom:calc(104px + env(safe-area-inset-bottom)); }
+
+/* Su Android il trascinamento verso il basso in cima alla pagina fa
+   «tira per aggiorna»: si ricaricava il gioco camminando verso l'alto.
+   `touch-action` sul body c'era già, questo copre l'altro modo. */
+html, body{ overscroll-behavior:none; }
+
+/* ------------------------------------------------------------------
+   LE FINESTRE, SU UNO SCHERMO STRETTO
+   A 375px la finestra era 308×657 e dentro ci stavano celle da 21px.
+   Sotto i 560 va a tutto schermo: lo spazio c'è tutto, e le celle
+   possono tornare grandi abbastanza da centrarle senza guardare.
+   ------------------------------------------------------------------ */
+@media (max-width:560px){
+  #modal{
+    position:absolute; inset:0; width:auto; max-width:none;
+    max-height:none; border-radius:0; border-width:0 0 0 0;
+    margin:0; padding-top:env(safe-area-inset-top);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  #modal-head{ padding:10px 12px; }
+  #modal-title{ font-size:17px; }
+  #modal-close{ width:44px; height:44px; font-size:20px; }
+  #modal-body{ max-height:none; height:auto; flex:1; padding:12px; }
+  .icell{ width:52px; height:52px; }
+  .icell canvas{ width:38px; height:38px; }
+  /* le linguette del Diario erano 62×33: si sbagliava scheda a ogni tocco */
+  #modal .tabs button, #modal .tab{ min-height:40px; padding:8px 12px; font-size:13px; }
+  /* il riquadro del dialogo si legge, ma vuole più aria in basso */
+  #dialogue{ bottom:calc(96px + env(safe-area-inset-bottom)); }
+  .dlg-choices button{ min-height:42px; }
+}

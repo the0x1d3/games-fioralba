@@ -1090,6 +1090,61 @@ verifica('index.html carica tutti i js, nell\'ordine portante', () => {
   return problemi;
 });
 
+/* Chi gioca col pollice ha due soli verbi a schermo, «Usa» e «Parla»,
+   e sotto ci sono Spazio ed E. Prima ce n'era uno solo: il tocco sul
+   canvas chiamava `usaOggetto()` e mai `interagisci()`, quindi porte,
+   casse, macchinari e abitanti non esistevano — cioè il gioco non si
+   poteva finire da telefono, e nessuno se n'era accorto perché la
+   landing lo rifiutava alla porta.
+
+   Questo controllo tiene fermi i pezzi che, mancando uno solo, fanno
+   tornare quel buco senza rompere niente di visibile: il modulo, i due
+   tasti nel markup, e il fatto che tocco.js parli al gioco con tasti
+   sintetici invece che chiamandone le funzioni — che è quello che gli
+   regala tutta la sensibilità al contesto (dialogo, finestra, pesca,
+   lettera d'apertura) senza doverla riscrivere. */
+verifica('i comandi a tocco ci sono tutti, e passano dai tasti veri', () => {
+  const problemi = [];
+  const html = fs.readFileSync(path.join(RADICE, 'index.html'), 'utf8');
+  /* Senza togliere i commenti, questo controllo si accendeva da solo: in
+     `game.js` c'è scritto **perché** il rifiuto «solo da computer» è
+     stato tolto, e la spiegazione nomina le due cose che cerca. In un
+     repo dove i commenti raccontano il difetto che li ha motivati, un
+     controllo che legge il sorgente deve leggere il codice. */
+  const senzaCommenti = f => fs.readFileSync(path.join(RADICE, 'js', f), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
+  const src  = senzaCommenti('tocco.js');
+  const game = senzaCommenti('game.js');
+  const ui   = senzaCommenti('ui.js');
+
+  for (const id of ['tocco', 'tocco-pad', 'tocco-usa', 'tocco-parla'])
+    if (!html.includes('id="' + id + '"')) problemi.push(`manca #${id} in index.html`);
+
+  // i due verbi, e sotto i due tasti che il gioco ascolta davvero
+  if (!/collegaTasto\(\s*\$\('#tocco-usa'\)\s*,\s*' '\s*\)/.test(src))
+    problemi.push("«Usa» non è più collegato a Spazio: senza, non si zappa e non si pesca");
+  if (!/collegaTasto\(\s*\$\('#tocco-parla'\)\s*,\s*'e'\s*\)/.test(src))
+    problemi.push("«Parla» non è più collegato a E: senza, porte, casse e abitanti tornano irraggiungibili");
+
+  // la regola del file: si emettono tasti, non si chiamano le funzioni
+  if (!/new KeyboardEvent\('keydown'/.test(src) || !/new KeyboardEvent\('keyup'/.test(src))
+    problemi.push('tocco.js non emette più KeyboardEvent: la sensibilità al contesto va riscritta a mano');
+
+  // un solo padrone delle direzioni: due si pestano i piedi
+  if (/cvs\.addEventListener\('touch/.test(game))
+    problemi.push('game.js ha di nuovo gestori touch sul canvas: il movimento avrebbe due padroni');
+
+  // il dialogo si avanza toccandolo, o su un telefono la storia finisce alla prima battuta
+  if (!/getElementById\('dialogue'\)[\s\S]{0,200}addEventListener\('click'/.test(ui))
+    problemi.push('il riquadro del dialogo non avanza più al tocco: ogni conversazione è un vicolo cieco');
+
+  // e il cancello non deve tornare
+  if (/id="mobile-warn"|class="lp-mobile"/.test(html) || /solo-desktop/.test(game))
+    problemi.push('è tornato il rifiuto «solo da computer»: adesso direbbe una cosa falsa');
+
+  return problemi;
+});
+
 /* =================================================================== */
 
 const larghezza = 62;

@@ -1712,3 +1712,34 @@ Object.assign(window.LINGUA_EN, {
 "Cambiava la lingua del gioco ma non quella della presentazione: si restava a leggere l'italiano premendo un pulsante inglese.":
   'It changed the language of the game but not of the presentation: you went on reading Italian after pressing an English button.'
 });
+
+/* --- i due tasti a schermo, per chi gioca col pollice.
+       Stanno dentro un cerchio di 82 e 64 pixel: la parola deve entrarci
+       senza rimpicciolirsi, quindi «Talk» e non «Talk to», «Use» e non
+       «Use item». Sono anche i due verbi che il gioco aveva già sulla
+       tastiera — Spazio ed E — e non due nomi nuovi da imparare. --- */
+Object.assign(window.LINGUA_EN, {
+'Usa': 'Use',
+'Parla': 'Talk'
+});
+
+/* --- versione 2.3, la carta della landing (il censimento salta
+       changelog.js apposta: queste vanno aggiunte a mano) --- */
+Object.assign(window.LINGUA_EN, {
+'Fioralba si gioca dal telefono': 'Fioralba can be played on a phone',
+'Si gioca col pollice': 'You play with your thumb',
+"Fino a ieri la pagina iniziale diceva «Solo da computer» e rifiutava il clic. Adesso no: appoggi il pollice dove vuoi, nella metà sinistra dello schermo, e nasce lì una levetta che ti segue — non è ferma in un angolo, perché su uno schermo alto il pollice non torna mai nello stesso punto. A destra due tasti, che sono i due verbi che il gioco aveva già sulla tastiera: <b>Usa</b> e <b>Parla</b>. Tenendo premuto Usa si tira la lenza.":
+  'Until yesterday the front page said «Computer only» and refused the click. Not any more: put your thumb down wherever you like on the left half of the screen and a stick appears there and follows it — it is not fixed in a corner, because on a tall screen your thumb never comes back to the same spot. On the right, two buttons, which are the two verbs the game already had on the keyboard: <b>Use</b> and <b>Talk</b>. Hold Use down to play the fish.',
+'Adesso si può aprire una porta': 'You can open a door now',
+"Il tocco sullo schermo sapeva fare una cosa sola, cioè usare l'attrezzo in mano. Non sapeva interagire: porte, casse, macchinari e abitanti erano fuori portata, e senza quello il gioco non si poteva finire. Il tasto «Parla» è esattamente quel verbo che mancava.":
+  'Touching the screen could do exactly one thing: use the tool in your hand. It could not interact — doors, chests, machines and villagers were all out of reach, and without that the game could not be finished. The «Talk» button is precisely the verb that was missing.',
+'I dialoghi avanzano toccandoli': 'Tap a conversation to move it on',
+'Si avanzava solo con Spazio, Invio o E: da telefono ogni conversazione era un vicolo cieco, e siccome tutta la storia passa di lì la partita finiva alla prima battuta. Adesso si tocca il riquadro. Vale anche col mouse: chi gioca da computer con una mano sola cliccava e non succedeva niente.':
+  'You could only move on with Space, Enter or E: on a phone every conversation was a dead end, and since the whole story goes through them the game ended at the first line. Now you tap the box. It works with a mouse too: anyone playing one-handed on a computer used to click and nothing happened.',
+'Si vede la valle, non un corridoio': 'You can see the valley, not a corridor',
+'Su un telefono in verticale si vedevano 5,9 caselle di larghezza, contro le 20 di un computer: si camminava dentro una feritoia. Adesso sono circa dodici, e il conto tiene anche il telefono coricato, che prima restava alto sei caselle — tre sopra la testa e tre sotto i piedi.':
+  'On a phone held upright you could see 5.9 tiles across, against twenty on a computer: you were walking down a slot. Now it is about twelve, and the sum also covers a phone on its side, which used to be six tiles tall — three above your head and three below your feet.',
+'Tutto grande abbastanza per un dito': 'Everything big enough for a finger',
+"La barra degli attrezzi era larga 466 pixel dentro uno schermo da 375: il primo e l'ultimo attrezzo stavano fuori. Le celle dello zaino erano 21 pixel, la crocetta per chiudere le finestre 29. Adesso la barra ci sta, le finestre si aprono a tutto schermo, e ogni cosa che si tocca è grande almeno quanto un polpastrello. C'è anche il rispetto della tacca dell'iPhone e della barra di casa.":
+  'The tool bar was 466 pixels wide inside a 375-pixel screen: the first and last tool sat off the edge. The backpack cells were 21 pixels, the cross that closes a window 29. Now the bar fits, windows open full-screen, and everything you touch is at least as big as a fingertip. The iPhone notch and home bar are respected too.'
+});

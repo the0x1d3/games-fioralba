@@ -57,6 +57,29 @@ R.resize = function(){
   // ...ma l'ingrandimento effettivo dev'essere un numero INTERO di pixel fisici
   SCALE = Math.max(1, Math.round(zoom*DPR));
 
+  /* Su un telefono non c'è schermo da spendere in zoom.
+
+     Col minimo di 2 qui sopra, un 375×812 con DPR 2 dava SCALE 4 e
+     quindi 5,9 caselle in larghezza, contro le 20 di un computer: si
+     camminava dentro un corridoio, senza vedere né dove si va né cosa
+     c'è intorno. Misurato, non stimato.
+
+     Quindi su uno schermo piccolo si punta alle CASELLE e non allo
+     zoom, e su tutte e due le dimensioni: la prima versione guardava
+     solo la larghezza e il telefono coricato (844×390) restava a 6,1
+     caselle in altezza — cioè tre sopra la testa e tre sotto i piedi,
+     e non si vede arrivare niente. Il conto si fa in pixel fisici
+     perché SCALE dev'essere comunque intero.
+
+     `Math.min` e non un valore fisso: questa regola può solo
+     ALLARGARE la vista, mai stringerla. Su una finestra piccola di un
+     computer allarga anche lì, ed è quello che serve pure a quella. */
+  if(cssW < 560 || cssH < 460){
+    const perLarghezza = Math.round(devW / (11.5*T));
+    const perAltezza   = Math.round(devH / (7.5*T));
+    SCALE = Math.max(1, Math.min(SCALE, perLarghezza, perAltezza));
+  }
+
   VW = Math.max(1, Math.ceil(devW/SCALE)); VH = Math.max(1, Math.ceil(devH/SCALE));
   scene.width=VW; scene.height=VH;
   light.width=VW; light.height=VH;

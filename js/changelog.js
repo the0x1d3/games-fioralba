@@ -16,6 +16,18 @@
 
 window.CHANGELOG = [
   {
+    v: '2.3',
+    data: 'agosto 2026',
+    titolo: 'Fioralba si gioca dal telefono',
+    voci: [
+      { tipo:'nuovo',  t:'Si gioca col pollice', d:'Fino a ieri la pagina iniziale diceva «Solo da computer» e rifiutava il clic. Adesso no: appoggi il pollice dove vuoi, nella metà sinistra dello schermo, e nasce lì una levetta che ti segue — non è ferma in un angolo, perché su uno schermo alto il pollice non torna mai nello stesso punto. A destra due tasti, che sono i due verbi che il gioco aveva già sulla tastiera: <b>Usa</b> e <b>Parla</b>. Tenendo premuto Usa si tira la lenza.' },
+      { tipo:'fix',    t:'Adesso si può aprire una porta', d:'Il tocco sullo schermo sapeva fare una cosa sola, cioè usare l\'attrezzo in mano. Non sapeva interagire: porte, casse, macchinari e abitanti erano fuori portata, e senza quello il gioco non si poteva finire. Il tasto «Parla» è esattamente quel verbo che mancava.' },
+      { tipo:'fix',    t:'I dialoghi avanzano toccandoli', d:'Si avanzava solo con Spazio, Invio o E: da telefono ogni conversazione era un vicolo cieco, e siccome tutta la storia passa di lì la partita finiva alla prima battuta. Adesso si tocca il riquadro. Vale anche col mouse: chi gioca da computer con una mano sola cliccava e non succedeva niente.' },
+      { tipo:'meglio', t:'Si vede la valle, non un corridoio', d:'Su un telefono in verticale si vedevano 5,9 caselle di larghezza, contro le 20 di un computer: si camminava dentro una feritoia. Adesso sono circa dodici, e il conto tiene anche il telefono coricato, che prima restava alto sei caselle — tre sopra la testa e tre sotto i piedi.' },
+      { tipo:'meglio', t:'Tutto grande abbastanza per un dito', d:'La barra degli attrezzi era larga 466 pixel dentro uno schermo da 375: il primo e l\'ultimo attrezzo stavano fuori. Le celle dello zaino erano 21 pixel, la crocetta per chiudere le finestre 29. Adesso la barra ci sta, le finestre si aprono a tutto schermo, e ogni cosa che si tocca è grande almeno quanto un polpastrello. C\'è anche il rispetto della tacca dell\'iPhone e della barra di casa.' }
+    ]
+  },
+  {
     v: '2.2',
     data: 'agosto 2026',
     titolo: 'Fioralba parla inglese, e la partita ti segue da un computer all\'altro',

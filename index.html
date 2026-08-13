@@ -109,6 +109,20 @@
       <button id="btn-map"   data-eti="Mappa"       data-tasto="M">🗺️</button>
       <button id="btn-menu"  data-eti="Menu"        data-tasto="Esc">⚙️</button>
     </div>
+
+    <!-- ============ COMANDI A TOCCO ============
+         Stanno dentro l'HUD apposta: fuori dalla partita l'HUD è
+         nascosto, e con lui questi. Il pad non è fisso in un angolo —
+         nasce dove appoggi il pollice — quindi parte senza posizione.
+         I due tasti sono i due verbi che il gioco ha davvero: «Usa» è
+         Spazio (e tenuto premuto è la pesca), «Parla» è E. -->
+    <div id="tocco" class="hidden">
+      <div id="tocco-pad"><span class="tp-perno"></span></div>
+      <div id="tocco-tasti">
+        <button id="tocco-parla" class="tocco-btn" data-t>Parla</button>
+        <button id="tocco-usa" class="tocco-btn grosso" data-t>Usa</button>
+      </div>
+    </div>
   </div>
 
   <!-- ============ DIALOGUE ============ -->
@@ -186,13 +200,6 @@
   <!-- ============ LANDING PAGE ============ -->
   <div id="landing">
     <div class="lp-scroll">
-
-      <!-- avviso onesto e SUBITO visibile: compare solo su telefono/tablet -->
-      <div class="lp-mobile" data-t>
-        <strong>💻 Fioralba si gioca da computer.</strong>
-        Serve tastiera e mouse: da telefono o tablet i comandi non funzionano.
-        Puoi comunque dare un'occhiata a cosa ti aspetta.
-      </div>
 
       <header class="lp-hero">
         <div class="lp-logo">
@@ -375,23 +382,6 @@
     </div>
   </div>
 
-  <!-- ============ AVVISO MOBILE (schermo intero) ============ -->
-  <div id="mobile-warn">
-    <div class="mw-inner">
-      <div class="mw-icon">🖥️</div>
-      <h2 class="mw-title" data-t>Gioca dal computer</h2>
-      <p class="mw-text" data-t>
-        <strong>Fioralba</strong> è pensato per essere giocato da PC con
-        tastiera e mouse. Da smartphone o tablet <strong>non funziona</strong>
-        correttamente.
-      </p>
-      <p class="mw-text mw-text-soft" data-t>
-        Per vivere al meglio la valle, riapri il gioco da un computer. 🏮
-      </p>
-      <button id="mw-back" class="btn" data-t>Torna indietro</button>
-    </div>
-  </div>
-
 </div>
 
 <!-- L'ordine conta: ogni file registra il proprio oggetto globale (DATA, ART,
@@ -432,6 +422,7 @@
 <script src="js/livelli.js"></script>
 <script src="js/tutorial.js"></script>
 <script src="js/guida.js"></script>
+<script src="js/tocco.js"></script>
 <script src="js/render.js"></script>
 <script src="js/game.js"></script>
 

@@ -108,26 +108,27 @@ function init(){
 
 /* ===================================================================
    LANDING PAGE — front page con "cosa offre" e i pulsanti di avvio.
-   Su mobile la pagina è visibile, ma provare a giocare mostra l'avviso.
+   Si gioca da tutto: i comandi a tocco stanno in tocco.js.
    =================================================================== */
 function collegaLanding(){
   // la landing usa lo sfondo animato del titolo: nascondi il vecchio menu del titolo
   const ti = $('#title-inner'); if(ti) ti.style.display='none';
-  const daMobile = ()=> window.matchMedia('(max-width:820px), (pointer:coarse) and (hover:none)').matches;
-  const avviso = ()=> $('#mobile-warn').classList.add('show');
-  const back = $('#mw-back'); if(back) back.onclick = ()=> $('#mobile-warn').classList.remove('show');
+  /* Il telefono non si rifiuta più.
 
-  /* Su telefono l'avviso va dato SUBITO, in cima alla pagina: far leggere
-     tutta la presentazione per poi rifiutare il clic è la peggiore delle
-     accoglienze. I pulsanti restano lì ma dicono già come andrà a finire. */
-  if(daMobile()){
-    const lp = $('#landing');
-    if(lp) lp.classList.add('solo-desktop');
-    document.querySelectorAll('.lp-new').forEach(b=>{
-      b.textContent = 'Solo da computer';
-      b.title = 'Fioralba richiede tastiera e mouse';
-    });
-  }
+     Qui c'era `daMobile()`, e chiudeva la porta: la landing prendeva la
+     classe `solo-desktop`, «Nuova Partita» diventava «Solo da computer»
+     e ogni clic apriva un avviso. Era onesto finché era vero — il tocco
+     non poteva interagire né avanzare un dialogo, cioè il gioco non si
+     poteva finire. Adesso quei due buchi sono chiusi (tocco.js), la
+     barra degli attrezzi entra nello schermo e si vedono 11,7 caselle
+     invece di 5,9: il motivo del cancello non c'è più, e il cancello
+     nemmeno.
+
+     Sono spariti anche il riquadro «Fioralba si gioca da computer» in
+     cima alla landing e la schermata a tutto schermo `#mobile-warn`:
+     non erano soltanto inutili, dicevano una cosa falsa, e del markup
+     morto che afferma il contrario di come sta il gioco è peggio di
+     niente — al primo che lo rilegge sembra una cosa da riattivare. */
 
   if(window.LANDING) LANDING.init();
 
@@ -135,14 +136,12 @@ function collegaLanding(){
   document.querySelectorAll('.lp-continue').forEach(b=>{
     if(!haSalvato){ b.disabled = true; b.title = 'Nessuna partita salvata'; }
     b.addEventListener('click', ()=>{
-      if(daMobile()){ avviso(); return; }
       SND.resume(); SND.play('menu');
       if(carica()) avviaGioco(false); else nuovaPartita();
     });
   });
   document.querySelectorAll('.lp-new').forEach(b=>{
     b.addEventListener('click', ()=>{
-      if(daMobile()){ avviso(); return; }
       SND.resume(); SND.play('menu');
       chiediNuovaPartita();     // se c'è già una partita, prima si avverte
     });
@@ -156,7 +155,6 @@ function collegaLanding(){
      la partita da solo. */
   document.querySelectorAll('.lp-import').forEach(b=>{
     b.addEventListener('click', ()=>{
-      if(daMobile()){ avviso(); return; }
       SND.resume(); SND.play('menu');
       G.importaDaFile();
     });
@@ -3792,34 +3790,20 @@ function collegaInput(){
   $('#btn-map').onclick   = ()=>UI.mappa(G);
   $('#btn-menu').onclick  = ()=>UI.menu(G);
 
-  // touch: movimento verso il tocco + azione
-  let touchStart=null;
-  cvs.addEventListener('touchstart', e=>{
-    SND.resume();
-    attivita();
-    if(!G.inGioco) return;
-    const t=e.touches[0];
-    const r=cvs.getBoundingClientRect();
-    touchStart={x:t.clientX-r.left, y:t.clientY-r.top, t:Date.now()};
-    if(PESCA.inCorso()) PESCA.premuto();
-  }, {passive:true});
-  cvs.addEventListener('touchmove', e=>{
-    if(!G.inGioco||!touchStart) return;
-    const t=e.touches[0];
-    const r=cvs.getBoundingClientRect();
-    const dx=(t.clientX-r.left)-touchStart.x, dy=(t.clientY-r.top)-touchStart.y;
-    tasti['a']=dx<-18; tasti['d']=dx>18;
-    tasti['w']=dy<-18; tasti['s']=dy>18;
-  }, {passive:true});
-  cvs.addEventListener('touchend', e=>{
-    tasti['a']=tasti['d']=tasti['w']=tasti['s']=false;
-    if(PESCA.inCorso()){ PESCA.rilasciato(); touchStart=null; return; }
-    if(touchStart && Date.now()-touchStart.t < 220){
-      calcolaBersaglio();
-      usaOggetto();
-    }
-    touchStart=null;
-  }, {passive:true});
+  /* Il tocco sta tutto in tocco.js. Qui c'erano tre gestori sul canvas
+     che scrivevano dentro `tasti[]` per camminare e chiamavano
+     `usaOggetto()` al tocco breve: erano il seme giusto ma con due
+     buchi che rendevano il gioco non finibile da telefono — non
+     chiamavano MAI `interagisci()`, quindi porte, casse, macchinari e
+     abitanti non esistevano; e sui dialoghi non potevano niente.
+
+     Sono stati tolti e non affiancati: due padroni dello stesso vettore
+     di direzioni si pestano i piedi. Uno alza `tasti['a']` a mano,
+     l'altro emette il `keyup` di 'a', e chi cammina dipende da chi
+     arriva ultimo. Adesso il pad emette tasti veri e passa da questo
+     stesso gestore di `keydown`, con tutta la sua sensibilità al
+     contesto in regalo. */
+  if(window.TOCCO) TOCCO.init();
 }
 
 /* ===================================================================

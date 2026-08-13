@@ -619,6 +619,27 @@ function prossimaRiga(){
   }, 16);
 }
 
+/* Toccare il riquadro lo fa avanzare.
+
+   Si avanzava solo con Spazio, Invio o E — che su un telefono non ci
+   sono: ogni conversazione era un vicolo cieco, e siccome tutta la
+   storia passa di lì il gioco finiva alla prima battuta. Il gestore sta
+   qui e non nei comandi a tocco perché è giusto anche col mouse: chi
+   gioca da computer con una mano sul mouse cliccava sul riquadro e non
+   succedeva niente.
+
+   Si collega una volta sola, e non sulle scelte: quelle sono pulsanti
+   veri, e un click che risale fino al riquadro avanzerebbe il dialogo
+   annullando la scelta appena fatta. */
+(function collegaTocchiDialogo(){
+  const d = document.getElementById('dialogue');
+  if(!d) return;
+  d.addEventListener('click', e=>{
+    if(e.target.closest('.dlg-choices')) return;
+    U.avanzaDialogo();
+  });
+})();
+
 U.avanzaDialogo = function(){
   if(!dlgAttivo) return false;
   const d = $('#dialogue');
