@@ -67,6 +67,7 @@ function statoIniziale(){
            visitatoBosco:false, visitatoGrotta:false, visitatoPaese:false},
     guidaAperta:true, guidaNascosta:false,
     mercato:null, gelo:false, richieste:[], richiestaSeq:0, premiSospesi:[],
+    gatto:{ affetto:0, giorno:-1, nome:null },
     obiettiviRiscossi:{}, sagra:null, mercante:{presente:false, giorno:-1, stock:[]},
     visitati:{podere:true}, collezione:{},
     trame:{ torta:{avviata:false, segreto:false, fatta:false},
@@ -714,7 +715,12 @@ function normalizzaStato(){
   ['inv','richieste','cassaConsegna','animali','premiSospesi'].forEach(A);
   ['skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
    'lettere','ricetteNote','stats','obiettiviRiscossi','visitati','collezione','regaloRicevuto',
-   'parlatoOggi','regalatoOggi','mercato'].forEach(O);
+   'parlatoOggi','regalatoOggi','mercato','gatto'].forEach(O);
+  /* le partite cominciate prima del gatto non hanno i suoi campi: senza
+     questi, la prima carezza leggerebbe `undefined + 6` */
+  if(typeof G.gatto.affetto !== 'number') G.gatto.affetto = 0;
+  if(typeof G.gatto.giorno  !== 'number') G.gatto.giorno  = -1;
+  if(G.gatto.nome === undefined) G.gatto.nome = null;
   if(!G.trame || typeof G.trame!=='object') G.trame={};
   if(!G.trame.torta)     G.trame.torta={avviata:false,segreto:false,fatta:false};
   if(!G.trame.pesceluna) G.trame.pesceluna={avviata:false,preso:false,fatta:false};
@@ -1356,6 +1362,10 @@ function interagisci(){
     if(Math.hypot(n.px-p.px, n.py-p.py) < 46){ parlaCon(n); return; }
   }
 
+  // il gatto, che non è un NPC ma nemmeno un oggetto
+  const gatto = gattoVicino();
+  if(gatto){ accarezzaGatto(gatto); return; }
+
   // caselle intorno
   const off=[[0,1],[-1,0],[1,0],[0,-1]][p.dir];
   const cand=[[px+off[0],py+off[1]],[px,py]];
@@ -1589,6 +1599,11 @@ function promptContestuale(){
       UI.prompt('<kbd>E</kbd> parla con '+(N ? N.nome : 'qualcuno'));
       return;
     }
+  }
+
+  if(gattoVicino()){
+    UI.prompt('<kbd>E</kbd> accarezza ' + (G.nomeGatto() || 'il gatto'));
+    return;
   }
 
   const px=(p.px/T)|0, py=(p.py/T)|0;
@@ -2019,6 +2034,101 @@ G.aggiungiGallina = function(){
   });
 };
 
+/* ===================================================================
+   IL GATTO
+
+   C'era dal primo giorno e non si poteva toccare. Girava attorno al
+   giocatore a cinque caselle di distanza, disegnato bene, e finiva lì:
+   le galline si accarezzano dal pollaio, lui no. Per un gioco che parla
+   di una valle da riavvicinare, l'unico animale che ti sceglie era
+   arredamento.
+
+   Adesso è l'unica cosa del podere che non si compra, non si costruisce
+   e non si sblocca con le monete: si guadagna tornando. Una carezza al
+   giorno — di più non conta, perché la fiducia di un gatto non si
+   accelera — e a ogni soglia si avvicina di una casella. Il nome arriva
+   solo alla fine, e non lo scegli tu: glielo aveva già dato Ilde.
+   =================================================================== */
+const GATTO_NOME = 'Cenere';
+
+/* Le soglie. `r` è il raggio in cui gironzola attorno a te: cinque
+   caselle sono "ti tengo d'occhio", una è "sono sul tuo piede". */
+const GATTO_FASI = [
+  { da:0,  r:5, frasi:['Si lascia sfiorare la schiena, poi si sposta di un passo.',
+                       'Ti annusa la mano e decide che va bene così.',
+                       'Resta fermo giusto il tempo di farsi toccare.'] },
+  { da:20, r:4, frasi:['Fa le fusa un momento, poi finge di non averlo fatto.',
+                       'Si struscia contro lo stivale e se ne va soddisfatto.'] },
+  { da:45, r:3, frasi:['Fa le fusa forte. Non si sposta.',
+                       'Si rotola sulla schiena e ti guarda a testa in giù.'] },
+  { da:70, r:2, frasi:['Ti viene incontro prima ancora che ti fermi.',
+                       'Fa le fusa appoggiandoti la testa sulla gamba.'] },
+  { da:90, r:1, frasi:['Ti cammina fra i piedi come se il podere fosse suo. E in fondo lo è.',
+                       'Si accuccia accanto a te e chiude gli occhi.'] }
+];
+
+function faseGatto(){
+  const a = (G.gatto && G.gatto.affetto) || 0;
+  let f = GATTO_FASI[0];
+  for(const x of GATTO_FASI) if(a >= x.da) f = x;
+  return f;
+}
+
+/* Come si chiama, se ha già un nome. Prima di allora è «il gatto». */
+G.nomeGatto = ()=> (G.gatto && G.gatto.nome) || null;
+
+function gattoVicino(){
+  for(const a of G.animali){
+    if(a.tipo!=='gatto' || a.mappa!==G.mappaId) continue;
+    if(Math.hypot(a.px-G.p.px, a.py-G.p.py) < 42) return a;
+  }
+  return null;
+}
+
+function accarezzaGatto(a){
+  if(!G.gatto) G.gatto = { affetto:0, giorno:-1, nome:null };
+  const g = G.gatto;
+  const chi = g.nome || 'Il gatto';
+
+  SND.play('gatto');
+  a.dest = null; a.wait = 2200;          // si ferma un attimo a farsi accarezzare
+
+  /* Una sola volta al giorno conta. Le altre carezze non sono un errore
+     — accarezzare il gatto è sempre lecito — quindi rispondono lo
+     stesso, ma senza far salire niente: se salisse, bastava restare lì
+     un minuto a premere E per avere tutto in un pomeriggio. */
+  if(g.giorno === G.giornoTot){
+    UI.toast(chi + ' ne ha avuto abbastanza, per oggi.','hint');
+    for(let k=0;k<3;k++) G.particelle.push({t:'cuoricino',
+      x:a.px+(Math.random()-0.5)*20, y:a.py-14-Math.random()*10,
+      vx:(Math.random()-0.5)*0.25, vy:-0.45, g:0, vita:800, vitaMax:800, c:'#f08a9a'});
+    return;
+  }
+
+  const prima = faseGatto();
+  g.giorno = G.giornoTot;
+  g.affetto = Math.min(100, g.affetto + 6);
+  const dopo = faseGatto();
+
+  for(let k=0;k<7;k++) G.particelle.push({t:'cuoricino',
+    x:a.px+(Math.random()-0.5)*26, y:a.py-16-Math.random()*16,
+    vx:(Math.random()-0.5)*0.3, vy:-0.5, g:0, vita:1000, vitaMax:1000, c:'#e04a63'});
+
+  UI.toast(chi + ': ' + dopo.frasi[(Math.random()*dopo.frasi.length)|0]);
+  G.progresso();
+
+  if(dopo !== prima) particelleTesto(a.px, a.py-30, 'si fida di più', '#f0a8b8');
+
+  /* Il nome. Non è un premio da inventario: è la cosa che Ilde non ha
+     fatto in tempo a dirti, e arriva quando il gatto ha smesso di essere
+     randagio. Una volta sola, e da lì in poi ce l'ha. */
+  if(!g.nome && g.affetto >= 70){
+    g.nome = GATTO_NOME;
+    setTimeout(()=>{
+      UI.lettera('gatto');
+    }, 1400);
+  }
+}
 function aggiornaAnimali(dt){
   for(const a of G.animali){
     if(a.mappa!==G.mappaId) continue;
@@ -2027,7 +2137,9 @@ function aggiornaAnimali(dt){
     if(!a.dest){
       const m=G.maps[a.mappa];
       let base;
-      if(a.tipo==='gatto'){ base={x:(G.p.px/T)|0, y:(G.p.py/T)|0, r:5}; }
+      /* il gatto gira attorno a te, e più si fida più stretto: il raggio
+         è la sua confidenza, non un numero fisso */
+      if(a.tipo==='gatto'){ base={x:(G.p.px/T)|0, y:(G.p.py/T)|0, r:faseGatto().r}; }
       else {
         const sp=G.maps.podere.spazi.pollaio;
         base={x:sp.x+2, y:sp.y+5, r:4};
@@ -2863,10 +2975,18 @@ function eventiNotturniPossibili(){
         const n = WORLD.spargiSu(G.maps.bosco,'erba',6,R=>({t:'foraggio', item:forSt[(R()*forSt.length)|0]}), seed);
         return n ? 'Una nidiata di lucciole: il sottobosco è tornato a fiorire.' : null;
     }},
+    /* Il pesce sulla soglia c'era già, ma lo portava «il gatto randagio»
+       anche a chi non l'aveva mai sfiorato: un regalo da uno che ti
+       evita. Adesso lo porta solo se si fida, e quando ha un nome lo
+       dice col nome. */
     { icona:'carpa', tipo:'good', applica(){
+        const gt = G.gatto || {};
+        if((gt.affetto||0) < 45) return null;
         if(!G.puoiAggiungere('carpa',1)) return null;
         G.aggiungi('carpa',1);
-        return 'Il gatto randagio ha lasciato un pesce sulla soglia di casa.';
+        return gt.nome
+          ? gt.nome + ' ha lasciato un pesce sulla soglia di casa. Non chiede niente in cambio.'
+          : 'Il gatto ha lasciato un pesce sulla soglia di casa.';
     }},
     { icona:'miele', tipo:'good', applica(){
         if(!G.puoiAggiungere('miele',1)) return null;

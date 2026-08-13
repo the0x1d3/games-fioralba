@@ -148,7 +148,7 @@ function costruisciDati(){
     tutorialFatto:G.tutorialFatto, guidaAperta:G.guidaAperta, guidaNascosta:G.guidaNascosta,
     regaloRicevuto:G.regaloRicevuto,
     mercato:G.mercato, gelo:G.gelo,
-    richieste:G.richieste, richiestaSeq:G.richiestaSeq, premiSospesi:G.premiSospesi,
+    richieste:G.richieste, richiestaSeq:G.richiestaSeq, premiSospesi:G.premiSospesi, gatto:G.gatto,
     obiettiviRiscossi:G.obiettiviRiscossi, sagra:G.sagra, mercante:G.mercante, trame:G.trame, visitati:G.visitati, collezione:G.collezione,
     px:G.p.px, py:G.p.py,
     maps:(function(){ const o={}; for(const k in G.maps) o[k]=serializzaMappa(G.maps[k]); return o; })()
@@ -311,7 +311,7 @@ function applicaSalvataggio(raw){
                   'braci','lettere','ricetteNote','cassaConsegna','stats','animali','look',
                   'vistoFiammella','introSerafina','vistoPesca','sacaccia','lezioneCaccia','tutorialFatto','guidaAperta','guidaNascosta','regaloRicevuto',
                   'mercato','gelo',
-                  'richieste','richiestaSeq','premiSospesi','obiettiviRiscossi','sagra','mercante','trame','visitati','collezione']){
+                  'richieste','richiestaSeq','premiSospesi','gatto','obiettiviRiscossi','sagra','mercante','trame','visitati','collezione']){
     if(d[k]!==undefined) G[k]=d[k];
   }
   /* Salvataggi fatti quando la giornata era 180: i punti guadagnati coi

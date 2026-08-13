@@ -301,8 +301,11 @@ verifica('ogni lettera esiste ed è consegnata da qualcosa', () => {
     if (!DATA.LETTERE[id]) problemi.push(`la posta consegna «${id}», che non è fra le lettere`);
 
   /* le altre vie di consegna: l'apertura, le quattro braci, la ricetta,
-     e le due dell'atto secondo, che le consegnano la verità e la veglia */
-  const altre = new Set(['intro', 'ricetta_ilde', 'verita', 'veglia']);
+     le due dell'atto secondo (verità e veglia) e quella del gatto, che
+     non arriva per posta ma la lascia lui quando si decide */
+  const altre = new Set(['intro', 'ricetta_ilde', 'verita', 'veglia', 'gatto']);
+  if (!/UI\.lettera\('gatto'\)/.test(tutto))
+    problemi.push('la lettera «gatto» non la consegna più nessuno');
   for (const k of ['verita', 'veglia'])
     if (!new RegExp('G\\.lettere\\.' + k + '\\s*=\\s*true').test(tutto))
       problemi.push(`la lettera «${k}» non viene mai consegnata da nessun file`);

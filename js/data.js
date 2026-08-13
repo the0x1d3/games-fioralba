@@ -871,6 +871,25 @@ Tu sì. Ecco perché ti ho lasciato il podere e non i soldi.
 
 <b>Ilde</b>` },
 
+  /* Non arriva per posta: la consegna il gatto stesso, la prima volta
+     che smette di essere randagio. Ilde non fa in tempo a dirti come si
+     chiama, quindi te lo dice con una carta lasciata dove sapeva che
+     prima o poi avresti guardato. */
+  gatto:{ titolo:'Il gatto', da:'Nonna Ilde', testo:
+`Se stai leggendo questa, vuol dire che si è deciso.
+
+Non è mio e non è tuo: è arrivato una sera d'inverno che pioveva e si è messo davanti alla stufa come se avesse pagato l'affitto. L'ho chiamato <b>Cenere</b> perché era esattamente del colore che resta quando il fuoco si spegne, e a quel tempo la battuta mi sembrava spiritosa.
+
+Ci ha messo due anni a farsi toccare. Due. Io gli mettevo il latte fuori e facevo finta di niente, e lui faceva finta di niente e beveva il latte.
+
+Poi una sera mi si è seduto sulle ginocchia senza chiedere permesso, e non se n'è più andato.
+
+Ti dico questo perché con le persone della valle funziona uguale, solo che nessuno te lo spiega: non devi convincerle. Devi solo esserci abbastanza volte.
+
+Lui lo sa già. Per questo è rimasto anche quando non c'è rimasto nessun altro.
+
+<b>Ilde</b>` },
+
   ricetta_ilde:{ titolo:'La ricetta di Ilde', testo:
 `<b>Torta del Solstizio — di Nonna Ilde</b>
 

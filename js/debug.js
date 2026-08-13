@@ -378,6 +378,26 @@ function costruisciStoria(){
     nota('atto secondo da rifare');
   }, 'rosso');
 
+  const gt = sezione('Il gatto');
+  bottone(gt, 'Portalo qui', ()=>{
+    const a = G.animali.find(x=>x.tipo==='gatto');
+    if(!a){ nota('nessun gatto in questa partita', false); return; }
+    a.mappa = G.mappaId; a.px = G.p.px + 24; a.py = G.p.py; a.dest = null; a.wait = 0;
+    nota('il gatto è al tuo fianco: premi E');
+  });
+  for(const n of [0, 45, 69, 100])
+    bottone(gt, 'Affetto ' + n, ()=>{
+      G.gatto.affetto = n;
+      if(n < 70) G.gatto.nome = null;
+      G.gatto.giorno = -1;
+      nota('affetto ' + n + (n>=70 ? ' — la prossima carezza gli dà il nome' : ''));
+    });
+  bottone(gt, 'Riazzera il gatto', ()=>{
+    G.gatto = { affetto:0, giorno:-1, nome:null };
+    delete G.lettere.gatto;
+    nota('torna randagio, lettera compresa');
+  }, 'rosso');
+
   const c = sezione('Le altre storie');
   bottone(c, 'Torta di Ilde: avvia', ()=>{
     G.trame.torta = { avviata:true, segreto:false, fatta:false };
