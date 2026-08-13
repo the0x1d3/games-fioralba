@@ -47,7 +47,8 @@ tutto, `game.js` per ultimo.
 ```
 data.js  palette.js  art.js  fx.js  audio.js  world.js  mobs.js
 ui.js  demo.js  changelog.js  landing.js  titolo.js  salvataggio.js
-pesca.js  storie.js  solstizio.js  tutorial.js  guida.js
+pesca.js  storie.js  vicende.js  persona.js  solstizio.js  tutorial.js
+guida.js
 render.js  game.js
 ```
 
@@ -68,6 +69,8 @@ caricato non fa rumore — non è un errore di sintassi e non è un test rosso.
 | `SALVA`    | salvataggio.js| localStorage, backup, esporta/importa in `.json`        |
 | `PESCA`    | pesca.js      | il minigioco: lancio, abboccata, lotta                  |
 | `STORIE`   | storie.js     | la lezione di Oreste, la torta di Ilde, il Pesce Luna   |
+| `VICENDE`  | vicende.js    | le storie del paese: il motore, i testi stanno in `DATA` |
+| `PERSONA`  | persona.js    | zaino, resistenza, scarpe, cintura: negozio ed effetti   |
 | `SOLSTIZIO`| solstizio.js  | atto secondo: le sei memorie, la verità, la veglia      |
 | `LIV`      | livelli.js    | barretta, carta del livello, scheda delle abilità       |
 | `REND`     | render.js     | il disegno di un fotogramma                             |
@@ -245,6 +248,22 @@ campo di testo che venga aggiunto in futuro.
 Il pannello browser **non compone**: `requestAnimationFrame` non scatta mai,
 quindi non si fanno screenshot del DOM e il gioco non gira da solo. Si lavora
 così: si chiama il disegno a mano e si legge il canvas.
+
+**Il loop però si può far girare a mano**, ed è l'unico modo di misurare quello
+che vive dentro al fotogramma — la velocità di cammino, le prede che scappano,
+il tempo che passa. La richiamata di `requestAnimationFrame` si intercetta
+**prima** che la partita cominci, e poi la si chiama con l'orologio che decidi
+tu. Con la prova di taratura davanti: dieci fotogrammi da 16 ms devono spostare
+il giocatore di 11,8 px, che è la velocità base (`1.18`) per dieci.
+
+```js
+window.__giri=[];
+const vero=window.requestAnimationFrame.bind(window);
+window.requestAnimationFrame=cb=>{ window.__giri.push(cb); return vero(cb); };
+// ...poi si comincia la partita, e da lì:
+let t=1000;
+const passo=ms=>{ const cb=window.__giri.pop(); t+=ms; window.__giri.length=0; cb(t); };
+```
 
 ```js
 REND.disegna(G);
