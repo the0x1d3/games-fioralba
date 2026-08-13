@@ -2475,3 +2475,14 @@ Object.assign(window.LINGUA_EN, {
 'ancora niente': 'nothing yet',
 'da prendere': 'still to get'
 });
+
+/* --- la scelta della dimensione dei pixel, nelle impostazioni --- */
+Object.assign(window.LINGUA_EN, {
+'Grafica': 'Graphics',
+'Automatica': 'Automatic',
+'Pixel piccoli': 'Small pixels',
+'Medi': 'Medium',
+'Pixel grandi': 'Large pixels',
+'In vista: {0} caselle in larghezza, {1} in altezza.':
+  'In view: {0} tiles across, {1} down.'
+});

@@ -37,6 +37,44 @@ function dprCorrente(){
   return Math.max(1, Math.min(3, window.devicePixelRatio || 1));
 }
 
+/* ---- quanto grande vuoi un pixel di gioco ----
+
+   Il gioco tiene in vista sempre una ventina di caselle, su qualunque
+   schermo: è la regola qui sotto, e sul telefono viene benissimo perché
+   lì un pixel di gioco è largo un pixel CSS — schermo piccolo, DPR alto.
+   Su un monitor da 1920 con DPR 1 lo stesso pixel di gioco diventa un
+   blocchetto da 3×3, e chi ci gioca lo legge come «sgranato». Non è un
+   difetto, è la conseguenza di tenere ferme le caselle in vista.
+
+   Non c'è una risposta giusta per tutti — pixel più piccoli vogliono
+   dire più mondo davanti e sprite più minuti — quindi si sceglie. Sta
+   in `localStorage` e non nel salvataggio perché è una preferenza
+   dell'APPARECCHIO: la stessa partita aperta sul telefono e sul computer
+   vuole due valori diversi, e portarsela dietro nel file sarebbe un
+   dispetto. Come la lingua. */
+const CHIAVE_ZOOM = 'fioralba_zoom';
+let zoomScelto = null;               // null = decide il gioco
+try{
+  const v = parseInt(localStorage.getItem(CHIAVE_ZOOM), 10);
+  if(v >= 2 && v <= 4) zoomScelto = v;
+}catch(e){}
+
+R.zoomScelto = ()=>zoomScelto;
+R.impostaZoom = function(n){
+  zoomScelto = (n >= 2 && n <= 4) ? n : null;
+  try{
+    if(zoomScelto) localStorage.setItem(CHIAVE_ZOOM, String(zoomScelto));
+    else localStorage.removeItem(CHIAVE_ZOOM);
+  }catch(e){}
+  R.resize();
+};
+/* Quante caselle si vedono adesso: serve al menu per far vedere il
+   baratto invece di raccontarlo. */
+R.caselleInVista = ()=>({
+  larghe: +(VW/T).toFixed(1),
+  alte:   +(VH/T).toFixed(1)
+});
+
 R.resize = function(){
   // un canvas 0×0 farebbe fallire drawImage: ripieghiamo su una misura sensata
   cssW = Math.max(320, window.innerWidth  || 0);
@@ -54,6 +92,8 @@ R.resize = function(){
   // è grande la finestra per l'occhio, quindi dalla misura in pixel CSS
   let zoom = Math.max(2, Math.min(4, Math.round(cssW/(19*T))));
   if(cssW < 760) zoom = Math.max(2, Math.min(3, Math.round(cssW/(13*T))));
+  // la scelta del giocatore, se l'ha fatta, vale più del conto qui sopra
+  if(zoomScelto) zoom = zoomScelto;
   // ...ma l'ingrandimento effettivo dev'essere un numero INTERO di pixel fisici
   SCALE = Math.max(1, Math.round(zoom*DPR));
 
@@ -162,6 +202,87 @@ function terrenoAttorno(m, gx, gy){
    il font del sistema e non a pixel: a questa misura un alfabeto
    disegnato a mano sarebbe illeggibile, e una targhetta che non si
    legge non serve a niente. */
+/* ===================================================================
+   IL TESTO DEL MONDO, ALLA RISOLUZIONE VERA DELLO SCHERMO
+
+   Tutto il gioco si disegna in una tela virtuale da `VW×VH` e poi si
+   ingrandisce di `SCALE` a pixel netti: è quello che fa la pixel art, ed
+   è giusto per gli sprite, che sono disegnati pixel per pixel.
+
+   Per il TESTO no. Le nuvolette, le targhette e i numerini che volano
+   non sono pixel art: sono scritti in Nunito e in system-ui, che sono
+   caratteri normali, già lisciati dal browser. Scritti a 9px dentro la
+   tela virtuale e poi ingranditi tre volte, quello che arrivava allo
+   schermo non erano lettere da 27px: erano lettere da 9px con la loro
+   lisciatura fatta a blocchetti da 3×3. Misurato su un 1920×1080: ogni
+   tratto di lettera era spesso 3 pixel fisici, minimo.
+
+   È il motivo per cui sul telefono si vede bene e sul computer no. Non
+   è il `devicePixelRatio` — quello è già gestito, la tela lavora in
+   pixel fisici — è che sul telefono un pixel di gioco è 1 pixel CSS
+   (schermo piccolo, DPR alto) e su un monitor grande ne sono 3.
+
+   Quindi il testo si mette in coda qui e si scrive DOPO l'ingrandimento,
+   con lo stesso carattere a `9*SCALE`: stessa misura all'occhio, tratti
+   da un pixel. Le cornici — la tavoletta di legno, la nuvoletta —
+   restano dentro alla tela virtuale, perché quelle sì che sono pixel
+   art e devono restare sulla griglia.
+
+   Il prezzo, nominabile: il testo passa sopra alla gradazione, quindi di
+   notte non si tinge di blu con tutto il resto. Si vede pochissimo
+   perché è quasi tutto scuro su fondo chiaro — e il fondo, che è dentro
+   la tela, la tinta ce l'ha. Se un giorno desse fastidio, la strada è
+   spostare `FX.gradazione` dopo il blit: è un riempimento piatto e dà lo
+   stesso risultato prima o dopo l'ingrandimento. La vignettatura no,
+   quella è un gradiente e deve restare retinata sulla griglia. */
+let testiSopra = [];
+
+function testoNitido(testo, x, y, opz){
+  testiSopra.push({
+    testo:String(testo), x, y,
+    px: opz.px || 9,
+    famiglia: opz.famiglia || 'system-ui, sans-serif',
+    colore: opz.colore || '#2a1d12',
+    allinea: opz.allinea || 'center',
+    base: opz.base || 'middle',
+    ombra: opz.ombra || null,
+    alfa: (opz.alfa === undefined) ? 1 : opz.alfa
+  });
+}
+
+function scriviTestiSopra(){
+  if(!testiSopra.length) return;
+  for(const t of testiSopra){
+    ctx.globalAlpha = t.alfa;
+    ctx.font = 'bold ' + (t.px*SCALE) + 'px ' + t.famiglia;
+    ctx.textAlign = t.allinea;
+    ctx.textBaseline = t.base;
+    /* Le coordinate sono quelle della tela virtuale: qui si moltiplicano
+       per SCALE, e NON si arrotondano. Arrotondando al pixel fisico il
+       testo scatterebbe di un pixel intero mentre la telecamera scorre
+       liscia, e si vedrebbe tremolare. */
+    if(t.ombra){
+      ctx.fillStyle = t.ombra;
+      ctx.fillText(t.testo, t.x*SCALE + SCALE, t.y*SCALE + SCALE);
+    }
+    ctx.fillStyle = t.colore;
+    ctx.fillText(t.testo, t.x*SCALE, t.y*SCALE);
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'start';
+  ctx.textBaseline = 'alphabetic';
+  testiSopra.length = 0;
+}
+
+/* La misura del testo serve PRIMA, per sapere quanto larga fare la
+   tavoletta o la nuvoletta, e va fatta nella tela virtuale — è lì che si
+   disegna la cornice. Il carattere è lo stesso e la larghezza è
+   proporzionale, quindi la scritta nitida ci sta dentro identica. */
+function larghezzaTesto(testo, px, famiglia){
+  sx.font = 'bold ' + px + 'px ' + famiglia;
+  return sx.measureText(String(testo)).width;
+}
+
 /* Le targhette messe in questo fotogramma, per non pestarsi fra loro.
    Due casse affiancate hanno i coperchi a trentadue pixel di distanza e
    le targhette sono larghe il triplo: si sovrapponevano e non si leggeva
@@ -169,12 +290,10 @@ function terrenoAttorno(m, gx, gy){
 let targhettePoste = [];
 const ALTA_T = 13, SALTO_T = 15;
 
+const CAR_T = 'system-ui, sans-serif';
 function targhetta(testo, cx, cy){
   const s = String(testo).slice(0, 18);
-  sx.font = 'bold 9px system-ui, sans-serif';
-  sx.textAlign = 'center';
-  sx.textBaseline = 'middle';
-  const w = Math.ceil(sx.measureText(s).width) + 8;
+  const w = Math.ceil(larghezzaTesto(s, 9, CAR_T)) + 8;
   let x0 = Math.round(cx - w/2), y0 = Math.round(cy - 7);
 
   /* si alza di un gradino per volta finché non tocca più nessuno; dopo
@@ -194,10 +313,7 @@ function targhetta(testo, cx, cy){
   ART.px(sx, x0, y0, w, ALTA_T, I.legnoOmbra);
   ART.px(sx, x0+1, y0+1, w-2, ALTA_T-2, I.legno);
   ART.px(sx, x0+1, y0+1, w-2, 1, I.legnoLuce);
-  sx.fillStyle = '#2a1d12';
-  sx.fillText(s, Math.round(x0 + w/2), y0 + 7);
-  sx.textAlign = 'start';
-  sx.textBaseline = 'alphabetic';
+  testoNitido(s, x0 + w/2, y0 + 7, { px:9, famiglia:CAR_T, colore:'#2a1d12' });
 }
 
 /* ===================================================================
@@ -268,15 +384,13 @@ function spezza(testo){
   return righe;
 }
 
+const CAR_F = 'Nunito, system-ui, sans-serif';
 function fumetto(testo, cx, cy, opacita){
   const righe = spezza(testo);
   if(!righe.length) return;
-  sx.font = 'bold 9px Nunito, system-ui, sans-serif';
-  sx.textAlign = 'center';
-  sx.textBaseline = 'middle';
 
   let larga = 0;
-  for(const r of righe) larga = Math.max(larga, Math.ceil(sx.measureText(r).width));
+  for(const r of righe) larga = Math.max(larga, Math.ceil(larghezzaTesto(r, 9, CAR_F)));
   const w = larga + 10, h = righe.length*FUM_ALTA + 6;
   let x0 = Math.round(cx - w/2), y0 = Math.round(cy - h);
 
@@ -304,11 +418,12 @@ function fumetto(testo, cx, cy, opacita){
   ART.px(sx, tx+1, y0+h-1, 2, 2, '#fdf6e4');
   ART.px(sx, tx+1, y0+h+1, 2, 1, '#2a1d12');
 
-  sx.fillStyle = '#3a2a1a';
-  righe.forEach((r, i)=> sx.fillText(r, Math.round(x0 + w/2), y0 + 4 + i*FUM_ALTA + 4));
   sx.globalAlpha = 1;
-  sx.textAlign = 'start';
-  sx.textBaseline = 'alphabetic';
+  /* L'opacità viaggia col testo: le nuvolette svaniscono, e una scritta
+     che resta piena su una nuvoletta che se ne va è la cosa più strana
+     che si possa vedere. */
+  righe.forEach((r, i)=> testoNitido(r, x0 + w/2, y0 + 4 + i*FUM_ALTA + 4,
+    { px:9, famiglia:CAR_F, colore:'#3a2a1a', alfa:a }));
 }
 
 /* Variante di un oggetto ricavata dalla sua casella: due alberi vicini
@@ -933,6 +1048,9 @@ R.disegna = function(G){
   /* ---------- BLIT ---------- */
   ctx.clearRect(0,0,cvs.width,cvs.height);
   ctx.drawImage(scene, 0,0, VW*SCALE, VH*SCALE);
+  /* e sopra, alla risoluzione vera dello schermo, tutto il testo del
+     mondo: vedi il cappello di `testoNitido` per il perché */
+  scriviTestiSopra();
 };
 
 /* ===================================================================
@@ -1860,13 +1978,13 @@ function disegnaParticella(p, ox, oy){
       break;
     }
     case 'testo': {
-      sx.font='bold 9px Nunito, sans-serif';
-      sx.textAlign='center';
-      sx.fillStyle='rgba(0,0,0,0.55)';
-      sx.fillText(p.testo, px+1, py+1);
-      sx.fillStyle=p.c;
-      sx.fillText(p.testo, px, py);
-      sx.textAlign='left';
+      /* «+1 Rapa», «LIVELLO 4»: sono le scritte più piccole del gioco e
+         le più corte, cioè quelle che una lisciatura a blocchetti da 3
+         rendeva più difficili da leggere di quanto siano. Vanno sopra,
+         alla risoluzione vera, con l'opacità loro perché svaniscono
+         salendo. `a` è già l'opacità calcolata per questa particella. */
+      testoNitido(p.testo, px, py, { px:9, famiglia:'Nunito, sans-serif',
+        colore:p.c, base:'alphabetic', ombra:'rgba(0,0,0,0.55)', alfa:a });
       break;
     }
     case 'cuoricino': {

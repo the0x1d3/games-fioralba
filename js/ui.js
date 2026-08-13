@@ -2929,7 +2929,47 @@ U.menu = function(G){
       s3.appendChild(r);
     }
 
-    /* ---- 4. LINGUA ---- */
+    /* ---- 4. GRAFICA ----
+
+       Nasce da una domanda di chi ci gioca: «sul telefono si vede
+       benissimo, sul PC sgranato». È vero ed è spiegabile — il gioco
+       tiene ferme le caselle in vista, quindi su un monitor grande un
+       pixel di gioco diventa un blocchetto da tre — ma non c'è un valore
+       giusto per tutti, quindi si sceglie.
+
+       Il riquadro dice quante caselle stai vedendo e si aggiorna al
+       clic: il baratto (più mondo contro pixel più grossi) si vede
+       invece di doverlo leggere. */
+    {
+      const sg = sezione(wrap, 'Grafica');
+      const riga=document.createElement('div'); riga.className='imp-riga';
+      const nota=document.createElement('div'); nota.className='muted imp-nota';
+      const scrivi=()=>{
+        const c = REND.caselleInVista();
+        nota.textContent = F('In vista: {0} caselle in larghezza, {1} in altezza.', c.larghe, c.alte);
+      };
+      for(const [n,lab] of [[null,'Automatica'],[2,'Pixel piccoli'],[3,'Medi'],[4,'Pixel grandi']]){
+        const b=document.createElement('button');
+        const attivo = REND.zoomScelto() === n;
+        b.className='btn' + (attivo ? ' gold' : ' blue');
+        b.textContent = T(lab);
+        b.disabled = attivo;
+        b.onclick=()=>{
+          REND.impostaZoom(n);
+          /* Il fondale è tagliato a misura della vista vecchia: senza
+             buttarlo, cambiando zoom resta stampato quello di prima. */
+          if(REND.invalidaTerreno) REND.invalidaTerreno();
+          scrivi();
+          U.aggiorna();
+        };
+        riga.appendChild(b);
+      }
+      sg.appendChild(riga);
+      scrivi();
+      sg.appendChild(nota);
+    }
+
+    /* ---- 5. LINGUA ---- */
     if(window.LINGUA && LINGUA.elenco.length > 1){
       const s4 = sezione(wrap, 'Lingua');
       const riga=document.createElement('div'); riga.className='imp-riga';

@@ -16,6 +16,15 @@
 
 window.CHANGELOG = [
   {
+    v: '3.4',
+    data: 'agosto 2026',
+    titolo: 'Le scritte non sono più sgranate, e i pixel li scegli tu',
+    voci: [
+      { tipo:'meglio', t:'Tutto il testo del mondo alla risoluzione vera dello schermo', d:'Le nuvolette di chi parla, le targhette delle casse e dei cartelli, i «+1 Rapa» che volano: erano scritti dentro alla tela piccola del gioco e poi ingranditi tre volte insieme a tutto il resto. Non arrivavano lettere grandi: arrivavano lettere piccole con la loro sfumatura fatta a blocchetti da tre. È il motivo per cui sul telefono si leggevano bene e sul computer no — lì un pixel di gioco è largo un pixel dello schermo, su un monitor grande ne è largo tre. Adesso le scritte si disegnano sopra, alla risoluzione vera: stessa misura all\'occhio, tratti netti. Le cornici di legno e le nuvolette restano pixel art, come devono.' },
+      { tipo:'nuovo',  t:'Puoi scegliere quanto grandi sono i pixel', d:'Nelle impostazioni, sotto «Grafica». Il gioco tiene in vista una ventina di caselle su qualunque schermo, e su un monitor grande questo vuol dire pixel grossi: se preferisci vedere più mondo con pixel più minuti, adesso si può. Il riquadro dice quante caselle stai vedendo e cambia mentre scegli, così il baratto lo vedi invece di leggerlo. La scelta resta su questo apparecchio e non viaggia col salvataggio: lo stesso podere aperto sul telefono e sul computer vuole due valori diversi.' }
+    ]
+  },
+  {
     v: '3.3',
     data: 'agosto 2026',
     titolo: 'Gli abitanti hanno una storia da raccontarti',
