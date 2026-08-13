@@ -558,6 +558,125 @@ function costruisciProgressi(){
 }
 
 /* --------------------------------------------------------------- */
+/* STORIE DEL PAESE                                                */
+/* --------------------------------------------------------------- */
+/* Una vicenda intera vuole quattro cose che a mano costano mezz'ora:
+   l'amicizia giusta, la roba da consegnare, il giro fino al posto e
+   tre conversazioni. Qui è un clic per passo.
+
+   Passa da `VICENDE.avanza`, che è la stessa funzione che chiama la
+   scelta nel dialogo: se un giorno il motore cambia, questo cambia con
+   lui invece di continuare a provare una strada che non esiste più.
+   L'amicizia si alza scrivendo il numero, ed è l'unica scorciatoia —
+   ma è la stessa cosa che fa un regalo, solo senza aspettare i giorni.
+
+   `UI.chiudiDialogo()` davanti non è cerimonia: la scelta vera chiude il
+   dialogo PRIMA di eseguire l'azione, e il premio dell'ultimo passo è
+   appeso al `fine` del dialogo. Aprendone uno nuovo sopra a quello
+   ancora aperto, `dlgFine` verrebbe sovrascritto e il premio non lo
+   pagherebbe più nessuno. */
+function unPassoDiVicenda(id, zitto){
+  const v = DATA.VICENDE[id];
+  const s = G.vicende[id];
+  if(s && s.fatta){ if(!zitto) nota(v.titolo + ': già finita'); return false; }
+
+  const serve = (v.cuori||0) * 100;
+  if((G.amicizia[v.npc]||0) < serve) G.amicizia[v.npc] = serve;
+
+  const p = s ? v.passi[s.passo] : v.passi[0];
+  const dati = [];
+  if(p && p.tipo === 'porta'){
+    for(const k in p.ing){
+      const manca = p.ing[k] - G.conta(k);
+      if(manca > 0){
+        let messi = 0;
+        for(let i=0;i<manca;i++){ if(!G.aggiungi(k,1)) break; messi++; }
+        dati.push(IT.nome(k) + ' ×' + messi);
+        if(messi < manca){ nota('zaino pieno: manca ' + IT.nome(k) + ' per andare avanti', false); return false; }
+      }
+    }
+  }
+
+  UI.chiudiDialogo();
+  VICENDE.avanza(id);
+
+  if(!zitto){
+    const d = G.vicende[id] || {};
+    const dove = (VICENDE.attive().find(x=>x.id===id) || {}).compito;
+    /* «finita, premio pagato» era falso e misurato falso: il premio è
+       appeso al `fine` del dialogo, quindi al momento di questa riga
+       c'erano ancora 600 monete e ne sarebbero arrivate 1.300 chiudendo
+       l'ultima battuta. Un pannello che annuncia una cosa non ancora
+       successa è peggio di uno muto, perché chi prova va a controllare
+       il valore sbagliato e conclude che il premio non funziona. */
+    nota(v.titolo + ': ' + (d.fatta ? 'finita — il premio arriva chiudendo il dialogo'
+          : 'passo ' + (d.passo+1) + ' di ' + v.passi.length + ' — ' + dove)
+        + (dati.length ? ' (dati: ' + dati.join(', ') + ')' : ''));
+  }
+  return true;
+}
+
+function costruisciVicende(){
+  const g = sezione('Storie del paese');
+  for(const id in DATA.VICENDE)
+    bottone(g, DATA.VICENDE[id].titolo, ()=>unPassoDiVicenda(id));
+
+  bottone(g, 'Finisci tutte', ()=>{
+    let passi = 0, guardia = 0;
+    for(const id in DATA.VICENDE)
+      while(!(G.vicende[id]||{}).fatta && guardia++ < 60)
+        { if(!unPassoDiVicenda(id, true)) break; passi++; }
+    UI.chiudiDialogo();
+    nota(passi + ' passi fatti: sei storie finite, e i quattro miglioramenti si possono comprare');
+  });
+
+  bottone(g, 'Azzera le storie', ()=>{
+    G.vicende = {};
+    nota('storie da rifare (i cuori restano dove sono)');
+  }, 'rosso');
+}
+
+/* --------------------------------------------------------------- */
+/* SULLA PERSONA                                                   */
+/* --------------------------------------------------------------- */
+/* Comprare passa da `PERSONA.compra`, che rifiuta se la vicenda non è
+   finita: il bottone quindi prima finisce la storia di quella persona,
+   e lo dice. È il percorso vero, in ordine, e non un permesso scritto a
+   mano — un `G.persona.zaino = 2` lascerebbe la partita in uno stato in
+   cui hai lo zaino grande e Bruno non ti ha mai parlato del libretto. */
+function costruisciPersona(){
+  const g = sezione('Sulla persona');
+  for(const k in DATA.PERSONA){
+    const U = DATA.PERSONA[k];
+    bottone(g, U.nome + ' ▸', ()=>{
+      if(PERSONA.grado(k) >= U.gradi.length){ nota(U.nome + ': già al massimo'); return; }
+      let storia = '';
+      if(!PERSONA.disponibile(k)){
+        let guardia = 0;
+        while(!(G.vicende[U.vicenda]||{}).fatta && guardia++ < 20)
+          if(!unPassoDiVicenda(U.vicenda, true)) break;
+        UI.chiudiDialogo();
+        storia = ' (prima ho finito «' + DATA.VICENDE[U.vicenda].titolo + '»)';
+      }
+      const c = PERSONA.costo(k);
+      if(G.oro < c.costo) G.oro = c.costo;
+      for(const i in (c.ing||{})){
+        const manca = c.ing[i] - G.conta(i);
+        for(let n=0;n<manca;n++) if(!G.aggiungi(i,1)) break;
+      }
+      if(!PERSONA.compra(k)){ nota(U.nome + ': non è passato — zaino pieno o materiale mancante', false); return; }
+      nota(U.nome + ': ' + c.nome + ' — ' + PERSONA.frase(k) + storia);
+    });
+  }
+
+  bottone(g, 'Azzera i miglioramenti', ()=>{
+    G.persona = {};
+    G.applicaPersona();
+    nota('tolti: zaino ' + G.invMax + ' caselle, energia ' + G.energiaMax);
+  }, 'rosso');
+}
+
+/* --------------------------------------------------------------- */
 /* SALVATAGGIO                                                     */
 /* --------------------------------------------------------------- */
 function costruisciSalvataggio(){
@@ -616,6 +735,8 @@ function monta(){
   costruisciLuoghi();
   costruisciLivelli();
   costruisciStoria();
+  costruisciVicende();
+  costruisciPersona();
   costruisciProgressi();
   costruisciSalvataggio();
 
