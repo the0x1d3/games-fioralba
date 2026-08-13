@@ -1343,14 +1343,16 @@ verifica('i comandi a tocco ci sono tutti, e passano dai tasti veri', () => {
   const game = senzaCommenti('game.js');
   const ui   = senzaCommenti('ui.js');
 
-  for (const id of ['tocco', 'tocco-pad', 'tocco-usa', 'tocco-parla'])
+  for (const id of ['tocco', 'tocco-pad', 'tocco-usa', 'tocco-parla', 'tocco-corri'])
     if (!html.includes('id="' + id + '"')) problemi.push(`manca #${id} in index.html`);
 
-  // i due verbi, e sotto i due tasti che il gioco ascolta davvero
+  // i verbi, e sotto i tasti che il gioco ascolta davvero
   if (!/collegaTasto\(\s*\$\('#tocco-usa'\)\s*,\s*' '\s*\)/.test(src))
     problemi.push("«Usa» non è più collegato a Spazio: senza, non si zappa e non si pesca");
   if (!/collegaTasto\(\s*\$\('#tocco-parla'\)\s*,\s*'e'\s*\)/.test(src))
     problemi.push("«Parla» non è più collegato a E: senza, porte, casse e abitanti tornano irraggiungibili");
+  if (!/collegaTasto\(\s*\$\('#tocco-corri'\)\s*,\s*'shift'\s*\)/.test(src))
+    problemi.push("«Corri» non è più collegato a Shift: da telefono si tornerebbe ad andare solo al passo");
 
   // la regola del file: si emettono tasti, non si chiamano le funzioni
   if (!/new KeyboardEvent\('keydown'/.test(src) || !/new KeyboardEvent\('keyup'/.test(src))
@@ -1399,6 +1401,40 @@ verifica('i comandi a tocco ci sono tutti, e passano dai tasti veri', () => {
   if (!/html\.col-dito #quickbtns\{[^}]*flex-direction:row/.test(cssRitto))
     problemi.push('i tasti dell\'HUD sono tornati in colonna: rifarebbero un muro sul lato destro');
 
+  return problemi;
+});
+
+/* La veglia fissata «domani sera» e poi saltata — a dormire prima del
+   tramonto, o svenendo a mezzanotte dall'altra parte della valle — non
+   deve chiudere l'atto secondo per sempre: `eSeraDiVeglia()` confronta
+   il giorno con l'uguale, e con `giornoTot` andato oltre non tornava
+   mai più vera. Fiammella ripeteva «È domani sera» per l'eternità.
+   Il controllo esegue il modulo vero e verifica che il risveglio
+   riporti la data a oggi: è una prova di comportamento, non di testo,
+   così qualunque modo di correggere il difetto la tiene verde. */
+verifica('la veglia saltata si ripropone la sera dopo', () => {
+  const vm = require('vm');
+  const problemi = [];
+  const sandbox = { window:{}, console, DATA };
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(RADICE, 'js/solstizio.js'), 'utf8'),
+    sandbox, { filename:'solstizio.js' });
+  sandbox.G = {
+    giornoTot: 12,
+    trame: { veglia: { avviata:true, memorie:{}, verita:true, invitati:{}, giorno:10, fatta:false } },
+    maps: {}     // senza bosco: qui conta solo la data, non gli ospiti
+  };
+  sandbox.window.SOLSTIZIO.aggiornaOspitiVeglia();
+  const v = sandbox.G.trame.veglia;
+  if (v.giorno !== 12)
+    problemi.push(`la veglia saltata resta al giorno ${v.giorno} con giornoTot 12: l'atto secondo non si chiude più`);
+  if (!sandbox.window.SOLSTIZIO.eSeraDiVeglia())
+    problemi.push('dopo il risveglio eSeraDiVeglia() è ancora falsa: Fiammella continuerebbe a dire «È domani sera»');
+  // una veglia già fatta invece non si riapre
+  sandbox.G.trame.veglia = { avviata:true, memorie:{}, verita:true, invitati:{}, giorno:10, fatta:true };
+  sandbox.window.SOLSTIZIO.aggiornaOspitiVeglia();
+  if (sandbox.G.trame.veglia.giorno !== 10)
+    problemi.push('una veglia già conclusa viene rimessa in calendario');
   return problemi;
 });
 

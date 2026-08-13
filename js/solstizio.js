@@ -163,6 +163,17 @@ const eSeraDiVeglia = function(){
 
 let daPrimaDellaVeglia = {};
 function aggiornaOspitiVeglia(){
+  const v = veglia();
+  /* La veglia saltata si ripropone, sempre. `giorno` era fissato a
+     «domani» e basta: chi quella sera andava a dormire prima del
+     tramonto — o sveniva a mezzanotte dall'altra parte della valle —
+     si svegliava con `giornoTot > giorno`, `eSeraDiVeglia()` non
+     tornava mai più vera, e Fiammella ripeteva «È domani sera» per
+     l'eternità: l'atto secondo non si poteva più chiudere. Adesso ogni
+     mattina (questa funzione gira a ogni risveglio e a ogni avvio) la
+     data scaduta si sposta a stasera: i sei hanno già detto di sì, e
+     un sì non scade. */
+  if(v && v.giorno && !v.fatta && G.giornoTot > v.giorno) v.giorno = G.giornoTot;
   const bosco = G.maps.bosco;
   if(!bosco) return;
   const attiva = eSeraDiVeglia();

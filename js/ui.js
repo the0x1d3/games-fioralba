@@ -3470,7 +3470,11 @@ U.riepilogo = function(G, voci, tot, dopo){
     }
     const b=document.createElement('button'); b.className='btn'; b.style.marginTop='14px';
     b.textContent='Buongiorno!';
-    b.onclick=()=>{ U.chiudiModal(); if(dopo) dopo(); };
+    /* `dopo` lo chiama già `chiudiModal` (è l'onClose qui sotto, e vale
+       anche per chi chiude con Escape): chiamarlo pure dal pulsante lo
+       faceva girare due volte, e ogni mattina con la cassa piena
+       arrivavano due frasi di risveglio una sopra l'altra. */
+    b.onclick=()=>{ U.chiudiModal(); };
     body.appendChild(b);
   }, dopo);
 };

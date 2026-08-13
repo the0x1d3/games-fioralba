@@ -84,7 +84,7 @@ G.statoIniziale = statoIniziale;
 /* ===================================================================
    BOOT
    =================================================================== */
-let cvs, ultimo=0, accum=0;
+let cvs, ultimo=0, accum=0, loopInCorsa=false;
 G.tempoMs = 0;
 G.particelle = [];
 G.cam = {x:0,y:0};
@@ -246,7 +246,15 @@ function avviaGioco(conIntro){
     }), 700);
   }
   ultimo = performance.now();
-  requestAnimationFrame(loop);
+  /* Un loop solo, sempre. «Cambia partita» dal menu arriva qui con la
+     partita vecchia ancora in corsa (`G.inGioco` non è mai tornato
+     falso): un secondo requestAnimationFrame avrebbe messo due loop a
+     disegnare lo stesso canvas, e un cambio dopo l'altro li avrebbe
+     accumulati. Il loop esistente continua da solo con lo stato nuovo. */
+  if(!loopInCorsa){
+    loopInCorsa = true;
+    requestAnimationFrame(loop);
+  }
 }
 
 /* ===================================================================
@@ -590,9 +598,16 @@ function sistema(nome, fn){
 }
 
 function loop(ts){
-  if(!G.inGioco) return;                      // il loop si ferma solo uscendo dal gioco
+  if(!G.inGioco){ loopInCorsa = false; return; }   // il loop si ferma solo uscendo dal gioco
   try{
-    const dt = Math.min(50, ts-ultimo);
+    /* Anche da sotto: il primo `ts` di requestAnimationFrame è l'ora di
+       inizio del fotogramma, che può PRECEDERE il performance.now() con
+       cui avviaGioco ha appena riempito `ultimo`. Un dt negativo manda
+       G.tempoMs sotto zero, e col tempo negativo la fase delle
+       increspature della fontana diventa negativa: raggio negativo,
+       `ellipse` lancia, e quel fotogramma muore a metà lasciando il
+       contesto sporco (globalAlpha compreso) per il fotogramma dopo. */
+    const dt = Math.min(50, Math.max(0, ts-ultimo));
     ultimo = ts;
     G.tempoMs += dt;
 

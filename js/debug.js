@@ -537,7 +537,10 @@ function costruisciProgressi(){
   bottone(g, 'Salta la guida', ()=>{
     G.tutorialFatto = true;
     G.guidaNascosta = true;
-    if(window.TUT && TUT.chiudi) TUT.chiudi();
+    /* la funzione si chiama `fine`, non `chiudi`: col nome sbagliato la
+       guardia `TUT.chiudi &&` taceva e il cartello del tutorial restava
+       a schermo dopo il clic */
+    if(window.TUT) TUT.fine(true);
     if(window.GUIDA && GUIDA.init) GUIDA.init();
     nota('primi passi tolti di mezzo');
   });

@@ -325,7 +325,10 @@ L.scheda = function(body){
       (G.premiSospesi||[]).map(p=>IT.nome(p.item)+' ×'+p.n).join(' · ')));
     s.appendChild(t);
     const b = el('button','btn gold','Ritira');
-    b.onclick = ()=>{ L.ritira(); UI.diario(G,'abilita'); };
+    /* la scheda si chiama 'livelli': con 'abilita', che non esiste,
+       il diario ricadeva sul ramo di riserva e chi ritirava i premi
+       si ritrovava davanti «Il podere in numeri» */
+    b.onclick = ()=>{ L.ritira(); UI.diario(G,'livelli'); };
     s.appendChild(b);
     body.appendChild(s);
   }
