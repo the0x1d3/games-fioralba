@@ -1465,6 +1465,64 @@ verifica('ogni collezione ha il suo premio, e i premi esistono', () => {
   return problemi;
 });
 
+/* «Dove si trova» dev'essere tradotto per intero.
+
+   `IT.dove` costruisce le sue frasi dai dati, e per mesi le ha
+   costruite col `+`: il nome dell'oggetto era tradotto e la frase
+   intorno no, quindi in inglese si leggeva «Cresce nel campo dai Semi
+   di **Turnip**, che Bruno vende in primavera». Misurato: 67 righe su
+   121, il 55%.
+
+   Adesso ogni frase è un modello, e questo controllo verifica che ogni
+   modello abbia la sua traduzione. Non è il censimento (`tools/lingua.js`,
+   che gira a parte): è la parte che `npm test` deve poter bocciare,
+   perché una riga mezza inglese non rompe niente e nessuno se ne
+   accorge finché non la legge un giocatore. */
+verifica('«dove si trova» è tradotto per intero', () => {
+  const problemi = [];
+  const ui = fs.readFileSync(path.join(RADICE, 'js', 'ui.js'), 'utf8');
+  const da = ui.indexOf('function nomeStagione(id){');
+  const apre = ui.indexOf('IT.dove = function(id){', da);
+  if (da < 0 || apre < 0) { problemi.push('non trovo IT.dove in ui.js'); return problemi; }
+  const re = /\r?\n\};\r?\n/g; re.lastIndex = apre;
+  let fine = -1, m;
+  while ((m = re.exec(ui))) {
+    const dentro = ui.slice(apre, m.index);
+    if ((dentro.split('{').length - dentro.split('}').length) === 1) { fine = m.index; break; }
+  }
+  if (fine < 0) { problemi.push('non trovo la chiusura di IT.dove'); return problemi; }
+  const zona = ui.slice(da, fine);
+
+  let cat = null;
+  try {
+    const sb = { window:{} };
+    require('vm').runInNewContext(
+      fs.readFileSync(path.join(RADICE, 'js', 'lingua-en.js'), 'utf8'), sb, { filename:'lingua-en.js' });
+    cat = sb.window.LINGUA_EN;
+  } catch (e) { problemi.push('non riesco a leggere il catalogo inglese: ' + e.message); return problemi; }
+
+  /* Ogni letterale passato a T(...) o F(...) dentro alla zona. Le
+     stringhe di servizio (id, chiavi) non hanno spazi e si scartano. */
+  const viste = new Set();
+  for (const mm of zona.matchAll(/\b[TF]\(\s*'((?:[^'\\]|\\.)*)'/g)) {
+    const s = mm[1].replace(/\\'/g, "'").replace(/\\\\/g, '\\');
+    if (s.indexOf(' ') < 0) continue;
+    viste.add(s);
+  }
+  /* e le frasi dentro alla tabella AMANO, che passano tutte da T() */
+  const amano = zona.slice(zona.indexOf('const AMANO = {'), zona.indexOf('};', zona.indexOf('const AMANO = {')));
+  for (const mm of amano.matchAll(/:\s*'((?:[^'\\]|\\.)*)'/g)) {
+    const s = mm[1].replace(/\\'/g, "'").replace(/\\\\/g, '\\');
+    if (s.indexOf(' ') >= 0) viste.add(s);
+  }
+
+  if (viste.size < 20) problemi.push(`trovo solo ${viste.size} frasi in IT.dove: la lettura del sorgente non funziona più`);
+  for (const s of viste)
+    if (!cat[s]) problemi.push('«dove si trova» ha una frase senza traduzione inglese: ' + JSON.stringify(s.slice(0, 70)));
+
+  return problemi;
+});
+
 /* =================================================================== */
 
 const larghezza = 62;

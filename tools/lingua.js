@@ -56,7 +56,11 @@ const USCITE = [
      dentro LINGUA.t come le altre, ma da una funzione locale che questo
      elenco non conosceva — e sei frasi che il giocatore legge di sicuro
      risultavano tradotte quando non lo erano */
-  'dillo'
+  'dillo',
+  /* `F(...)` è il modello con i pezzi dentro, in ui.js e in storie.js.
+     Con la parola intera davanti: senza il confine, `IF(`, `OF(` e
+     qualunque nome che finisce per F entrerebbero nel conto. */
+  '\\bF'
 ];
 
 function testiModuli() {

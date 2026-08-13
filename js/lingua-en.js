@@ -2039,3 +2039,94 @@ Object.assign(window.LINGUA_EN, {
 "Pesci e minerali pagavano già, tramite due traguardi in un'altra scheda, mentre le altre tre collezioni non davano niente. Adesso pagano tutte, nello stesso posto, e nessuna paga due volte. Le cifre dei due traguardi sono passate di là identiche: nessuno prende meno di prima, e chi li aveva già riscossi si ritrova la collezione già riscossa.":
   'Fish and minerals already paid, through two achievements on another tab, while the other three collections gave nothing at all. Now they all pay, in the same place, and none pays twice. The two achievements’ amounts moved across unchanged: nobody gets less than before, and anyone who had already claimed them finds the collection already claimed.'
 });
+
+/* ===================================================================
+   DOVE SI TROVA
+   Le frasi di `IT.dove`, che adesso sono MODELLI e non somme di pezzi.
+   Prima uscivano metà e metà — «Cresce nel campo dai Semi di Turnip,
+   che Bruno vende in primavera» — perché il nome dell'oggetto era
+   tradotto e la frase intorno no. Qui il {0} va dove lo vuole
+   l'inglese: «Turnip Seeds», non «Semi di Turnip».
+   =================================================================== */
+Object.assign(window.LINGUA_EN, {
+/* macchinari */
+'Esce dalla <b>barattoliera</b>, mettendoci dentro {0}.':
+  'Comes out of the <b>preserves jar</b>, with {0} put inside.',
+'Esce dalla <b>botte</b>, mettendoci dentro {0}. Ci vogliono quattro giorni.':
+  'Comes out of the <b>barrel</b>, with {0} put inside. It takes four days.',
+'Esce dalla <b>botte</b>, mettendoci dentro {0}.':
+  'Comes out of the <b>barrel</b>, with {0} put inside.',
+
+/* semi e raccolti */
+'Si semina in <b>{0}</b>, e ci mette <b>{1} giorni</b> a maturare; poi ricresce ogni {2} giorni senza riseminare.':
+  'Sown in <b>{0}</b>, and takes <b>{1} days</b> to ripen; after that it grows back every {2} days without resowing.',
+'Si semina in <b>{0}</b>, e ci mette <b>{1} giorni</b> a maturare.':
+  'Sown in <b>{0}</b>, and takes <b>{1} days</b> to ripen.',
+'Lo vende <b>Bruno</b> in bottega, ma solo nella sua stagione.':
+  '<b>Bruno</b> sells it in the shop, but only in its own season.',
+'Cresce nel campo dai <b>Semi di {0}</b>, che <b>Bruno</b> vende in <b>{1}</b>. Fuori stagione la pianta appassisce.':
+  'Grown in the field from <b>{0} Seeds</b>, which <b>Bruno</b> sells in <b>{1}</b>. Out of season the plant withers.',
+
+/* foraggio */
+'Si trova anche sui <b>cespugli carichi</b> in <b>{0}</b>, tagliandoli con la <b>falce</b>.':
+  'Also found on <b>laden bushes</b> in <b>{0}</b>, by cutting them with the <b>scythe</b>.',
+"Si raccoglie da terra sul <b>Passo di montagna</b>, dove è sempre inverno: c'è tutto l'anno.":
+  'Picked off the ground on the <b>mountain Pass</b>, where it is always winter: it is there all year.',
+"Si raccoglie da terra in <b>{0}</b>, sparso per la valle — prato, bosco, radure. Nelle altre stagioni non c'è.":
+  'Picked off the ground in <b>{0}</b>, scattered about the valley — meadow, woods, clearings. In other seasons there is none.',
+
+/* pesci */
+'nel fiume del paese': 'in the village river',
+'nel lago del bosco': 'in the woodland lake',
+'in mare, alla Costa': 'out at sea, at the Coast',
+'nelle acque della valle': 'in the waters of the valley',
+'Si pesca {0}, in <b>{1}</b>, e solo <b>dopo il tramonto</b>.':
+  'Caught {0}, in <b>{1}</b>, and only <b>after sunset</b>.',
+'Si pesca {0}, in <b>{1}</b>.': 'Caught {0}, in <b>{1}</b>.',
+'Si pesca {0}, e solo <b>dopo il tramonto</b>.': 'Caught {0}, and only <b>after sunset</b>.',
+'Si pesca {0}.': 'Caught {0}.',
+
+/* minerali */
+'Si spacca col <b>piccone</b> nella <b>miniera</b>, e più si scende più se ne trova.':
+  'Broken out with the <b>pickaxe</b> in the <b>mine</b>, and the deeper you go the more there is.',
+'Si spacca col <b>piccone</b> nella <b>miniera</b>.':
+  'Broken out with the <b>pickaxe</b> in the <b>mine</b>.',
+
+/* ricette */
+'Si cucina <b>ai fornelli di casa</b> con: <b>{0}</b>.':
+  'Cooked <b>on the stove at home</b> from: <b>{0}</b>.',
+'Si fa <b>al banco da lavoro</b> (tasto C) con: <b>{0}</b>.':
+  'Made <b>at the workbench</b> (key C) from: <b>{0}</b>.',
+
+/* i casi che i dati non sanno raccontare da soli */
+"Si prende abbattendo alberi e ceppi con l'<b>ascia</b>.":
+  'Got by felling trees and stumps with the <b>axe</b>.',
+'Si prende spaccando sassi col <b>piccone</b>.': 'Got by breaking rocks with the <b>pickaxe</b>.',
+'Si prende tagliando le <b>erbacce</b> con la falce, o a mani nude.':
+  'Got by cutting <b>weeds</b> with the scythe, or with bare hands.',
+'Salta fuori <b>zappando</b> la terra, ogni tanto.': 'Turns up now and then while <b>hoeing</b> the soil.',
+'Dai sassi neri della <b>miniera</b>, o bruciando legna nella fornace.':
+  'From the black rocks in the <b>mine</b>, or by burning wood in the kiln.',
+'Ogni tanto la lascia un <b>albero abbattuto</b>.': 'Now and then a <b>felled tree</b> leaves some behind.',
+'Lo fanno le <b>galline</b> del pollaio, ogni mattina.': 'The <b>hens</b> in the coop lay them every morning.',
+'Lo fa una gallina molto contenta. Trattale bene.': 'Laid by a very contented hen. Treat them well.',
+"Dall'<b>arnia</b>, ogni quattro giorni. Meglio se ci sono fiori intorno.":
+  'From the <b>beehive</b>, every four days. Better if there are flowers around it.',
+'Lo vende <b>Bruno</b> in bottega: viene dalla cascina di là dal colle.':
+  '<b>Bruno</b> sells it in the shop: it comes from the farm over the hill.',
+'La vende <b>Bruno</b>. Ti serve prima il <b>pollaio</b>.':
+  '<b>Bruno</b> sells them. You need the <b>coop</b> first.',
+'Lo vende <b>Bruno</b>, o si fa al banco da lavoro con fibra e carbone.':
+  '<b>Bruno</b> sells it, or you make it at the workbench from fibre and charcoal.',
+"Ce l'hai dall'inizio. <b>Tobia</b>, alla fucina, lo può potenziare.":
+  'You have had it from the start. <b>Tobia</b>, at the forge, can upgrade it.',
+'La consegna il <b>Santuario</b>, nel bosco, quando gli porti le cinque offerte di <b>{0}</b>. Le quattro braci insieme riaccendono la Lanterna.':
+  'The <b>Shrine</b> in the woods hands it over when you bring it the five offerings of <b>{0}</b>. The four embers together relight the Lantern.',
+"Te l'ha lasciato <b>Nonna Ilde</b>. Non si vende e non si perde.":
+  '<b>Granny Ilde</b> left it to you. It cannot be sold and cannot be lost.',
+'Roba che ogni tanto abbocca al posto di un pesce. Si butta, o si vende per due soldi.':
+  'Junk that bites now and then instead of a fish. Throw it away, or sell it for pennies.'
+});
+
+/* la congiunzione degli elenchi: «primavera, autunno e inverno» */
+Object.assign(window.LINGUA_EN, { '{0} e {1}': '{0} and {1}' });

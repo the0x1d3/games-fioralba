@@ -98,14 +98,35 @@ IT.commestibile = id => IT.energia(id) > 0;
    ricetta, la spiegazione si aggiorna da sola invece di restare a
    raccontare il gioco di ieri.
    =================================================================== */
-const NOMI_STAGIONE = { primavera:'primavera', estate:'estate', autunno:'autunno', inverno:'inverno' };
-function elenco(a, cong){
+/* I nomi delle stagioni si prendono da DATA, non da una tabella qui.
+
+   C'era `NOMI_STAGIONE = { primavera:'primavera', … }`, cioè gli stessi
+   nomi scritti una seconda volta in minuscolo — e scritti in italiano,
+   quindi «Bruno vende in primavera» restava «in primavera» anche
+   giocando in inglese. `DATA.SEASONS` invece il motore della lingua lo
+   traduce sul posto, e da lì i nomi arrivano già nella lingua giusta.
+   Minuscoli perché stanno in mezzo a una frase: in inglese le stagioni
+   vogliono la maiuscola solo a inizio periodo, e qui non ci stanno mai. */
+function nomeStagione(id){
+  const S = (DATA.SEASONS || []).find(s => s.id === id);
+  const n = S ? S.nome : id;
+  return window.LINGUA && LINGUA.attiva === 'en' ? n.toLowerCase() : String(n).toLowerCase();
+}
+function elenco(a){
   const v = a.filter(Boolean);
   if(!v.length) return '';
   if(v.length===1) return v[0];
-  return v.slice(0,-1).join(', ') + ' ' + (cong||'e') + ' ' + v[v.length-1];
+  /* La congiunzione passa da un MODELLO e non da `T('e')`.
+
+     Con `T('e')` restava «spring, autumn e winter»: il censimento
+     scarta le stringhe più corte di due caratteri — sono id, chiavi,
+     simboli — quindi quella «e» non l'avrebbe mai chiesta a nessuno, e
+     l'elenco sarebbe rimasto mezzo italiano senza che niente lo
+     segnalasse. Come modello invece è una frase come le altre, e in
+     inglese può anche diventare «, and» con la virgola. */
+  return F('{0} e {1}', v.slice(0,-1).join(', '), v[v.length-1]);
 }
-function stagioni(a){ return elenco((a||[]).map(s=>NOMI_STAGIONE[s]||s), 'e'); }
+function stagioni(a){ return elenco((a||[]).map(nomeStagione)); }
 
 /* `IT.dove` risponde in HTML, perché quasi ovunque finisce dentro alla
    pagina. Nell'attributo `title` invece i tag si vedrebbero scritti. */
@@ -120,13 +141,27 @@ function ricettaDi(id){
   return null;
 }
 
+/* ===================================================================
+   DOVE SI TROVA
+
+   Ricava la provenienza dai dati invece di tenerne un elenco a mano,
+   così resta vera da sola quando i dati cambiano.
+
+   OGNI FRASE È UN MODELLO, non una somma di pezzi. Prima erano
+   concatenazioni — `'Cresce nel campo dai Semi di ' + C.nome + ', che
+   Bruno vende in ' + stagioni(...)` — e in inglese uscivano metà e
+   metà: «Cresce nel campo dai Semi di **Turnip**, che Bruno vende in
+   primavera». Misurato: 67 righe su 121, il 55%. È lo stesso difetto di
+   «Vino di Grapes», e la cura è la stessa: il {0} va dove lo vuole la
+   lingua d'arrivo, non dove stava in italiano.
+   =================================================================== */
 IT.dove = function(id){
   /* prodotti delle macchine: conserva:rapa, vino:uva… */
   if(id.indexOf(':')>0){
     const k = id.split(':')[0], s = IT.nome(IT.src(id));
-    if(k==='conserva') return 'Esce dalla <b>barattoliera</b>, mettendoci dentro ' + s + '.';
-    if(k==='vino')     return 'Esce dalla <b>botte</b>, mettendoci dentro ' + s + '. Ci vogliono quattro giorni.';
-    if(k==='succo')    return 'Esce dalla <b>botte</b>, mettendoci dentro ' + s + '.';
+    if(k==='conserva') return F('Esce dalla <b>barattoliera</b>, mettendoci dentro {0}.', s);
+    if(k==='vino')     return F('Esce dalla <b>botte</b>, mettendoci dentro {0}. Ci vogliono quattro giorni.', s);
+    if(k==='succo')    return F('Esce dalla <b>botte</b>, mettendoci dentro {0}.', s);
     return null;
   }
   const I = DATA.ITEMS[id];
@@ -137,20 +172,23 @@ IT.dove = function(id){
     const c = id.replace(/^seme_/, '');
     const C = DATA.CROPS[c];
     if(C){
-      const st = stagioni(C.stagioni);
-      let dove = 'Si semina in <b>' + st + '</b>';
       const giorni = C.fasi.reduce((a,b)=>a+b, 0);
-      dove += ', e ci mette <b>' + giorni + ' giorni</b> a maturare';
-      if(C.ricresce) dove += '; poi ricresce ogni ' + C.ricresce + ' giorni senza riseminare';
-      dove += '. Lo vende <b>Bruno</b> in bottega, ma solo nella sua stagione.';
-      return dove;
+      /* Tre frasi e non una con dei pezzi opzionali incollati: chi
+         traduce deve poter girare l'ordine di tutta la frase, e con
+         «...» + «...» + «...» non può. */
+      const base = C.ricresce
+        ? F('Si semina in <b>{0}</b>, e ci mette <b>{1} giorni</b> a maturare; poi ricresce ogni {2} giorni senza riseminare.',
+            stagioni(C.stagioni), giorni, C.ricresce)
+        : F('Si semina in <b>{0}</b>, e ci mette <b>{1} giorni</b> a maturare.',
+            stagioni(C.stagioni), giorni);
+      return base + ' ' + T('Lo vende <b>Bruno</b> in bottega, ma solo nella sua stagione.');
     }
   }
   /* raccolti: si risale al seme */
   if(DATA.CROPS[id]){
     const C = DATA.CROPS[id];
-    return 'Cresce nel campo dai <b>Semi di ' + C.nome + '</b>, che <b>Bruno</b> vende in <b>' +
-           stagioni(C.stagioni) + '</b>. Fuori stagione la pianta appassisce.';
+    return F('Cresce nel campo dai <b>Semi di {0}</b>, che <b>Bruno</b> vende in <b>{1}</b>. Fuori stagione la pianta appassisce.',
+             C.nome, stagioni(C.stagioni));
   }
   /* foraggio: si raccoglie per terra, e conta la stagione */
   if(I.cat === 'foraggio'){
@@ -162,32 +200,44 @@ IT.dove = function(id){
        tutto l'anno, ma sui cespugli solo d'inverno, e senza dirlo la
        riga si contraddiceva da sola. */
     const cespuglio = daCespuglio
-      ? ' Si trova anche sui <b>cespugli carichi</b> in <b>' + (NOMI_STAGIONE[daCespuglio]||daCespuglio) +
-        '</b>, tagliandoli con la <b>falce</b>.' : '';
+      ? ' ' + F('Si trova anche sui <b>cespugli carichi</b> in <b>{0}</b>, tagliandoli con la <b>falce</b>.',
+                nomeStagione(daCespuglio))
+      : '';
     if(['bacca_inverno','radice_gelata','fiocco_cristallo'].indexOf(id) >= 0)
-      return 'Si raccoglie da terra sul <b>Passo di montagna</b>, dove è sempre inverno: c\'è tutto l\'anno.' + cespuglio;
-    return 'Si raccoglie da terra in <b>' + (NOMI_STAGIONE[I.stagione]||I.stagione) +
-           '</b>, sparso per la valle — prato, bosco, radure. Nelle altre stagioni non c\'è.' + cespuglio;
+      return T('Si raccoglie da terra sul <b>Passo di montagna</b>, dove è sempre inverno: c\'è tutto l\'anno.') + cespuglio;
+    return F('Si raccoglie da terra in <b>{0}</b>, sparso per la valle — prato, bosco, radure. Nelle altre stagioni non c\'è.',
+             nomeStagione(I.stagione)) + cespuglio;
   }
   /* pesci */
   if(I.cat === 'pesce' && !I.spazzatura){
-    const luoghi = { fiume:'nel fiume del paese', lago:'nel lago del bosco', mare:'in mare, alla Costa' };
-    let d = 'Si pesca ' + (luoghi[I.luogo] || 'nelle acque della valle');
-    if(I.stagioni && I.stagioni.length < 4) d += ', in <b>' + stagioni(I.stagioni) + '</b>';
-    if(I.notte) d += ', e solo <b>dopo il tramonto</b>';
-    return d + '.';
+    const dove = I.luogo === 'fiume' ? T('nel fiume del paese')
+               : I.luogo === 'lago'  ? T('nel lago del bosco')
+               : I.luogo === 'mare'  ? T('in mare, alla Costa')
+                                     : T('nelle acque della valle');
+    const diStagione = I.stagioni && I.stagioni.length < 4;
+    /* Quattro frasi intere invece di una costruita a pezzi: in inglese
+       «only after sunset» non sta dove sta «e solo dopo il tramonto», e
+       incollando si finiva con la virgola italiana in mezzo. */
+    if(diStagione && I.notte)
+      return F('Si pesca {0}, in <b>{1}</b>, e solo <b>dopo il tramonto</b>.', dove, stagioni(I.stagioni));
+    if(diStagione) return F('Si pesca {0}, in <b>{1}</b>.', dove, stagioni(I.stagioni));
+    if(I.notte)    return F('Si pesca {0}, e solo <b>dopo il tramonto</b>.', dove);
+    return F('Si pesca {0}.', dove);
   }
   /* minerali */
   if(I.cat === 'minerale'){
     const rari = ['oro','ametista','gemma_luna','geode','quarzo'];
-    return 'Si spacca col <b>piccone</b> nella <b>miniera</b>' +
-           (rari.indexOf(id)>=0 ? ', e più si scende più se ne trova.' : '.');
+    return T(rari.indexOf(id)>=0
+      ? 'Si spacca col <b>piccone</b> nella <b>miniera</b>, e più si scende più se ne trova.'
+      : 'Si spacca col <b>piccone</b> nella <b>miniera</b>.');
   }
   /* roba che si costruisce o si cucina */
   const r = ricettaDi(id);
   if(r){
     const lista = Object.keys(r.ing).map(k => IT.nome(k) + ' ×' + r.ing[k]).join(', ');
-    return 'Si fa ' + r.dove + ' con: <b>' + lista + '</b>.';
+    return F(r.dove === 'ai fornelli di casa'
+      ? 'Si cucina <b>ai fornelli di casa</b> con: <b>{0}</b>.'
+      : 'Si fa <b>al banco da lavoro</b> (tasto C) con: <b>{0}</b>.', lista);
   }
   /* i pochi casi che i dati non sanno raccontare da soli */
   const AMANO = {
@@ -204,17 +254,16 @@ IT.dove = function(id){
     gallina:'La vende <b>Bruno</b>. Ti serve prima il <b>pollaio</b>.',
     concime:'Lo vende <b>Bruno</b>, o si fa al banco da lavoro con fibra e carbone.'
   };
-  if(AMANO[id]) return AMANO[id];
-  if(I.cat === 'attrezzo') return 'Ce l\'hai dall\'inizio. <b>Tobia</b>, alla fucina, lo può potenziare.';
+  if(AMANO[id]) return T(AMANO[id]);
+  if(I.cat === 'attrezzo') return T('Ce l\'hai dall\'inizio. <b>Tobia</b>, alla fucina, lo può potenziare.');
   /* le quattro braci sono il filo di tutta la partita: se c'è una cosa
      che deve dire dove si prende, è questa */
   if(/^brace_/.test(id)){
-    const st = id.replace('brace_','');
-    return 'La consegna il <b>Santuario</b>, nel bosco, quando gli porti le cinque offerte di <b>' +
-           (NOMI_STAGIONE[st]||st) + '</b>. Le quattro braci insieme riaccendono la Lanterna.';
+    return F('La consegna il <b>Santuario</b>, nel bosco, quando gli porti le cinque offerte di <b>{0}</b>. Le quattro braci insieme riaccendono la Lanterna.',
+             nomeStagione(id.replace('brace_','')));
   }
-  if(id === 'medaglione') return 'Te l\'ha lasciato <b>Nonna Ilde</b>. Non si vende e non si perde.';
-  if(I.spazzatura) return 'Roba che ogni tanto abbocca al posto di un pesce. Si butta, o si vende per due soldi.';
+  if(id === 'medaglione') return T('Te l\'ha lasciato <b>Nonna Ilde</b>. Non si vende e non si perde.');
+  if(I.spazzatura) return T('Roba che ogni tanto abbocca al posto di un pesce. Si butta, o si vende per due soldi.');
   return null;
 };
 
