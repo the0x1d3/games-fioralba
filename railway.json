@@ -1,0 +1,14 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "//": "Il comando d'avvio è scritto qui e non solo dedotto da package.json: il primo deploy è fallito con «No start command detected» perché il commit che aggiungeva `npm start` non era ancora su GitHub, e un errore del genere si legge molto meglio se la configurazione è esplicita. Il controllo di salute usa /salute, che risponde senza toccare né il disco né il database: così un problema del DB non fa credere a Railway che sia morto tutto il servizio.",
+  "build": {
+    "builder": "RAILPACK"
+  },
+  "deploy": {
+    "startCommand": "node server.js",
+    "healthcheckPath": "/salute",
+    "healthcheckTimeout": 30,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 5
+  }
+}

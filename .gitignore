@@ -27,3 +27,11 @@ desktop.ini
 # --- Log e temporanei ---
 *.log
 tmp/
+
+# --- Segreti ---
+# La stringa di connessione al database sta in una variabile d'ambiente:
+# su Railway la fornisce il servizio Postgres, in locale in un .env che
+# non deve MAI finire nel repository.
+.env
+.env.*
+!.env.esempio
