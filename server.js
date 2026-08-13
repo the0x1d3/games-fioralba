@@ -135,6 +135,8 @@ function statico(req, res, rel){
   });
 }
 
+const partite = require('./server-partite.js');
+
 const server = http.createServer((req, res)=>{
   const rel = decodeURIComponent((req.url || '/').split('?')[0]);
 
@@ -143,7 +145,21 @@ const server = http.createServer((req, res)=>{
      fa credere che sia morto tutto il servizio e lo fa riavviare. */
   if(rel === '/salute'){
     res.writeHead(200, { 'Content-Type':'application/json', 'Cache-Control':'no-store' });
-    return res.end(JSON.stringify({ ok:true, su:'fioralba' }));
+    return res.end(JSON.stringify({ ok:true, su:'fioralba', memoria: partite.tipoMemoria() }));
+  }
+
+  /* La sincronizzazione dei salvataggi. Sta sulla stessa origine del
+     gioco — è tutto il motivo per cui siamo su un server solo — quindi
+     niente CORS da configurare e niente da sbagliare. */
+  if(rel.startsWith('/api/')){
+    partite.gestisci(req, res, rel).catch(e=>{
+      console.error('[api]', e && e.message);
+      if(!res.headersSent){
+        res.writeHead(500, { 'Content-Type':'application/json', 'Cache-Control':'no-store' });
+        res.end(JSON.stringify({ errore:'errore interno' }));
+      }
+    });
+    return;
   }
 
   if(req.method !== 'GET' && req.method !== 'HEAD'){

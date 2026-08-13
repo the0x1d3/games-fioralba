@@ -1885,6 +1885,200 @@ function disegnaTrama(x, z){
 /* ===================================================================
    MENU DI SISTEMA
    =================================================================== */
+/* ===================================================================
+   IL PANNELLO DELLA SINCRONIZZAZIONE (dentro il Menu)
+
+   Deve dire tre cose e nient'altro: se sei collegato, qual è il tuo
+   codice, e cosa fare adesso. Tutto il resto — versioni, timestamp,
+   numeri — resta sotto il cofano, tranne quando c'è un conflitto: lì
+   servono, perché è il momento in cui il giocatore deve decidere.
+   =================================================================== */
+function quando(iso){
+  if(!iso) return '';
+  const d = new Date(iso), ora = new Date();
+  const min = Math.round((ora - d) / 60000);
+  if(min < 1)  return T('adesso');
+  if(min < 60) return min + ' ' + T('minuti fa');
+  const h = Math.round(min/60);
+  if(h < 24) return h + (h===1 ? ' ' + T('ora fa') : ' ' + T('ore fa'));
+  return d.toLocaleDateString(window.LINGUA ? LINGUA.locale() : 'it-IT');
+}
+
+/* la carta di una partita, per il confronto nel conflitto */
+function cartaPartita(titolo, s, evidenzia){
+  const c = document.createElement('div');
+  c.className = 'sinc-carta' + (evidenzia ? ' avanti' : '');
+  const t = document.createElement('div'); t.className='sinc-carta-tit'; t.textContent = titolo;
+  c.appendChild(t);
+  if(!s){
+    const v = document.createElement('div'); v.className='muted'; v.textContent = T('vuota');
+    c.appendChild(v); return c;
+  }
+  const righe = [
+    [T('Contadino'), s.nome || '—'],
+    [T('A che punto'), (s.stagione ? s.stagione + ' ' + (s.giorno||1) + ', ' + T('anno') + ' ' + (s.anno||1) : '—')],
+    [T('Giorni giocati'), (s.giornoTot|0) + 1],
+    [T('Monete'), s.oro != null ? s.oro : '—'],
+    [T('Salvata'), quando(s.aggiornato)]
+  ];
+  for(const [k,v] of righe){
+    if(v === '' || v == null) continue;
+    const r = document.createElement('div'); r.className='sinc-riga';
+    const a = document.createElement('span'); a.textContent = k;
+    const b = document.createElement('b'); b.textContent = v;
+    r.appendChild(a); r.appendChild(b); c.appendChild(r);
+  }
+  return c;
+}
+
+/* La finestra del conflitto. Non sceglie niente da sé: mostra le due
+   partite affiancate e aspetta. È l'unico posto del gioco in cui una
+   scelta non si può rimandare, quindi non c'è «annulla» che confonda —
+   c'è «decido dopo», che lascia tutto com'è. */
+U.conflittoSinc = function(G, locale, server){
+  U.modal(T('Due partite diverse'), body=>{
+    const p = document.createElement('div'); p.className='muted'; p.style.marginBottom='12px';
+    p.innerHTML = T('Su questo computer e sul server ci sono due partite che non combaciano. ' +
+                    'Tenerne una vuol dire <b>perdere l\'altra</b>: guarda a che punto sono e scegli.');
+    body.appendChild(p);
+
+    const avanti = (locale && server) ? ((locale.giornoTot||0) >= (server.giornoTot||0) ? 'loc' : 'srv') : null;
+    const g = document.createElement('div'); g.className='sinc-confronto';
+    g.appendChild(cartaPartita(T('Su questo computer'), locale, avanti==='loc'));
+    g.appendChild(cartaPartita(T('Sul server'), server, avanti==='srv'));
+    body.appendChild(g);
+
+    const az = document.createElement('div');
+    az.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-top:14px';
+
+    const bLoc = document.createElement('button'); bLoc.className='btn';
+    bLoc.textContent = T('Tengo questa');
+    bLoc.onclick = ()=>{
+      /* `forza` manda senza dichiarare la versione: il server smette di
+         controllare e accetta. È l'unico punto in cui si sovrascrive di
+         proposito, e ci si arriva solo da qui. */
+      SINC.invia(true).then(r=>{
+        U.chiudiModal();
+        U.toast(r.ok ? T('Fatto: adesso vale questa.') : (r.errore || T('non riuscito')), r.ok ? 'good' : 'bad');
+      });
+    };
+
+    const bSrv = document.createElement('button'); bSrv.className='btn blue';
+    bSrv.textContent = T('Tengo quella del server');
+    bSrv.onclick = ()=>{
+      SINC.scarica().then(r=>{
+        U.chiudiModal();
+        if(r.ok){
+          U.toast(T('Scaricata. Ricarico la pagina…'),'good');
+          setTimeout(()=>location.reload(), 900);
+        } else U.toast(r.errore || T('non riuscito'),'bad');
+      });
+    };
+
+    const bNo = document.createElement('button'); bNo.className='btn';
+    bNo.textContent = T('Decido dopo');
+    bNo.onclick = ()=>U.chiudiModal();
+
+    az.appendChild(bLoc); az.appendChild(bSrv); az.appendChild(bNo);
+    body.appendChild(az);
+  });
+};
+
+function pannelloSinc(G){
+  const box = document.createElement('div');
+
+  if(!SINC.collegato()){
+    const p = document.createElement('div'); p.className='muted'; p.style.marginBottom='8px';
+    p.textContent = T('Collega la partita per riprenderla da un altro computer. Niente registrazione: si genera un codice.');
+    box.appendChild(p);
+    const b = document.createElement('button'); b.className='btn blue';
+    b.textContent = T('Collega questa partita');
+    b.onclick = ()=>{
+      b.disabled = true; b.textContent = T('collego…');
+      SINC.collega().then(r=>{
+        if(!r.ok){ U.toast(r.errore,'bad'); b.disabled=false; b.textContent=T('Collega questa partita'); return; }
+        SINC.invia().then(()=>{ U.aggiorna(); U.toast(T('Collegata. Segna il codice.'),'good'); });
+      });
+    };
+    box.appendChild(b);
+
+    const alt = document.createElement('div'); alt.className='muted';
+    alt.style.margin='10px 0 6px';
+    alt.textContent = T('Hai già un codice da un altro computer?');
+    box.appendChild(alt);
+
+    const riga = document.createElement('div');
+    riga.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap';
+    const inp = document.createElement('input');
+    inp.type='text'; inp.className='sinc-codice-inp';
+    inp.placeholder = 'FIORALBA-XXXX-XXXX-XXXX';
+    /* Il gioco ascolta la tastiera su window e non guarda da dove
+       arriva il tasto: senza fermare l'evento qui, scrivere il codice
+       farebbe camminare il giocatore e aprirebbe lo zaino. */
+    for(const ev of ['keydown','keyup','keypress']) inp.addEventListener(ev, e=>e.stopPropagation());
+    const bUsa = document.createElement('button'); bUsa.className='btn';
+    bUsa.textContent = T('Usa questo codice');
+    bUsa.onclick = ()=>{
+      SINC.usaCodice(inp.value).then(r=>{
+        if(!r.ok){ U.toast(r.errore,'bad'); return; }
+        U.aggiorna();
+        if(r.scheda && !r.scheda.vuota) U.conflittoSinc(G, SINC.schedaLocale(), r.scheda);
+        else { SINC.invia().then(()=>U.toast(T('Collegata.'),'good')); }
+      });
+    };
+    riga.appendChild(inp); riga.appendChild(bUsa);
+    box.appendChild(riga);
+    return box;
+  }
+
+  /* --- già collegata --- */
+  const st = SINC.stato();
+  const cod = document.createElement('div'); cod.className='sinc-codice';
+  cod.textContent = st.codice;
+  cod.title = T('Clicca per copiare');
+  cod.onclick = ()=>{
+    try{ navigator.clipboard.writeText(st.codice); U.toast(T('Codice copiato.'),'good'); }
+    catch(e){ U.toast(T('Copialo a mano: ') + st.codice); }
+  };
+  box.appendChild(cod);
+
+  const nota = document.createElement('div'); nota.className='muted'; nota.style.margin='6px 0 10px';
+  nota.innerHTML = T('Scrivi questo codice sull\'altro computer per riprendere la partita. ' +
+                     '<b>Chi ha il codice ha la partita</b>: non darlo in giro.');
+  box.appendChild(nota);
+
+  const az = document.createElement('div');
+  az.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
+
+  const bSu = document.createElement('button'); bSu.className='btn';
+  bSu.textContent = T('Manda adesso');
+  bSu.onclick = ()=>{
+    bSu.disabled=true;
+    SINC.invia().then(r=>{
+      bSu.disabled=false;
+      if(r.conflitto) return U.conflittoSinc(G, r.locale, r.server);
+      U.toast(r.ok ? T('Partita mandata al server.') : (r.errore||T('non riuscito')), r.ok?'good':'bad');
+    });
+  };
+
+  const bGiu = document.createElement('button'); bGiu.className='btn blue';
+  bGiu.textContent = T('Prendi dal server');
+  bGiu.onclick = ()=>{
+    SINC.controllaAvvio().then(d=>{
+      U.conflittoSinc(G, SINC.schedaLocale(), (d && d.server) || null);
+    });
+  };
+
+  const bVia = document.createElement('button'); bVia.className='btn red';
+  bVia.textContent = T('Scollega');
+  bVia.title = T('La partita resta qui e resta sul server: si smette solo di allinearle.');
+  bVia.onclick = ()=>{ SINC.scollega(); U.aggiorna(); U.toast(T('Scollegata.')); };
+
+  az.appendChild(bSu); az.appendChild(bGiu); az.appendChild(bVia);
+  box.appendChild(az);
+  return box;
+}
+
 U.menu = function(G){
   U.modal('Menu', body=>{
     const wrap=document.createElement('div');
@@ -1913,6 +2107,13 @@ U.menu = function(G){
       vol.appendChild(r);
     }
     wrap.appendChild(vol);
+
+    /* sincronizzazione fra dispositivi */
+    if(window.SINC){
+      const st = document.createElement('div'); st.className='sectitle'; st.textContent=T('Partita su più computer');
+      wrap.appendChild(st);
+      wrap.appendChild(pannelloSinc(G));
+    }
 
     /* lingua */
     if(window.LINGUA && LINGUA.elenco.length > 1){
