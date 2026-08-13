@@ -992,3 +992,24 @@ Object.assign(window.LINGUA_EN, {
 'ore fa': 'hours ago'
 
 });
+
+/* --- la finestra che compare dopo aver importato un file --- */
+Object.assign(window.LINGUA_EN, {
+'Partita importata': 'Game imported',
+'Partita importata e collegata': 'Game imported and linked',
+'La partita è al sicuro sul server. Da adesso si sincronizza da sola: questo è il tuo codice.':
+  'Your game is safe on the server. From now on it syncs by itself: this is your code.',
+'La partita è stata mandata sul server, sul codice che questo browser aveva già.':
+  'The game has been sent to the server, under the code this browser already had.',
+"<b>Segnatelo.</b> Su un altro computer apri Fioralba, vai nel Menu e inseriscilo: ritrovi questa partita dov'era. Qui dentro resta salvato, non devi rifare niente.":
+  '<b>Write it down.</b> On another computer open Fioralba, go to the Menu and type it in: you will find this game exactly where you left it. It stays saved in here, so you need not do it again.',
+'La partita è stata importata e riparte adesso. Non sono riuscito a collegarla al server: potrai farlo dal Menu, quando vuoi.':
+  'The game has been imported and is starting now. I could not link it to the server: you can do that from the Menu whenever you like.',
+'Il file è stato importato, ma questo browser era già collegato a una partita diversa sul server. Scegli quale vale.':
+  'The file has been imported, but this browser was already linked to a different game on the server. Choose which one counts.',
+'Quella appena importata': 'The one just imported',
+'Tengo quella importata': 'Keep the imported one',
+'Comincia a giocare': 'Start playing',
+'Salvataggio importato.': 'Save imported.',
+'Salvataggio importato! Riavvio…': 'Save imported! Restarting…'
+});

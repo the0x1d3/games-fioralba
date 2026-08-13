@@ -264,14 +264,29 @@ S.importaDaFile = function(){
     const rd = new FileReader();
     rd.onload = ()=>{
       const res = S.importaTesto(String(rd.result||''));
-      if(res.ok){
-        flashMessaggio('Salvataggio importato! Riavvio…', true);
-        try{ sessionStorage.setItem('fioralba_import','1'); }catch(e){}
-        setTimeout(()=>location.reload(), 800);
-      }else{
+      if(!res.ok){
         flashMessaggio(res.err||'Import non riuscito.', false);
+        inp.remove();
+        return;
       }
       inp.remove();
+      try{ sessionStorage.setItem('fioralba_import','1'); }catch(e){}
+
+      /* Chi importa un file sta spostando la partita: è il momento
+         giusto per agganciarla al server, e l'unico in cui non si
+         interrompe niente — sta già aspettando il riavvio. Se la
+         sincronizzazione non c'è o non risponde, si ricarica come
+         prima: l'import da file deve continuare a funzionare anche
+         col server spento. */
+      if(!window.SINC || !window.UI || !UI.dopoImport){
+        flashMessaggio('Salvataggio importato! Riavvio…', true);
+        setTimeout(()=>location.reload(), 800);
+        return;
+      }
+      flashMessaggio('Salvataggio importato.', true);
+      SINC.migraDaImport()
+        .then(r=>UI.dopoImport(r))
+        .catch(()=>{ setTimeout(()=>location.reload(), 800); });
     };
     rd.onerror = ()=>{ flashMessaggio('Non riesco a leggere il file.', false); inp.remove(); };
     rd.readAsText(file);

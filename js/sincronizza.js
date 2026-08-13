@@ -200,6 +200,37 @@ S.programmaInvio = function(){
   }, RITARDO_INVIO);
 };
 
+/* --------------------------------------------------------------- */
+/* la migrazione, che passa da chi importa un file                 */
+/* --------------------------------------------------------------- */
+/* Chi importa un salvataggio da file È, quasi per definizione, chi sta
+   spostando la partita da un posto a un altro: o dal vecchio indirizzo,
+   o dal fisso al portatile. È il momento in cui la sincronizzazione gli
+   serve davvero, e l'unico in cui gliela si può offrire senza
+   interrompere niente — sta già aspettando che il gioco si riavvii.
+
+   Quindi il file appena importato sale sul server e si prende un codice.
+   È così che i salvataggi locali passano nel database uno per volta,
+   senza una migrazione in blocco che nessuno saprebbe fare: migra chi
+   si presenta.
+
+   Se il browser ha già un codice non se ne inventa un altro: manda sul
+   suo, e se il server ha qualcosa di diverso lo dice invece di
+   sovrascrivere. */
+S.migraDaImport = async function(){
+  if(!S.collegato()){
+    const c = await S.collega();
+    if(!c.ok) return { ok:false, errore:c.errore };
+    const i = await S.invia();
+    if(!i.ok) return { ok:false, errore:i.errore || 'non riesco a mandare la partita' };
+    return { ok:true, codice:stato.codice, nuovo:true };
+  }
+  const i = await S.invia();
+  if(i.conflitto) return { ok:false, conflitto:true, server:i.server, locale:i.locale, codice:stato.codice };
+  if(!i.ok) return { ok:false, errore:i.errore, codice:stato.codice };
+  return { ok:true, codice:stato.codice, nuovo:false };
+};
+
 /* All'avvio: se il server è più avanti di noi, lo si dice e basta. Non
    si scarica di nascosto — sostituire la partita di qualcuno senza
    chiedere è esattamente quello che questa funzione non deve fare. */

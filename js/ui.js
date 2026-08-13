@@ -2079,6 +2079,98 @@ function pannelloSinc(G){
   return box;
 }
 
+/* ===================================================================
+   DOPO AVER IMPORTATO UN FILE
+
+   È l'unico momento in cui il giocatore guarda una schermata sapendo
+   già di dover aspettare, quindi è l'unico in cui gli si può dare una
+   cosa da leggere senza rubargli niente: il suo codice.
+
+   La finestra non si chiude da sola e non ha una X: il codice va
+   copiato, e una finestra che sparisce mentre lo stai leggendo è il
+   modo migliore per farlo perdere. Si esce solo dal pulsante, che
+   ricarica e fa ripartire la partita importata.
+   =================================================================== */
+U.dopoImport = function(esito){
+  /* Se il server non ha risposto non si blocca niente: il file è già
+     importato e in localStorage, la partita riparte lo stesso. La
+     sincronizzazione si potrà collegare dopo, dal menu. */
+  if(!esito || (!esito.ok && !esito.conflitto)){
+    U.modal(T('Partita importata'), body=>{
+      const p = document.createElement('div'); p.className='muted';
+      p.textContent = T('La partita è stata importata e riparte adesso. Non sono riuscito a collegarla al server: potrai farlo dal Menu, quando vuoi.');
+      body.appendChild(p);
+      if(esito && esito.errore){
+        const e = document.createElement('div'); e.className='muted';
+        e.style.cssText='margin-top:6px;font-size:11.5px;opacity:.75';
+        e.textContent = esito.errore;
+        body.appendChild(e);
+      }
+      body.appendChild(bottoneRiparti());
+    });
+    return;
+  }
+
+  /* Il caso spiacevole: questo browser era già collegato a una partita
+     diversa. Non si sceglie al posto suo. */
+  if(esito.conflitto){
+    U.modal(T('Partita importata'), body=>{
+      const p = document.createElement('div'); p.className='muted'; p.style.marginBottom='10px';
+      p.innerHTML = T('Il file è stato importato, ma questo browser era già collegato a una partita diversa sul server. Scegli quale vale.');
+      body.appendChild(p);
+      const g = document.createElement('div'); g.className='sinc-confronto';
+      g.appendChild(cartaPartita(T('Quella appena importata'), esito.locale, true));
+      g.appendChild(cartaPartita(T('Sul server'), esito.server, false));
+      body.appendChild(g);
+
+      const az = document.createElement('div');
+      az.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-top:14px';
+      const b1 = document.createElement('button'); b1.className='btn';
+      b1.textContent = T('Tengo quella importata');
+      b1.onclick = ()=>{ b1.disabled=true; SINC.invia(true).then(()=>location.reload()); };
+      const b2 = document.createElement('button'); b2.className='btn blue';
+      b2.textContent = T('Tengo quella del server');
+      b2.onclick = ()=>{ b2.disabled=true; SINC.scarica().then(()=>location.reload()); };
+      az.appendChild(b1); az.appendChild(b2);
+      body.appendChild(az);
+    });
+    return;
+  }
+
+  /* Il caso normale: importata e collegata. */
+  U.modal(T('Partita importata e collegata'), body=>{
+    const p = document.createElement('div'); p.className='muted'; p.style.marginBottom='10px';
+    p.innerHTML = esito.nuovo
+      ? T('La partita è al sicuro sul server. Da adesso si sincronizza da sola: questo è il tuo codice.')
+      : T('La partita è stata mandata sul server, sul codice che questo browser aveva già.');
+    body.appendChild(p);
+
+    const cod = document.createElement('div'); cod.className='sinc-codice';
+    cod.textContent = esito.codice;
+    cod.title = T('Clicca per copiare');
+    cod.onclick = ()=>{
+      try{ navigator.clipboard.writeText(esito.codice); U.toast(T('Codice copiato.'),'good'); }
+      catch(e){ U.toast(T('Copialo a mano: ') + esito.codice); }
+    };
+    body.appendChild(cod);
+
+    const n = document.createElement('div'); n.className='muted'; n.style.margin='8px 0 4px';
+    n.innerHTML = T('<b>Segnatelo.</b> Su un altro computer apri Fioralba, vai nel Menu e inseriscilo: ritrovi questa partita dov\'era. Qui dentro resta salvato, non devi rifare niente.');
+    body.appendChild(n);
+
+    body.appendChild(bottoneRiparti());
+  });
+};
+
+function bottoneRiparti(){
+  const b = document.createElement('button');
+  b.className = 'btn gold';
+  b.style.cssText = 'width:100%;margin-top:14px';
+  b.textContent = T('Comincia a giocare');
+  b.onclick = ()=>{ b.disabled = true; location.reload(); };
+  return b;
+}
+
 U.menu = function(G){
   U.modal('Menu', body=>{
     const wrap=document.createElement('div');
