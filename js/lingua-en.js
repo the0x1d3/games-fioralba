@@ -2002,3 +2002,40 @@ Object.assign(window.LINGUA_EN, {
 "La nuvoletta smetteva di riempirsi una riga prima del dovuto: l'ultima conteneva una parola sola e tutto il resto della frase spariva. Di ottantaquattro caratteri disponibili se ne usavano una cinquantina.":
   'The bubble stopped filling one line early: the last one held a single word and all the rest of the sentence disappeared. Of eighty-four characters available, about fifty were used.'
 });
+
+/* --- «cosa serve» sulle braci, e i premi di collezione --- */
+Object.assign(window.LINGUA_EN, {
+/* le cinque caselle della Collezione: nomi di categoria, non di oggetto */
+'Pesci': 'Fish',
+'Minerali': 'Minerals',
+'Colture': 'Crops',
+'Foraggio': 'Forage',
+'Piatti': 'Dishes',
+
+'offerte': 'offered',
+'già offerto': 'already offered',
+'Cosa serve — te ne mancano {0}': 'What it needs — {0} to go',
+'Al Santuario si arriva dal bosco, oltre il burrone: serve il ponte. Da lì saprai cosa chiede ogni brace.':
+  'The Shrine is reached through the woods, across the ravine: you need the bridge. From then on you will know what each ember is asking for.',
+
+'Riscuoti': 'Claim',
+'premio riscosso': 'reward claimed',
+'completala: {0} monete + {1}× {2}': 'complete it: {0} coins + {1}× {2}',
+'{0} completata! +{1} monete{2}': '{0} complete! +{1} coins{2}',
+"Lo zaino era pieno: l'oggetto ti aspetta nella scheda delle abilità.":
+  'Your backpack was full: the item is waiting for you in the skills page.'
+});
+
+/* --- versione 3.0 (changelog.js il censimento lo salta: a mano) --- */
+Object.assign(window.LINGUA_EN, {
+'Il Diario dice cosa serve, e le collezioni pagano': 'The Journal says what is needed, and collections pay',
+'«Cosa serve» per ogni brace, senza salire al Santuario': '«What it needs» for every ember, without walking up to the Shrine',
+"Per sapere cosa chiede una brace bisognava farsi la strada fino al Santuario e leggerlo lì, ogni volta. Adesso nel Diario, sotto ogni brace, c'è una riga che si apre: i cinque frutti che servono, dove si trovano, e quali hai già portato — quelli restano in elenco, spenti, perché sapere cosa hai già offerto è metà dell'informazione. Compare dopo il <b>ponte</b>: prima al Santuario non ci si arriva, e un elenco per un posto irraggiungibile è un compito senza porta.":
+  'To find out what an ember was asking for you had to walk all the way to the Shrine and read it there, every time. Now in the Journal, under each ember, there is a line that opens up: the five fruits it wants, where to find them, and which ones you have already brought — those stay in the list, greyed out, because knowing what you have already offered is half the information. It appears after the <b>bridge</b>: before that the Shrine cannot be reached, and a list for an unreachable place is a task with no door.',
+'Completare una collezione adesso paga': 'Completing a collection now pays',
+"Il contatore arrivava a 10/10 e restava lì: era l'unica cosa del Diario che si riempie senza che nessuno se ne accorga. Adesso ogni collezione ha il suo premio — monete e un oggetto che quella collezione non ti fa mai avere — e lo si vede scritto <b>prima</b> di finirla, così sai cosa stai cercando. Se lo zaino è pieno l'oggetto non si perde: ti aspetta nella scheda delle abilità.":
+  'The counter reached 10/10 and stayed there: it was the one thing in the Journal that fills up without anybody noticing. Now every collection has its reward — coins and an item that collection never lets you keep — and you can read it <b>before</b> you finish, so you know what you are working towards. If your backpack is full the item is not lost: it waits for you in the skills page.',
+'Niente più premi pagati due volte': 'No more rewards paid twice',
+"Pesci e minerali pagavano già, tramite due traguardi in un'altra scheda, mentre le altre tre collezioni non davano niente. Adesso pagano tutte, nello stesso posto, e nessuna paga due volte. Le cifre dei due traguardi sono passate di là identiche: nessuno prende meno di prima, e chi li aveva già riscossi si ritrova la collezione già riscossa.":
+  'Fish and minerals already paid, through two achievements on another tab, while the other three collections gave nothing at all. Now they all pay, in the same place, and none pays twice. The two achievements’ amounts moved across unchanged: nobody gets less than before, and anyone who had already claimed them finds the collection already claimed.'
+});

@@ -3465,24 +3465,80 @@ G.schizzo = schizzo;   // pesca.js: l'acqua che si apre quando cade la lenza
 /* ===================================================================
    COLLEZIONE DEL NATURALISTA
    =================================================================== */
+/* Ogni categoria ha un `id` oltre al nome. Il nome è quello che si legge
+   e cambia con la lingua; l'id è quello con cui si ricorda che il premio
+   è già stato riscosso, e quello non deve cambiare mai — chi gioca in
+   inglese e poi torna in italiano non deve poter riscuotere due volte. */
 G.categorieCollezione = function(){
   const F = c => Object.keys(DATA.ITEMS).filter(k=>DATA.ITEMS[k].cat===c && !DATA.ITEMS[k].spazzatura);
   return [
-    ['Pesci',    'canna',          F('pesce')],
-    ['Minerali', 'gemma_luna',     F('minerale')],
-    ['Colture',  'zappa',          F('raccolto')],
-    ['Foraggio', 'viola',          F('foraggio')],
-    ['Piatti',   'frittata',       DATA.CUCINA.map(r=>r.id)]
+    { id:'pesci',    nome:'Pesci',    icona:'canna',      ids:F('pesce')    },
+    { id:'minerali', nome:'Minerali', icona:'gemma_luna', ids:F('minerale') },
+    { id:'colture',  nome:'Colture',  icona:'zappa',      ids:F('raccolto') },
+    { id:'foraggio', nome:'Foraggio', icona:'viola',      ids:F('foraggio') },
+    { id:'piatti',   nome:'Piatti',   icona:'frittata',   ids:DATA.CUCINA.map(r=>r.id) }
   ];
 };
 G.contaCollezione = function(){
   const coll = G.collezione||{}, r={}; let totD=0, totT=0;
-  for(const [nome,,ids] of G.categorieCollezione()){
-    const d = ids.filter(id=>coll[id]).length;
-    r[nome]={d, t:ids.length}; totD+=d; totT+=ids.length;
+  for(const c of G.categorieCollezione()){
+    const d = c.ids.filter(id=>coll[id]).length;
+    r[c.id] = { d, t:c.ids.length };
+    totD+=d; totT+=c.ids.length;
   }
   r.tot={d:totD, t:totT};
   return r;
+};
+
+/* --- il premio di una collezione completata ---
+
+   Completare una casella non dava niente: il contatore passava a 10/10 e
+   restava lì. Era l'unica cosa del Diario che si riempie senza che
+   nessuno se ne accorga — le richieste pagano, la sagra paga, i
+   traguardi pagano, e la vetrina no.
+
+   Si riscuote a mano e non da sola: una collezione si completa pescando
+   di notte o scavando in fondo alla miniera, cioè in un momento in cui
+   una finestra a schermo è un'interruzione. Il premio aspetta nel
+   Diario, dove uno ci arriva quando ha finito.
+
+   L'oggetto segue la stessa regola dei premi di livello: se lo zaino è
+   pieno non si perde, va in `premiSospesi`. Ed è il caso normale, non
+   quello raro — si completa una collezione raccogliendo. */
+G.premioCollezione = function(idCat){
+  return (DATA.PREMI_COLLEZIONE || {})[idCat] || null;
+};
+G.collezioneCompleta = function(idCat){
+  const c = G.categorieCollezione().find(x=>x.id===idCat);
+  if(!c || !c.ids.length) return false;
+  const coll = G.collezione||{};
+  return c.ids.every(id=>coll[id]);
+};
+G.collezioneRiscossa = function(idCat){
+  if(!G.obiettiviRiscossi) return false;
+  if(G.obiettiviRiscossi['coll_'+idCat]) return true;
+  /* Chi ha una partita avviata può aver già riscosso «Ittiologo» o
+     «Gemmologo», che pagavano esattamente questo. Il premio è lo stesso
+     e l'ha già preso: qui vale come riscosso, altrimenti la stessa
+     collezione pagherebbe due volte proprio a chi gioca da più tempo. */
+  const vecchio = (DATA.COLLEZIONE_DA_TRAGUARDO || {})[idCat];
+  return !!(vecchio && G.obiettiviRiscossi[vecchio]);
+};
+G.riscuotiCollezione = function(idCat){
+  if(!G.collezioneCompleta(idCat) || G.collezioneRiscossa(idCat)) return null;
+  const P = G.premioCollezione(idCat);
+  if(!P) return null;
+  if(!G.obiettiviRiscossi) G.obiettiviRiscossi = {};
+  G.obiettiviRiscossi['coll_'+idCat] = true;
+
+  const dato = { oro:P.oro||0, item:P.item, n:P.n||0, sospeso:false };
+  if(P.oro){ G.oro += P.oro; G.registraVendita(0); }
+  if(P.item && P.n){
+    if(G.puoiAggiungere(P.item, P.n)) G.aggiungi(P.item, P.n);
+    else { G.premiSospesi.push({ item:P.item, n:P.n, da:'collezione', liv:0 }); dato.sospeso = true; }
+  }
+  SND.play('livello');
+  return dato;
 };
 
 /* I traguardi dicevano cosa serve — «Frantuma 100 rocce» — ma non dove
@@ -3539,12 +3595,13 @@ G.obiettivi = function(){
   cont('benestante','Benestante','lingotto_oro','Accumula 50.000 monete guadagnate.', s.guadagno,50000,3000,
     'Conta il <b>totale guadagnato</b>, non quello che hai in tasca: spendere non ti fa tornare indietro. '+
     'La strada breve è trasformare — l\'uva cruda vale 76 monete, il vino 228 — con botte, barattoliera e forno.');
-  cont('ittiologo','Ittiologo','storione','Scopri tutti i pesci della valle.', cc.Pesci.d, cc.Pesci.t, 1600,
-    'Ogni pesce ha la sua stagione, la sua acqua e a volte la sua ora: certi escono solo di notte. '+
-    'Quelli che ti mancano li vedi in <b>Diario → Collezione</b>, con dove e quando cercarli.');
-  cont('gemmologo','Gemmologo','gemma_luna','Scopri tutti i minerali.', cc.Minerali.d, cc.Minerali.t, 1600,
-    'Nella <b>miniera</b>, e i più rari stanno in fondo: scendi di livello. I <b>geodi</b> vanno rotti alla fucina '+
-    'per vedere cosa c\'è dentro.');
+  /* «Ittiologo» e «Gemmologo» stavano qui e davano 1600 monete ciascuno
+     per aver scoperto tutti i pesci e tutti i minerali. Adesso quelle
+     due collezioni pagano nella scheda Collezione, dove uno le completa
+     e dove vede il contatore arrivare a 15/15: pagarle anche qui
+     sarebbe lo stesso gesto contato due volte, e le altre tre
+     collezioni non avevano niente. Le cifre sono passate di là
+     identiche (DATA.PREMI_COLLEZIONE), quindi nessuno prende meno. */
   cont('collezionista','Collezionista','medaglione','Completa la Collezione del Naturalista.', cc.tot.d, cc.tot.t, 4000,
     'È la somma di tutte le altre: pesci, minerali, raccolti e cose trovate in giro. '+
     'Basta averne visto uno di ogni tipo, non serve tenerlo.');

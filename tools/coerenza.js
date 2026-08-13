@@ -1407,6 +1407,64 @@ verifica('nessuna battuta dei fumetti arriva tagliata', () => {
   return problemi;
 });
 
+/* I premi delle collezioni, e il «cosa serve» delle braci.
+
+   Sono due cose che spariscono senza far rumore: un premio con un
+   oggetto che non esiste si riscuote lo stesso e non arriva niente
+   nello zaino, e una categoria senza premio resta l'unica che si
+   completa senza dare niente — che è esattamente il difetto da cui
+   nasce tutto questo. */
+verifica('ogni collezione ha il suo premio, e i premi esistono', () => {
+  const problemi = [];
+  const P = DATA.PREMI_COLLEZIONE || {};
+
+  /* Le categorie si leggono dal sorgente di game.js: riscriverle qui
+     vorrebbe dire tenere due elenchi d'accordo per sempre, ed è la
+     cosa che questo file esiste per evitare. */
+  const game = fs.readFileSync(path.join(RADICE, 'js', 'game.js'), 'utf8');
+  const dentro = game.slice(game.indexOf('G.categorieCollezione = function'),
+                            game.indexOf('G.contaCollezione = function'));
+  const cat = [...dentro.matchAll(/\{\s*id:'(\w+)'/g)].map(m => m[1]);
+  if (!cat.length) { problemi.push('non trovo le categorie in G.categorieCollezione'); return problemi; }
+
+  for (const id of cat)
+    if (!P[id]) problemi.push(`la collezione «${id}» non ha un premio: si completerebbe senza dare niente`);
+  for (const id in P)
+    if (cat.indexOf(id) < 0) problemi.push(`c'è un premio per «${id}», che non è una collezione`);
+
+  for (const id in P) {
+    const p = P[id];
+    if (!(p.oro > 0)) problemi.push(`il premio di «${id}» non dà monete`);
+    if (!p.item || !DATA.ITEMS[p.item])
+      problemi.push(`il premio di «${id}» regala «${p.item}», che non esiste fra gli oggetti`);
+    if (!(p.n > 0)) problemi.push(`il premio di «${id}» regala zero pezzi di ${p.item}`);
+  }
+
+  /* I due traguardi sostituiti non devono tornare: pagherebbero una
+     seconda volta lo stesso gesto. E la mappa che li ricorda serve a non
+     far riscuotere due volte chi li aveva già presi. */
+  for (const id in (DATA.COLLEZIONE_DA_TRAGUARDO || {})) {
+    const vecchio = DATA.COLLEZIONE_DA_TRAGUARDO[id];
+    if (new RegExp("cont\\('" + vecchio + "'").test(game))
+      problemi.push(`il traguardo «${vecchio}» è tornato: pagherebbe due volte la collezione «${id}»`);
+  }
+
+  /* Il «cosa serve» delle braci si apre solo col ponte: senza, è un
+     elenco di offerte per un posto dove non si può ancora andare. */
+  const ui = fs.readFileSync(path.join(RADICE, 'js', 'ui.js'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  if (!/G\.costruzioni && G\.costruzioni\.ponte/.test(ui))
+    problemi.push('il «cosa serve» delle braci non è più legato al ponte');
+
+  /* E ogni cosa che una brace chiede dev'essere un oggetto vero, o la
+     riga con «dove si trova» resterebbe vuota proprio lì. */
+  for (const b of DATA.SANTUARIO)
+    for (const r of b.req)
+      if (!DATA.ITEMS[r]) problemi.push(`la brace «${b.id}» chiede «${r}», che non esiste`);
+
+  return problemi;
+});
+
 /* =================================================================== */
 
 const larghezza = 62;

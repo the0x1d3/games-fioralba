@@ -16,6 +16,16 @@
 
 window.CHANGELOG = [
   {
+    v: '3.0',
+    data: 'agosto 2026',
+    titolo: 'Il Diario dice cosa serve, e le collezioni pagano',
+    voci: [
+      { tipo:'nuovo',  t:'«Cosa serve» per ogni brace, senza salire al Santuario', d:'Per sapere cosa chiede una brace bisognava farsi la strada fino al Santuario e leggerlo lì, ogni volta. Adesso nel Diario, sotto ogni brace, c\'è una riga che si apre: i cinque frutti che servono, dove si trovano, e quali hai già portato — quelli restano in elenco, spenti, perché sapere cosa hai già offerto è metà dell\'informazione. Compare dopo il <b>ponte</b>: prima al Santuario non ci si arriva, e un elenco per un posto irraggiungibile è un compito senza porta.' },
+      { tipo:'nuovo',  t:'Completare una collezione adesso paga', d:'Il contatore arrivava a 10/10 e restava lì: era l\'unica cosa del Diario che si riempie senza che nessuno se ne accorga. Adesso ogni collezione ha il suo premio — monete e un oggetto che quella collezione non ti fa mai avere — e lo si vede scritto <b>prima</b> di finirla, così sai cosa stai cercando. Se lo zaino è pieno l\'oggetto non si perde: ti aspetta nella scheda delle abilità.' },
+      { tipo:'meglio', t:'Niente più premi pagati due volte', d:'Pesci e minerali pagavano già, tramite due traguardi in un\'altra scheda, mentre le altre tre collezioni non davano niente. Adesso pagano tutte, nello stesso posto, e nessuna paga due volte. Le cifre dei due traguardi sono passate di là identiche: nessuno prende meno di prima, e chi li aveva già riscossi si ritrova la collezione già riscossa.' }
+    ]
+  },
+  {
     v: '2.9',
     data: 'agosto 2026',
     titolo: 'Gli abitanti finiscono le frasi',

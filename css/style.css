@@ -2151,3 +2151,24 @@ html.col-dito .sinc-legacy-link{
      avevo contato a occhio. Misurato e corretto a 14. */
   display:inline-block; padding:14px 2px; line-height:1.2;
 }
+
+/* --- l'intestazione di una collezione porta con sé il premio --- */
+.coll-testa{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.coll-testa > span:first-child{ flex:1; min-width:0; }
+.coll-premio{
+  font-size:11.5px; font-weight:800; letter-spacing:0;
+  text-transform:none; color:var(--ink-soft); opacity:.9; flex:none;
+}
+.coll-premio.riscosso{ color:var(--green-d); }
+.btn.coll-riscuoti{ padding:5px 12px; font-size:13px; flex:none; }
+
+/* nell'elenco di «cosa serve», quello già portato al Santuario resta
+   in lista ma spento: sapere cosa hai già offerto è metà
+   dell'informazione, e toglierlo farebbe sembrare che ne serva meno */
+.coll-manca-riga.data{ opacity:.55; }
+.coll-manca-riga.data b{ color:var(--green-d); }
+
+@media (max-width:560px){
+  .coll-premio{ width:100%; }
+  .btn.coll-riscuoti{ min-height:44px; }
+}

@@ -415,6 +415,49 @@ D.PREMI_LIVELLO = {
   ]
 };
 
+/* Il premio di una collezione completata.
+
+   Completare una casella della Collezione non dava niente: il contatore
+   passava a 10/10 e restava lì. Era l'unica cosa del Diario che si
+   riempie senza che nessuno se ne accorga — le richieste pagano, la
+   sagra paga, i traguardi pagano, e la vetrina no.
+
+   DUE DI QUESTE CINQUE PAGAVANO GIÀ, e in un'altra scheda: i traguardi
+   «Ittiologo» e «Gemmologo» davano 1600 monete ciascuno per aver
+   scoperto tutti i pesci e tutti i minerali. Era lo stesso gesto pagato
+   in due posti, con le altre tre collezioni che non pagavano niente — e
+   chi finiva i minerali lo scopriva solo aprendo un'altra scheda. I due
+   traguardi sono stati tolti e il loro valore è finito qui, dove la
+   collezione si completa: nessuno prende due volte, e nessuno prende
+   meno di prima. Chi li aveva già riscossi si ritrova la collezione già
+   riscossa, non un secondo premio.
+
+   Le altre tre stanno sotto le due storiche, e fra loro salgono con
+   quanto costa riempirle: il foraggio si raccoglie camminando, le
+   colture vogliono quattro stagioni di semine, i piatti vogliono la
+   cucina e le ricette che si sbloccano parlando con la gente.
+
+   L'oggetto è quello che quella collezione non ti fa mai avere: chi ha
+   finito i pesci ha portato in vetrina i più rari invece di cucinarli.
+
+   Restano tutte sotto il traguardo «Collezionista» (4000), che è la
+   somma di tutte: chi le completa tutte e cinque prende 6800 qui più
+   4000 lì.
+   =================================================================== */
+D.PREMI_COLLEZIONE = {
+  /* i due che venivano dai traguardi: la cifra resta quella */
+  pesci:    { oro:1600, item:'pesce_arrosto', n:5  },
+  minerali: { oro:1600, item:'geode',         n:3  },
+  /* i tre che non pagavano niente, sotto i due storici */
+  colture:  { oro:1400, item:'concime',       n:8  },
+  piatti:   { oro:1200, item:'miele',         n:6  },
+  foraggio: { oro:1000, item:'tisana',        n:3  }
+};
+
+/* i traguardi che questi premi hanno sostituito: chi li aveva già
+   riscossi non deve poter riscuotere due volte la stessa cosa */
+D.COLLEZIONE_DA_TRAGUARDO = { pesci:'ittiologo', minerali:'gemmologo' };
+
 /* ------------------------------------------------------------------
    PERSONAGGI
    ------------------------------------------------------------------ */

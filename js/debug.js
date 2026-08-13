@@ -525,7 +525,7 @@ function costruisciProgressi(){
     nota(DATA.COSTRUZIONI.length + ' costruzioni in piedi');
   });
   bottone(g, 'Collezione completa', ()=>{
-    for(const [,,ids] of G.categorieCollezione()) for(const id of ids) G.collezione[id] = true;
+    for(const {ids} of G.categorieCollezione()) for(const id of ids) G.collezione[id] = true;
     const c = G.contaCollezione().tot;
     nota('collezione ' + c.d + '/' + c.t);
   });
@@ -549,7 +549,7 @@ function costruisciProgressi(){
     for(const r of DATA.CUCINA) G.ricetteNote[r.id] = true;
     for(const k in DATA.UPGRADE){ if(!G.conta(k)) G.aggiungi(k,1); G.attrezziLiv[k] = DATA.UPGRADE[k].length; }
     for(const id of WORLD.MAPPE) G.visitati[id] = true;
-    for(const [,,ids] of G.categorieCollezione()) for(const id of ids) G.collezione[id] = true;
+    for(const {ids} of G.categorieCollezione()) for(const id of ids) G.collezione[id] = true;
     G.oro += 100000;
     G.sacaccia = true;
     accendiBraci(4);

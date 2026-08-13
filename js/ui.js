@@ -247,6 +247,15 @@ U.ico = ico;
    nell'ultimo istante, mentre esce a schermo. Cinque strozzature invece
    di milleduecento righe toccate. */
 const T = s => (window.LINGUA ? LINGUA.t(s) : s);
+/* Le frasi con un pezzo variabile dentro non si incollano col `+`: in
+   inglese l'ordine delle parole cambia e verrebbe fuori metà frase
+   tradotta con la grammatica italiana — è già successo con «Vino di
+   Grapes». E i numeri passano dal separatore della lingua: 1.400 in
+   italiano, 1,400 in inglese. */
+const F = (modello, ...pezzi)=> window.LINGUA
+  ? LINGUA.f(modello, ...pezzi)
+  : modello.replace(/\{(\d+)\}/g, (_,i)=>pezzi[i]);
+const NUM = v => (window.LINGUA ? LINGUA.n(v) : String(v));
 
 U.toast = function(msg, tipo, itemId){
   msg = T(msg);
@@ -1336,6 +1345,13 @@ U.diario = function(G, tabIniziale){
                     : 'Porta al Santuario i frutti di ogni stagione.');
       body.appendChild(p);
 
+      /* Il ponte è la chiave: senza, al Santuario non ci si arriva, e
+         un elenco di cinque offerte per un posto che non esiste ancora
+         è un compito senza porta. Con il ponte invece la porta c'è, e
+         allora tenere l'elenco solo laggiù vuol dire farsi la strada
+         ogni volta per rileggere cosa manca. */
+      const conPonte = !!(G.costruzioni && G.costruzioni.ponte);
+
       for(const b of DATA.SANTUARIO){
         const done=G.santuario[b.id];
         const r=document.createElement('div'); r.className='row';
@@ -1344,9 +1360,52 @@ U.diario = function(G, tabIniziale){
         const dati = (G.santuarioDato[b.id]||[]).length;
         info.innerHTML=`<div class="rname">${b.nome} ${done?'✦':''}</div>`+
                        `<div class="rdesc">${b.testo}</div>`+
-                       `<div class="ringr">${done?'<b>Completata.</b>':dati+'/'+b.req.length+' offerte'}</div>`;
+                       `<div class="ringr">${done?'<b>Completata.</b>':dati+'/'+b.req.length+' '+T('offerte')}</div>`;
         r.appendChild(info);
         body.appendChild(r);
+
+        /* --- cosa serve, e dove si trova ---
+           Stessa forma di «dove si trovano» nella Collezione: una riga
+           che si apre, non un muro di testo sempre aperto. Quattro
+           braci aperte insieme sono venti righe. */
+        if(conPonte && !done){
+          const dato = G.santuarioDato[b.id] || [];
+          const box=document.createElement('div'); box.className='coll-manca';
+          const cap=document.createElement('div'); cap.className='coll-manca-cap cliccabile';
+          const restano = b.req.filter(x=>dato.indexOf(x)<0).length;
+          cap.innerHTML='<span class="ob-freccia"></span>'+
+                        F('Cosa serve — te ne mancano {0}', restano);
+          const lista=document.createElement('div'); lista.className='coll-manca-lista hidden';
+          for(const id of b.req){
+            const gia = dato.indexOf(id)>=0;
+            const riga=document.createElement('div');
+            riga.className='coll-manca-riga' + (gia ? ' data' : '');
+            const c=document.createElement('div'); c.className='icell mini'; c.appendChild(ico(id));
+            riga.appendChild(c);
+            const t=document.createElement('div');
+            /* Quello già offerto resta in elenco, spento: sapere cosa hai
+               già portato è metà dell'informazione, e toglierlo dalla
+               lista farebbe sembrare che il Santuario ne voglia meno. */
+            t.innerHTML='<b>'+IT.nome(id)+(gia?' ✦':'')+'</b>'+
+                        '<div class="rdesc">'+(gia ? T('già offerto') : IT.dove(id))+'</div>';
+            riga.appendChild(t);
+            lista.appendChild(riga);
+          }
+          cap.onclick=()=>{
+            const chiuso=lista.classList.contains('hidden');
+            lista.classList.toggle('hidden', !chiuso);
+            cap.querySelector('.ob-freccia').classList.toggle('giu', chiuso);
+            SND.play('menu');
+          };
+          box.appendChild(cap); box.appendChild(lista);
+          body.appendChild(box);
+        }
+      }
+      if(!conPonte){
+        const n=document.createElement('div'); n.className='muted';
+        n.style.margin='2px 0 10px';
+        n.textContent = T('Al Santuario si arriva dal bosco, oltre il burrone: serve il ponte. Da lì saprai cosa chiede ogni brace.');
+        body.appendChild(n);
       }
 
       // --- SAGRA DI STAGIONE ---
@@ -1489,9 +1548,46 @@ U.diario = function(G, tabIniziale){
       intro.innerHTML=`Tutto ciò che hai scoperto nella valle. Completamento: <b>${cc.tot.d}/${cc.tot.t}</b> (${cc.tot.t?Math.round(cc.tot.d/cc.tot.t*100):0}%).`;
       body.appendChild(intro);
       const coll=G.collezione||{};
-      for(const [nome,,ids] of G.categorieCollezione()){
+      for(const cat of G.categorieCollezione()){
+        const nome = cat.nome, ids = cat.ids;
         const d=ids.filter(id=>coll[id]).length;
-        const s=document.createElement('div'); s.className='sectitle'; s.textContent=nome+' — '+d+'/'+ids.length;
+
+        /* L'intestazione porta con sé il premio: prima diceva soltanto
+           «MINERALI — 10/10» e finiva lì, cioè l'unica cosa del Diario
+           che si riempie senza che nessuno se ne accorga. */
+        const s=document.createElement('div'); s.className='sectitle coll-testa';
+        const et=document.createElement('span');
+        et.textContent = T(nome)+' — '+d+'/'+ids.length;
+        s.appendChild(et);
+
+        const P = G.premioCollezione(cat.id);
+        if(P){
+          if(G.collezioneRiscossa(cat.id)){
+            const t=document.createElement('span'); t.className='coll-premio riscosso';
+            t.textContent = T('premio riscosso');
+            s.appendChild(t);
+          } else if(G.collezioneCompleta(cat.id)){
+            const b=document.createElement('button'); b.className='btn gold coll-riscuoti';
+            b.textContent = T('Riscuoti')+' ✦';
+            b.onclick=()=>{
+              const dato = G.riscuotiCollezione(cat.id);
+              if(!dato) return;
+              const oggetto = dato.n ? ' · ' + dato.n + '× ' + IT.nome(dato.item) : '';
+              U.toast(F('{0} completata! +{1} monete{2}', T(nome), NUM(dato.oro), oggetto), 'gold', dato.item);
+              if(dato.sospeso) U.toast(T('Lo zaino era pieno: l\'oggetto ti aspetta nella scheda delle abilità.'),'bad');
+              G.aggiornaHUD(); G.rinfrescaHotbar(); U.aggiorna();
+            };
+            s.appendChild(b);
+          } else {
+            /* Quanto vale finirla, detto PRIMA di finirla: un premio che
+               si scopre solo dopo non fa venire voglia di cercare
+               l'ultimo pesce. */
+            const t=document.createElement('span'); t.className='coll-premio';
+            t.textContent = F('completala: {0} monete + {1}× {2}',
+                              NUM(P.oro), P.n, IT.nome(P.item));
+            s.appendChild(t);
+          }
+        }
         body.appendChild(s);
         const grid=document.createElement('div'); grid.className='invgrid';
         const mancanti=[];

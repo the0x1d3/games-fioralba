@@ -114,6 +114,14 @@ interface FioSkill { nome: string; desc: string; /** Icona nella scheda dei live
 type FioBonus = Record<string, number>;
 
 /** Il premio di una salita di livello. L'indice 0 della scala è null. */
+/** Il premio di una collezione completata. Niente `chiave`: qui
+    l'oggetto non sblocca niente, celebra e basta. */
+interface FioPremioCollezione {
+  oro: number;
+  item: string;
+  n: number;
+}
+
 interface FioPremioLivello {
   oro: number;
   item: string;
@@ -262,6 +270,11 @@ interface FioData {
   BONUS_TESTO: Record<string, (liv: number) => [string, string][]>;
   /** I premi di ogni salita: scala[0] è null, poi un premio a livello. */
   PREMI_LIVELLO: Record<string, Array<FioPremioLivello | null>>;
+  /** Il premio di una collezione completata, per id di categoria. */
+  PREMI_COLLEZIONE: Record<string, FioPremioCollezione>;
+  /** I traguardi che i premi di collezione hanno sostituito: chi li
+      aveva già riscossi non riscuote due volte lo stesso gesto. */
+  COLLEZIONE_DA_TRAGUARDO: Record<string, string>;
   /** La gente di passaggio: nessuna storia, solo un giro e qualcosa da dire. */
   PASSANTI: FioPassante[];
 }
