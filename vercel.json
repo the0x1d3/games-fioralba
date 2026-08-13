@@ -10,7 +10,7 @@
     },
     {
       "//": "L'immagine di anteprima non cambia mai: quella si può cachare a lungo.",
-      "source": "/og-fioralba.png",
+      "source": "/og-fioralba.jpg",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=604800" }
       ]

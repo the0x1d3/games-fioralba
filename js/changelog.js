@@ -16,6 +16,22 @@
 
 window.CHANGELOG = [
   {
+    v: '2.1',
+    data: 'agosto 2026',
+    titolo: 'I livelli si vedono, e i dialoghi si leggono per intero',
+    voci: [
+      { tipo:'nuovo',  t:'Salire di livello adesso paga', d:'L\'esperienza c\'era ma saliva di nascosto: non si vedeva mai quanto mancasse, e all\'arrivo restava un avviso che spariva in tre secondi. Adesso ogni livello dà monete e un oggetto del mestiere che l\'ha guadagnato — chi zappa riceve semi, chi scava riceve lingotti — e si prende una carta che mostra il bonus appena sbloccato. Se lo zaino è pieno l\'oggetto non si perde: ti aspetta nella scheda.' },
+      { tipo:'nuovo',  t:'Una scheda per i livelli, e una barretta mentre lavori', d:'Nel Diario c\'è «Livelli»: per ognuna delle cinque abilità il punto in cui sei, quanto manca alla prossima, tutti i bonus (anche quelli che devono ancora arrivare) e il premio del livello dopo. E mentre zappi o scavi compare in basso una barretta che dice quanto hai preso e quanto resta.' },
+      { tipo:'fix',    t:'I dialoghi non si troncano più a metà', d:'Premere invio mentre la frase si scriveva doveva completarla e invece la congelava dov\'era arrivata, a metà parola. Chi legge in fretta premeva sempre, e si perdeva mezza storia credendo fosse scritta così.' },
+      { tipo:'fix',    t:'I grassetti sono grassetti, non parole', d:'Nei dialoghi si leggeva «Prima cosa: <b>mettitelo in mano</b>» coi tag in chiaro.' },
+      { tipo:'fix',    t:'Esportare la partita esporta la partita', d:'Dalla pagina iniziale, «Nuova Partita» propone di esportare prima di cancellare: quel pulsante salvava un file vuoto di trentun byte, che al reimport veniva giustamente rifiutato. Adesso esporta quello che c\'è davvero, e un file che non riusciremmo a rileggere non parte nemmeno.' },
+      { tipo:'nuovo',  t:'Si importa un salvataggio dalla pagina iniziale', d:'Prima il pulsante stava solo nel menu interno: per riprendere una partita portata da un altro computer bisognava già averne una.' },
+      { tipo:'meglio', t:'La caccia si sente nei piedi, non solo nella mira', d:'«Le prede si accorgono di te più tardi» era scritto nella descrizione dell\'abilità dall\'inizio, ma non succedeva: il livello serviva solo a centrare il bersaglio. Adesso salendo di Caccia ci si può avvicinare davvero di più.' },
+      { tipo:'fix',    t:'La pioggia cade uguale su ogni schermo', d:'Gocce e fiocchi avanzavano a ogni fotogramma invece che col tempo: su un monitor a 144Hz la pioggia cadeva più del doppio più veloce che su uno normale.' },
+      { tipo:'meglio', t:'Il gioco salva senza far scattare la partita', d:'Il salvataggio automatico si piazzava in mezzo a un fotogramma ogni due minuti, sempre mentre camminavi. Adesso aspetta un momento libero, e i file occupano un quinto in meno.' }
+    ]
+  },
+  {
     v: '2.0',
     data: 'agosto 2026',
     titolo: 'La notte del solstizio',
@@ -152,5 +168,22 @@ window.CHANGELOG = [
     ]
   }
 ];
+
+/* La versione, presa dalla voce più recente e stampata dove serve.
+
+   Era scritta a mano in tre punti di index.html, e si era già scollata:
+   il riquadro del changelog diceva 2.0 — quello lo riempie la landing
+   leggendo di qui — mentre il piede della stessa pagina, due centimetri
+   sotto, diceva ancora 1.6. Adesso chiunque voglia mostrarla mette
+   `class="app-ver"` e ci pensa questo file; un controllo in
+   tools/coerenza.js verifica che in index.html non ne resti nessuna
+   scritta a mano. */
+window.CHANGELOG.versione = window.CHANGELOG[0].v;
+
+function stampaVersione(){
+  for(const e of document.querySelectorAll('.app-ver')) e.textContent = 'v' + window.CHANGELOG.versione;
+}
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', stampaVersione);
+else stampaVersione();
 
 })();

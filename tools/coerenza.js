@@ -861,6 +861,40 @@ verifica('chi lavora al chiuso ha una stanza che lo ospita', () => {
   return problemi;
 });
 
+/* La versione si scriveva a mano in tre punti di index.html, e si era
+   scollata da sola: il riquadro del changelog diceva 2.0 — quello lo
+   riempie la landing leggendo js/changelog.js — mentre il piede della
+   stessa pagina, due centimetri sotto, diceva ancora 1.6. Adesso la
+   stampa changelog.js su ogni `.app-ver`, e qui si controlla che in
+   index.html non ne rientri nessuna a mano. */
+verifica('la versione si legge da un posto solo', () => {
+  const html = fs.readFileSync(path.join(RADICE, 'index.html'), 'utf8');
+  const src = fs.readFileSync(path.join(RADICE, 'js/changelog.js'), 'utf8');
+  const problemi = [];
+
+  const corpo = html.replace(/<!--[\s\S]*?-->/g, '');
+  for (const m of corpo.matchAll(/\bv\d+\.\d+/g))
+    problemi.push(`index.html ha «${m[0]}» scritto a mano: usa <span class="app-ver">`);
+
+  const segnaposti = (corpo.match(/class="[^"]*\bapp-ver\b/g) || []).length;
+  if (!segnaposti) problemi.push('nessun segnaposto .app-ver in index.html: la versione non si vede da nessuna parte');
+
+  if (!/\.app-ver/.test(src)) problemi.push('changelog.js non stampa più la versione sui segnaposti');
+
+  const prima = src.match(/v:\s*'([\d.]+)'/);
+  if (!prima) problemi.push('non trovo la versione della voce più recente in changelog.js');
+
+  // le versioni devono scendere: la voce più recente sta in cima
+  const tutte = [...src.matchAll(/v:\s*'([\d.]+)'/g)].map(m => m[1].split('.').map(Number));
+  for (let i = 1; i < tutte.length; i++) {
+    const [aM, am] = tutte[i - 1], [bM, bm] = tutte[i];
+    if (aM * 1000 + am <= bM * 1000 + bm)
+      problemi.push(`changelog: la voce ${tutte[i - 1].join('.')} non è più recente di ${tutte[i].join('.')}`);
+  }
+
+  return problemi;
+});
+
 /* I dialoghi si scrivono a macchina un carattere per volta, e per farlo
    ui.js deve spezzare la riga in tag e testo. Regge i tag semplici e
    bilanciati — <b>, <i>, <kbd>, <br> — e nient'altro: un tag mai chiuso

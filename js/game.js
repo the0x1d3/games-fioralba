@@ -2505,7 +2505,9 @@ function ambienteGiusto(){
 }
 
 /* ===================================================================
-   FINE GIORNATA
+   ANDARE A DORMIRE
+   Le due porte per la notte: il letto e lo svenimento. La giornata che
+   si chiude davvero è `nuovoGiorno`, più in basso.
    =================================================================== */
 function dormi(){
   if(G.p.dorme) return;
@@ -2577,6 +2579,16 @@ function consegnaPosta(ritardo){
   return true;
 }
 
+/* ===================================================================
+   FINE GIORNATA
+   Centottantatré righe che stavano sotto l'intestazione «LA POSTA»,
+   perché sono cresciute lì sotto una riga per volta: la vendita della
+   cassa, l'avanzamento della data, i campi che crescono, il meteo, il
+   mercato, le richieste, la sagra, il mercante, gli eventi notturni.
+   La posta vera sono le quattordici righe qui sopra. Chi cercava «dove
+   finisce la giornata» non lo trovava, e chi contava le dipendenze di
+   «LA POSTA» ne trovava tredici e la credeva inseparabile.
+   =================================================================== */
 function nuovoGiorno(svenuto, multa){
   /* --- vendita cassa di consegna --- */
   const voci=[]; let tot=0;
