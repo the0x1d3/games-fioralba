@@ -2370,3 +2370,100 @@ Object.assign(window.LINGUA_EN, {
 '{0} ha qualcosa da dirti. Vai a parlarci.': '{0} has something to tell you. Go and talk.',
 '{0} si aprirà con te più avanti ({1} cuori)': '{0} will open up to you later on ({1} hearts)'
 });
+
+/* --- QUELLO CHE SI MIGLIORA ADDOSSO (DATA.PERSONA) -----------------
+   In `effetto` il `{0}` è il numero calcolato dal grado: va ricopiato,
+   o la frase promette un bonus senza dire quanto. */
+Object.assign(window.LINGUA_EN, {
+
+/* Zaino — Bruno */
+'Zaino': 'Bag',
+'🎒 Mi servirebbe uno zaino più grande': '🎒 I could do with a bigger bag',
+'{0} caselle in più nello zaino.': '{0} more slots in your bag.',
+'Zaino da mercato': 'Market bag',
+'Uno zaino? Guarda che io vendo semi e formaggio, non pellami.':
+  'A bag? Look, I sell seed and cheese, not leatherwork.',
+'…Però quello che porta la roba su dal capoluogo passa ogni dieci giorni, e mi deve ancora un favore. Portami la pelle e la fibra, al resto ci penso io.':
+  '…Though the man who brings goods up from town comes every ten days, and he still owes me a favour. Bring me the leather and the fibre, I will see to the rest.',
+'Tieni. Non è bello, ma ci sta dentro un raccolto intero.':
+  'Here. It is not handsome, but a whole harvest fits inside it.',
+'Zaino da viaggio': 'Travelling pack',
+'Ancora più grande. Certo. Sai che è la stessa faccia che faceva Ilde quando gliene proponevo uno piccolo.':
+  'Bigger still. Of course. You know that is the exact face Ilde pulled whenever I offered her a small one.',
+'Questo ha il telaio di rame dentro, così non ti si affloscia addosso quando è pieno.':
+  'This one has a copper frame inside, so it does not sag against you when it is full.',
+'Ecco. Adesso però non lamentarti del peso, che il peso è tutta roba tua.':
+  'There. Now do not complain about the weight — the weight is all your own doing.',
+
+/* Resistenza — Marisol */
+'Resistenza': 'Stamina',
+'🍲 Insegnami a reggere la giornata': '🍲 Teach me how to last the day',
+'{0} punti di energia in più al risveglio.': '{0} more energy when you wake.',
+'Colazione vera': 'A proper breakfast',
+'Il problema non è che lavori troppo. È che parti a stomaco vuoto e poi mangi una mela alle due.':
+  'The trouble is not that you work too hard. It is that you set off on an empty stomach and then eat an apple at two.',
+'Da domani passi di qui prima dell\'alba. Ti faccio io la colazione, e ti insegno a fartela.':
+  'From tomorrow you come by before dawn. I will make you breakfast, and teach you to make it yourself.',
+'Non è un segreto e non è una ricetta. È solo mangiare prima invece che dopo.':
+  'It is not a secret and it is not a recipe. It is only eating before instead of after.',
+'Passo della locandiera': 'The innkeeper\'s pace',
+'Io sto in piedi dalle cinque a mezzanotte da diciannove anni. Vuoi sapere come.':
+  'I have been on my feet from five to midnight for nineteen years. You want to know how.',
+'Non si tratta di essere forti. Si tratta di non sprecare niente: non corri se puoi camminare, non torni indietro due volte, e ti siedi quando ti siedi.':
+  'It is not about being strong. It is about wasting nothing: you do not run if you can walk, you do not go back twice, and when you sit, you sit.',
+'Adesso lo sai anche tu. Il difficile è crederci quando hai fretta.':
+  'Now you know it too. The hard part is believing it when you are in a hurry.',
+
+/* Scarpe — Oreste */
+'Scarpe': 'Boots',
+'🥾 Come fai a camminare così?': '🥾 How do you walk like that?',
+'Cammini il {0}% più svelto.': 'You walk {0}% faster.',
+'Suole da Passo': 'Pass soles',
+'Perché ho le scarpe giuste e tu hai le scarpe che ti hanno dato.':
+  'Because I have the right boots and you have the boots you were given.',
+'La suola va cucita a doppio filo e ingrassata due volte l\'anno. Se scivoli sul bagnato non è colpa del bagnato.':
+  'The sole wants double stitching and greasing twice a year. If you slip on wet ground, the wet ground is not to blame.',
+'Portami la pelle e due corni, che il corno tagliato fa i ramponi. Te le faccio io.':
+  'Bring me the leather and two antlers — cut antler makes the studs. I will make them myself.',
+'Passo di montagna': 'Mountain step',
+'Queste hanno il ferro sotto la punta. Sono brutte e pesano, e sono le migliori che avrai mai.':
+  'These have iron under the toe. They are ugly and heavy, and they are the best you will ever own.',
+'Il trucco non è la scarpa, comunque: è appoggiare tutto il piede invece che il tacco. Ma con la scarpa sbagliata non si può.':
+  'The trick is not the boot, mind: it is putting down the whole foot instead of the heel. But with the wrong boot you cannot.',
+'Adesso vai dove vuoi. Anche d\'inverno, anche sul ghiaccio vivo.':
+  'Now go wherever you like. In winter too, on solid ice too.',
+
+/* Cintura — Tobia */
+'Cintura': 'Belt',
+'🧰 Una cintura per gli attrezzi': '🧰 A belt for the tools',
+'Ogni colpo di attrezzo costa il {0}% di energia in meno.':
+  'Every swing of a tool costs {0}% less energy.',
+'Cintura da fucina': 'Forge belt',
+'Ti guardo da mesi: prendi la zappa, la posi, prendi il piccone, lo posi. Ogni volta ti pieghi.':
+  'I have watched you for months: pick up the hoe, put it down, pick up the pickaxe, put it down. You bend every time.',
+'Cento volte al giorno per trecento giorni. Non è la zappa che ti stanca, è raccoglierla.':
+  'A hundred times a day for three hundred days. It is not the hoe that tires you, it is picking it up.',
+'Con questa ce li hai addosso. Sembra una sciocchezza finché non la porti per una settimana.':
+  'With this you wear them. It sounds like nothing until you have worn it for a week.',
+'Cintura del fabbro': 'Blacksmith\'s belt',
+'Questa è la mia. Cioè, è come la mia: gli anelli sono a molla, l\'attrezzo ci salta dentro da solo.':
+  'This is mine. That is, it is like mine: the rings are sprung, the tool drops into them on its own.',
+'Mio padre diceva che un fabbro si vede dalla cintura e non dal martello. Aveva torto sul martello, ma sulla cintura aveva ragione.':
+  'My father said you know a smith by his belt and not by his hammer. He was wrong about the hammer, but right about the belt.',
+'Tieni. E non appoggiare più niente per terra, che poi lo cerchi.':
+  'Here. And stop putting things down on the ground, or you will only go looking for them.'
+});
+
+/* --- il negozio di quello che si migliora addosso --- */
+Object.assign(window.LINGUA_EN, {
+'Adesso hai: <b>{0}</b> — {1}': 'You have: <b>{0}</b> — {1}',
+'Non hai ancora niente del genere.': 'You have nothing of the sort yet.',
+'Meglio di così non si può.': 'It does not get better than this.',
+'Prendilo': 'Take it',
+'Non hai abbastanza monete.': 'You do not have enough coins.',
+'Ti manca ancora del materiale.': 'You are still short of materials.',
+'{0} monete': '{0} coins',
+'{0}: {1}': '{0}: {1}',
+'ancora niente': 'nothing yet',
+'da prendere': 'still to get'
+});

@@ -322,6 +322,34 @@ L.scheda = function(body){
     body.appendChild(s);
   }
 
+  /* --- quello che si è migliorato addosso ---
+
+     Sta qui e non in una scheda sua perché è la stessa domanda dei
+     livelli — «a che punto sono» — e perché così il numero e la frase
+     si leggono uno sotto l'altro: la frase la calcola `PERSONA.frase`
+     dallo stesso `passo` che il gioco applica, quindi non possono
+     divergere. Non compare finché non si è sbloccato niente: una
+     sezione vuota per tre stagioni è solo rumore. */
+  const addosso = (window.PERSONA ? PERSONA.righeScheda() : []);
+  if(addosso.length){
+    body.appendChild(el('div','sectitle', 'Sulla persona'));
+    for(const r of addosso){
+      const c = el('div','liv-scheda' + (r.grado >= r.quanti ? ' massimo' : ''));
+      const testa = el('div','liv-scheda-testa');
+      testa.appendChild(icona(r.icona, 34));
+      const nomi = el('div','liv-scheda-nomi');
+      nomi.appendChild(el('div','liv-scheda-nome', r.nome + ' — ' + r.titolo));
+      nomi.appendChild(el('div','liv-scheda-desc', r.frase));
+      testa.appendChild(nomi);
+      testa.appendChild(el('div','liv-scheda-liv',
+        r.grado >= r.quanti ? 'MAX' : r.grado + '/' + r.quanti));
+      c.appendChild(testa);
+      if(r.grado < r.quanti)
+        c.appendChild(el('div','liv-scheda-conto', 'Il prossimo lo fa ' + r.da + '.'));
+      body.appendChild(c);
+    }
+  }
+
   /* --- una carta per abilità --- */
   for(const k of CHIAVI){
     const p = L.progresso(k);

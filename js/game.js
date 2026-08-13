@@ -70,7 +70,7 @@ function statoIniziale(){
     gatto:{ affetto:0, giorno:-1, nome:null },
     obiettiviRiscossi:{}, sagra:null, mercante:{presente:false, giorno:-1, stock:[]},
     visitati:{podere:true}, collezione:{},
-    vicende:{},
+    vicende:{}, persona:{},
     trame:{ torta:{avviata:false, segreto:false, fatta:false},
             pesceluna:{avviata:false, preso:false, fatta:false},
             veglia:{avviata:false, memorie:{}, verita:false, invitati:{}, giorno:null, fatta:false} },
@@ -670,6 +670,32 @@ function guardiaGiocatore(){
   }
 }
 
+/* I due monti — energia e caselle dello zaino — si ricalcolano sempre dai
+   pezzi, non si sommano man mano. È il motivo per cui una partita già
+   cominciata si ritrova subito il valore giusto: valeva già per
+   l'energia (base + quello che si è guadagnato salendo di livello), e
+   adesso vale anche per lo zaino.
+
+   Il silo faceva `G.invMax = Math.min(36, G.invMax+12)`, cioè scriveva
+   il risultato invece degli addendi. Finché era l'unico a toccare quel
+   numero reggeva; con lo zaino comprato da Bruno no, perché due
+   ricalcoli di fila avrebbero dato risultati diversi a seconda
+   dell'ordine, e il tetto a 36 avrebbe mangiato in silenzio quello che
+   uno aveva appena pagato. 27 + 9 col silo fa 36, cioè esattamente
+   quello che dava prima: chi ha il silo non guadagna e non perde nulla.
+
+   Il `while(...) push(null)` viene dopo perché l'array cresce e non si
+   accorcia mai: uno zaino non si rimpicciolisce. */
+const ZAINO_BASE = 27, ZAINO_SILO = 9;
+G.applicaPersona = function(){
+  if(!G.persona || typeof G.persona!=='object') G.persona = {};
+  const P = window.PERSONA;
+  G.energiaMax = ENERGIA_BASE + G.energiaBonus + (P ? P.valore('resistenza') : 0);
+  G.invMax = ZAINO_BASE + ((G.costruzioni && G.costruzioni.silo) ? ZAINO_SILO : 0)
+           + (P ? P.valore('zaino') : 0);
+  while(G.inv.length < G.invMax) G.inv.push(null);
+};
+
 /* garantisce che tutte le strutture di stato esistano e siano del tipo giusto:
    così salvataggi vecchi/parziali non mandano in errore il resto del motore. */
 function normalizzaStato(){
@@ -678,7 +704,7 @@ function normalizzaStato(){
   ['inv','richieste','cassaConsegna','animali','premiSospesi'].forEach(A);
   ['skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
    'lettere','ricetteNote','stats','obiettiviRiscossi','visitati','collezione','regaloRicevuto',
-   'parlatoOggi','regalatoOggi','mercato','gatto','vicende'].forEach(O);
+   'parlatoOggi','regalatoOggi','mercato','gatto','vicende','persona'].forEach(O);
   /* le partite cominciate prima del gatto non hanno i suoi campi: senza
      questi, la prima carezza leggerebbe `undefined + 6` */
   if(typeof G.gatto.affetto !== 'number') G.gatto.affetto = 0;
@@ -703,15 +729,9 @@ function normalizzaStato(){
      vecchio lo ricava applicaSalvataggio, in salvataggio.js: è l'unico
      posto in cui si sa ancora che nel file non c'era.) */
   if(typeof G.energiaBonus !== 'number' || !isFinite(G.energiaBonus)) G.energiaBonus = 0;
-  G.energiaMax = ENERGIA_BASE + G.energiaBonus;
+  G.applicaPersona();
   if(typeof G.energia !== 'number' || !isFinite(G.energia)) G.energia = G.energiaMax;
   G.energia = Math.min(G.energia, G.energiaMax);
-  /* Ventisette e non ventiquattro: lo zaino si legge come una riga di
-     barra più due righe di deposito, e tre righe da nove tornano.
-     Le partite già cominciate salgono a ventisette invece di restare
-     con una riga monca. */
-  if(typeof G.invMax!=='number' || G.invMax<1) G.invMax=27;
-  if(G.invMax < 27) G.invMax = 27;
   while(G.inv.length < G.invMax) G.inv.push(null);
   // giocatore incastrato in un solido dopo il caricamento → sblocca (una tantum)
   const p=G.p, m=(G.maps && G.maps[G.mappaId]) ? G.maps[G.mappaId] : null;
@@ -830,7 +850,10 @@ function aggiornaGiocatore(dt){
     // velocità: sentiero più veloce
     const tSotto = WORLD.terreno(m, (p.px/T)|0, (p.py/T)|0);
     const duro = tSotto==='sentiero'||tSotto==='assi'||tSotto==='lastre'||tSotto==='cotto';
-    let vel = (correndo?1.9:1.18) * (duro?1.14:1);
+    /* Le scarpe di Oreste. Moltiplicano invece di sommare, come fa il
+       sentiero qui accanto: sommare avrebbe dato lo stesso regalo a chi
+       cammina e a chi corre, e camminando si sarebbe sentito il doppio. */
+    let vel = (correndo?1.9:1.18) * (duro?1.14:1) * (1 + (window.PERSONA ? PERSONA.valore('scarpe') : 0));
     if(p.usoT>0) vel*=0.35;
     const spd = vel * dt/16;
 
@@ -1332,7 +1355,18 @@ function posa(id, tx, ty){
 }
 
 function spendi(e){
-  e = Math.max(0.4, e);
+  /* La cintura di Tobia sconta anche il pavimento, non solo il costo.
+
+     Scontando il solo costo, il pavimento a 0.4 si mangiava lo sconto
+     proprio dove serve: gli attrezzi potenziati costano già 0.5 e 0.6
+     (`3 - liv*0.5`, `2 - liv*0.35`), quindi a fine partita — cioè
+     quando la cintura ce l'hai — il 24% promesso ne sarebbe diventato
+     un 4%, e la scheda avrebbe raccontato un bonus che non c'era.
+     Scontato anche il minimo, il gesto più economico passa da 0.4 a
+     0.30: meno, ma mai gratis, che è il motivo per cui il pavimento
+     esiste. */
+  const sconto = window.PERSONA ? PERSONA.valore('cintura') : 0;
+  e = Math.max(0.4 * (1 - sconto), e * (1 - sconto));
   if(G.energia < e){
     UI.toast('Sei troppo stanco. Mangia qualcosa o vai a dormire.','bad');
     SND.play('errore');
@@ -2041,6 +2075,10 @@ function parlaCon(n){
      fondo all'elenco — sotto «Vorrei comprare qualcosa» e «Insegnami una
      ricetta» — diventano una voce di menu invece che una storia. */
   for(const s of VICENDE.scelte(n.id)) scelte.push(s);
+  /* Quello che si migliora addosso lo vende chi ti ha appena raccontato
+     la sua storia: la voce compare qui sotto, dopo la vicenda e prima
+     del negozio, perché è la cosa nuova e va vista. */
+  for(const s of PERSONA.scelte(n.id)) scelte.push(s);
   if(SOLSTIZIO.memoriaDi(n.id))    scelte.push({testo:'✦ Quella notte, dodici anni fa', azione:()=>SOLSTIZIO.raccontaMemoria(n.id)});
   if(SOLSTIZIO.puoiInvitare(n.id)) scelte.push({testo:'🕯️ Vieni alla veglia al Santuario', azione:()=>SOLSTIZIO.invitaAllaVeglia(n.id)});
   if(n.id==='bruno') scelte.push({testo:'🛒 Vorrei comprare qualcosa', azione:()=>UI.negozio(G,'bruno')});
@@ -2606,7 +2644,7 @@ G.costruisci = function(c){
   G.costruzioni[c.id]=true;
   WORLD.costruisci(G.maps, c.id);
   REND.invalidaTerreno();      // ponte e serra cambiano il terreno
-  if(c.id==='silo') G.invMax = Math.min(36, G.invMax+12);
+  if(c.id==='silo') G.applicaPersona();   // il silo è uno degli addendi, non una somma a parte
   SND.play('costruisci');
   UI.toast(c.nome+' costruito!','gold');
   G.aggiornaHUD();

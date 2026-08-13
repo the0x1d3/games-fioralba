@@ -728,6 +728,56 @@ verifica('le vicende del paese stanno in piedi', () => {
   return problemi;
 });
 
+/* Quello che si migliora addosso ha due modi di guastarsi in silenzio.
+
+   Il primo è la roba inventata, come per ogni tabella. Il secondo è più
+   sottile: ognuno di questi si sblocca finendo una vicenda, e se la
+   vicenda non esiste — un id scritto male, una storia rinominata — non
+   succede niente di rotto. Succede che quella cosa non si può comprare,
+   mai, e nessuno se ne accorge perché «non è ancora sbloccata» è uno
+   stato normale del gioco.
+
+   E c'è la regola dei numeri: `passo` sta in `DATA.PERSONA` una volta
+   sola perché lo leggono sia chi applica l'effetto sia chi lo racconta
+   nella scheda. Qui si verifica che ci sia e che sia un numero: senza,
+   la scheda scriverebbe «NaN caselle in più» — che in questo repo è già
+   successo, con le frasi dei livelli. */
+verifica('quello che si migliora addosso sta in piedi', () => {
+  const P = DATA.PERSONA || {};
+  const problemi = [];
+  for (const k in P) {
+    const U = P[k];
+    const q = t => `«${k}»: ${t}`;
+    if (!DATA.NPCS[U.da]) problemi.push(q(`lo vende «${U.da}», che non è un abitante`));
+    if (!DATA.VICENDE[U.vicenda]) problemi.push(q(`si sblocca con la vicenda «${U.vicenda}», che non esiste: non si potrà comprare mai`));
+    else if (DATA.VICENDE[U.vicenda].npc !== U.da)
+      problemi.push(q(`lo vende ${U.da} ma si sblocca con una storia di ${DATA.VICENDE[U.vicenda].npc}`));
+    if (!DATA.ITEMS[U.icona]) problemi.push(q(`ha per icona «${U.icona}», che non è un oggetto`));
+    if (!(typeof U.passo === 'number' && isFinite(U.passo) && U.passo > 0))
+      problemi.push(q('non ha un `passo` numerico: la scheda scriverebbe NaN'));
+    if (!U.effetto || U.effetto.indexOf('{0}') < 0)
+      problemi.push(q('`effetto` non ha il segnaposto {0}: il numero non comparirebbe nella frase'));
+    if (!U.scelta) problemi.push(q('non ha la voce di dialogo che apre il negozio'));
+    if (!Array.isArray(U.gradi) || !U.gradi.length) { problemi.push(q('non ha gradi')); continue; }
+    let prima = 0;
+    U.gradi.forEach((g, i) => {
+      const r = t => problemi.push(q(`grado ${i + 1}: ${t}`));
+      if (!g.nome) r('non ha nome');
+      if (!(g.costo > 0)) r(`costa ${g.costo}`);
+      /* Un grado che costa meno del precedente si compra al contrario, e
+         chi ha pagato il primo si sente preso in giro. */
+      if (g.costo <= prima) r(`costa ${g.costo}, cioè non più del grado prima (${prima})`);
+      prima = g.costo;
+      for (const i2 in (g.ing || {})) {
+        if (!DATA.ITEMS[i2]) r(`chiede «${i2}», che non è un oggetto`);
+        if (!(g.ing[i2] > 0)) r(`chiede ${g.ing[i2]} di «${i2}»`);
+      }
+      if (!Array.isArray(g.righe) || !g.righe.length) r('non fa dire niente a chi te lo dà');
+    });
+  }
+  return problemi;
+});
+
 /* In basso al centro ci sono tre fasce sovrapposte in ordine: la barra
    degli attrezzi col nome dell'oggetto, il suggerimento («E parla con
    Bruno», «Abbocca! Premi Spazio») e i messaggi. Nessuna delle tre sa

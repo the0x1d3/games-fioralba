@@ -148,6 +148,11 @@ const CAMPI = [
      uguale nella traduzione, o l'elenco delle cose da portare sparisce
      dalla frase invece di finirci dentro. */
   ['VICENDE',     ['titolo','scelta','compito','manca','righe']],
+  /* Come sopra, e per lo stesso motivo: `da`, `vicenda` e `icona` sono
+     id e devono restare intatti. `nome` prende sia quello dell'upgrade
+     sia quello di ogni grado, perché `raccogli` va per nome di campo e
+     non gli importa a che piano sta. */
+  ['PERSONA',     ['nome','scelta','effetto','righe']],
   ['LETTERE',     ['titolo','testo','da']],
   ['CONTESTO',    null],      // struttura libera: si traduce tutto il testo dentro
   ['FESTA',       null],

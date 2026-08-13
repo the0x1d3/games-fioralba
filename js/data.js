@@ -906,6 +906,103 @@ D.VICENDE = {
 
 };
 
+/* ===================================================================
+   QUELLO CHE SI MIGLIORA ADDOSSO — non gli attrezzi, la persona.
+
+   Fino a qui tutto quello che cresceva era fuori dal giocatore: gli
+   attrezzi (D.UPGRADE, da Tobia), le abilità (D.SKILLS, giocando), il
+   podere (D.COSTRUZIONI). La persona no: si camminava alla stessa
+   velocità del primo giorno, si portavano le stesse ventisette caselle
+   e ogni zappata costava quello che costava a mezzogiorno del giorno
+   uno.
+
+   Ognuno di questi si sblocca finendo la vicenda di chi lo fa: la
+   cintura la batte Tobia dopo la campana, lo zaino lo ordina Bruno dopo
+   il libretto. Il motivo non è narrativo, è che sono quattro cose
+   potenti e messe in vendita subito toglierebbero il senso ai primi
+   inverni — così invece arrivano quando quei problemi lì li hai già
+   avuti addosso per un po'.
+
+   `passo` è il numero, e sta qui una volta sola: lo legge chi applica
+   l'effetto e chi lo racconta nella scheda. Le due volte che in questo
+   repo un numero di bilanciamento è finito in due posti, i due posti si
+   sono contraddetti entro un mese. */
+D.PERSONA = {
+
+  zaino: {
+    nome:'Zaino', da:'bruno', vicenda:'bruno_libretto', icona:'cassa',
+    scelta:'🎒 Mi servirebbe uno zaino più grande',
+    passo:9, effetto:'{0} caselle in più nello zaino.',
+    gradi:[
+      { nome:'Zaino da mercato', costo:2600, ing:{ pelle:6, fibra:20 }, righe:[
+        'Uno zaino? Guarda che io vendo semi e formaggio, non pellami.',
+        '…Però quello che porta la roba su dal capoluogo passa ogni dieci giorni, e mi deve ancora un favore. Portami la pelle e la fibra, al resto ci penso io.',
+        'Tieni. Non è bello, ma ci sta dentro un raccolto intero.'
+      ] },
+      { nome:'Zaino da viaggio', costo:7800, ing:{ pelle:12, fibra:40, lingotto_rame:3 }, righe:[
+        'Ancora più grande. Certo. Sai che è la stessa faccia che faceva Ilde quando gliene proponevo uno piccolo.',
+        'Questo ha il telaio di rame dentro, così non ti si affloscia addosso quando è pieno.',
+        'Ecco. Adesso però non lamentarti del peso, che il peso è tutta roba tua.'
+      ] }
+    ]
+  },
+
+  resistenza: {
+    nome:'Resistenza', da:'marisol', vicenda:'marisol_stanza', icona:'zuppa_contadina',
+    scelta:'🍲 Insegnami a reggere la giornata',
+    passo:15, effetto:'{0} punti di energia in più al risveglio.',
+    gradi:[
+      { nome:'Colazione vera', costo:2400, ing:{ uovo:10, latte:6 }, righe:[
+        'Il problema non è che lavori troppo. È che parti a stomaco vuoto e poi mangi una mela alle due.',
+        'Da domani passi di qui prima dell\'alba. Ti faccio io la colazione, e ti insegno a fartela.',
+        'Non è un segreto e non è una ricetta. È solo mangiare prima invece che dopo.'
+      ] },
+      { nome:'Passo della locandiera', costo:7200, ing:{ zuppa_contadina:4, spezzatino:3, pane_miele:4 }, righe:[
+        'Io sto in piedi dalle cinque a mezzanotte da diciannove anni. Vuoi sapere come.',
+        'Non si tratta di essere forti. Si tratta di non sprecare niente: non corri se puoi camminare, non torni indietro due volte, e ti siedi quando ti siedi.',
+        'Adesso lo sai anche tu. Il difficile è crederci quando hai fretta.'
+      ] }
+    ]
+  },
+
+  scarpe: {
+    nome:'Scarpe', da:'eremita', vicenda:'eremita_neve', icona:'pelle',
+    scelta:'🥾 Come fai a camminare così?',
+    passo:0.10, effetto:'Cammini il {0}% più svelto.',
+    gradi:[
+      { nome:'Suole da Passo', costo:2800, ing:{ pelle:8, corno_cervo:2 }, righe:[
+        'Perché ho le scarpe giuste e tu hai le scarpe che ti hanno dato.',
+        'La suola va cucita a doppio filo e ingrassata due volte l\'anno. Se scivoli sul bagnato non è colpa del bagnato.',
+        'Portami la pelle e due corni, che il corno tagliato fa i ramponi. Te le faccio io.'
+      ] },
+      { nome:'Passo di montagna', costo:8400, ing:{ pelle:16, corno_cervo:4, lingotto_ferro:2 }, righe:[
+        'Queste hanno il ferro sotto la punta. Sono brutte e pesano, e sono le migliori che avrai mai.',
+        'Il trucco non è la scarpa, comunque: è appoggiare tutto il piede invece che il tacco. Ma con la scarpa sbagliata non si può.',
+        'Adesso vai dove vuoi. Anche d\'inverno, anche sul ghiaccio vivo.'
+      ] }
+    ]
+  },
+
+  cintura: {
+    nome:'Cintura', da:'tobia', vicenda:'tobia_campana', icona:'zappa',
+    scelta:'🧰 Una cintura per gli attrezzi',
+    passo:0.12, effetto:'Ogni colpo di attrezzo costa il {0}% di energia in meno.',
+    gradi:[
+      { nome:'Cintura da fucina', costo:3000, ing:{ pelle:10, lingotto_rame:4 }, righe:[
+        'Ti guardo da mesi: prendi la zappa, la posi, prendi il piccone, lo posi. Ogni volta ti pieghi.',
+        'Cento volte al giorno per trecento giorni. Non è la zappa che ti stanca, è raccoglierla.',
+        'Con questa ce li hai addosso. Sembra una sciocchezza finché non la porti per una settimana.'
+      ] },
+      { nome:'Cintura del fabbro', costo:8800, ing:{ pelle:18, lingotto_ferro:5, corno_cervo:3 }, righe:[
+        'Questa è la mia. Cioè, è come la mia: gli anelli sono a molla, l\'attrezzo ci salta dentro da solo.',
+        'Mio padre diceva che un fabbro si vede dalla cintura e non dal martello. Aveva torto sul martello, ma sulla cintura aveva ragione.',
+        'Tieni. E non appoggiare più niente per terra, che poi lo cerchi.'
+      ] }
+    ]
+  }
+
+};
+
 /* Cosa porta un cespuglio carico, stagione per stagione.
 
    Stava scritta dentro al codice della falce, e il disegno del cespuglio

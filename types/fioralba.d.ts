@@ -162,6 +162,31 @@ interface FioVicenda {
   premio: { oro?: number; item?: string; qta?: number; amicizia?: number };
 }
 
+/** Un grado di un miglioramento addosso: quanto costa e cosa si sente
+ *  dire da chi te lo dà. */
+interface FioGradoPersona {
+  nome: string;
+  costo: number;
+  ing?: Record<string, number>;
+  righe: string[];
+}
+
+interface FioPersona {
+  nome: string;
+  /** Chi lo fa: la voce compare nel suo dialogo. */
+  da: string;
+  /** La vicenda che lo sblocca: prima di finirla non si può comprare. */
+  vicenda: string;
+  /** Id oggetto usato come icona nella scheda. */
+  icona: string;
+  scelta: string;
+  /** Il numero, in un posto solo: lo leggono l'effetto e la frase. */
+  passo: number;
+  /** La frase, con `{0}` al posto del numero calcolato dal grado. */
+  effetto: string;
+  gradi: FioGradoPersona[];
+}
+
 interface FioMemoria {
   id: string;
   npc: string;
@@ -293,6 +318,8 @@ interface FioData {
   MEMORIE: FioMemoria[];
   /** Le storie del paese: una per abitante, aperte dai cuori. */
   VICENDE: Record<string, FioVicenda>;
+  /** Quello che si migliora addosso: zaino, resistenza, scarpe, cintura. */
+  PERSONA: Record<string, FioPersona>;
   /** Dove sta ognuno la sera della veglia: coppie di caselle. */
   POSTI_VEGLIA: Record<string, number[][]>;
   /** Il frutto del cespuglio, stagione per stagione. */
