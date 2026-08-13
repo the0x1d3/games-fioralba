@@ -1794,15 +1794,53 @@ html.col-dito .slot .qty{ font-size:10px; right:2px; }
 html.col-dito .slot:hover{ transform:none; }     /* :hover col dito resta incollato */
 html.col-dito .slot.sel{ transform:translateY(-4px); }
 
-/* i cinque tasti dell'HUD: da 46 a 52, e in colonna sopra i due verbi */
-html.col-dito #quickbtns{ right:10px; gap:9px; }
-html.col-dito #quickbtns button{ width:52px; height:52px; font-size:23px; }
+/* I cinque tasti dell'HUD passano da colonna a RIGA, in alto sotto
+   l'orologio.
+
+   Misurato a 375×812: in colonna sul bordo destro erano alti 296px, e
+   insieme ai due verbi tenevano occupato il **55% dell'altezza dello
+   schermo** lungo tutto il lato destro — un muro di pulsanti davanti
+   alla valle.
+
+   Vanno in alto perché sono tasti da menu e non da gioco: zaino,
+   artigianato, diario, mappa e impostazioni si premono ogni tanto e ci
+   si può allungare. Il pollice, in basso, resta libero per i due verbi,
+   che si premono di continuo. E sono più piccoli: 44 invece di 52, che
+   è la soglia comoda per un polpastrello e non un pixel di più. */
+html.col-dito #quickbtns{
+  top:calc(99px + env(safe-area-inset-top));
+  bottom:auto; right:10px;
+  transform:none;
+  flex-direction:row; gap:7px;
+}
+html.col-dito #quickbtns button{ width:44px; height:44px; font-size:20px; }
+
+/* e i due verbi scendono da 82/64 a 72/56: restano larghi sopra la
+   soglia dei 44 e restituiscono un quinto della fascia che tenevano */
+html.col-dito .tocco-btn{ width:56px; height:56px; font-size:12px; }
+html.col-dito .tocco-btn.grosso{ width:72px; height:72px; font-size:14px; }
 
 /* La guida «Primi passi» occupava 236×258 dentro 375: un terzo dello
    schermo, sopra il gioco. Col dito parte ripiegata — il titolo con la
    barretta resta, il corpo si apre toccandolo. */
 html.col-dito #guida{ width:min(214px, 58vw); top:200px; }
 html.col-dito #guida .gu-corpo{ max-height:112px; overflow-y:auto; }
+
+/* La linguetta del pannello di prova sta in basso a destra, che col dito
+   è il posto peggiore che ci sia: in verticale copriva gli slot 8 e 9
+   della barra degli attrezzi, coricati copriva «Parla». In tutti e due
+   i casi la prova diceva «coperto da dbg-linguetta», cioè un comando
+   che non risponde e nessun modo di capire perché.
+
+   Va sul bordo sinistro a metà altezza, che è l'unica fascia libera in
+   tutti e due gli orientamenti: sopra c'è l'energia, sotto la barra, e
+   in mezzo non c'è niente da premere. Il pannello è provvisorio — ma
+   finché c'è, non deve rubare un tasto. */
+html.col-dito .dbg-scatola{
+  right:auto; bottom:auto;
+  left:10px; top:50%; transform:translateY(-50%);
+  align-items:flex-start;
+}
 
 /* niente etichette che scorrono al passaggio del mouse: non passa nessuno */
 html.col-dito #quickbtns button::after,
@@ -1953,3 +1991,116 @@ html, body{ overscroll-behavior:none; }
   .imp .btn{ min-height:44px; }
   .imp-cursore input{ height:32px; }   /* il cursore si prende col dito, non col puntatore */
 }
+
+/* ===================================================================
+   IL TELEFONO CORICATO
+
+   L'HUD è disposto per un rettangolo alto, e in orizzontale si accavalla
+   su se stesso. Misurato a 844×390 col dito acceso:
+
+   - i cinque tasti dell'HUD (colonna a destra, centrata: y 47→343)
+     stavano ADDOSSO ai due verbi (x748, y130→286). Uno dei due vince per
+     z-index e l'altro diventa un pulsante che non risponde.
+   - e stavano addosso anche all'orologio, che in orizzontale arriva fino
+     a x832 mentre la colonna comincia a x782.
+   - la barra dell'energia è alta 195px dentro a uno schermo di 390: metà
+     altezza per un numero.
+   - la guida «Primi passi» finiva sotto la barra dell'energia.
+
+   Quindi qui l'HUD si riorganizza per come si tiene un telefono
+   coricato: **tutto quello che si guarda va in alto, tutto quello che si
+   preme va in basso agli angoli**, dove arrivano i pollici. In mezzo
+   resta il gioco, che di altezza ne ha già poca.
+
+   Si aggancia a `col-dito` e non alla sola larghezza: una finestra bassa
+   e larga su un computer ha ancora il mouse, e non deve perdere il suo
+   HUD per una proporzione.
+   =================================================================== */
+@media (orientation:landscape) and (max-height:520px){
+
+  /* --- in alto: quello che si legge --- */
+  /* l'energia diventa orizzontale: 26×150 in piedi, 120×20 coricata */
+  html.col-dito #sidebar{ top:calc(8px + env(safe-area-inset-top)); left:10px; }
+  html.col-dito #energybox{ width:auto; padding:5px 9px 6px; }
+  html.col-dito #energybox .statlabel{ display:none; }
+  html.col-dito #energybox .vbar{
+    width:118px; height:20px; margin:0; border-radius:11px;
+  }
+  html.col-dito #energybox #energyfill{
+    /* in verticale si riempie in altezza, qui in larghezza: la stessa
+       percentuale la scrive `G.aggiornaHUD` su `height`, quindi la si
+       gira col trasformare invece di cambiare il JS in due posti */
+    top:0; bottom:0; height:100% !important;
+    width:var(--energia, 100%);
+    right:auto;
+  }
+  html.col-dito #energybox .vbar span{ padding:0; align-items:center; }
+
+  html.col-dito #topbar{ top:calc(8px + env(safe-area-inset-top)); right:10px; gap:7px; }
+  html.col-dito #clockbox{ min-width:0; padding:5px 10px; }
+  html.col-dito #clockbox #dateline{ font-size:11px; }
+  html.col-dito #clockbox #timetext{ font-size:17px; }
+  html.col-dito #clockbox #weatherline{ font-size:11px; }
+  html.col-dito #goldbox{ padding:5px 10px; }
+
+  /* i cinque tasti passano da colonna a destra a RIGA in alto a destra,
+     sotto l'orologio: lì il pollice non ci arriva per sbaglio, ed è
+     l'unica fascia libera che resta */
+  /* Sotto l'orologio, non accanto. A 844×390 l'orologio è alto 72 e la
+     riga partiva da 58: ci finiva dentro. E non a fianco, perché su un
+     telefono più stretto (568 coricato) le due file affiancate non ci
+     starebbero in larghezza. */
+  html.col-dito #quickbtns{
+    top:calc(86px + env(safe-area-inset-top));
+    bottom:auto; right:10px;
+    transform:none;
+    flex-direction:row; gap:7px;
+  }
+  html.col-dito #quickbtns button{ width:44px; height:44px; font-size:20px; }
+
+  /* --- in basso: quello che si preme --- */
+  /* i due verbi si affiancano invece di impilarsi: 156px di colonna
+     dentro a 390 di schermo erano il 40% dell'altezza */
+  html.col-dito #tocco-tasti{
+    flex-direction:row-reverse; align-items:flex-end; gap:9px;
+    right:12px; bottom:calc(10px + env(safe-area-inset-bottom));
+  }
+  html.col-dito .tocco-btn{ width:56px; height:56px; font-size:12px; }
+  html.col-dito .tocco-btn.grosso{ width:70px; height:70px; font-size:14px; }
+
+  /* la barra degli attrezzi si sposta a sinistra del centro, così non
+     finisce sotto i due verbi: a destra ci sono 82+70+gap = 170px */
+  html.col-dito #hotbar-wrap{
+    left:12px; transform:none;
+    bottom:calc(8px + env(safe-area-inset-bottom));
+  }
+  html.col-dito #hotbar{ gap:3px; padding:4px; }
+  html.col-dito .slot{ width:32px; height:32px; }
+  html.col-dito .slot canvas{ width:25px; height:25px; }
+  html.col-dito #hotbar-name{ font-size:12px; }
+
+  /* il pad nasce sotto il pollice sinistro, che qui sta più in basso:
+     il cerchio da 104 di diametro non deve uscire dallo schermo */
+  html.col-dito #tocco-pad{ width:88px; height:88px; margin:-44px 0 0 -44px; }
+  html.col-dito .tp-perno{ width:38px; height:38px; }
+
+  /* --- quello che non ci sta --- */
+  /* «Primi passi» è largo 214 e alto 159: in orizzontale non c'è una
+     fascia libera dove metterlo senza coprire il gioco o un comando.
+     Sparisce, e torna girando il telefono — che è un gesto che si fa
+     senza spiegazioni. Il progresso non si perde: è nello stato. */
+  html.col-dito #guida{ display:none; }
+
+  /* i messaggi salivano da 138px, cioè in mezzo allo schermo */
+  html.col-dito #toasts{ bottom:calc(74px + env(safe-area-inset-bottom)); }
+  html.col-dito #prompt{ bottom:calc(90px + env(safe-area-inset-bottom)); }
+
+  /* il riquadro del dialogo si prende la fascia bassa per intero, ma
+     lascia fuori i due verbi a destra */
+  html.col-dito #dialogue{
+    bottom:calc(6px + env(safe-area-inset-bottom));
+    right:calc(150px + env(safe-area-inset-right));
+  }
+  html.col-dito #dialogue .dlg-portrait{ transform:scale(.8); transform-origin:left center; }
+}
+

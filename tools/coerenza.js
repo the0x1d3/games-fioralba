@@ -1142,6 +1142,37 @@ verifica('i comandi a tocco ci sono tutti, e passano dai tasti veri', () => {
   if (/id="mobile-warn"|class="lp-mobile"/.test(html) || /solo-desktop/.test(game))
     problemi.push('è tornato il rifiuto «solo da computer»: adesso direbbe una cosa falsa');
 
+  /* IL TELEFONO CORICATO. L'HUD è disegnato per un rettangolo alto, e
+     coricato si accavalla su se stesso: misurato a 844×390, i cinque
+     tasti dell'HUD stavano addosso ai due verbi e all'orologio, e la
+     barra dell'energia era alta metà schermo. Le regole che lo
+     rimettono in ordine sono CSS e non fanno rumore sparendo: il gioco
+     continua a girare, e il pulsante che apre le porte semplicemente
+     non risponde più. */
+  const css = fs.readFileSync(path.join(RADICE, 'css', 'style.css'), 'utf8');
+  if (!/@media \(orientation:landscape\) and \(max-height:520px\)/.test(css))
+    problemi.push('sparito il layout del telefono coricato: i comandi tornerebbero a sovrapporsi');
+  if (!/--energia/.test(css) || !/--energia/.test(game))
+    problemi.push('la barra dell\'energia non sa più girarsi: coricata resterebbe alta mezzo schermo');
+
+  /* La linguetta del pannello di prova sta in basso a destra, che col
+     dito è il posto dei comandi: in verticale copriva gli slot 8 e 9
+     della barra, coricata copriva «Parla». */
+  if (!/html\.col-dito \.dbg-scatola/.test(css))
+    problemi.push('la linguetta del pannello di prova è tornata sui comandi del tocco');
+
+  /* I cinque tasti dell'HUD in colonna sul bordo destro tenevano, coi
+     due verbi, il 55% dell'altezza dello schermo. Vanno in riga — e in
+     riga anche in VERTICALE, che è il caso che il proprietario ha visto.
+
+     Si guarda solo la parte di foglio prima del blocco del coricato: la
+     stessa regola c'è due volte, e cercandola su tutto il file la copia
+     del coricato copriva quella del verticale. Rotta la prima, il
+     controllo restava verde — un verde che non voleva dire niente. */
+  const cssRitto = css.slice(0, css.indexOf('@media (orientation:landscape)'));
+  if (!/html\.col-dito #quickbtns\{[^}]*flex-direction:row/.test(cssRitto))
+    problemi.push('i tasti dell\'HUD sono tornati in colonna: rifarebbero un muro sul lato destro');
+
   return problemi;
 });
 

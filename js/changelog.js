@@ -16,6 +16,16 @@
 
 window.CHANGELOG = [
   {
+    v: '2.6',
+    data: 'agosto 2026',
+    titolo: 'Il telefono si può girare, e i tasti smettono di coprire la valle',
+    voci: [
+      { tipo:'nuovo',  t:'Un HUD per il telefono coricato', d:'Girando il telefono l\'interfaccia si accavallava su se stessa: i cinque tasti del menu finivano sopra i due verdi comandi, e sopra l\'orologio; la barra dell\'energia era alta mezzo schermo per dire un numero. Adesso coricati c\'è una disposizione tutta sua — quello che si guarda in alto, quello che si preme in basso agli angoli, dove arrivano i pollici — e l\'energia diventa una barretta orizzontale.' },
+      { tipo:'meglio', t:'I tasti a destra non fanno più muro', d:'Sul telefono in piedi, dal primo tasto del menu all\'ultimo comando c\'era una colonna di pulsanti alta il <b>55% dello schermo</b> lungo tutto il lato destro. I cinque tasti del menu sono passati in alto, in riga sotto l\'orologio: si premono ogni tanto e ci si può allungare. In basso restano solo i due verbi, che ora occupano il 17%.' },
+      { tipo:'fix',    t:'Il pulsante che apriva le porte a volte non rispondeva', d:'La linguetta del pannello di prova stava nell\'angolo in basso a destra — che col dito è esattamente il posto dei comandi. In verticale copriva gli ultimi due attrezzi della barra, coricata copriva «Parla». Adesso si sposta di lato.' }
+    ]
+  },
+  {
     v: '2.5',
     data: 'agosto 2026',
     titolo: 'Impostazioni rifatte, e la partita ha un nome',

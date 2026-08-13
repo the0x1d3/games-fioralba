@@ -1927,3 +1927,18 @@ Object.assign(window.LINGUA_EN, {
 "Uscendo, il gioco manda l'ultima partita mentre la pagina si chiude: arrivava, ma nessuno faceva in tempo a segnarselo. Al rientro il gioco diceva «c'è del gioco non ancora salvato» di una cosa già salvata, accendeva l'avviso e faceva chiedere conferma per uscire. Adesso confronta e si accorge da sé che era tutto a posto.":
   'On the way out the game sends your last play as the page closes: it arrived, but nobody was around long enough to note it down. Coming back, the game said «some play has not been saved yet» about something already saved, lit the warning and made the browser ask you to confirm before leaving. Now it compares, and works out for itself that all was well.'
 });
+
+/* --- versione 2.6 (changelog.js il censimento lo salta: a mano) --- */
+Object.assign(window.LINGUA_EN, {
+'Il telefono si può girare, e i tasti smettono di coprire la valle':
+  'You can turn the phone sideways, and the buttons stop covering the valley',
+'Un HUD per il telefono coricato': 'A layout for the phone on its side',
+"Girando il telefono l'interfaccia si accavallava su se stessa: i cinque tasti del menu finivano sopra i due verdi comandi, e sopra l'orologio; la barra dell'energia era alta mezzo schermo per dire un numero. Adesso coricati c'è una disposizione tutta sua — quello che si guarda in alto, quello che si preme in basso agli angoli, dove arrivano i pollici — e l'energia diventa una barretta orizzontale.":
+  'Turn the phone and the interface piled up on itself: the five menu buttons ended up on top of the two controls, and on top of the clock; the energy bar was half the screen tall to tell you one number. Sideways there is now a layout of its own — what you look at along the top, what you press in the bottom corners where your thumbs land — and energy becomes a short horizontal bar.',
+'I tasti a destra non fanno più muro': 'The buttons on the right no longer form a wall',
+"Sul telefono in piedi, dal primo tasto del menu all'ultimo comando c'era una colonna di pulsanti alta il <b>55% dello schermo</b> lungo tutto il lato destro. I cinque tasti del menu sono passati in alto, in riga sotto l'orologio: si premono ogni tanto e ci si può allungare. In basso restano solo i due verbi, che ora occupano il 17%.":
+  'On a phone held upright, from the first menu button to the last control there was a column of buttons <b>55% of the screen tall</b> down the whole right-hand side. The five menu buttons have moved up top, in a row under the clock: you press them now and then, and you can reach. Down below only the two verbs are left, and they now take up 17%.',
+'Il pulsante che apriva le porte a volte non rispondeva': 'The button that opens doors sometimes did nothing',
+'La linguetta del pannello di prova stava nell\'angolo in basso a destra — che col dito è esattamente il posto dei comandi. In verticale copriva gli ultimi due attrezzi della barra, coricata copriva «Parla». Adesso si sposta di lato.':
+  'The test panel tab sat in the bottom-right corner — which, with a finger, is exactly where the controls are. Upright it covered the last two tools on the bar; sideways it covered «Talk». Now it moves out of the way.'
+});

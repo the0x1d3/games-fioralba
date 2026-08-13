@@ -539,7 +539,16 @@ function aggiornaNomeHotbar(){
 G.aggiornaHUD = function(){
   $('#goldtext').textContent = G.oro.toLocaleString('it-IT');
   const pct = Math.max(0, Math.min(100, G.energia/G.energiaMax*100));
-  $('#energyfill').style.height = pct+'%';
+  /* La stessa percentuale in due posti perché la barra cambia verso:
+     in piedi si riempie in altezza, col telefono coricato in larghezza
+     (26×150 diventa 118×20, o metà schermo se ne va per un numero).
+     Scriverla come variabile invece di cambiare il verso qui dentro
+     lascia la scelta al CSS, che è l'unico che sa com'è girato lo
+     schermo — e non fa esistere due strade nel JS che devono restare
+     d'accordo per sempre. */
+  const barra = $('#energyfill');
+  barra.style.height = pct+'%';
+  barra.style.setProperty('--energia', pct+'%');
   $('#energytext').textContent = Math.max(0,Math.round(G.energia));
   $('#energybox .vbar').classList.toggle('low', pct<30);
 
