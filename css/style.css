@@ -331,9 +331,20 @@ kbd{
 /* Sopra la barra c'è anche il nome dell'attrezzo scelto: la barra sta a
    14px, il nome arriva a centodieci, e i messaggi partivano da
    novantasei — si sovrapponevano per forza. Adesso partono da
-   centotrentotto, che è dove il nome finisce davvero. */
+   centotrentotto, che è dove il nome finisce davvero.
+
+   Poi è toccato al suggerimento, che era rimasto indietro a 84px, cioè
+   dentro al nome dell'attrezzo: durante la pesca — quando il nome c'è
+   sempre, perché la canna è in mano — «Abbocca! Premi Spazio» finiva
+   stampato sopra «Attrezzo · Canna da pesca», e sotto ancora di sei
+   pixel dentro alla barra. Misurato su 1280×720: suggerimento 602-636,
+   nome 601-630, barra 630-706.
+
+   Adesso le tre fasce salgono in fila e non si toccano: barra fino a
+   596, suggerimento a 132 dal fondo (554-588), messaggi a 176 (fino a
+   544). Se ne sposti una, spostale tutte. */
 #toasts{
-  position:absolute; bottom:138px; left:50%; transform:translateX(-50%);
+  position:absolute; bottom:176px; left:50%; transform:translateX(-50%);
   display:flex; flex-direction:column-reverse; align-items:center; gap:8px;
   pointer-events:none; width:min(560px,94vw);
 }
@@ -362,7 +373,7 @@ kbd{
 
 /* ---------- prompt interazione ---------- */
 #prompt{
-  position:absolute; bottom:84px; left:50%; transform:translateX(-50%);
+  position:absolute; bottom:132px; left:50%; transform:translateX(-50%);
   background:rgba(30,20,12,.9); color:var(--paper);
   border:2px solid rgba(242,193,78,.45); border-radius:20px;
   padding:6px 15px; font-size:13px; font-weight:700;
@@ -2091,8 +2102,12 @@ html, body{ overscroll-behavior:none; }
      senza spiegazioni. Il progresso non si perde: è nello stato. */
   html.col-dito #guida{ display:none; }
 
-  /* i messaggi salivano da 138px, cioè in mezzo allo schermo */
-  html.col-dito #toasts{ bottom:calc(74px + env(safe-area-inset-bottom)); }
+  /* i messaggi salivano da 138px, cioè in mezzo allo schermo. Ma a 74
+     partivano da sotto al suggerimento, che sta a 90, e siccome crescono
+     verso l'alto ci finivano sopra: qui la barra degli attrezzi è a
+     sinistra e non dà fastidio a nessuno dei due, ma loro due fra loro
+     sì. Il suggerimento resta dov'è, i messaggi passano sopra. */
+  html.col-dito #toasts{ bottom:calc(130px + env(safe-area-inset-bottom)); }
   html.col-dito #prompt{ bottom:calc(90px + env(safe-area-inset-bottom)); }
 
   /* il riquadro del dialogo si prende la fascia bassa per intero, ma

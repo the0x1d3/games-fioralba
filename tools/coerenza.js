@@ -614,6 +614,40 @@ verifica('gli oggetti posabili corrispondono a qualcosa di costruibile', () => {
   return problemi;
 });
 
+/* In basso al centro ci sono tre fasce sovrapposte in ordine: la barra
+   degli attrezzi col nome dell'oggetto, il suggerimento («E parla con
+   Bruno», «Abbocca! Premi Spazio») e i messaggi. Nessuna delle tre sa
+   quanto sono alte le altre — sono tre `bottom` in pixel scritti a mano
+   in tre punti diversi del CSS — e si sono già scavalcate due volte: i
+   messaggi sul nome dell'attrezzo, poi il suggerimento sul nome
+   dell'attrezzo durante la pesca, quando la canna in mano fa comparire
+   sempre l'etichetta.
+
+   Qui si controlla solo l'ordine, che è la parte che si può leggere dal
+   sorgente: i messaggi stanno sopra al suggerimento. Le distanze vere si
+   misurano nel browser, e stanno scritte nel commento accanto a
+   `#toasts`. */
+verifica('i messaggi stanno sopra al suggerimento', () => {
+  const css = fs.readFileSync(path.join(RADICE, 'css/style.css'), 'utf8');
+  const problemi = [];
+  const fondo = (sel, dove) => {
+    const re = new RegExp(sel.replace(/[.#]/g, '\\$&') + '\\s*\\{[^}]*?bottom\\s*:\\s*(?:calc\\(\\s*)?(\\d+)px', 'g');
+    const dentro = dove ? css.slice(css.indexOf(dove)) : css;
+    const m = re.exec(dentro);
+    return m ? Number(m[1]) : null;
+  };
+  const coppie = [
+    ['di suo', '#toasts', '#prompt', null],
+    ['col telefono in orizzontale', 'html.col-dito #toasts', 'html.col-dito #prompt', '@media (orientation:landscape)']
+  ];
+  for (const [dove, selMsg, selSug, ancora] of coppie) {
+    const msg = fondo(selMsg, ancora), sug = fondo(selSug, ancora);
+    if (msg === null || sug === null) { problemi.push(`${dove}: non trovo più i due \`bottom\` (${selMsg}, ${selSug})`); continue; }
+    if (msg <= sug) problemi.push(`${dove}: i messaggi partono da ${msg}px e il suggerimento da ${sug}px — crescendo verso l'alto ci finiscono sopra`);
+  }
+  return problemi;
+});
+
 /* Un posabile senza disegno non è un errore: si compra, si posa, e sul
    terreno resta il vuoto — `A.placeable` cade nel `default` e restituisce
    una tela pulita. Lo stesso vale per l'icona nello zaino, che sta in un
