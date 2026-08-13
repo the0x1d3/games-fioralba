@@ -131,6 +131,37 @@ interface FioPremioLivello {
 }
 
 /** Una testimonianza dell'atto secondo. */
+/** Un passo di una vicenda: parlare con qualcuno, portargli della roba,
+ *  o farsi vedere in un posto. */
+interface FioPassoVicenda {
+  tipo: 'parla' | 'porta' | 'luogo';
+  /** Con chi (per `parla` e `porta`). */
+  npc?: string;
+  /** Dove (per `luogo`): l'id di una mappa. */
+  dove?: string;
+  /** Cosa portare (per `porta`): id oggetto → quanti. */
+  ing?: Record<string, number>;
+  /** La riga del Diario finché il passo è aperto. `{ing}` diventa
+   *  l'elenco di quello che manca ancora. */
+  compito: string;
+  /** Cosa si sente dire arrivando senza la roba. `{ing}` come sopra. */
+  manca?: string;
+  /** Cosa viene detto quando il passo si chiude. */
+  righe: string[];
+}
+
+interface FioVicenda {
+  /** Di chi è la storia: il primo passo è sempre un `parla` con lui. */
+  npc: string;
+  /** Cuori di amicizia che la fanno comparire nel dialogo. */
+  cuori: number;
+  titolo: string;
+  /** La voce di dialogo che la apre. */
+  scelta: string;
+  passi: FioPassoVicenda[];
+  premio: { oro?: number; item?: string; qta?: number; amicizia?: number };
+}
+
 interface FioMemoria {
   id: string;
   npc: string;
@@ -260,6 +291,8 @@ interface FioData {
   COMPLEANNI: Record<string, { stagione: string; giorno: number }>;
   /** Le sei testimonianze dell'atto secondo. */
   MEMORIE: FioMemoria[];
+  /** Le storie del paese: una per abitante, aperte dai cuori. */
+  VICENDE: Record<string, FioVicenda>;
   /** Dove sta ognuno la sera della veglia: coppie di caselle. */
   POSTI_VEGLIA: Record<string, number[][]>;
   /** Il frutto del cespuglio, stagione per stagione. */

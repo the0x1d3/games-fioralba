@@ -133,6 +133,21 @@ const CAMPI = [
   ['NPCS',        ['nome','ruolo','battute','amico']],
   ['SANTUARIO',   ['nome','testo']],
   ['MEMORIE',     ['titolo','testo']],
+  /* Le vicende hanno il testo su due piani (`titolo` sta sulla storia,
+     `righe` dentro ai passi) e `raccogli` ci arriva da solo, perché
+     scende per nome di campo e non per piano.
+
+     Elencati e non `null`: una vicenda è piena di id — `npc:'bruno'`,
+     `tipo:'parla'`, `dove:'spiaggia'`, `item:'pane_miele'` — e con la
+     struttura libera finivano nel catalogo insieme alle frasi. Un
+     traduttore che scrive `'bruno' → 'Bruno'` non sbaglia niente di
+     evidente e spegne una storia intera: la scelta non compare più nel
+     dialogo di nessuno, e non c'è nessun errore da nessuna parte.
+
+     Dentro `compito` e `manca` c'è il segnaposto `{ing}`: va ricopiato
+     uguale nella traduzione, o l'elenco delle cose da portare sparisce
+     dalla frase invece di finirci dentro. */
+  ['VICENDE',     ['titolo','scelta','compito','manca','righe']],
   ['LETTERE',     ['titolo','testo','da']],
   ['CONTESTO',    null],      // struttura libera: si traduce tutto il testo dentro
   ['FESTA',       null],

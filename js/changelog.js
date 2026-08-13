@@ -16,6 +16,15 @@
 
 window.CHANGELOG = [
   {
+    v: '3.3',
+    data: 'agosto 2026',
+    titolo: 'Gli abitanti hanno una storia da raccontarti',
+    voci: [
+      { tipo:'nuovo',  t:'Sei storie del paese, una per abitante', d:'I cuori salivano e non succedeva niente: a sei cuori arrivava qualche battuta in più, e basta. Adesso ognuno dei sei ha una faccenda sua, che si apre quando gli sei abbastanza amico e va avanti a passi — parlarci, portargli qualcosa, andare a vedere un posto. <b>Il libretto di Bruno</b>, una riga di conto aperta da due anni con un uomo che ha smesso di scendere dal Passo. <b>La rete di suo padre</b>, che Elio tiene appesa perché ripararla vorrebbe dire usarla. <b>Le pagine mancanti</b> dell\'erbario di Ilde. <b>La campana della piazza</b>, crepata da quella notte di dodici anni fa. <b>La stanza di sopra</b>, chiusa alla locanda. <b>La neve che non si scioglie</b>, al Passo. Ognuna finisce con qualcosa che da quella persona non arriverebbe in nessun altro modo.' },
+      { tipo:'nuovo',  t:'Il Diario dice cosa hai in ballo', d:'Le storie stanno nella scheda «Richieste», sopra alla bacheca: cosa devi fare adesso, a che passo sei, e — se devi portare della roba — quanta te ne manca ancora, non quanta ne serve in tutto. Chi ha già cinque fibre su dodici legge «Fibra ×7», non «Fibra ×12». Si vede anche chi ancora non si è aperto e a quanti cuori lo farà, perché sapere che una persona ha qualcosa da raccontare è metà del motivo per portarle un regalo.' }
+    ]
+  },
+  {
     v: '3.2',
     data: 'agosto 2026',
     titolo: 'I cartelli li scrivi tu',

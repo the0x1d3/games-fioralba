@@ -70,6 +70,7 @@ function statoIniziale(){
     gatto:{ affetto:0, giorno:-1, nome:null },
     obiettiviRiscossi:{}, sagra:null, mercante:{presente:false, giorno:-1, stock:[]},
     visitati:{podere:true}, collezione:{},
+    vicende:{},
     trame:{ torta:{avviata:false, segreto:false, fatta:false},
             pesceluna:{avviata:false, preso:false, fatta:false},
             veglia:{avviata:false, memorie:{}, verita:false, invitati:{}, giorno:null, fatta:false} },
@@ -677,7 +678,7 @@ function normalizzaStato(){
   ['inv','richieste','cassaConsegna','animali','premiSospesi'].forEach(A);
   ['skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
    'lettere','ricetteNote','stats','obiettiviRiscossi','visitati','collezione','regaloRicevuto',
-   'parlatoOggi','regalatoOggi','mercato','gatto'].forEach(O);
+   'parlatoOggi','regalatoOggi','mercato','gatto','vicende'].forEach(O);
   /* le partite cominciate prima del gatto non hanno i suoi campi: senza
      questi, la prima carezza leggerebbe `undefined + 6` */
   if(typeof G.gatto.affetto !== 'number') G.gatto.affetto = 0;
@@ -2035,6 +2036,11 @@ function parlaCon(n){
   /* L'atto secondo passa dai dialoghi: prima la testimonianza, poi
      l'invito. Vanno in cima perché sono la cosa che il giocatore sta
      cercando quando apre quel dialogo. */
+  /* Le vicende del paese stanno subito sotto l'atto secondo e sopra il
+     resto: sono la cosa che si sta portando avanti, e se finiscono in
+     fondo all'elenco — sotto «Vorrei comprare qualcosa» e «Insegnami una
+     ricetta» — diventano una voce di menu invece che una storia. */
+  for(const s of VICENDE.scelte(n.id)) scelte.push(s);
   if(SOLSTIZIO.memoriaDi(n.id))    scelte.push({testo:'✦ Quella notte, dodici anni fa', azione:()=>SOLSTIZIO.raccontaMemoria(n.id)});
   if(SOLSTIZIO.puoiInvitare(n.id)) scelte.push({testo:'🕯️ Vieni alla veglia al Santuario', azione:()=>SOLSTIZIO.invitaAllaVeglia(n.id)});
   if(n.id==='bruno') scelte.push({testo:'🛒 Vorrei comprare qualcosa', azione:()=>UI.negozio(G,'bruno')});
@@ -2835,6 +2841,9 @@ function cambiaMappa(id, tx, ty){
   SND.ambiente(ambienteGiusto());
   const chi = chiCeDentro(dest);
   UI.toast(chi ? dest.nome + ' — ' + chi : dest.nome);
+  /* Un passo «vai a vedere» si chiude arrivandoci, comunque ci si
+     arrivi: a piedi o col viaggio rapido, che passa di qui anche lui. */
+  VICENDE.visita(id);
 }
 
 /* punti d'arrivo del viaggio rapido (casella camminabile per ogni luogo) */

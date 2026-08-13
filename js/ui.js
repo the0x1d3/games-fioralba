@@ -1548,8 +1548,77 @@ U.diario = function(G, tabIniziale){
       LIV.scheda(body);
     }
     else if(tab==='richieste'){
+      /* --- LE STORIE DEL PAESE, sopra alle richieste della bacheca ---
+
+         Stanno insieme perché sono la stessa domanda — «cosa devo fare
+         adesso» — ma in cima, e con la riga in grande, perché sono
+         diverse: la bacheca chiede sei carote entro giovedì e domani ne
+         chiede altre, una storia comincia e finisce una volta sola.
+
+         Le storie che ancora non si sono aperte si vedono lo stesso, ma
+         senza titolo: sapere che una persona ha qualcosa da raccontare è
+         metà del motivo per portarle dei regali, e senza questa riga i
+         cuori restano un numero che sale e basta — che è esattamente
+         com'era prima. */
+      const atti = VICENDE.attive(), pronte = VICENDE.pronte(),
+            finite = VICENDE.finite(), attesa = VICENDE.inAttesa();
+      if(atti.length || pronte.length || finite.length || attesa.length){
+        const st=document.createElement('div'); st.className='sectitle';
+        st.textContent=T('Storie del paese'); body.appendChild(st);
+      }
+      const facciaDi = (npcId)=>{
+        const N=DATA.NPCS[npcId]; if(!N) return null;
+        const c=document.createElement('canvas'); c.width=c.height=40;
+        const cx=c.getContext('2d'); cx.imageSmoothingEnabled=false;
+        cx.drawImage(ART.face(npcId,N.look),0,0,40,40); c.style.borderRadius='7px';
+        return c;
+      };
+      for(const v of atti){
+        const row=document.createElement('div'); row.className='row';
+        const f=facciaDi(v.npc); if(f) row.appendChild(f);
+        const info=document.createElement('div'); info.className='rinfo';
+        const N=DATA.NPCS[v.npc];
+        info.innerHTML =
+          `<div class="rname">${v.titolo}</div>`+
+          `<div class="rdesc">${v.compito}</div>`+
+          `<div class="ringr">${F('passo {0} di {1}', v.passo, v.quanti)}`+
+          (v.pronto && N ? ' · '+F('ce l\'hai tutto: vai da {0}', N.nome) : '')+`</div>`;
+        row.appendChild(info);
+        body.appendChild(row);
+      }
+      for(const v of pronte){
+        const N=DATA.NPCS[v.npc]; if(!N) continue;
+        const row=document.createElement('div'); row.className='row';
+        const f=facciaDi(v.npc); if(f) row.appendChild(f);
+        const info=document.createElement('div'); info.className='rinfo';
+        info.innerHTML =
+          `<div class="rname">${v.titolo}</div>`+
+          `<div class="rdesc">${F('{0} ha qualcosa da dirti. Vai a parlarci.', N.nome)}</div>`;
+        row.appendChild(info);
+        body.appendChild(row);
+      }
+      if(attesa.length){
+        const n=document.createElement('div'); n.className='muted'; n.style.margin='2px 2px 10px';
+        n.innerHTML = attesa.map(v=>{
+          const N=DATA.NPCS[v.npc];
+          return N ? F('{0} si aprirà con te più avanti ({1} cuori)', '<b>'+N.nome+'</b>', v.cuori) : '';
+        }).filter(Boolean).join('<br>');
+        body.appendChild(n);
+      }
+      if(finite.length){
+        const n=document.createElement('div'); n.className='cassa-nota fatta'; n.style.margin='2px 2px 14px';
+        n.innerHTML = finite.map(v=>v.titolo).join(' · ');
+        body.appendChild(n);
+      }
+
+      const st2=document.createElement('div'); st2.className='sectitle';
+      st2.textContent=T('Bacheca delle richieste'); body.appendChild(st2);
       const intro=document.createElement('div'); intro.className='muted'; intro.style.marginBottom='12px';
-      intro.textContent='Gli abitanti chiedono una mano. Consegna in tempo: monete e amicizia in cambio.';
+      /* Era assegnata dritta a `textContent`, quindi non passava da
+         nessun traduttore e nessun censimento la vedeva: in inglese
+         restava questa riga italiana, e adesso stava anche sotto a
+         un'intestazione inglese. */
+      intro.textContent=T('Gli abitanti chiedono una mano. Consegna in tempo: monete e amicizia in cambio.');
       body.appendChild(intro);
 
       const attive=(G.richieste||[]).filter(r=>!r.fatta);

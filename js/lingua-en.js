@@ -2185,3 +2185,188 @@ Object.assign(window.LINGUA_EN, {
 'Il <b>piccone</b> le toglie da sempre, e te le rimette intere nello zaino — ma nessuno lo diceva: stando davanti a una staccionata il gioco non scriveva niente, perché E di proposito non tocca gli arredi. Chi ci giocava ha provato e ha concluso che non si poteva. Adesso, quando ci sei davanti, in basso compare la riga che lo spiega. Serve anche a rifare un campo altrove: si smontano e si riposano dove vuoi.':
   'The <b>pickaxe</b> has always taken them away, and puts them back in your bag intact — but nobody said so: standing in front of a fence the game wrote nothing at all, because E deliberately does not touch furniture. Somebody playing tried and concluded it could not be done. Now, when you are standing in front of one, a line at the bottom explains it. It is also how you rebuild a field somewhere else: take them down and set them up wherever you like.'
 });
+
+/* --- LE VICENDE DEL PAESE (DATA.VICENDE) ---------------------------
+   Il segnaposto `{ing}` va ricopiato uguale: è il punto dove il motore
+   infila l'elenco delle cose da portare. Una frase che lo perde smette
+   di dire cosa serve proprio quando il giocatore lo sta chiedendo. */
+Object.assign(window.LINGUA_EN, {
+
+/* Il libretto di Bruno */
+'Il libretto di Bruno': 'Bruno\'s book',
+'📓 Quel libretto sotto il banco': '📓 That book under the counter',
+'Parla con Bruno, in bottega.': 'Talk to Bruno, at the shop.',
+'Questo? È il libretto dei conti aperti. Chi non ha da pagare subito, io segno e amen.':
+  'This? It is the book of open accounts. If you cannot pay today, I write it down and that is that.',
+'C\'è una riga che non chiudo da due anni. Non per i soldi — sono quattro spiccioli. È che quello lassù ha smesso di scendere.':
+  'There is one line I have not closed in two years. Not for the money — it is pennies. It is that the man up there stopped coming down.',
+'Oreste. L\'eremita del Passo. Prima veniva giù ogni due settimane, prendeva le sue cose e brontolava del tempo. Poi più niente.':
+  'Oreste. The hermit of the Pass. He used to come down every fortnight, take his things and grumble about the weather. Then nothing.',
+'Non so se sta bene. E salire fin lassù, con la bottega aperta, io non posso.':
+  'I do not know if he is well. And I cannot climb all the way up there with the shop open.',
+'Porta a Oreste, al Passo di montagna: {ing}': 'Take up to Oreste, at the mountain Pass: {ing}',
+'Bruno aveva detto: {ing}. Torna quando ce le hai.': 'Bruno said: {ing}. Come back when you have them.',
+'Le patate. E il latte. …Te le ha date Bruno, vero. Non rispondere, lo so io.':
+  'The potatoes. And the milk. …Bruno gave you these, did he not. Do not answer, I know.',
+'Non sono sceso perché la strada d\'inverno è ghiaccio vivo e io non ho più vent\'anni. Non perché mi sia offeso.':
+  'I stopped coming down because in winter that road is solid ice and I am not twenty any more. Not because I took offence.',
+'Digli che il conto lo pago. E digli che se manda su qualcuno ogni tanto, io il caffè ce l\'ho.':
+  'Tell him I will pay what I owe. And tell him that if he sends someone up now and then, I have coffee.',
+'Torna da Bruno e digli come sta Oreste.': 'Go back to Bruno and tell him how Oreste is.',
+'Sta bene. Sta bene davvero, o lo dici per non farmi stare in pensiero?':
+  'He is well. Is he really well, or are you saying it so I stop worrying?',
+'…La strada ghiacciata. Certo che è la strada ghiacciata. Sono due anni che mi racconto che si era offeso, e intanto era il ghiaccio.':
+  '…The icy road. Of course it is the icy road. For two years I have been telling myself he took offence, and all along it was the ice.',
+'La riga la lascio aperta. Adesso però è aperta per un motivo diverso: è la scusa per mandare su qualcuno.':
+  'I am leaving the line open. Only now it is open for a different reason: it is the excuse to send someone up.',
+'Tieni. E quando risali, portagli anche questo da parte mia.':
+  'Here. And when you go back up, take him this from me as well.',
+
+/* La rete di suo padre */
+'La rete di suo padre': 'His father\'s net',
+'🪢 Quella rete appesa al muro': '🪢 That net hanging on the wall',
+'Parla con Elio, al porto.': 'Talk to Elio, down at the harbour.',
+'Quella non si tocca. Era di mio padre — l\'ha fatta lui, nodo per nodo, l\'inverno che non si pescava.':
+  'That one nobody touches. It was my father\'s — he made it himself, knot by knot, the winter there was no fishing.',
+'È marcia in tre punti. La tengo appesa perché buttarla mi sembra brutto e ripararla mi sembra peggio.':
+  'It is rotten in three places. I keep it hanging because throwing it away feels wrong and mending it feels worse.',
+'Ripararla vuol dire dire che è ancora una rete. E se è ancora una rete, va usata.':
+  'Mending it means saying it is still a net. And if it is still a net, it ought to be used.',
+'Se mi porti della <b>fibra</b> buona, ci provo. Ma non prometto niente.':
+  'Bring me some good <b>fibre</b> and I will try. But I promise nothing.',
+'Porta a Elio: {ing}': 'Take to Elio: {ing}',
+'Elio aspetta {ing} per rammendare la rete.': 'Elio is waiting for {ing} to mend the net.',
+'Guarda che nodo. Mio padre lo faceva in tre mosse, io ci metto un minuto, ma viene uguale.':
+  'Look at that knot. My father tied it in three moves, I take a minute, but it comes out the same.',
+'Domani all\'alba la porto in acqua. Vieni anche tu, se ti va: da soli certe cose non si fanno.':
+  'Tomorrow at dawn I am taking her out. Come along if you like: some things you do not do alone.',
+'Vai alla spiaggia, all\'alba o quando puoi.': 'Go down to the shore, at dawn or whenever you can.',
+'La rete di Elio è stesa sulla sabbia, piena d\'acqua e di luce. Funziona.':
+  'Elio\'s net lies spread on the sand, full of water and light. It works.',
+'Parla con Elio.': 'Talk to Elio.',
+'Hai visto? Tiene. Tiene meglio delle mie.': 'Did you see? She holds. She holds better than mine.',
+'Ho pensato una cosa stupida mentre la tiravo su: che lui l\'ha fatta per una barca che non c\'è più, e io la sto usando lo stesso.':
+  'A stupid thing came to me while I was hauling her in: he made her for a boat that is gone, and I am using her anyway.',
+'Le cose fatte bene si trovano un altro lavoro. Tieni, questo l\'ho preso stamattina con lei.':
+  'Things made well find themselves another job. Here, I caught this with her this morning.',
+
+/* Le pagine mancanti */
+'Le pagine mancanti': 'The missing pages',
+'🌿 L\'erbario a cui mancano le pagine': '🌿 The herbal with the missing pages',
+'Parla con Serafina, nel bosco.': 'Talk to Serafina, in the woods.',
+'L\'erbario me l\'ha lasciato Ilde. È l\'unica cosa che ho di suo, e ha tre pagine strappate.':
+  'Ilde left me the herbal. It is the only thing of hers I have, and three pages are torn out.',
+'Non strappate per rabbia: strappate per portarsele dietro. Le piegava in quattro e se le metteva in tasca.':
+  'Not torn out in anger: torn out to carry about. She folded them in four and put them in her pocket.',
+'So quali erano, perché me le ha fatte imparare a memoria da ragazza. Le so ridisegnare. Mi servono le piante vere davanti.':
+  'I know which ones they were, because she made me learn them by heart as a girl. I can draw them again. I need the real plants in front of me.',
+'Lavanda, porcini, viole. Portamele e rifacciamo le pagine.':
+  'Lavender, porcini, violets. Bring them to me and we will make the pages again.',
+'Porta a Serafina: {ing}': 'Take to Serafina: {ing}',
+'Per le tre pagine servono ancora: {ing}': 'The three pages still need: {ing}',
+'Ferma, non appoggiarle. Una per volta, che le devo guardare da sotto.':
+  'Wait, do not put them down. One at a time — I have to look at them from underneath.',
+'…Ecco. La lavanda va disegnata mentre è ancora viva, sennò il grigio del secco ti frega la misura.':
+  '…There. Lavender has to be drawn while it is still alive, or the grey of the dried stem throws your measurements off.',
+'Tre pagine in una sera. Ilde ci metteva una settimana e diceva che era per la pazienza. Aveva le mani che tremavano già allora, credo.':
+  'Three pages in one evening. Ilde took a week and said it was for the patience. Her hands were already shaking back then, I think.',
+'L\'erbario è di nuovo intero. Non è più solo suo: adesso c\'è dentro anche una cosa fatta da noi due.':
+  'The herbal is whole again. It is not only hers any more: there is something in it now that the two of us made.',
+
+/* La campana della piazza */
+'La campana della piazza': 'The bell in the square',
+'🔔 Perché la campana non suona?': '🔔 Why does the bell never ring?',
+'Parla con Tobia, alla fucina.': 'Talk to Tobia, at the forge.',
+'Perché è crepata. Crepata da dodici anni, dal solstizio che sai.':
+  'Because it is cracked. Cracked for twelve years, since the solstice you know about.',
+'L\'hanno suonata tutta la notte quella volta, per chiamare. Il bronzo freddo non è fatto per essere suonato così, e a un certo punto ha ceduto.':
+  'They rang it all that night, to call out. Cold bronze is not made to be rung like that, and at some point it gave.',
+'Rifonderla non si può: quel bronzo lì non lo fa più nessuno. Si può fasciare la crepa, però. Rame e carbone, e una giornata di fuoco.':
+  'Recasting is out: nobody makes that bronze any more. The crack can be bound, though. Copper and coal, and a day of fire.',
+'Vai a vederla, prima. Voglio che tu la guardi bene, poi mi dici se ne vale la pena.':
+  'Go and see it first. I want you to look at it properly, then tell me whether it is worth it.',
+'Vai a vedere la campana, in piazza.': 'Go and look at the bell, in the square.',
+'La crepa parte dal bordo e sale per due palmi. Da sotto, il bronzo è ancora lucido dove ci battevano le mani.':
+  'The crack starts at the rim and climbs two hand-spans. From below, the bronze is still bright where hands used to strike it.',
+'Porta a Tobia: {ing}': 'Take to Tobia: {ing}',
+'Per fasciare la campana servono ancora: {ing}': 'Binding the bell still needs: {ing}',
+'L\'hai guardata. Si vede che l\'hai guardata, hai la faccia di quelli che l\'hanno guardata.':
+  'You looked at it. I can tell you looked at it — you have the face of someone who has.',
+'Il rame va colato caldo dentro la crepa e poi battuto finché non si offende. Domani ci vuole tutto il giorno.':
+  'The copper goes in hot, straight into the crack, then gets beaten until it takes offence. Tomorrow will take all day.',
+'Non tornerà come prima. Farà un suono più basso, un po\' rotto. Va bene così: è successo, e si sente.':
+  'It will not be as it was. It will sound lower, a little broken. That is right: it happened, and you can hear it.',
+'Torna da Tobia il giorno dopo.': 'Come back to Tobia the next day.',
+'Suonata stamattina. Due rintocchi, per provare.': 'Rang it this morning. Two strokes, to try it.',
+'È uscita mezza piazza. Nessuno ha detto niente, sono usciti e basta, e poi sono rientrati.':
+  'Half the square came out. Nobody said anything, they just came out, and then they went back in.',
+'Dodici anni. Tieni questo: l\'ho fatto con l\'avanzo del rame. Non serve a niente, è solo bello.':
+  'Twelve years. Take this: I made it from the leftover copper. It is good for nothing, it is only beautiful.',
+
+/* La stanza di sopra */
+'La stanza di sopra': 'The room upstairs',
+'🚪 Quella porta chiusa in cima alle scale': '🚪 That closed door at the top of the stairs',
+'Parla con Marisol, alla locanda.': 'Talk to Marisol, at the inn.',
+'La stanza d\'angolo. Chiusa da quando è morta Ilde, perché era la sua quando si fermava a dormire in paese.':
+  'The corner room. Closed since Ilde died, because it was hers whenever she stayed the night in the village.',
+'Non l\'ho chiusa per sentimento, all\'inizio. L\'ho chiusa perché avevo da fare e non me la sentivo di svuotarla, e poi il tempo ha deciso da solo.':
+  'I did not close it out of sentiment, at first. I closed it because I was busy and could not face emptying it, and then time decided on its own.',
+'Adesso è una stanza che non rende e una porta che tutti guardano salendo. Il peggio delle due cose.':
+  'Now it is a room that earns nothing and a door everyone looks at on the way up. The worst of both.',
+'Se mi aiuti a rimetterla a posto, la riapro. Serve legna per il pavimento, fibra per il materasso, e una lanterna che non sia la sua.':
+  'Help me put it right and I will open it again. It needs wood for the floor, fibre for the mattress, and a lantern that is not hers.',
+'Porta a Marisol: {ing}': 'Take to Marisol: {ing}',
+'Per la stanza di sopra servono ancora: {ing}': 'The room upstairs still needs: {ing}',
+'Le assi vanno di là, la lanterna sul comodino. No, non al centro: al lato, che è dove la teneva lei.':
+  'The boards go over there, the lantern on the nightstand. No, not in the middle: to one side, which is where she kept it.',
+'…Ho detto «dove la teneva lei». Va bene, mi sa che un po\' di sentimento c\'era.':
+  '…I said "where she kept it". All right, I suppose there was some sentiment after all.',
+'Domani la apro. La affitto a chi passa, e a Natale la tengo libera. Una stanza chiusa non è un ricordo, è solo una stanza chiusa.':
+  'Tomorrow I open it. I will let it to whoever passes through, and keep it free at midwinter. A closed room is not a memory, it is only a closed room.',
+'Torna da Marisol.': 'Go back to Marisol.',
+'Ci ha dormito uno che vendeva sementi. Ha detto che era la stanza più bella in cui avesse dormito in vita sua, e non sapeva niente di niente.':
+  'A seed merchant slept in it. He said it was the finest room he had ever slept in, and he knew nothing about anything.',
+'Mi è piaciuto tantissimo che non sapesse niente. Ha dormito bene e basta.':
+  'I loved that he knew nothing. He simply slept well.',
+'Tieni, l\'ho fatta stamattina. Prima fetta, come si deve.':
+  'Here, I made it this morning. First slice, as is only right.',
+
+/* La neve che non si scioglie */
+'La neve che non si scioglie': 'The snow that never melts',
+'❄️ Quella chiazza di neve che resta': '❄️ That patch of snow that stays',
+'Parla con Oreste, al Passo.': 'Talk to Oreste, at the Pass.',
+'L\'hai notata anche tu. Bene. Vuol dire che guardi.': 'So you noticed it too. Good. It means you look.',
+'Quella chiazza lì non se ne va nemmeno ad agosto. Ci ho messo dieci anni a smettere di trovarci una spiegazione.':
+  'That patch does not go even in August. It took me ten years to stop finding explanations for it.',
+'Il ghiaccio vecchio, sotto, non è acqua e basta. C\'è dentro l\'aria di quando si è formato. È aria di prima di noi.':
+  'The old ice underneath is not just water. The air from when it formed is still inside it. It is air from before us.',
+'Portami due fiocchi di cristallo e un geode, che ti faccio vedere una cosa che non ho mai fatto vedere a nessuno.':
+  'Bring me two crystal flakes and a geode, and I will show you something I have never shown anyone.',
+'Porta a Oreste, al Passo: {ing}': 'Take to Oreste, at the Pass: {ing}',
+'Oreste aspetta: {ing}': 'Oreste is waiting for: {ing}',
+'Guarda dentro il geode, controluce, con il fiocco davanti. Non con gli occhi tutti e due: chiudine uno.':
+  'Look into the geode against the light, with the flake held in front. Not with both eyes: close one.',
+'…Visto? Quella riga che si muove. È la stessa che c\'è nel ghiaccio della chiazza.':
+  '…See it? That line that moves. It is the same one in the ice of the patch.',
+'Io ci ho passato sopra dieci inverni a chiedermi cosa fosse. Poi ho smesso, e il giorno che ho smesso l\'ho vista.':
+  'I spent ten winters wondering what it was. Then I stopped, and the day I stopped I saw it.',
+'Non te la spiego. Se te la spiego smetti di guardarla. Tieni: questo è il pezzo migliore che ho tirato fuori dal Passo.':
+  'I will not explain it to you. If I explain it you stop looking at it. Here: this is the finest piece I ever took out of the Pass.'
+});
+
+/* --- il motore delle vicende e la loro parte di Diario --- */
+Object.assign(window.LINGUA_EN, {
+'Ti manca ancora: {ing}': 'You are still missing: {ing}',
+'Nuova storia: {0}.': 'New story: {0}.',
+'Storia finita: {0}.': 'Story finished: {0}.',
+'Lo zaino era pieno: il regalo ti aspetta nella scheda delle abilità.':
+  'Your bag was full: the gift is waiting for you in the skills sheet.',
+'Storie del paese': 'Village stories',
+'Gli abitanti chiedono una mano. Consegna in tempo: monete e amicizia in cambio.':
+  'The villagers are asking for a hand. Deliver in time: coins and friendship in return.',
+'Bacheca delle richieste': 'The request board',
+'passo {0} di {1}': 'step {0} of {1}',
+'ce l\'hai tutto: vai da {0}': 'you have it all: go to {0}',
+'{0} ha qualcosa da dirti. Vai a parlarci.': '{0} has something to tell you. Go and talk.',
+'{0} si aprirà con te più avanti ({1} cuori)': '{0} will open up to you later on ({1} hearts)'
+});

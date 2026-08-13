@@ -695,6 +695,217 @@ D.POSTI_VEGLIA = {
   serafina: [[39,36],[40,36]]
 };
 
+/* ===================================================================
+   LE VICENDE DEL PAESE — una storia a più passi per ogni abitante.
+
+   L'amicizia esisteva da prima di questa tabella e non serviva quasi a
+   niente: i cuori salivano, e a sei cuori arrivava qualche battuta in
+   più. Nient'altro. Qui ogni abitante ha una faccenda sua che si apre a
+   una certa altezza di cuori, e che si porta avanti parlandoci e
+   portandogli roba.
+
+   La forma è la stessa per tutte, così ne bastano una tabella e un
+   modulo invece di una bandierina su `G` per ognuna — che è come sono
+   fatte le tre catene dell'atto primo (`G.trame.torta`,
+   `G.trame.pesceluna`), e infatti quelle non compaiono da nessuna parte
+   nel Diario: il giocatore non ha modo di sapere cosa ha in ballo.
+
+   Un passo è di tre tipi soltanto:
+     parla  — vai da quella persona e parlaci
+     porta  — vai da quella persona con questa roba (`ing`)
+     luogo  — fatti vedere in un posto (`dove`)
+   `compito` è la riga che si legge nel Diario finché quel passo è
+   aperto; `righe` è quello che viene detto quando il passo si chiude.
+   Il primo passo è sempre un `parla` con chi la storia appartiene: è
+   quello che la fa cominciare.
+
+   Le ricompense non sono mai solo monete: le monete a un certo punto
+   della partita non dicono più niente. C'è sempre un oggetto che da
+   quella persona non arriverebbe in nessun altro modo. */
+D.VICENDE = {
+
+  bruno_libretto: {
+    npc:'bruno', cuori:2, titolo:'Il libretto di Bruno',
+    scelta:'📓 Quel libretto sotto il banco',
+    passi:[
+      { tipo:'parla', npc:'bruno',
+        compito:'Parla con Bruno, in bottega.',
+        righe:[
+          'Questo? È il libretto dei conti aperti. Chi non ha da pagare subito, io segno e amen.',
+          'C\'è una riga che non chiudo da due anni. Non per i soldi — sono quattro spiccioli. È che quello lassù ha smesso di scendere.',
+          'Oreste. L\'eremita del Passo. Prima veniva giù ogni due settimane, prendeva le sue cose e brontolava del tempo. Poi più niente.',
+          'Non so se sta bene. E salire fin lassù, con la bottega aperta, io non posso.'
+        ] },
+      { tipo:'porta', npc:'eremita', ing:{ patata:5, latte:2 },
+        compito:'Porta a Oreste, al Passo di montagna: {ing}',
+        manca:'Bruno aveva detto: {ing}. Torna quando ce le hai.',
+        righe:[
+          'Le patate. E il latte. …Te le ha date Bruno, vero. Non rispondere, lo so io.',
+          'Non sono sceso perché la strada d\'inverno è ghiaccio vivo e io non ho più vent\'anni. Non perché mi sia offeso.',
+          'Digli che il conto lo pago. E digli che se manda su qualcuno ogni tanto, io il caffè ce l\'ho.'
+        ] },
+      { tipo:'parla', npc:'bruno',
+        compito:'Torna da Bruno e digli come sta Oreste.',
+        righe:[
+          'Sta bene. Sta bene davvero, o lo dici per non farmi stare in pensiero?',
+          '…La strada ghiacciata. Certo che è la strada ghiacciata. Sono due anni che mi racconto che si era offeso, e intanto era il ghiaccio.',
+          'La riga la lascio aperta. Adesso però è aperta per un motivo diverso: è la scusa per mandare su qualcuno.',
+          'Tieni. E quando risali, portagli anche questo da parte mia.'
+        ] }
+    ],
+    premio:{ oro:700, item:'pane_miele', qta:3, amicizia:140 }
+  },
+
+  elio_rete: {
+    npc:'elio', cuori:2, titolo:'La rete di suo padre',
+    scelta:'🪢 Quella rete appesa al muro',
+    passi:[
+      { tipo:'parla', npc:'elio',
+        compito:'Parla con Elio, al porto.',
+        righe:[
+          'Quella non si tocca. Era di mio padre — l\'ha fatta lui, nodo per nodo, l\'inverno che non si pescava.',
+          'È marcia in tre punti. La tengo appesa perché buttarla mi sembra brutto e ripararla mi sembra peggio.',
+          'Ripararla vuol dire dire che è ancora una rete. E se è ancora una rete, va usata.',
+          'Se mi porti della <b>fibra</b> buona, ci provo. Ma non prometto niente.'
+        ] },
+      { tipo:'porta', npc:'elio', ing:{ fibra:12 },
+        compito:'Porta a Elio: {ing}',
+        manca:'Elio aspetta {ing} per rammendare la rete.',
+        righe:[
+          'Guarda che nodo. Mio padre lo faceva in tre mosse, io ci metto un minuto, ma viene uguale.',
+          'Domani all\'alba la porto in acqua. Vieni anche tu, se ti va: da soli certe cose non si fanno.'
+        ] },
+      { tipo:'luogo', dove:'spiaggia',
+        compito:'Vai alla spiaggia, all\'alba o quando puoi.',
+        righe:['La rete di Elio è stesa sulla sabbia, piena d\'acqua e di luce. Funziona.'] },
+      { tipo:'parla', npc:'elio',
+        compito:'Parla con Elio.',
+        righe:[
+          'Hai visto? Tiene. Tiene meglio delle mie.',
+          'Ho pensato una cosa stupida mentre la tiravo su: che lui l\'ha fatta per una barca che non c\'è più, e io la sto usando lo stesso.',
+          'Le cose fatte bene si trovano un altro lavoro. Tieni, questo l\'ho preso stamattina con lei.'
+        ] }
+    ],
+    premio:{ oro:900, item:'storione', qta:1, amicizia:150 }
+  },
+
+  serafina_pagine: {
+    npc:'serafina', cuori:3, titolo:'Le pagine mancanti',
+    scelta:'🌿 L\'erbario a cui mancano le pagine',
+    passi:[
+      { tipo:'parla', npc:'serafina',
+        compito:'Parla con Serafina, nel bosco.',
+        righe:[
+          'L\'erbario me l\'ha lasciato Ilde. È l\'unica cosa che ho di suo, e ha tre pagine strappate.',
+          'Non strappate per rabbia: strappate per portarsele dietro. Le piegava in quattro e se le metteva in tasca.',
+          'So quali erano, perché me le ha fatte imparare a memoria da ragazza. Le so ridisegnare. Mi servono le piante vere davanti.',
+          'Lavanda, porcini, viole. Portamele e rifacciamo le pagine.'
+        ] },
+      { tipo:'porta', npc:'serafina', ing:{ lavanda:3, fungo_porcino:2, viola:2 },
+        compito:'Porta a Serafina: {ing}',
+        manca:'Per le tre pagine servono ancora: {ing}',
+        righe:[
+          'Ferma, non appoggiarle. Una per volta, che le devo guardare da sotto.',
+          '…Ecco. La lavanda va disegnata mentre è ancora viva, sennò il grigio del secco ti frega la misura.',
+          'Tre pagine in una sera. Ilde ci metteva una settimana e diceva che era per la pazienza. Aveva le mani che tremavano già allora, credo.',
+          'L\'erbario è di nuovo intero. Non è più solo suo: adesso c\'è dentro anche una cosa fatta da noi due.'
+        ] }
+    ],
+    premio:{ oro:800, item:'gemma_luna', qta:1, amicizia:160 }
+  },
+
+  tobia_campana: {
+    npc:'tobia', cuori:3, titolo:'La campana della piazza',
+    scelta:'🔔 Perché la campana non suona?',
+    passi:[
+      { tipo:'parla', npc:'tobia',
+        compito:'Parla con Tobia, alla fucina.',
+        righe:[
+          'Perché è crepata. Crepata da dodici anni, dal solstizio che sai.',
+          'L\'hanno suonata tutta la notte quella volta, per chiamare. Il bronzo freddo non è fatto per essere suonato così, e a un certo punto ha ceduto.',
+          'Rifonderla non si può: quel bronzo lì non lo fa più nessuno. Si può fasciare la crepa, però. Rame e carbone, e una giornata di fuoco.',
+          'Vai a vederla, prima. Voglio che tu la guardi bene, poi mi dici se ne vale la pena.'
+        ] },
+      { tipo:'luogo', dove:'piazza',
+        compito:'Vai a vedere la campana, in piazza.',
+        righe:['La crepa parte dal bordo e sale per due palmi. Da sotto, il bronzo è ancora lucido dove ci battevano le mani.'] },
+      { tipo:'porta', npc:'tobia', ing:{ lingotto_rame:3, carbone:6 },
+        compito:'Porta a Tobia: {ing}',
+        manca:'Per fasciare la campana servono ancora: {ing}',
+        righe:[
+          'L\'hai guardata. Si vede che l\'hai guardata, hai la faccia di quelli che l\'hanno guardata.',
+          'Il rame va colato caldo dentro la crepa e poi battuto finché non si offende. Domani ci vuole tutto il giorno.',
+          'Non tornerà come prima. Farà un suono più basso, un po\' rotto. Va bene così: è successo, e si sente.'
+        ] },
+      { tipo:'parla', npc:'tobia',
+        compito:'Torna da Tobia il giorno dopo.',
+        righe:[
+          'Suonata stamattina. Due rintocchi, per provare.',
+          'È uscita mezza piazza. Nessuno ha detto niente, sono usciti e basta, e poi sono rientrati.',
+          'Dodici anni. Tieni questo: l\'ho fatto con l\'avanzo del rame. Non serve a niente, è solo bello.'
+        ] }
+    ],
+    premio:{ oro:1200, item:'lingotto_oro', qta:1, amicizia:150 }
+  },
+
+  marisol_stanza: {
+    npc:'marisol', cuori:3, titolo:'La stanza di sopra',
+    scelta:'🚪 Quella porta chiusa in cima alle scale',
+    passi:[
+      { tipo:'parla', npc:'marisol',
+        compito:'Parla con Marisol, alla locanda.',
+        righe:[
+          'La stanza d\'angolo. Chiusa da quando è morta Ilde, perché era la sua quando si fermava a dormire in paese.',
+          'Non l\'ho chiusa per sentimento, all\'inizio. L\'ho chiusa perché avevo da fare e non me la sentivo di svuotarla, e poi il tempo ha deciso da solo.',
+          'Adesso è una stanza che non rende e una porta che tutti guardano salendo. Il peggio delle due cose.',
+          'Se mi aiuti a rimetterla a posto, la riapro. Serve legna per il pavimento, fibra per il materasso, e una lanterna che non sia la sua.'
+        ] },
+      { tipo:'porta', npc:'marisol', ing:{ legna:15, fibra:10, lanterna:1 },
+        compito:'Porta a Marisol: {ing}',
+        manca:'Per la stanza di sopra servono ancora: {ing}',
+        righe:[
+          'Le assi vanno di là, la lanterna sul comodino. No, non al centro: al lato, che è dove la teneva lei.',
+          '…Ho detto «dove la teneva lei». Va bene, mi sa che un po\' di sentimento c\'era.',
+          'Domani la apro. La affitto a chi passa, e a Natale la tengo libera. Una stanza chiusa non è un ricordo, è solo una stanza chiusa.'
+        ] },
+      { tipo:'parla', npc:'marisol',
+        compito:'Torna da Marisol.',
+        righe:[
+          'Ci ha dormito uno che vendeva sementi. Ha detto che era la stanza più bella in cui avesse dormito in vita sua, e non sapeva niente di niente.',
+          'Mi è piaciuto tantissimo che non sapesse niente. Ha dormito bene e basta.',
+          'Tieni, l\'ho fatta stamattina. Prima fetta, come si deve.'
+        ] }
+    ],
+    premio:{ oro:1000, item:'torta_zucca', qta:2, amicizia:160 }
+  },
+
+  eremita_neve: {
+    npc:'eremita', cuori:4, titolo:'La neve che non si scioglie',
+    scelta:'❄️ Quella chiazza di neve che resta',
+    passi:[
+      { tipo:'parla', npc:'eremita',
+        compito:'Parla con Oreste, al Passo.',
+        righe:[
+          'L\'hai notata anche tu. Bene. Vuol dire che guardi.',
+          'Quella chiazza lì non se ne va nemmeno ad agosto. Ci ho messo dieci anni a smettere di trovarci una spiegazione.',
+          'Il ghiaccio vecchio, sotto, non è acqua e basta. C\'è dentro l\'aria di quando si è formato. È aria di prima di noi.',
+          'Portami due fiocchi di cristallo e un geode, che ti faccio vedere una cosa che non ho mai fatto vedere a nessuno.'
+        ] },
+      { tipo:'porta', npc:'eremita', ing:{ fiocco_cristallo:2, geode:1 },
+        compito:'Porta a Oreste, al Passo: {ing}',
+        manca:'Oreste aspetta: {ing}',
+        righe:[
+          'Guarda dentro il geode, controluce, con il fiocco davanti. Non con gli occhi tutti e due: chiudine uno.',
+          '…Visto? Quella riga che si muove. È la stessa che c\'è nel ghiaccio della chiazza.',
+          'Io ci ho passato sopra dieci inverni a chiedermi cosa fosse. Poi ho smesso, e il giorno che ho smesso l\'ho vista.',
+          'Non te la spiego. Se te la spiego smetti di guardarla. Tieni: questo è il pezzo migliore che ho tirato fuori dal Passo.'
+        ] }
+    ],
+    premio:{ oro:1400, item:'cristallia', qta:2, amicizia:170 }
+  }
+
+};
+
 /* Cosa porta un cespuglio carico, stagione per stagione.
 
    Stava scritta dentro al codice della falce, e il disegno del cespuglio

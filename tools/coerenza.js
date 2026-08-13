@@ -614,6 +614,120 @@ verifica('gli oggetti posabili corrispondono a qualcosa di costruibile', () => {
   return problemi;
 });
 
+/* Un campo di stato nuovo va scritto in TRE posti: `statoIniziale()` in
+   game.js, l'oggetto che si serializza in salvataggio.js, e l'elenco dei
+   nomi che si rileggono. Sono tre liste a mano e non si sorvegliano fra
+   loro.
+
+   Questo controllo nasce da un difetto vero, preso mentre si aggiungevano
+   le vicende del paese: `G.vicende` esisteva e funzionava per tutta la
+   sessione, ma non era in nessuna delle due liste di salvataggio. In
+   partita non si vedeva niente di storto — si vedeva ricaricando, con
+   tutte le storie tornate da fare. Un difetto che si manifesta solo al
+   giro dopo è quello che arriva più lontano prima che qualcuno lo veda.
+
+   Si legge il sorgente e non lo stato vero, perché `statoIniziale()` sta
+   in game.js e game.js qui non si carica: vuole il DOM. */
+verifica('ogni pezzo di stato finisce nel salvataggio', () => {
+  const g = fs.readFileSync(path.join(RADICE, 'js/game.js'), 'utf8');
+  const s = fs.readFileSync(path.join(RADICE, 'js/salvataggio.js'), 'utf8');
+
+  const corpo = g.slice(g.indexOf('function statoIniziale()'), g.indexOf('G.statoIniziale = statoIniziale'));
+  if (!corpo) return ['non trovo più `statoIniziale()` in game.js: questo controllo non sa più dove guardare'];
+  // le chiavi al primo piano: quattro spazi di rientro e poi `nome:`
+  const nello = new Set([...corpo.matchAll(/^ {4}([a-zA-Z]\w*)\s*:/gm)].map(m => m[1]));
+
+  const scritti = new Set([...s.matchAll(/(\w+)\s*:\s*G\.\1\b/g)].map(m => m[1]));
+  const lettiM = s.match(/for\s*\(const k of \[([\s\S]*?)\]\)/);
+  const letti = new Set(lettiM ? [...lettiM[1].matchAll(/'(\w+)'/g)].map(m => m[1]) : []);
+  if (!scritti.size || !letti.size) return ['non trovo più le liste di salvataggio in salvataggio.js'];
+
+  /* Quello che di proposito NON si salva, con il perché accanto: se un
+     giorno uno di questi deve entrare, si toglie da qui e il controllo
+     comincia a pretenderlo. */
+  const fuori = {
+    energia: 'si rigenera dormendo, e viene ricalcolata al caricamento',
+    energiaMax: 'ricalcolata da base + bonus a ogni caricamento',
+    mappaId: 'salvato a parte, insieme a px/py',
+    inv: 'salvato a parte (viene normalizzato in lettura)',
+    slotSel: 'la mano in cui si tiene qualcosa non è progresso',
+    parlatoOggi: 'si azzera ogni mattina',
+    regalatoOggi: 'si azzera ogni mattina'
+  };
+
+  const problemi = [];
+  for (const k of nello) {
+    if (fuori[k] || scritti.has(k)) continue;
+    problemi.push(`\`G.${k}\` esiste in statoIniziale() ma non si salva: al prossimo caricamento riparte da zero`);
+  }
+  for (const k of scritti) {
+    if (k === 'p') continue;
+    if (!letti.has(k)) problemi.push(`\`G.${k}\` si salva ma non si rilegge: il salvataggio lo porta e nessuno lo raccoglie`);
+  }
+  for (const k of letti) if (!scritti.has(k)) problemi.push(`\`G.${k}\` si rilegge ma non lo scrive nessuno`);
+  return problemi;
+});
+
+/* Le vicende del paese sono diciotto passi scritti a mano che il motore
+   esegue alla lettera: un `npc` sbagliato è una scelta che non compare
+   mai nel dialogo, un `dove` sbagliato è un passo che non si chiude più
+   e blocca la storia per sempre, e un oggetto inventato in `ing` è una
+   consegna impossibile. Nessuna di queste tre cose fa rumore giocando:
+   sembrano solo storie che non partono. */
+verifica('le vicende del paese stanno in piedi', () => {
+  const V = DATA.VICENDE || {};
+  const mappe = WORLD.MAPPE;
+  const problemi = [];
+  const diChi = {};
+  for (const id in V) {
+    const v = V[id];
+    const q = t => `«${id}»: ${t}`;
+    if (!DATA.NPCS[v.npc]) { problemi.push(q(`è di «${v.npc}», che non è un abitante`)); continue; }
+    /* Una persona, una storia: il motore mostra le scelte per abitante e
+       due storie sulla stessa faccia si presenterebbero insieme, senza
+       modo di capire quale sia quale. */
+    if (diChi[v.npc]) problemi.push(q(`è la seconda storia di «${v.npc}» (l'altra è «${diChi[v.npc]}»)`));
+    diChi[v.npc] = id;
+    if (!v.titolo || !v.scelta) problemi.push(q('manca il titolo o la voce di dialogo che la apre'));
+    if (!(v.cuori >= 0 && v.cuori <= 8)) problemi.push(q(`chiede ${v.cuori} cuori, che non si raggiungono (il massimo è 8)`));
+    if (!Array.isArray(v.passi) || !v.passi.length) { problemi.push(q('non ha passi')); continue; }
+
+    const p0 = v.passi[0];
+    if (p0.tipo !== 'parla' || p0.npc !== v.npc)
+      problemi.push(q('il primo passo deve essere un «parla» con chi la storia appartiene, o non si apre da nessuna parte'));
+
+    v.passi.forEach((p, i) => {
+      const r = t => problemi.push(q(`passo ${i + 1}: ${t}`));
+      if (!p.compito) r('non dice cosa fare (manca `compito`, cioè la riga del Diario)');
+      if (!Array.isArray(p.righe) || !p.righe.length) r('non dice niente quando si chiude (manca `righe`)');
+      if (p.tipo === 'parla' || p.tipo === 'porta') {
+        if (!DATA.NPCS[p.npc]) r(`è con «${p.npc}», che non è un abitante`);
+      } else if (p.tipo === 'luogo') {
+        if (mappe.indexOf(p.dove) < 0) r(`manda in «${p.dove}», che non è un posto`);
+      } else r(`è di tipo «${p.tipo}», che il motore non conosce`);
+      if (p.tipo === 'porta') {
+        if (!p.ing || !Object.keys(p.ing).length) r('è una consegna senza niente da consegnare');
+        for (const k in (p.ing || {})) {
+          if (!DATA.ITEMS[k]) r(`chiede «${k}», che non è un oggetto`);
+          if (!(p.ing[k] > 0)) r(`chiede ${p.ing[k]} di «${k}»`);
+        }
+        /* `{ing}` è il posto dove il motore infila l'elenco di quello che
+           manca. Senza, la frase resta generica proprio nel momento in
+           cui il giocatore vuole sapere cosa gli serve. */
+        for (const campo of ['compito', 'manca'])
+          if (p[campo] && String(p[campo]).indexOf('{ing}') < 0)
+            r(`\`${campo}\` non ha il segnaposto {ing}: l'elenco delle cose da portare non comparirà`);
+      }
+    });
+
+    const P = v.premio || {};
+    if (P.item && !DATA.ITEMS[P.item]) problemi.push(q(`paga con «${P.item}», che non è un oggetto`));
+    if (P.item && !(P.qta > 0)) problemi.push(q('paga con un oggetto ma non dice quanti'));
+    if (!P.oro && !P.item) problemi.push(q('non paga niente'));
+  }
+  return problemi;
+});
+
 /* In basso al centro ci sono tre fasce sovrapposte in ordine: la barra
    degli attrezzi col nome dell'oggetto, il suggerimento («E parla con
    Bruno», «Abbocca! Premi Spazio») e i messaggi. Nessuna delle tre sa
