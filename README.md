@@ -210,9 +210,8 @@ js/game.js          stato, ciclo di gioco, input, sistemi
 tsconfig.json       type-checking (solo editor e riga di comando, nessuna build)
 types/fioralba.d.ts descrizione dei tipi dei dati e dello stato
 tools/coerenza.js   test di coerenza dei dati (ricette, mappe, missioni)
-tools/serve.js      server locale di sviluppo, senza cache
-package.json        solo strumenti di sviluppo: il gioco non ne ha bisogno
-vercel.json         configurazione per il deploy statico su Vercel
+server.js           serve il gioco (sviluppo e produzione: stesso file)
+package.json        strumenti di sviluppo e avvio del server
 ```
 
 Niente build, niente `npm install`: si aprono i file e funziona.
@@ -269,17 +268,16 @@ Il gioco è un **sito statico** (niente server, salvataggi in `localStorage`), q
 il piano **gratuito** di Vercel basta e avanza. Non serve installare Node: Vercel
 serve i file così come sono.
 
-**Con Git (consigliato):** metti la cartella su un repo GitHub, poi su Vercel scegli
-*Add New → Project*, importa il repo e premi *Deploy*. Non c'è nulla da configurare:
-Vercel non trova un `package.json`, capisce che è un sito statico e serve `index.html`.
+**Su Railway:** collega il repository e non c'è altro da configurare — Railway
+trova il `package.json`, esegue `npm start` e serve il gioco. La porta la passa
+lui nella variabile `PORT`, che `server.js` legge da sé.
 
-**Senza Git (al volo):** installa la CLI di Vercel su un computer che ha Node
-(`npm i -g vercel`), poi da questa cartella lancia `vercel`. In alternativa puoi
-trascinare la cartella nella dashboard di Vercel.
+**Altrove:** basta un Node qualsiasi. `npm start` e il gioco è servito.
 
-Il file `vercel.json` è già pronto: lascia rivalidare l'HTML (così i nuovi
-aggiornamenti si vedono) e tiene in cache a lungo `js/` e `css/` — che cambiano URL
-da soli grazie al `?v=N` sui tag `<script>`.
+In produzione `server.js` comprime i file, manda un `ETag` e lascia rivalidare
+tutto: il browser tiene i file in cache e riceve un `304` finché non cambiano
+davvero, così un aggiornamento non resta invisibile a nessuno. L'anteprima
+social, che non cambia mai, ha una cache lunga.
 
 > **Banda:** il gioco pesa pochissimo (nessun file immagine o audio), quindi rientra
 > comodo nei limiti del piano gratuito anche con molti giocatori.
