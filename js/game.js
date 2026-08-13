@@ -3300,6 +3300,8 @@ function aggiornaParticelle(dt){
 }
 
 function particelleTesto(x,y,testo,col){
+  // anche il testo che vola sopra la testa passa dalla lingua
+  if(window.LINGUA) testo = LINGUA.t(testo);
   G.particelle.push({t:'testo', x, y, vx:0, vy:-0.42, g:0, testo, c:col||'#fff8d0',
                      vita:1100, vitaMax:1100});
 }

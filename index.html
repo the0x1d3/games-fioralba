@@ -308,6 +308,10 @@
     <div class="lp-bar">
       <span class="lp-bar-title">🏮 Fioralba</span>
       <div class="lp-bar-btns">
+        <!-- la lingua si sceglie prima di cominciare, non solo dal menu
+             interno: chi arriva e non legge italiano deve poterlo fare
+             senza entrare in partita al buio -->
+        <button class="btn lp-lingua" id="lp-lingua"></button>
         <button class="btn lp-continue">Continua</button>
         <button class="btn gold lp-new">Nuova Partita</button>
       </div>
@@ -364,6 +368,11 @@
      appena caricato fa init(). Un controllo in tools/coerenza.js tiene
      ferma questa lista: un file scritto e mai caricato non fa rumore. -->
 <script src="js/data.js"></script>
+<!-- Subito dopo i dati: il motore della lingua traduce DATA sul posto,
+     quindi vuole DATA già caricato e il catalogo già in memoria. Tutto
+     il resto del gioco legge DATA senza sapere che lingua sia. -->
+<script src="js/lingua-en.js"></script>
+<script src="js/lingua.js"></script>
 <script src="js/palette.js"></script>
 <script src="js/art.js"></script>
 <script src="js/fx.js"></script>

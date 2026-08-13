@@ -356,12 +356,35 @@ function ciclo(t){
   raf = requestAnimationFrame(ciclo);
 }
 
+/* Il pulsante della lingua sulla barra: mostra quella in cui NON sei,
+   perché è quella su cui si clicca. Con due lingue è un interruttore;
+   se un giorno diventano tre, qui ci vuole un elenco. */
+function collegaLingua(){
+  const b = $('#lp-lingua');
+  if(!b || !window.LINGUA || LINGUA.elenco.length < 2){ if(b) b.remove(); return; }
+  const disegna = ()=>{
+    const altra = LINGUA.elenco.find(l => l.id !== LINGUA.attiva);
+    b.textContent = altra.bandiera + ' ' + altra.nome;
+    b.title = 'Cambia lingua';
+  };
+  b.onclick = ()=>{
+    const altra = LINGUA.elenco.find(l => l.id !== LINGUA.attiva);
+    LINGUA.set(altra.id);
+    disegna();
+    // la valle, le schede e il changelog sono già impaginati in italiano
+    costruisciCose(); costruisciGente(); costruisciChangelog();
+  };
+  LINGUA.suCambio(disegna);
+  disegna();
+}
+
 L.init = function(){
   const lp = $('#landing');
   if(!lp || lp.classList.contains('hidden')) return;
   costruisciCose();
   costruisciGente();
   costruisciValle();
+  collegaLingua();
   collegaChangelog();
   collegaComparsa();
   vivo = true;

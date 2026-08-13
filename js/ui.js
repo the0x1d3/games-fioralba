@@ -235,7 +235,14 @@ U.ico = ico;
    se ne impila un secondo: si aggiorna quello che c'è. Chi taglia tre
    alberi di fila vedeva tre cartelli sovrapposti, adesso ne vede uno
    che conta. */
+/* La traduzione sta qui e non ai punti di chiamata: il testo si scrive
+   in italiano dove serve — e lì resta leggibile — e diventa inglese
+   nell'ultimo istante, mentre esce a schermo. Cinque strozzature invece
+   di milleduecento righe toccate. */
+const T = s => (window.LINGUA ? LINGUA.t(s) : s);
+
 U.toast = function(msg, tipo, itemId){
+  msg = T(msg);
   const box = $('#toasts');
 
   if(itemId){
@@ -285,6 +292,7 @@ function riarmaTimer(el, msg){
 U.prompt = function(testo){
   const p = $('#prompt');
   if(!testo){ p.classList.add('hidden'); return; }
+  testo = T(testo);
   if(p.dataset.t !== testo){ p.dataset.t = testo; p.innerHTML = testo; }
   p.classList.remove('hidden');
 };
@@ -295,6 +303,7 @@ U.prompt = function(testo){
 let modalAperta = null;
 
 U.modal = function(titolo, costruisci, onClose){
+  titolo = T(titolo);
   // se una modale era già aperta, il suo onClose va eseguito lo stesso:
   // altrimenti chi ci aveva agganciato qualcosa da fermare (le demo
   // animate, per dire) se lo ritrova a girare a vuoto per sempre
@@ -552,7 +561,8 @@ function passiDiRiga(html){
 U.dialogo = function(npcId, righe, opzioni){
   opzioni = opzioni || {};
   const N = DATA.NPCS[npcId];
-  dlgCoda = Array.isArray(righe) ? righe.slice() : [righe];
+  dlgCoda = (Array.isArray(righe) ? righe.slice() : [righe]).map(T);
+  if(opzioni.scelte) for(const s of opzioni.scelte) s.testo = T(s.testo);
   dlgFine = opzioni.fine || null;
   dlgAttivo = true;
   const d = $('#dialogue');
@@ -1896,6 +1906,31 @@ U.menu = function(G){
       vol.appendChild(r);
     }
     wrap.appendChild(vol);
+
+    /* lingua */
+    if(window.LINGUA && LINGUA.elenco.length > 1){
+      const lt=document.createElement('div'); lt.className='sectitle'; lt.textContent='Lingua';
+      wrap.appendChild(lt);
+      const riga=document.createElement('div');
+      riga.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+      for(const l of LINGUA.elenco){
+        const b=document.createElement('button');
+        b.className='btn' + (LINGUA.attiva===l.id ? ' gold' : ' blue');
+        b.textContent = l.bandiera + ' ' + l.nome;
+        b.disabled = LINGUA.attiva===l.id;
+        b.onclick=()=>{
+          LINGUA.set(l.id);
+          /* Il gioco è già disegnato quando si cambia lingua: la finestra
+             si ridisegna da sé, ma la barra degli attrezzi e l'HUD hanno
+             i nomi di prima stampati dentro, e resterebbero nella lingua
+             vecchia finché non li tocchi. */
+          G.rinfrescaHotbar(); G.aggiornaHUD();
+          U.aggiorna();
+        };
+        riga.appendChild(b);
+      }
+      wrap.appendChild(riga);
+    }
 
     /* guida "Primi passi": si può nascondere e riaccendere quando si vuole */
     if(window.GUIDA && !GUIDA.completata()){
