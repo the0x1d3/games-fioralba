@@ -421,7 +421,7 @@ PAL.snap('#8a6038')   // → '#8a5c34'
 npm test
 ```
 
-`tools/coerenza.js`: **63 controlli** sui dati e sulle mappe, senza dipendenze —
+`tools/coerenza.js`: **64 controlli** sui dati e sulle mappe, senza dipendenze —
 carica i moduli in un finto `window`. Il primo controlla che ogni file `.js` sia
 sintatticamente valido, e non è pignoleria: un apostrofo non protetto dentro una
 stringa fa fallire il caricamento in silenzio e nel browser resta una pagina

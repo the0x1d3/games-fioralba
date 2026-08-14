@@ -2548,6 +2548,79 @@ verifica('il margine di disegno copre il mobile più alto che esiste', () => {
   return problemi;
 });
 
+/* --- IL RADDOPPIO NON SI SOMMA A SÉ STESSO ---
+
+   `raddoppia` è RELATIVA: si appoggia alla trasformazione che trova. Va
+   benissimo per chi la chiama dal ciclo di disegno, dove il contesto è
+   pulito, e va malissimo per chi può essere chiamato da DENTRO a un
+   blocco già raddoppiato. La targhetta col nome di una cassa era così: la
+   chiede `disegnaOggettoDentro`, che gira già raddoppiato, e i due
+   raddoppi si sommavano.
+
+   Misurato quando è successo: scala 4 invece di 2, e la tavoletta di una
+   cassa che sta in (640,640) finiva in (1624,920). La scritta no — quella
+   si stampa dopo l'ingrandimento e sta sempre in pixel di mondo — quindi
+   restava al suo posto. A schermo si vedevano assi di legno vuote che
+   volavano per il prato, e da un'altra parte scritte senza niente sotto.
+   Nessun test era rosso: è un difetto che si vede solo guardando.
+
+   Qui si prende ogni funzione chiamata da dentro a un corpo `…Dentro` e
+   si pretende che non usi il raddoppio relativo. `raddoppiaDaCapo` azzera
+   la trasformazione e riparte, quindi è immune a chi la chiama. */
+verifica(TS ? 'niente raddoppio relativo dentro a un blocco già raddoppiato'
+            : 'raddoppio annidato: SALTATO, manca typescript (fai npm install)', () => {
+  if (!TS) return [];
+  const problemi = [];
+  const src = fs.readFileSync(path.join(RADICE, 'js/render.js'), 'utf8');
+  const sf = TS.createSourceFile('render.js', src, TS.ScriptTarget.Latest, true, TS.ScriptKind.JS);
+
+  /* Il CORPO e non la funzione intera, e senza commenti: la firma
+     `function raddoppia(x, ox, oy)` è una chiamata a `raddoppia` per
+     qualunque regex, e in `pareteRocciaDentro` c'è scritto «vedi
+     stalattiti()» in un commento. Due falsi allarmi presi subito, e
+     tutti e due dicevano una cosa vera su come si legge il codice con
+     le espressioni regolari: non si legge. */
+  const senzaCommenti = t => t.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
+  const corpi = new Map();                 // nome -> corpo, senza firma né commenti
+  (function raccogli(nd) {
+    if (TS.isFunctionDeclaration(nd) && nd.name && nd.body)
+      corpi.set(nd.name.text, senzaCommenti(nd.body.getText()));
+    nd.forEachChild(raccogli);
+  })(sf);
+  if (!corpi.size) return ['non trovo nessuna funzione in render.js: il controllo non protegge niente'];
+
+  if (!/function raddoppiaDaCapo\([\s\S]{0,120}setTransform\(K, 0, 0, K, 0, 0\)/.test(src))
+    problemi.push('`raddoppiaDaCapo` non azzera più la trasformazione con setTransform: ' +
+                  'non è più immune a chi la chiama, ed è tutto quello che serviva che fosse');
+
+  /* chi viene chiamato da dentro a un blocco raddoppiato, anche di
+     rimbalzo: se A sta in un …Dentro e A chiama B, pure B ci sta dentro */
+  const dentro = new Set();
+  const daVedere = [...corpi.keys()].filter(n => n.endsWith('Dentro'));
+  if (daVedere.length < 8)
+    problemi.push(`trovati solo ${daVedere.length} corpi \`…Dentro\`: il controllo non li vede più`);
+  while (daVedere.length) {
+    const nome = daVedere.pop();
+    const testo = corpi.get(nome);
+    if (!testo) continue;
+    for (const altro of corpi.keys()) {
+      if (altro === nome || dentro.has(altro) || altro.endsWith('Dentro')) continue;
+      if (new RegExp('(?<!\\w)' + altro + '\\s*\\(').test(testo)) {
+        dentro.add(altro); daVedere.push(altro);
+      }
+    }
+  }
+
+  for (const nome of dentro) {
+    const testo = corpi.get(nome);
+    if (/(?<!\w)raddoppia\s*\(/.test(testo))
+      problemi.push(`\`${nome}\` è chiamata da dentro a un blocco raddoppiato e usa \`raddoppia\`: ` +
+                    'i due raddoppi si sommano e quello che disegna esce a scala 4, ' +
+                    'spostato. Va usata `raddoppiaDaCapo`.');
+  }
+  return problemi;
+});
+
 const larghezza = 62;
 console.log('\n  Fioralba — coerenza dei dati\n  ' + '─'.repeat(larghezza));
 for (const nome of fatti) console.log('  [32m✓[0m ' + nome);

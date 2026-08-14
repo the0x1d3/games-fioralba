@@ -207,6 +207,20 @@ R.schermoAMondo = function(px, py, cam){
    misura serve anche in un conto (l'ancoraggio ai piedi, di solito).
    =================================================================== */
 function raddoppia(x, ox, oy){ x.save(); x.translate(ox, oy); x.scale(K, K); }
+
+/* Come `raddoppia`, ma ASSOLUTA: butta via qualunque trasformazione ci
+   fosse addosso e riparte dall'origine della scena.
+
+   Serve a chi ragiona in pixel di mondo ma può essere chiamato da DENTRO
+   a un blocco già raddoppiato, e sono la targhetta e il fumetto: la
+   targhetta di una cassa col nome la chiede `disegnaOggettoDentro`, che
+   gira già dentro al suo raddoppio. Con `raddoppia` il raddoppio si
+   sommava — misurato: scala 4 invece di 2, e la tavoletta di una cassa
+   in (640,640) finiva in (1624,920). La scritta no, perché quella si
+   stampa dopo l'ingrandimento e sta sempre in pixel di mondo: restava
+   al suo posto. Da fuori si vedevano assi di legno vuote che volavano
+   per il prato, e da un'altra parte delle scritte senza niente sotto. */
+function raddoppiaDaCapo(x){ x.save(); x.setTransform(K, 0, 0, K, 0, 0); }
 const mez = n => n/K;
 function spr(img, dx, dy){ sx.drawImage(img, dx, dy, img.width/K, img.height/K); }
 
@@ -402,7 +416,7 @@ function targhetta(testo, cxMondo, cyMondo){
   targhettePoste.push({ x:x0, y:y0, w });
 
   const I = PAL.c.interno;
-  raddoppia(sx, 0, 0);
+  raddoppiaDaCapo(sx);
   ART.px(sx, x0, y0, w, ALTA_T, I.legnoOmbra);
   ART.px(sx, x0+1, y0+1, w-2, ALTA_T-2, I.legno);
   ART.px(sx, x0+1, y0+1, w-2, 1, I.legnoLuce);
@@ -510,7 +524,7 @@ function fumetto(testo, cxMondo, cyMondo, opacita){
   y0 = Math.max(2, y0);
 
   const a = opacita === undefined ? 1 : opacita;
-  raddoppia(sx, 0, 0);
+  raddoppiaDaCapo(sx);
   sx.globalAlpha = a;
   ART.px(sx, x0,   y0,   w,   h,   '#2a1d12');
   ART.px(sx, x0+1, y0+1, w-2, h-2, '#fdf6e4');
@@ -2366,7 +2380,7 @@ let meteoT = 0;
 function disegnaMeteo(G, t){
   const LW = meteoW(), LH = meteoH();
   if(!gocce.length) initMeteo();
-  raddoppia(sx, 0, 0);
+  raddoppiaDaCapo(sx);
   const k = Math.min(100, Math.max(0, t - meteoT)) / 16.667;
   meteoT = t;
   const M = G.meteo;
