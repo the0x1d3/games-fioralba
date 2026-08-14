@@ -221,6 +221,19 @@ function aggiornaOspitiSagra(){
     if(iBosco<0 && serafinaNelBosco){ bosco.npc.push(serafinaNelBosco); serafinaNelBosco=null; }
   }
 }
+/* Quali oggetti valgono per la sagra in corso. `sagraQualifica` sa
+   rispondere su uno per volta, e a chi versa basta; ma chi la sagra la
+   RACCONTA — il Diario — deve poterne fare l'elenco. La carta diceva
+   «Consegna 20 prodotti di stagione» e non quali fossero: al primo anno
+   uno se li ricorda, al terzo no — «gli spinaci sono di primavera o
+   d'autunno?» — e l'unico modo di scoprirlo era portare roba al banco e
+   vedere se la prendeva. */
+PS.sagraVale = function(){
+  const st = G.sagra && G.sagra.stagione;
+  if(!st) return [];
+  return Object.keys(DATA.ITEMS).filter(id => sagraQualifica(id, st));
+};
+
 function sagraQualifica(id, season){
   const I = DATA.ITEMS[id]; if(!I) return false;
   if(I.cat==='raccolto' && I.crop && DATA.CROPS[I.crop]) return DATA.CROPS[I.crop].stagioni.indexOf(season)>=0;

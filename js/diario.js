@@ -159,6 +159,46 @@ U.diario = function(G, tabIniziale){
           r.appendChild(b);
         }
         body.appendChild(r);
+
+        /* --- cosa vale davvero, e quanto ne hai ---
+           «Consegna 20 prodotti di stagione» dice la regola e non
+           l'elenco. Quali siano i prodotti di questa stagione uno se lo
+           ricorda al primo anno; al terzo no, e l'unico modo di
+           saperlo era portare roba al banco e vedere se la prendeva.
+           Stessa riga che si apre delle braci e della Collezione: chiusa
+           non ruba spazio, aperta risponde. Quello che hai già nello
+           zaino sta in cima, perché è la parte su cui puoi agire
+           adesso. */
+        if(!G.sagra.riscossa){
+          const vale = G.sagraVale();
+          const stag = (DATA.SEASONS.find(s=>s.id===G.sagra.stagione)||{}).nome || G.sagra.stagione;
+          const box=document.createElement('div'); box.className='coll-manca';
+          const cap=document.createElement('div'); cap.className='coll-manca-cap cliccabile';
+          cap.innerHTML='<span class="ob-freccia"></span>'+
+                        F('Cosa vale — {0} prodotti di {1}', vale.length, stag);
+          const lista=document.createElement('div'); lista.className='coll-manca-lista hidden';
+          const conto = id => (G.conta ? G.conta(id) : 0);
+          for(const id of vale.slice().sort((a,b)=>conto(b)-conto(a) || IT.nome(a).localeCompare(IT.nome(b)))){
+            const n = conto(id);
+            const riga=document.createElement('div');
+            riga.className='coll-manca-riga' + (n>0 ? ' data' : '');
+            const cc=document.createElement('div'); cc.className='icell mini'; cc.appendChild(ico(id));
+            riga.appendChild(cc);
+            const t=document.createElement('div');
+            t.innerHTML='<b>'+IT.nome(id)+(n>0?' ×'+n:'')+'</b>'+
+                        '<div class="rdesc">'+(n>0 ? T('nello zaino') : IT.dove(id))+'</div>';
+            riga.appendChild(t);
+            lista.appendChild(riga);
+          }
+          cap.onclick=()=>{
+            const chiuso=lista.classList.contains('hidden');
+            lista.classList.toggle('hidden', !chiuso);
+            cap.querySelector('.ob-freccia').classList.toggle('giu', chiuso);
+            SND.play('menu');
+          };
+          box.appendChild(cap); box.appendChild(lista);
+          body.appendChild(box);
+        }
       }
 
       const s2=document.createElement('div'); s2.className='sectitle'; s2.textContent='Traguardi';
