@@ -16,6 +16,16 @@
 
 window.CHANGELOG = [
   {
+    v: '3.6',
+    data: 'agosto 2026',
+    titolo: 'La mappa della valle si vede nitida, e dice chi c\'è',
+    voci: [
+      { tipo:'fix',    t:'La mappa non è più sfocata', d:'Era disegnata su una tela di 460 pixel di larghezza e poi stirata dal browser fino a riempire la finestra: misurato, arrivava a 764 pixel, cioè ingrandita di una volta e mezza — e su uno schermo a densità doppia, come quasi tutti i portatili e i telefoni, di più del triplo. Ogni linea da un pixel arrivava spalmata su due o tre, ed è quello che si leggeva come «sfocata»: non era una scelta di stile, era una tela troppo piccola tirata per i capelli. Adesso la mappa si disegna alla misura vera dei pixel che occupa, qualunque sia lo schermo, e si ridisegna da sola se giri il telefono. È la stessa cura che nella 3.4 aveva rimesso a fuoco le scritte del mondo.' },
+      { tipo:'nuovo',  t:'Sulla mappa vedi dove sono gli abitanti adesso', d:'Ogni luogo porta in alto a destra un bollino per ogni abitante che si trova lì in questo momento, del colore della sua maglia — quello con cui lo vedi in giro, così si impara guardandolo. Aprendo la mappa a metà mattina si vede che Bruno, Tobia, Marisol ed Elio sono in paese, e che Serafina è nel bosco; il giorno della sagra si vede Serafina scendere in piazza con gli altri. Era la domanda vera che uno si fa aprendo una mappa, e l\'unica cosa che non c\'era.' },
+      { tipo:'meglio', t:'I posti dove non sei mai stato si riconoscono', d:'Prima erano disegnati identici agli altri, e l\'unico modo per sapere dove si poteva fare il viaggio rapido era provare a toccarli e leggersi un rifiuto. Adesso hanno la pergamena velata, il bordo tratteggiato e — nello stesso angolo dove gli altri dicono «▸ vai» — la scritta «? da scoprire». La forma della valle resta visibile: quello che manca non è il posto, è esserci stati.' }
+    ]
+  },
+  {
     v: '3.5',
     data: 'agosto 2026',
     titolo: 'Si corre anche col pollice, e la veglia non si perde più',

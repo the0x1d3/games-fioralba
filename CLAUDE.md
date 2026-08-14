@@ -253,6 +253,36 @@ da 3.483 a 1.540 righe. **Resta un blocco solo**, `IL MENU` + le demo animate
 quello che rimane è il nocciolo vero — `IT` e «dove si trova», toast, modale,
 dialogo, «quante ne prendi», cassa, macchina, regalo, cartello.
 
+### Una tela dentro a una finestra vuole i pixel veri
+
+Le tele del gioco (quella grande, e quelle degli sprite) lavorano già in pixel
+fisici. Quelle disegnate **dentro alle finestre del DOM** no, ed è un difetto
+che si ripete: si crea un `<canvas>` con `width`/`height` in numeri comodi, si
+scrive `style="width:100%"`, e il browser lo stira. La mappa della valle era
+460×400 mostrata su 764: **1,66×**, e su uno schermo a densità doppia 3,3×.
+
+Il rimedio, come per il testo del mondo, è disegnare alla misura vera:
+
+```js
+const cssW = c.clientWidth || W;
+const k = Math.max(1, (cssW * (window.devicePixelRatio||1)) / W);
+c.width = Math.round(W*k); c.height = Math.round(H*k);
+x.setTransform(k, 0, 0, k, 0, 0);   // il disegno continua a parlare in W×H
+```
+
+Con `setTransform` **non cambia una coordinata** del disegno esistente: cambia
+solo quanti pixel veri ci finiscono dentro. Tre trappole, tutte pagate:
+
+- **`U.modal` costruisce il corpo prima di attaccarlo alla pagina**, quindi alla
+  prima passata `clientWidth` è 0 e la tela nasce alla misura di ripiego — lo
+  stesso numero di prima, e sembra che la correzione non abbia fatto niente.
+  Serve una seconda passata con `setTimeout(disegna, 0)`.
+- **Il `ResizeObserver` non basta** come rete: serve per quando la finestra
+  cambia misura o il telefono gira, ma scatta coi passi di rendering, che nel
+  pannello del browser non avvengono mai. Lì la prova diceva ancora 460.
+- Metti `aspect-ratio` nel CSS della tela, o la finestra si apre con un salto:
+  senza, la tela nasce 300×150 e l'altezza cambia al primo disegno.
+
 ### Firme che sorprendono
 
 Diverse funzioni prendono `G` come **primo parametro**, non dal globale. Chiamarle

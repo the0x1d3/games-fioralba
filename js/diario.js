@@ -532,11 +532,15 @@ U.diario = function(G, tabIniziale){
    =================================================================== */
 U.mappa = function(G){
   U.modal('Valle di Fioralba', body=>{
+    /* Lo SPAZIO DI DISEGNO resta 460×400 e tutte le coordinate qui sotto
+       parlano quella lingua. Quello che è cambiato è quanti pixel veri ci
+       stanno dentro: vedi `disegna()`. */
     const W=460, H=400;
     const c=document.createElement('canvas');
-    c.width=W; c.height=H;
-    c.style.cssText='width:100%;border:3px solid #8a6038;border-radius:10px;display:block';
-    const x=c.getContext('2d');
+    /* `aspect-ratio` serve prima ancora del disegno: senza, la tela nasce
+       300×150 e la finestra si apre con un salto di altezza. */
+    c.style.cssText='width:100%;aspect-ratio:'+W+'/'+H+';height:auto;'+
+                    'border:3px solid #8a6038;border-radius:10px;display:block';
 
     /* --- disposizione fedele ai passaggi reali ---
        A nord del paese la Miniera e, ancora sopra, il Passo innevato.
@@ -560,113 +564,234 @@ U.mappa = function(G){
       [255,210, 235,224]    // fioralba ↔ bosco
     ];
 
-    /* --- pergamena --- */
-    const g=x.createLinearGradient(0,0,W,H);
-    g.addColorStop(0,'#f2e0bb'); g.addColorStop(0.5,'#e9d3ab'); g.addColorStop(1,'#dcc294');
-    x.fillStyle=g; x.fillRect(0,0,W,H);
-    for(let i=0;i<900;i++){
-      const bx=(ART.hsh(i,0,71)*W)|0, by=(ART.hsh(i,1,71)*H)|0;
-      x.fillStyle = ART.hsh(i,2,71)>0.5 ? 'rgba(150,110,60,0.07)' : 'rgba(255,240,210,0.10)';
-      x.fillRect(bx,by,2,2);
-    }
-    // macchie e bordi bruciacchiati
-    for(let i=0;i<9;i++){
-      const bx=ART.hsh(i,3,71)*W, by=ART.hsh(i,4,71)*H, r=8+ART.hsh(i,5,71)*26;
-      const gg=x.createRadialGradient(bx,by,0,bx,by,r);
-      gg.addColorStop(0,'rgba(160,115,60,0.10)'); gg.addColorStop(1,'rgba(160,115,60,0)');
-      x.fillStyle=gg; x.beginPath(); x.arc(bx,by,r,0,6.3); x.fill();
-    }
-    const vg=x.createRadialGradient(W/2,H/2,W*0.3,W/2,H/2,W*0.66);
-    vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(120,80,40,0.22)');
-    x.fillStyle=vg; x.fillRect(0,0,W,H);
+    /* I livelli profondi della miniera ricadono sulla Miniera: sono la
+       stessa bocca, e chi ci sta dentro deve vedersi da qualche parte.
+       Prima questo valeva per lo spillo «sei qui» ma non per la cornice
+       dorata, quindi in fondo alla grotta la mappa non evidenziava
+       niente e lo spillo galleggiava su un riquadro spento. */
+    const zidQui = (G.mappaId==='grotta2'||G.mappaId==='grotta3') ? 'grotta' : G.mappaId;
+    const scoperto = z => z.id===zidQui || !!(G.visitati && G.visitati[z.id]);
 
-    /* --- strade tratteggiate --- */
-    x.strokeStyle='#9a7048'; x.lineWidth=4; x.lineCap='round';
-    x.setLineDash([6,6]);
-    for(const s of strade){
-      x.beginPath(); x.moveTo(s[0],s[1]); x.lineTo(s[2],s[3]); x.stroke();
-    }
-    x.setLineDash([]); x.lineCap='butt';
+    /* Chi si trova adesso in quel luogo. Lo sa già il gioco: l'elenco
+       `npc` di ogni mappa è tenuto aggiornato dall'agenda, e ci passano
+       anche gli ospiti — Serafina scende dal bosco il giorno della sagra
+       e si vede comparire in paese. */
+    const chiCe = z => {
+      const ids = (G.maps[z.id] && G.maps[z.id].npc || []).map(n=>n.id);
+      return ids.map(id=>DATA.NPCS[id]).filter(Boolean);
+    };
 
-    /* --- regioni --- */
-    for(const z of zone){
-      const qui = z.id===G.mappaId;
-      // ombra
-      x.fillStyle='rgba(90,58,36,0.22)';
-      arrotondato(x, z.x+4, z.y+5, z.w, z.h, 9); x.fill();
-      // corpo
-      const zg=x.createLinearGradient(z.x,z.y,z.x,z.y+z.h);
-      zg.addColorStop(0,z.col); zg.addColorStop(1,z.col2);
-      x.fillStyle=zg;
-      arrotondato(x, z.x, z.y, z.w, z.h, 9); x.fill();
-      // trama interna
-      x.save();
-      arrotondato(x, z.x, z.y, z.w, z.h, 9); x.clip();
-      disegnaTrama(x, z);
-      x.restore();
-      // cornice
-      x.strokeStyle = qui ? '#f2c14e' : '#5b3a24';
-      x.lineWidth = qui ? 4 : 2.5;
-      arrotondato(x, z.x, z.y, z.w, z.h, 9); x.stroke();
+    body.appendChild(c);       // prima in pagina: la misura vera si legge solo da lì
 
-      // etichetta su cartiglio
-      const lw = x.measureText(z.n).width;
-      x.font='bold 15px Nunito, sans-serif';
-      const tw = x.measureText(z.n).width + 18;
-      x.fillStyle='rgba(246,230,200,0.92)';
-      arrotondato(x, z.x+9, z.y+8, tw, 22, 6); x.fill();
-      x.strokeStyle='#8a6038'; x.lineWidth=1.5;
-      arrotondato(x, z.x+9, z.y+8, tw, 22, 6); x.stroke();
-      x.fillStyle='#4a3320';
-      x.fillText(z.n, z.x+18, z.y+24);
+    let ultimaK = 0;
+    function disegna(){
+      /* IL DIFETTO CHE SI VEDEVA: la tela era 460×400 fissi e il CSS la
+         stirava a `width:100%`. Misurato in finestra: 460 pixel disegnati
+         e mostrati su 764, cioè 1,66× — e su uno schermo a densità doppia
+         3,3×. Ogni tratto da un pixel arrivava spalmato su due, ed è
+         esattamente quello che si leggeva come «sfocata».
 
-      // segnalino "viaggio rapido" sui luoghi scoperti (diversi da quello attuale)
-      if(z.id!==G.mappaId && G.visitati && G.visitati[z.id]){
-        x.font='bold 11px Nunito, sans-serif';
-        const chip='▸ vai', cw=x.measureText(chip).width+12;
-        x.fillStyle='rgba(242,193,78,0.94)';
-        arrotondato(x, z.x+z.w-cw-8, z.y+z.h-25, cw, 17, 6); x.fill();
-        x.strokeStyle='#8a6417'; x.lineWidth=1;
-        arrotondato(x, z.x+z.w-cw-8, z.y+z.h-25, cw, 17, 6); x.stroke();
-        x.fillStyle='#3d2a08'; x.fillText(chip, z.x+z.w-cw-2, z.y+z.h-12.5);
+         Adesso la tela si fa grande quanto i pixel VERI che occupa
+         (larghezza in CSS × `devicePixelRatio`) e il contesto si scala di
+         conseguenza. Il disegno continua a parlare in 460×400 — non è
+         cambiata una coordinata — ma finisce su pixel interi, e le scritte
+         le compone il browser alla misura vera. È la stessa cura del testo
+         del mondo, che si scrive dopo l'ingrandimento invece che dentro
+         alla tela piccola e poi ingrandito a blocchetti. */
+      const cssW = c.clientWidth || W;
+      const k = Math.max(1, (cssW * (window.devicePixelRatio || 1)) / W);
+      if(Math.abs(k - ultimaK) < 0.02) return;    // la misura non è cambiata davvero
+      ultimaK = k;
+      c.width = Math.round(W*k); c.height = Math.round(H*k);
+      const x = c.getContext('2d');
+      x.setTransform(k, 0, 0, k, 0, 0);
+
+      /* --- pergamena --- */
+      const g=x.createLinearGradient(0,0,W,H);
+      g.addColorStop(0,'#f2e0bb'); g.addColorStop(0.5,'#e9d3ab'); g.addColorStop(1,'#dcc294');
+      x.fillStyle=g; x.fillRect(0,0,W,H);
+      for(let i=0;i<900;i++){
+        const bx=(ART.hsh(i,0,71)*W)|0, by=(ART.hsh(i,1,71)*H)|0;
+        x.fillStyle = ART.hsh(i,2,71)>0.5 ? 'rgba(150,110,60,0.07)' : 'rgba(255,240,210,0.10)';
+        x.fillRect(bx,by,2,2);
       }
+      // macchie e bordi bruciacchiati
+      for(let i=0;i<9;i++){
+        const bx=ART.hsh(i,3,71)*W, by=ART.hsh(i,4,71)*H, r=8+ART.hsh(i,5,71)*26;
+        const gg=x.createRadialGradient(bx,by,0,bx,by,r);
+        gg.addColorStop(0,'rgba(160,115,60,0.10)'); gg.addColorStop(1,'rgba(160,115,60,0)');
+        x.fillStyle=gg; x.beginPath(); x.arc(bx,by,r,0,6.3); x.fill();
+      }
+      const vg=x.createRadialGradient(W/2,H/2,W*0.3,W/2,H/2,W*0.66);
+      vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(120,80,40,0.22)');
+      x.fillStyle=vg; x.fillRect(0,0,W,H);
+
+      /* --- strade tratteggiate --- */
+      x.strokeStyle='#9a7048'; x.lineWidth=4; x.lineCap='round';
+      x.setLineDash([6,6]);
+      for(const s of strade){
+        x.beginPath(); x.moveTo(s[0],s[1]); x.lineTo(s[2],s[3]); x.stroke();
+      }
+      x.setLineDash([]); x.lineCap='butt';
+
+      /* --- regioni --- */
+      for(const z of zone){
+        const qui = z.id===zidQui;
+        const visto = scoperto(z);
+        // ombra
+        x.fillStyle='rgba(90,58,36,0.22)';
+        arrotondato(x, z.x+4, z.y+5, z.w, z.h, 9); x.fill();
+
+        // corpo
+        const zg=x.createLinearGradient(z.x,z.y,z.x,z.y+z.h);
+        zg.addColorStop(0,z.col); zg.addColorStop(1,z.col2);
+        x.fillStyle=zg;
+        arrotondato(x, z.x, z.y, z.w, z.h, 9); x.fill();
+        // trama interna
+        x.save();
+        arrotondato(x, z.x, z.y, z.w, z.h, 9); x.clip();
+        disegnaTrama(x, z);
+        x.restore();
+
+        /* NON ANCORA SCOPERTO: una velatura di pergamena sopra, e basta.
+           Prima un posto dove non si era mai stati si disegnava identico
+           agli altri, e l'unico modo di sapere dove si poteva andare era
+           cliccare e leggersi un rifiuto. Il primo tentativo lo copriva
+           del tutto, con un «?» al centro: misurato a schermo, il primo
+           giorno restava un riquadro solo su sette e la valle spariva —
+           e nei riquadri bassi il «?» finiva addosso all'etichetta. La
+           geografia deve restare leggibile (la nota qui sotto la insegna,
+           e sarebbe una promessa non mantenuta): quello che manca non è
+           il posto, è esserci stati. */
+        if(!visto){
+          x.fillStyle='rgba(236,220,188,0.62)';
+          arrotondato(x, z.x, z.y, z.w, z.h, 9); x.fill();
+        }
+
+        // cornice
+        if(!visto){ x.setLineDash([7,5]); x.strokeStyle='#a2825c'; x.lineWidth=2; }
+        else { x.strokeStyle = qui ? '#f2c14e' : '#5b3a24'; x.lineWidth = qui ? 4 : 2.5; }
+        arrotondato(x, z.x, z.y, z.w, z.h, 9); x.stroke();
+        x.setLineDash([]);
+
+        // etichetta su cartiglio
+        x.font='bold 15px Nunito, sans-serif';
+        const tw = x.measureText(z.n).width + 18;
+        x.fillStyle = visto ? 'rgba(246,230,200,0.92)' : 'rgba(246,230,200,0.7)';
+        arrotondato(x, z.x+9, z.y+8, tw, 22, 6); x.fill();
+        x.strokeStyle='#8a6038'; x.lineWidth=1.5;
+        arrotondato(x, z.x+9, z.y+8, tw, 22, 6); x.stroke();
+        x.fillStyle = visto ? '#4a3320' : '#8a6f4e';
+        x.fillText(z.n, z.x+18, z.y+24);
+
+        /* --- chi c'è adesso ---
+           Un bollino per abitante, del colore della sua maglia, in fila
+           in basso a sinistra. La mappa diceva dove sono i luoghi e non
+           diceva niente di chi ci si trova, che è la domanda vera quando
+           uno la apre a metà giornata: «dov'è Bruno?». Il colore è quello
+           con cui lo si vede in giro, quindi si impara guardandolo. */
+        if(visto){
+          const gente = chiCe(z);
+          /* In alto a DESTRA, di fronte al cartiglio del nome: il nome a
+             sinistra, chi ci sta a destra. In basso non ci stanno — lì
+             c'è il segnalino del viaggio rapido, e con quattro abitanti
+             in paese i due si toccavano. */
+          const rr=5, passo=13, y0=z.y+19;
+          const quanti = Math.min(gente.length, Math.floor((z.w*0.42)/passo));
+          for(let i=0;i<quanti;i++){
+            const N=gente[i], bx=z.x+z.w-12-(quanti-1-i)*passo;
+            x.fillStyle='rgba(60,40,24,0.30)';
+            x.beginPath(); x.arc(bx, y0+1.5, rr, 0, 6.3); x.fill();
+            x.fillStyle=(N.look && N.look.maglia) || '#b8543f';
+            x.beginPath(); x.arc(bx, y0, rr, 0, 6.3); x.fill();
+            x.strokeStyle='rgba(255,248,228,0.92)'; x.lineWidth=1.4;
+            x.beginPath(); x.arc(bx, y0, rr, 0, 6.3); x.stroke();
+          }
+          if(gente.length > quanti){
+            x.font='bold 10px Nunito, sans-serif'; x.fillStyle='#3a2a18';
+            x.fillText('+'+(gente.length-quanti), z.x+z.w-12-quanti*passo-6, y0+3.5);
+          }
+        }
+
+        /* Il segnalino in basso a destra dice, nello stesso posto, una di
+           due cose: «▸ vai» dove il viaggio rapido si può fare, «? da
+           scoprire» dove non si è mai stati. Stessa posizione apposta,
+           così l'occhio impara a guardare un angolo solo invece di
+           cercare l'assenza di qualcosa. */
+        if(!qui){
+          x.font='bold 11px Nunito, sans-serif';
+          const chip = visto ? '▸ vai' : '? da scoprire';
+          const cw = x.measureText(chip).width+12;
+          x.fillStyle = visto ? 'rgba(242,193,78,0.94)' : 'rgba(247,235,211,0.90)';
+          arrotondato(x, z.x+z.w-cw-8, z.y+z.h-25, cw, 17, 6); x.fill();
+          x.strokeStyle = visto ? '#8a6417' : '#9c7f58'; x.lineWidth=1;
+          arrotondato(x, z.x+z.w-cw-8, z.y+z.h-25, cw, 17, 6); x.stroke();
+          x.fillStyle = visto ? '#3d2a08' : '#6f583c';
+          x.fillText(chip, z.x+z.w-cw-2, z.y+z.h-12.5);
+        }
+      }
+
+      /* --- segnalino "sei qui" --- */
+      const z = zone.find(z=>z.id===zidQui);
+      if(z){
+        const m=G.mappa();
+        const pxp = z.x + 10 + (G.p.px/(m.w*32))*(z.w-20);
+        const pyp = z.y + 34 + (G.p.py/(m.h*32))*(z.h-44);
+        x.fillStyle='rgba(0,0,0,0.25)';
+        x.beginPath(); x.ellipse(pxp,pyp+7,7,3,0,0,6.3); x.fill();
+        // spillo
+        x.strokeStyle='#7a2f22'; x.lineWidth=3;
+        x.beginPath(); x.moveTo(pxp,pyp+6); x.lineTo(pxp,pyp-4); x.stroke();
+        x.fillStyle='#d9694f';
+        x.beginPath(); x.arc(pxp,pyp-8,6.5,0,6.3); x.fill();
+        x.strokeStyle='#fff8e4'; x.lineWidth=2; x.stroke();
+        x.fillStyle='#fff8e4';
+        x.beginPath(); x.arc(pxp-2,pyp-10,2,0,6.3); x.fill();
+      }
+
+      /* --- rosa dei venti --- */
+      const rx=44, ry=H-42;
+      x.strokeStyle='#8a6038'; x.lineWidth=2;
+      x.beginPath(); x.arc(rx,ry,20,0,6.3); x.stroke();
+      x.globalAlpha=0.5; x.beginPath(); x.arc(rx,ry,14,0,6.3); x.stroke(); x.globalAlpha=1;
+      for(let i=0;i<4;i++){
+        const a=i*Math.PI/2 - Math.PI/2;
+        x.fillStyle = i===0 ? '#c0392b' : '#8a6038';
+        x.beginPath();
+        x.moveTo(rx+Math.cos(a)*19, ry+Math.sin(a)*19);
+        x.lineTo(rx+Math.cos(a+2.3)*6, ry+Math.sin(a+2.3)*6);
+        x.lineTo(rx+Math.cos(a-2.3)*6, ry+Math.sin(a-2.3)*6);
+        x.closePath(); x.fill();
+      }
+      x.fillStyle='#5b3a24'; x.font='bold 11px Nunito, sans-serif';
+      x.fillText('N', rx-4, ry-24);
     }
 
-    /* --- segnalino "sei qui" (le miniere profonde ricadono sulla Miniera) --- */
-    const zid = (G.mappaId==='grotta2'||G.mappaId==='grotta3') ? 'grotta' : G.mappaId;
-    const z = zone.find(z=>z.id===zid);
-    if(z){
-      const m=G.mappa();
-      const pxp = z.x + 10 + (G.p.px/(m.w*32))*(z.w-20);
-      const pyp = z.y + 34 + (G.p.py/(m.h*32))*(z.h-44);
-      x.fillStyle='rgba(0,0,0,0.25)';
-      x.beginPath(); x.ellipse(pxp,pyp+7,7,3,0,0,6.3); x.fill();
-      // spillo
-      x.strokeStyle='#7a2f22'; x.lineWidth=3;
-      x.beginPath(); x.moveTo(pxp,pyp+6); x.lineTo(pxp,pyp-4); x.stroke();
-      x.fillStyle='#d9694f';
-      x.beginPath(); x.arc(pxp,pyp-8,6.5,0,6.3); x.fill();
-      x.strokeStyle='#fff8e4'; x.lineWidth=2; x.stroke();
-      x.fillStyle='#fff8e4';
-      x.beginPath(); x.arc(pxp-2,pyp-10,2,0,6.3); x.fill();
-    }
+    disegna();
+    /* E subito dopo, di nuovo. `U.modal` costruisce il corpo PRIMA di
+       attaccarlo alla pagina, quindi alla prima passata `clientWidth` è
+       zero e la tela nasce alla misura di ripiego, cioè 460 — lo stesso
+       numero di prima, e la sfocatura sembrava non essere mai stata
+       tolta. Il rinvio a zero millisecondi arriva quando la finestra è in
+       pagina e misurata; è un giro in più solo la prima volta.
 
-    /* --- rosa dei venti --- */
-    const rx=44, ry=H-42;
-    x.strokeStyle='#8a6038'; x.lineWidth=2;
-    x.beginPath(); x.arc(rx,ry,20,0,6.3); x.stroke();
-    x.globalAlpha=0.5; x.beginPath(); x.arc(rx,ry,14,0,6.3); x.stroke(); x.globalAlpha=1;
-    for(let i=0;i<4;i++){
-      const a=i*Math.PI/2 - Math.PI/2;
-      x.fillStyle = i===0 ? '#c0392b' : '#8a6038';
-      x.beginPath();
-      x.moveTo(rx+Math.cos(a)*19, ry+Math.sin(a)*19);
-      x.lineTo(rx+Math.cos(a+2.3)*6, ry+Math.sin(a+2.3)*6);
-      x.lineTo(rx+Math.cos(a-2.3)*6, ry+Math.sin(a-2.3)*6);
-      x.closePath(); x.fill();
+       Non basta il ResizeObserver qui sotto: quello scatta con i passi di
+       rendering, che nel pannello del browser non avvengono mai, e la
+       prova diceva ancora 460 lasciando credere che la correzione non
+       funzionasse. */
+    setTimeout(disegna, 0);
+
+    /* Se la finestra cambia misura — o il telefono gira — la tela
+       tornerebbe stirata come prima: si rifà alla misura nuova.
+       L'osservatore si stacca da solo quando la finestra si chiude e la
+       tela esce dalla pagina, così non resta appeso a un elemento morto. */
+    if(window.ResizeObserver){
+      const oss = new ResizeObserver(()=>{
+        if(!c.isConnected){ oss.disconnect(); return; }
+        disegna();
+      });
+      oss.observe(c);
     }
-    x.fillStyle='#5b3a24'; x.font='bold 11px Nunito, sans-serif';
-    x.fillText('N', rx-4, ry-24);
 
     // --- viaggio rapido: clic su un luogo scoperto ---
     c.style.cursor='pointer';
@@ -675,7 +800,7 @@ U.mappa = function(G){
       const cxp=(ev.clientX-r.left)*(W/r.width), cyp=(ev.clientY-r.top)*(H/r.height);
       for(const zn of zone){
         if(cxp>=zn.x && cxp<=zn.x+zn.w && cyp>=zn.y && cyp<=zn.y+zn.h){
-          if(zn.id===G.mappaId) return;
+          if(zn.id===zidQui) return;
           if(G.visitati && G.visitati[zn.id]){ U.chiudiModal(); SND.play('menu'); G.viaggiaRapido(zn.id); }
           else U.toast('Non hai ancora scoperto «'+zn.n+'». Arrivaci a piedi la prima volta.','bad');
           return;
@@ -683,10 +808,10 @@ U.mappa = function(G){
       }
     };
 
-    body.appendChild(c);
-
     const n=document.createElement('div'); n.className='muted'; n.style.marginTop='12px';
     n.innerHTML = `<b>Tocca un luogo con «▸ vai» per il viaggio rapido.</b> `+
+      `I riquadri di pergamena sono i posti dove non sei ancora stato: ci si arriva a piedi la prima volta. `+
+      `I bollini sono gli abitanti che si trovano lì adesso, del colore della loro maglia. `+
       `Sei in: ${G.mappa().nome}. `+
       `Dal podere: <b>est</b> il paese, <b>sud</b> il bosco. `+
       `Dal paese: <b>nord</b> la miniera (e ancora su il passo innevato), <b>sud-est</b> la piazza e la costa. `+
