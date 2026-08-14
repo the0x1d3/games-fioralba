@@ -721,14 +721,27 @@ R.disegna = function(G){
     sx.drawImage(ART.water(stag, wf), (x*T+ox)|0, (y*T+oy)|0);
   }
 
-  /* ---------- 2. TERRENO A BLOCCHI ---------- */
-  const c0 = Math.max(0, (x0/CH)|0), c1 = ((x1/CH)|0);
-  const r0 = Math.max(0, (y0/CH)|0), r1 = ((y1/CH)|0);
-  for(let cy=r0; cy<=r1; cy++) for(let cx=c0; cx<=c1; cx++){
-    sx.drawImage(chunk(m,cx,cy,stag), (cx*CH*T+ox)|0, (cy*CH*T+oy)|0);
-  }
+  /* ---------- 2. SCHIUMA SULLE RIVE (animata), SOTTO AL TERRENO ----------
 
-  /* ---------- 3. SCHIUMA SULLE RIVE (animata) ---------- */
+     Stava dopo il terreno, ed è il difetto segnalato: «una sfumatura
+     bianca sul prato vicino all'acqua». Misurato attraversando una riva
+     un pixel per volta: dal blu si passava a otto pixel di verde slavato
+     — `#8cb07b`, che è esattamente l'erba `#659d4b` con sopra il 29% del
+     bianco della schiuma (0,55 dello sprite × 0,55 del contesto) — e poi
+     all'erba vera.
+
+     Il motivo è che l'erba SBORDA sulla casella d'acqua: ha priorità 6
+     contro 0, quindi il raccordo le disegna dentro una frangia dentellata
+     di prato, ed è quella frangia che fa la riva bella e irregolare. La
+     schiuma però si disegnava sul bordo della casella, cioè proprio lì
+     sopra, e invece di essere spuma sull'acqua diventava una velatura
+     bianca sull'erba — squadrata sui confini delle caselle, mentre la
+     riva accanto è frastagliata, ed è per quello che si notava.
+
+     Adesso la schiuma va prima: l'acqua, la spuma, e poi il terreno che
+     ci passa sopra. Dove l'erba sborda la copre, dove l'acqua è scoperta
+     resta — quindi la spuma si vede fra i denti della frangia invece che
+     addosso al prato. */
   for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
     if(WORLD.terreno(m,x,y)!=='acqua') continue;
     if(eFontana(m,x,y)) continue;              // niente schiuma sul bordo della vasca
@@ -741,6 +754,13 @@ R.disegna = function(G){
       sx.drawImage(ART.schiuma(d, v%3, ((t/260|0)+x+y)%4), px, py);
       sx.globalAlpha=1;
     }
+  }
+
+  /* ---------- 3. TERRENO A BLOCCHI ---------- */
+  const c0 = Math.max(0, (x0/CH)|0), c1 = ((x1/CH)|0);
+  const r0 = Math.max(0, (y0/CH)|0), r1 = ((y1/CH)|0);
+  for(let cy=r0; cy<=r1; cy++) for(let cx=c0; cx<=c1; cx++){
+    sx.drawImage(chunk(m,cx,cy,stag), (cx*CH*T+ox)|0, (cy*CH*T+oy)|0);
   }
 
   /* ---------- 3b. RIFLESSI SULL'ACQUA ----------
