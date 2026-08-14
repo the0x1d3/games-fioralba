@@ -1027,6 +1027,25 @@ W.rigeneraCosta = function(m, seed){
     setObj(m,x,y,{t:'ramo', v:(R()*3)|0, marea:true});
     legni++;
   }
+
+  /* Ogni tanto, una BOTTIGLIA chiusa. Non ha `marea` addosso, di
+     proposito: una bottiglia vista di sfuggita e ripescata il giorno
+     dopo deve essere ancora lì — la marea porta, ma un messaggio non se
+     lo riprende. E finché ce n'è una da aprire non ne arriva un'altra:
+     due bottiglie sulla stessa spiaggia farebbero collezione, e queste
+     sono apparizioni. */
+  let cera=false;
+  for(const o of m.obj) if(o && o.t==='bottiglia'){ cera=true; break; }
+  if(!cera && R()<0.35){
+    let t2=0;
+    while(t2<300){
+      t2++;
+      const x=1+((R()*(m.w-2))|0), y=1+((R()*(m.h-2))|0);
+      if(!libero(m,x,y) || !battigia(x,y)) continue;
+      setObj(m,x,y,{t:'bottiglia'});
+      break;
+    }
+  }
 };
 
 /* ===================================================================

@@ -2116,6 +2116,31 @@ verifica('il ponte non si tappa, e le costruzioni non seppelliscono il campo', (
 
 /* =================================================================== */
 
+/* Le bottiglie del mare si leggono UNA volta: il gioco si segna l'id di
+   quelle già aperte, quindi un id doppio farebbe sparire una lettera —
+   letta la prima, la seconda risulterebbe già letta senza esserlo mai
+   stata. E i testi devono avere la traduzione: DATA si traduce sul
+   posto per campi dichiarati, e un campo senza voce nel catalogo non fa
+   rumore — l'inglese mostrerebbe l'italiano in silenzio. Il confronto
+   col sorgente regge perché le chiavi del catalogo sono fra virgolette
+   doppie e i testi non ne contengono. */
+verifica('ogni bottiglia del mare si legge, una volta e in due lingue', () => {
+  const problemi = [];
+  const visti = new Set();
+  const en = fs.readFileSync(path.join(RADICE, 'js/lingua-en.js'), 'utf8');
+  for (const b of DATA.BOTTIGLIE || []) {
+    if (!b.id) { problemi.push('una bottiglia è senza id'); continue; }
+    if (visti.has(b.id)) problemi.push(`id doppio «${b.id}»: la seconda lettera non arriverebbe mai`);
+    visti.add(b.id);
+    if (!b.testo || !b.firma) problemi.push(`la bottiglia «${b.id}» è senza testo o senza firma`);
+    for (const campo of ['testo', 'firma'])
+      if (b[campo] && en.indexOf(b[campo]) < 0)
+        problemi.push(`la bottiglia «${b.id}» ha un ${campo} senza traduzione inglese`);
+  }
+  if (!(DATA.BOTTIGLIE || []).length) problemi.push('DATA.BOTTIGLIE è vuoto: la bottiglia si aprirebbe sul niente');
+  return problemi;
+});
+
 const larghezza = 62;
 console.log('\n  Fioralba — coerenza dei dati\n  ' + '─'.repeat(larghezza));
 for (const nome of fatti) console.log('  [32m✓[0m ' + nome);

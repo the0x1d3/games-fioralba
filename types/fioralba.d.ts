@@ -328,6 +328,8 @@ interface FioData {
   POSTI_VEGLIA: Record<string, number[][]>;
   /** Dove sta ognuno il giorno della sagra, in piazza: coppie di caselle. */
   POSTI_SAGRA: Record<string, number[][]>;
+  /** I messaggi nelle bottiglie che la marea porta alla Costa. */
+  BOTTIGLIE: { id:string; testo:string; firma:string }[];
   /** Il frutto del cespuglio, stagione per stagione. */
   CESPUGLIO: Record<string, string>;
   /** Coefficienti dei bonus per abilità: li leggono gioco e scheda. */

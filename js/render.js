@@ -1365,6 +1365,23 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
     }
     case 'fontana': break;
 
+    /* La bottiglia della marea, coricata sulla sabbia. Piccola apposta
+       — è una cosa da notare, non un monumento — ma col vetro chiaro e
+       un luccichio che pulsa piano, se no in mezzo a sassi e rami non la
+       vede nessuno e la lettera resta lì per sempre. */
+    case 'bottiglia': {
+      const y0=py+18;
+      ART.px(sx, px+7,  y0+2, 4, 4, '#8a6a3e');            // il tappo
+      ART.px(sx, px+11, y0+1, 12, 6, '#7fb3a8');           // il corpo, di taglio
+      ART.px(sx, px+21, y0,   4, 8, '#6fa397');            // il fondo, più largo
+      ART.px(sx, px+12, y0+2, 9, 2, '#aed4c9');            // la luce sul vetro
+      ART.px(sx, px+14, y0+3, 5, 3, '#e8dcae');            // il foglio, dentro
+      const lume = 0.35 + Math.sin(t*0.003 + gx*2)*0.25;
+      sx.globalAlpha = Math.max(0, lume);
+      ART.px(sx, px+12, y0+1, 2, 2, '#ffffff');
+      sx.globalAlpha = 1;
+      break;
+    }
     /* Una barca ormeggiata. Serviva perché la Piazza del Porto un porto
        non ce l'aveva: lastricato, fontana e basta, e il nome prometteva
        una cosa che non si vedeva da nessuna parte.

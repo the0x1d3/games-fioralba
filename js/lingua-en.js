@@ -2093,6 +2093,25 @@ Object.assign(window.LINGUA_EN, {
   'Also found on <b>laden bushes</b> in <b>{0}</b>, by cutting them with the <b>scythe</b>.',
 "Si raccoglie da terra sul <b>Passo di montagna</b>, dove è sempre inverno: c'è tutto l'anno.":
   'Picked off the ground on the <b>mountain Pass</b>, where it is always winter: it is there all year.',
+// --- le bottiglie del mare ---
+"Se leggi questo, il faro di Capo Gerso è ancora spento. Accendetene uno anche piccolo, sulla vostra costa: da qui fuori, una luce qualsiasi è già una direzione.":
+  'If you are reading this, the lighthouse at Cape Gerso is still dark. Light one of your own, however small, on your shore: from out here, any light at all is already a direction.',
+"Il guardiano del faro, senza faro": 'The lighthouse keeper, without a lighthouse',
+"Naufragata la nave, salvato il quaderno delle ricette. Le cose importanti galleggiano. Se il mare vi porta un pesce che non conoscete, cucinatelo con quello che avete: le ricette migliori nascono così.":
+  'The ship went down, the recipe book survived. Important things float. If the sea brings you a fish you do not know, cook it with what you have: the best recipes are born that way.',
+"Un cuoco di bordo": 'A ship’s cook',
+"Ho scritto il mio nome sulla sabbia e la marea se l'è preso. Il nonno dice che adesso ce l'ha il mare, e che il mare non dimentica niente. Scrivo anche il tuo, se mi dici come ti chiami.":
+  'I wrote my name in the sand and the tide took it. Grandpa says the sea has it now, and the sea forgets nothing. I will write yours too, if you tell me what it is.',
+"Una bambina di un'altra costa": 'A little girl from another shore',
+"Trent'anni di mare e una cosa sola ho capito: i pesci grossi stanno dove l'acqua è alta e la pazienza è lunga. Se avete un molo, pescate dalla punta. Se non ce l'avete, costruitelo.":
+  'Thirty years at sea and I have understood one thing: the big fish are where the water is deep and the patience is long. If you have a jetty, fish from the far end. If you do not, build one.',
+"Uno che non torna": 'One who is not coming back',
+"Sto disegnando la mappa di tutte le coste. Alla vostra manca ancora un nome sulla mia carta: ho scritto «la valle che tiene accesa una lanterna». Ditemi se sbaglio.":
+  'I am drawing a map of every coast. Yours still has no name on my chart: I wrote “the valley that keeps a lantern lit”. Tell me if I am wrong.',
+"La cartografa del Levante": 'The cartographer of the Levant',
+"Una bottiglia dal mare": 'A bottle from the sea',
+"Dentro c'è una ricetta, sbiadita dall'acqua ma leggibile: {0}!": 'Inside is a recipe, water-faded but readable: {0}!',
+"Dentro ci sono {0} monete, vecchie ma buone.": 'Inside are {0} coins, old but good.',
 "Si raccoglie sulla <b>battigia della Costa</b>, fra gli scogli e le pozze di marea. Ogni mattina il mare ne riporta.":
   'Gathered along the <b>shoreline of the Coast</b>, among the rocks and tide pools. Every morning the sea brings more.',
 "Si raccoglie da terra in <b>{0}</b>, sparso per la valle — prato, bosco, radure. Nelle altre stagioni non c'è.":

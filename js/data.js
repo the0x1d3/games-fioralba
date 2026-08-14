@@ -1690,6 +1690,33 @@ D.PASSANTI = [
     ] }
 ];
 
+/* ------------------------------------------------------------------
+   LE BOTTIGLIE DEL MARE — i messaggi che la marea porta a riva.
+
+   Terza delle cose da fare della Costa. Ogni tanto sulla battigia c'è
+   una bottiglia chiusa: dentro c'è una di queste lettere — una volta
+   sola, il gioco si segna quali hai già letto — oppure, finite le
+   lettere, una ricetta sbiadita dall'acqua o qualche moneta.
+
+   Nessuna è firmata da un abitante della valle, di proposito: vengono
+   dal mare, cioè da fuori, e sono l'unica finestra su un mondo più
+   grande che il gioco non mostra mai. Il controllo che pretende che
+   ogni lettera sia firmata da qualcuno che esiste vale per LETTERE, non
+   per queste: qui la firma è parte del racconto.
+   ------------------------------------------------------------------ */
+D.BOTTIGLIE = [
+  { id:'faro',      testo:'Se leggi questo, il faro di Capo Gerso è ancora spento. Accendetene uno anche piccolo, sulla vostra costa: da qui fuori, una luce qualsiasi è già una direzione.',
+                    firma:'Il guardiano del faro, senza faro' },
+  { id:'cuoco',     testo:'Naufragata la nave, salvato il quaderno delle ricette. Le cose importanti galleggiano. Se il mare vi porta un pesce che non conoscete, cucinatelo con quello che avete: le ricette migliori nascono così.',
+                    firma:'Un cuoco di bordo' },
+  { id:'bambina',   testo:'Ho scritto il mio nome sulla sabbia e la marea se l\'è preso. Il nonno dice che adesso ce l\'ha il mare, e che il mare non dimentica niente. Scrivo anche il tuo, se mi dici come ti chiami.',
+                    firma:'Una bambina di un\'altra costa' },
+  { id:'pescatore', testo:'Trent\'anni di mare e una cosa sola ho capito: i pesci grossi stanno dove l\'acqua è alta e la pazienza è lunga. Se avete un molo, pescate dalla punta. Se non ce l\'avete, costruitelo.',
+                    firma:'Uno che non torna' },
+  { id:'cartografa',testo:'Sto disegnando la mappa di tutte le coste. Alla vostra manca ancora un nome sulla mia carta: ho scritto «la valle che tiene accesa una lanterna». Ditemi se sbaglio.',
+                    firma:'La cartografa del Levante' }
+];
+
 D.CONSIGLI = [
   'Dormi prima di mezzanotte o ti sveglierai a pezzi.',
   'La pioggia annaffia il campo al posto tuo.',

@@ -161,7 +161,8 @@ const CAMPI = [
   ['CONSIGLI',    null],
   ['GIORNI_SETTIMANA', null],
   ['UPG_NOMI',    null],
-  ['PASSANTI',    ['dice']]      // solo quello che dicono: `id` e `dove` sono chiavi
+  ['PASSANTI',    ['dice']],     // solo quello che dicono: `id` e `dove` sono chiavi
+  ['BOTTIGLIE',   ['testo','firma']]   // l'`id` è la memoria di quali hai già letto
 ];
 
 /* l'italiano originale, preso una volta sola al primo avvio: è la

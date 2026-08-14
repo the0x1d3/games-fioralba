@@ -76,7 +76,7 @@ function statoIniziale(){
     arrediSpostati: [],
     gatto:{ affetto:0, giorno:-1, nome:null },
     obiettiviRiscossi:{}, sagra:null, mercante:{presente:false, giorno:-1, stock:[]},
-    visitati:{podere:true}, collezione:{},
+    visitati:{podere:true}, collezione:{}, bottiglieLette:[],
     vicende:{}, persona:{},
     trame:{ torta:{avviata:false, segreto:false, fatta:false},
             pesceluna:{avviata:false, preso:false, fatta:false},
@@ -1494,6 +1494,48 @@ function raccogliForaggio(tx,ty,o){
 /* ===================================================================
    INTERAZIONE (E / clic destro)
    =================================================================== */
+/* --- LA BOTTIGLIA DAL MARE ---
+   Dentro c'è una delle lettere di DATA.BOTTIGLIE, una volta sola:
+   `G.bottiglieLette` ricorda quali sono già arrivate, e viaggia nel
+   salvataggio. Finite le lettere, una ricetta sbiadita dall'acqua — la
+   stessa porta di Marisol, `ricetteNote` — e finite anche quelle,
+   qualche moneta vecchia: una bottiglia che si apre e non dà niente è
+   una promessa rotta, e il mare non ne fa. */
+function apriBottiglia(m, i){
+  m.obj[i] = null;
+  SND.play('acqua');
+  const lette = G.bottiglieLette;
+  const chiuse = DATA.BOTTIGLIE.filter(b => lette.indexOf(b.id) < 0);
+  if(chiuse.length){
+    const b = chiuse[(Math.random()*chiuse.length)|0];
+    lette.push(b.id);
+    UI.modal('Una bottiglia dal mare', body=>{
+      const t=document.createElement('div');
+      t.style.cssText='font-style:italic;line-height:1.65;margin-bottom:14px';
+      t.textContent = b.testo;
+      const f=document.createElement('div');
+      f.style.cssText='text-align:right;opacity:.75';
+      f.textContent = '— ' + b.firma;
+      body.appendChild(t); body.appendChild(f);
+    });
+    SND.play('regalo');
+    return;
+  }
+  const nuove = DATA.CUCINA.filter(r=>!G.ricetteNote[r.id]);
+  if(nuove.length){
+    const r = nuove[(Math.random()*nuove.length)|0];
+    G.ricetteNote[r.id] = true;
+    UI.toast(fraseF("Dentro c'è una ricetta, sbiadita dall'acqua ma leggibile: {0}!", IT.nome(r.id)), 'gold', r.id);
+    SND.play('livello');
+    return;
+  }
+  const n = 40 + ((Math.random()*80)|0);
+  G.oro += n; G.registraVendita(0);
+  UI.toast(fraseF('Dentro ci sono {0} monete, vecchie ma buone.', n), 'gold');
+  SND.play('regalo');
+  G.aggiornaHUD();
+}
+
 function interagisci(){
   const p=G.p, m=G.mappa();
   const px=(p.px/T)|0, py=(p.py/T)|0;
@@ -1518,6 +1560,7 @@ function interagisci(){
 
     if(o.t==='porta'){ apriPorta(o.ed); return; }
     if(o.t==='consegna'){ SOLSTIZIO.apriConsegna(); return; }
+    if(o.t==='bottiglia'){ apriBottiglia(m, i); return; }
 
     /* Col riordino acceso E prende il mobile invece di usarlo. Le porte
        e i muri restano quello che sono, sopra: una casa senza uscita
