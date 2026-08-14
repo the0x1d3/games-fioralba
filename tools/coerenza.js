@@ -1319,8 +1319,8 @@ verifica('index.html carica tutti i js, nell\'ordine portante', () => {
 /* --- e adesso: quanto pesa davvero, quell'ordine ---
 
    «L'ordine degli script è portante» stava scritto in due posti, e non
-   l'aveva misurato nessuno. Misurato: fra i moduli ci sono 2.655
-   riferimenti incrociati, e 2.641 stanno DENTRO le funzioni — cioè
+   l'aveva misurato nessuno. Misurato: fra i moduli ci sono 2.669
+   riferimenti incrociati, e 2.654 stanno DENTRO le funzioni — cioè
    avvengono a partita avviata, quando i file ci sono tutti da un pezzo,
    e dell'ordine non sanno niente. Al caricamento ne restano sei, ed
    è l'elenco qui sotto.
@@ -1337,7 +1337,7 @@ verifica('index.html carica tutti i js, nell\'ordine portante', () => {
      risultava un vincolo che non esiste — la stessa omonimia che aveva
      già fatto leggere male l'elenco delle dipendenze di game.js.
 
-   Il pericolo non sono questi nove, che si reggono. È il decimo: una
+   Il pericolo non sono questi dieci, che si reggono. È l'undicesimo: una
    riga come `SND.init()` messa al livello del file funziona finché
    l'ordine regge, non rompe niente e non lascia traccia — e il giorno
    che qualcuno sposta uno <script> il gioco si apre bianco, con l'errore
@@ -1359,10 +1359,11 @@ const VINCOLI_NOTI = {
   'game.js|traguardi.js':    'Object.assign(G, TRAGUARDI)',
   'game.js|abitanti.js':     'Object.assign(G, ABITANTI)',
   'game.js|paese.js':        'Object.assign(G, PAESE)',
-  'partite.js|ui.js':        'const U = UI: le nove finestre delle partite si appendono allo stesso oggetto UI'
+  'partite.js|ui.js':        'const U = UI: le nove finestre delle partite si appendono allo stesso oggetto UI',
+  'diario.js|ui.js':         'const U = UI, e const ico = U.ico: il Diario e la Mappa si appendono allo stesso oggetto'
 };
 
-verifica(TS ? 'nessuno script pretende di stare dopo un altro, oltre ai nove noti'
+verifica(TS ? 'nessuno script pretende di stare dopo un altro, oltre ai dieci noti'
             : 'ordine di caricamento: SALTATO, manca typescript (fai npm install)', () => {
   if (!TS) return [];
   const dir = path.join(RADICE, 'js');
@@ -1860,8 +1861,14 @@ verifica('ogni collezione ha il suo premio, e i premi esistono', () => {
   }
 
   /* Il «cosa serve» delle braci si apre solo col ponte: senza, è un
-     elenco di offerte per un posto dove non si può ancora andare. */
-  const ui = fs.readFileSync(path.join(RADICE, 'js', 'ui.js'), 'utf8')
+     elenco di offerte per un posto dove non si può ancora andare.
+     Quella riga sta nel Diario, che dal 14 agosto 2026 è in diario.js e
+     non più in ui.js: è la quarta volta che uno stacco fa cadere un
+     controllo che cerca del codice per nome dentro a un file preciso, e
+     ogni volta la correzione è la stessa — guardare l'interfaccia
+     intera invece di uno dei file in cui è divisa. */
+  const ui = ['ui.js', 'diario.js', 'partite.js']
+    .map(f => fs.readFileSync(path.join(RADICE, 'js', f), 'utf8')).join('\n')
     .replace(/\/\*[\s\S]*?\*\//g, '');
   if (!/G\.costruzioni && G\.costruzioni\.ponte/.test(ui))
     problemi.push('il «cosa serve» delle braci non è più legato al ponte');
