@@ -1587,21 +1587,64 @@ W.ristampaCosta = function(m){
   riparaSfrattati(m, sfrattati, 23, 3);          // vicino all'uscita per la Piazza
 };
 
-W.ristampaBurrone = function(m){
+W.ristampaBurrone = function(m, ponteCostruito){
   if(!m || !m.burrone) return;
   const p = m.pontePos;
   const nelPonte = (x,y) => p && x>=p.x && x<p.x+p.w && y>=p.y && y<p.y+p.h;
   const sfrattati = [];
 
+  /* Anche il CORRIDOIO DEL PONTE si decide qui, non si salta.
+
+     Prima le caselle nelPonte venivano saltate «per non toccare il
+     ponte» — cioè restavano come le diceva il salvataggio. Ma se il
+     varco di una versione precedente stava in un altro punto, il
+     salvataggio in quelle caselle ha roccia o vuoto: due o tre blocchi
+     INVISIBILI dentro al corridoio, sotto la passerella disegnata, e il
+     ponte comprato e pagato non si attraversava. Segnalato così:
+     «due blocchi invisibili che non te lo fanno attraversare».
+
+     Quindi: assi se il ponte c'è, vuoto se non c'è, deciso da noi. */
   for(const b of m.burrone){
     for(let y=b.y; y<b.y+b.h; y++) for(let x=b.x; x<b.x+b.w; x++){
-      if(!W.dentro(m,x,y) || nelPonte(x,y)) continue;
+      if(!W.dentro(m,x,y)) continue;
       const i = W.idx(m,x,y);
-      m.g[i] = ti('roccia');
+      m.g[i] = nelPonte(x,y) ? ti(ponteCostruito ? 'assi' : 'vuoto') : ti('roccia');
       if(m.suolo) m.suolo[i] = null;
       const o = m.obj[i];
       if(o && (o.t==='macchina' || o.t==='mobile')) sfrattati.push(o);
       m.obj[i] = null;
+    }
+  }
+
+  /* E le ASSI ORFANE nella fascia attorno: il ponte di una versione
+     vecchia, rimasto scritto nel salvataggio fuori dal burrone attuale,
+     si vede come una lingua di passerella che non porta da nessuna
+     parte — «si vede anche male, sinceramente». Si torna a erba, solo
+     nella fascia stretta attorno al burrone: più in là le assi possono
+     essere una superficie posata dal giocatore, e quelle non si toccano. */
+  const MARGINE = 2;
+  for(const b of m.burrone){
+    for(let y=b.y-MARGINE; y<b.y+b.h+MARGINE; y++)
+      for(let x=b.x-MARGINE; x<b.x+b.w+MARGINE; x++){
+        if(!W.dentro(m,x,y) || nelPonte(x,y)) continue;
+        const i = W.idx(m,x,y);
+        if(m.g[i] === ti('assi')) m.g[i] = ti('erba');
+      }
+  }
+  /* E lungo le COLONNE del ponte la scia si insegue più a fondo: il
+     ponte vecchio era più lungo di quello attuale, e la sua coda scende
+     oltre il margine di due — misurato su un salvataggio avvelenato
+     apposta, a margine 2 restavano assi a quattro e cinque caselle dal
+     corridoio. Sei caselle sopra e sotto, solo nelle colonne del ponte:
+     lì un'asse posata dal giocatore sarebbe comunque incollata alla
+     passerella, e non si distinguerebbe dalla scia nemmeno a occhio. */
+  if(p){
+    for(let y=p.y-6; y<p.y+p.h+6; y++){
+      if(!W.dentro(m,p.x,y) || nelPonte(p.x,y)) continue;
+      for(let x=p.x; x<p.x+p.w; x++){
+        const i = W.idx(m,x,y);
+        if(m.g[i] === ti('assi')) m.g[i] = ti('erba');
+      }
     }
   }
 

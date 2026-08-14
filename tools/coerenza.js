@@ -2059,10 +2059,41 @@ verifica('il ponte non si tappa, e le costruzioni non seppelliscono il campo', (
   const tappato = passa(b);
   if (tappato.presi >= tappato.sud)
     problemi.push('tre casse in mezzo al ponte non lo tappano: questa prova non sa più distinguere');
-  WORLD.ristampaBurrone(b);
+  WORLD.ristampaBurrone(b, true);
   const dopo = passa(b);
   if (dopo.presi < dopo.sud)
     problemi.push('ristampaBurrone non sgombra più il corridoio del ponte: una partita può restare bloccata di là dal burrone');
+
+  /* IL SALVATAGGIO NON DECIDE IL CORRIDOIO. Segnalato in partita: «il
+     ponte ha due blocchi invisibili che non te lo fanno attraversare».
+     Il terreno viaggia nel salvataggio, e se il varco di una versione
+     precedente stava in un altro punto, nelle caselle del ponte attuale
+     il salvataggio dice roccia o vuoto: la ristampa le SALTAVA «per non
+     toccare il ponte», e i blocchi restavano lì, invisibili sotto la
+     passerella disegnata. Qui si simula esattamente quel salvataggio:
+     ponte costruito, corridoio sporcato, e dopo la ristampa si deve
+     passare. */
+  for (let x = p.x; x < p.x+p.w; x++)
+    b.g[WORLD.idx(b, x, p.y+1)] = WORLD.ti(x===p.x+1 ? 'roccia' : 'vuoto');
+  const sporco = passa(b);
+  if (sporco.presi >= sporco.sud)
+    problemi.push('il corridoio sporcato non blocca: questa prova non sa più distinguere');
+  WORLD.ristampaBurrone(b, true);
+  const pulito = passa(b);
+  if (pulito.presi < pulito.sud)
+    problemi.push('un salvataggio col varco vecchio lascia blocchi invisibili sul ponte: il ponte pagato non si attraversa');
+  /* e senza ponte il corridoio deve restare CHIUSO anche se il
+     salvataggio lo diceva aperto: assi scritte da chissà quando non
+     regalano il passaggio. Si guarda il corridoio stesso, non la BFS:
+     a sud-ovest del burrone si arriva a piedi da sempre, ed è giusto. */
+  for (let y = p.y; y < p.y+p.h; y++) for (let x = p.x; x < p.x+p.w; x++)
+    b.g[WORLD.idx(b, x, y)] = WORLD.ti('assi');
+  WORLD.ristampaBurrone(b, false);
+  for (let y = p.y; y < p.y+p.h; y++) for (let x = p.x; x < p.x+p.w; x++)
+    if (!WORLD.solido(b, x, y)){
+      problemi.push('senza ponte la ristampa lascia il varco aperto: la radura si raggiunge gratis');
+      y = p.y+p.h; break;
+    }
 
   /* --- il campo sotto le costruzioni --- */
   const m = WORLD.crea().podere;

@@ -276,7 +276,7 @@ function applicaSalvataggio(raw){
      compreso: se il salvataggio è di prima della correzione, il burrone
      è ancora quello corto e la radura resta aggirabile a piedi. Il
      burrone lo decidiamo noi, non il giocatore, quindi si ristampa. */
-  WORLD.ristampaBurrone(G.maps.bosco);
+  WORLD.ristampaBurrone(G.maps.bosco, !!G.costruzioni.ponte);
   /* Stessa ragione, e stesso rimedio, per il porto e la costa: la
      Piazza del Porto ha preso l'insenatura con la banchina e le barche,
      la spiaggia le dune e le pozze di marea, e senza questo chi ha una
