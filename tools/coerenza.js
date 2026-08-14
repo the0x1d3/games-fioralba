@@ -834,7 +834,13 @@ verifica('ogni oggetto posabile ha uno sprite e un\'icona', () => {
   for (const id in DATA.ITEMS) {
     const p = DATA.ITEMS[id].posabile;
     if (!p) continue;
-    if (p !== 'sentiero' && !sprite.has(p)) problemi.push(`«${id}» si posa come «${p}», che ART.placeable non sa disegnare`);
+    /* Le SUPERFICI non hanno uno sprite e non devono averlo: non
+       appoggiano un oggetto sulla casella, le dipingono il terreno. Si
+       riconoscono da sole — il nome che posano è un tipo di terreno di
+       `WORLD.TIPI` — invece di stare scritte a mano qui come stava
+       «sentiero», che era l'unica e adesso sono cinque. */
+    const eSuperficie = WORLD.TIPI.indexOf(p) >= 0;
+    if (!eSuperficie && !sprite.has(p)) problemi.push(`«${id}» si posa come «${p}», che ART.placeable non sa disegnare`);
     if (!icone.has(id)) problemi.push(`«${id}» si posa ma non ha icona nello zaino (manca in ART.icon)`);
   }
   return problemi;

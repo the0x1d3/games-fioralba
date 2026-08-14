@@ -1002,6 +1002,17 @@ function calcolaBersaglio(){
   G.bersaglio = { x:tx, y:ty, ok: !!(s && azionePossibile(s.id, tx, ty)) };
 }
 
+/* Quello che si posa dipingendo il terreno invece di appoggiarci un
+   oggetto sopra. Il terreno viaggia nel salvataggio, quindi una
+   pennellata resta; e siccome i tipi di terreno sono gli stessi che il
+   mondo usa da sempre per i pavimenti degli interni, texture e raccordi
+   erano già disegnati — qui si è solo aperta la porta.
+
+   `erba` è quello che mancava: il sentiero si posava e non si toglieva
+   più, e una casella diventata terra battuta restava terra battuta per
+   sempre. La zolla è il verso opposto di tutti gli altri. */
+const SUPERFICI = { sentiero:1, assi:1, lastre:1, cotto:1, erba:1 };
+
 function azionePossibile(id, tx, ty){
   const m=G.mappa();
   if(!WORLD.dentro(m,tx,ty)) return false;
@@ -1019,7 +1030,29 @@ function azionePossibile(id, tx, ty){
   if(id==='falce') return !!(o && (o.t==='erbaccia'||o.t==='fiori'||o.t==='cespuglio'));
   if(id==='canna') return terr==='acqua';
   if(cat==='seme') return !!(suolo && !suolo.crop);
-  if(DATA.ITEMS[id] && DATA.ITEMS[id].posabile) return !o && !suolo && terr!=='acqua' && terr!=='roccia';
+  if(DATA.ITEMS[id] && DATA.ITEMS[id].posabile){
+    const kind = DATA.ITEMS[id].posabile;
+    /* Le SUPERFICI non posano un oggetto: dipingono il terreno, quindi
+       hanno regole loro. Si dipinge anche sotto a una staccionata o a
+       una lanterna — l'oggetto sta sopra e non c'entra — ma non sul
+       terreno arato, che vorrebbe dire cancellare una coltura senza
+       averlo chiesto.
+
+       Solo all'aperto: le stanze si riscrivono da `world.js` a ogni
+       caricamento e il salvataggio degli interni tiene solo casse e
+       macchinari, quindi un pavimento dipinto in casa sparirebbe alla
+       riapertura senza che niente lo dica.
+
+       E mai la stessa tinta che c'è già: sarebbe una zolla buttata per
+       non cambiare niente, ed è l'errore più facile da fare passando la
+       superficie a pennellate. */
+    if(SUPERFICI[kind]){
+      if(!m.esterno || suolo) return false;
+      if(terr==='acqua'||terr==='roccia'||terr==='vuoto'||terr==='grotta') return false;
+      return terr !== kind;
+    }
+    return !o && !suolo && terr!=='acqua' && terr!=='roccia';
+  }
   if(DATA.ITEMS[id] && DATA.ITEMS[id].uso) return !!(suolo && !suolo.concime);
   return false;
 }
@@ -1347,8 +1380,8 @@ function posa(id, tx, ty){
   const m=G.mappa();
   const i=WORLD.idx(m,tx,ty);
   const kind = DATA.ITEMS[id].posabile;
-  if(kind==='sentiero'){
-    m.g[i] = WORLD.ti('sentiero');
+  if(SUPERFICI[kind]){
+    m.g[i] = WORLD.ti(kind);
     REND.invalidaCasella(m.id, tx, ty);   // i raccordi vicini vanno ridisegnati
   } else if(kind==='cassa'){
     m.obj[i] = {t:'macchina', kind:'cassa', solido:true, slots:new Array(24).fill(null)};

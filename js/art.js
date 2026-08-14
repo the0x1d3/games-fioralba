@@ -2260,6 +2260,26 @@ function drawIcon(x, id){
       }
       break;
     }
+    /* Le superfici da posare. L'icona è un ritaglio del terreno VERO,
+       preso da `A.ground`, non un disegnino che gli somiglia: quello che
+       si vede nello zaino è esattamente quello che ci si ritrova per
+       terra, e il giorno che una texture cambia l'icona cambia con lei
+       senza che nessuno debba ricordarsene. La stagione è fissata a
+       primavera perché la zolla d'erba d'inverno sarebbe un quadrato di
+       neve, e in mano resta erba anche a dicembre. */
+    case 'assi': case 'lastre': case 'cotto': case 'zolla': {
+      const tipo = id==='zolla' ? 'erba' : id;
+      x.save();
+      x.beginPath(); x.rect(4,9,24,16); x.clip();
+      x.drawImage(A.ground(tipo, 1, 'primavera'), 0, 0);
+      x.restore();
+      /* Cornice: chiara sopra e a sinistra, scura sotto e a destra, così
+         la piastrella ha uno spessore e non sembra un buco nel foglio.
+         I colori li aggancia la palette al gradino più vicino. */
+      px(x,4,9,24,1,'#8a7a5e'); px(x,4,9,1,16,'#8a7a5e');
+      px(x,4,24,24,1,'#3a2a1c'); px(x,27,9,1,16,'#3a2a1c');
+      break;
+    }
     case 'recinto': case 'cancelletto': case 'cartello': case 'spaventapasseri': case 'lanterna': case 'cassa':
     case 'barattoliera': case 'botte': case 'forno': case 'fornace': case 'arnia':
     case 'vaso_lucciole': {

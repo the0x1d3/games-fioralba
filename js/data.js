@@ -153,6 +153,25 @@ D.ITEMS = {
   concime_acqua:{nome:'Terra Umida',  cat:'artigianato', prezzo:44, desc:'Il terreno resta bagnato la notte.', uso:'ritenzione' },
   spaventapasseri:{nome:'Spaventapasseri',cat:'artigianato',prezzo:90, desc:'Tiene lontani i corvi nel raggio di 6 caselle.', posabile:'spaventapasseri' },
   sentiero:   { nome:'Sentiero di Pietra', cat:'artigianato', prezzo:4, desc:'Cammini più veloce e l\'erba non ricresce.', posabile:'sentiero' },
+  /* Le altre superfici del podere. Il sentiero era l'unica cosa con cui
+     si potesse cambiare il terreno, quindi chi voleva un podere suo
+     aveva un colore solo a disposizione; e soprattutto non esisteva il
+     verso opposto — una casella diventata terra o sentiero non tornava
+     più prato in nessun modo.
+
+     Le tinte non sono nuove: `assi`, `lastre` e `cotto` sono tipi di
+     terreno che il mondo conosce da sempre (sono i pavimenti degli
+     interni), con le loro texture e i loro raccordi dentellati già
+     disegnati. Qui diventano posabili anche fuori.
+
+     La zolla si chiama zolla e non «semi d'erba» per una ragione di
+     codice che si vede in partita: `cat:'seme'` vuol dire «va nel
+     terreno arato», e un seme d'erba avrebbe chiesto di zappare prima
+     di poter rifare il prato, che è il contrario di quello che serve. */
+  assi:       { nome:'Assi da Pavimento', cat:'artigianato', prezzo:5, desc:'Un impiantito di legno. I passi ci suonano sopra.', posabile:'assi' },
+  lastre:     { nome:'Lastre di Pietra', cat:'artigianato', prezzo:6, desc:'Pietra squadrata, per i cortili e i vialetti larghi.', posabile:'lastre' },
+  cotto:      { nome:'Mattonelle di Cotto', cat:'artigianato', prezzo:9, desc:'Argilla cotta nella fornace: calda di colore, da aia.', posabile:'cotto' },
+  zolla:      { nome:'Zolla d\'Erba',  cat:'artigianato', prezzo:3, desc:'Prato pronto, da posare. Rifà erba dove c\'è terra battuta o una pavimentazione che non ti piace più.', posabile:'erba' },
   recinto:    { nome:'Staccionata',   cat:'artigianato', prezzo:8,  desc:'Delimita con garbo, e si aggancia da sé ai pezzi vicini. Non ci si passa attraverso: per quello serve un cancelletto. Per toglierla, una picconata.', posabile:'recinto' },
   cancelletto:{ nome:'Cancelletto',   cat:'artigianato', prezzo:14, desc:'Il varco di una staccionata. Tu passi, le bestie no. Per toglierlo, una picconata.', posabile:'cancelletto' },
   /* Il cartello nasce da chi ci gioca: «sto dividendo il campo a zone e
@@ -210,6 +229,15 @@ D.FRUTTA = ['fragola','pomodoro','melone','uva','mirtillo','mora','melagrana','b
    ------------------------------------------------------------------ */
 D.CRAFT = [
   { id:'sentiero',      out:4, ing:{pietra:1},                          liv:0, cat:'podere' },
+  /* Le superfici costano quanto il sentiero o poco più, di proposito:
+     sono una scelta di gusto, non un traguardo da guadagnare, e farle
+     care vorrebbe dire che il podere se lo personalizza solo chi ha già
+     finito il gioco. La zolla è la più a buon mercato perché è quella
+     che serve per disfare, e tornare indietro non deve costare. */
+  { id:'zolla',         out:4, ing:{fibra:3},                           liv:0, cat:'podere' },
+  { id:'assi',          out:4, ing:{legna:2},                           liv:0, cat:'podere' },
+  { id:'lastre',        out:4, ing:{pietra:2},                          liv:0, cat:'podere' },
+  { id:'cotto',         out:4, ing:{argilla:2, carbone:1},              liv:1, cat:'podere' },
   { id:'recinto',       out:4, ing:{legna:2},                           liv:0, cat:'podere' },
   { id:'cartello',      out:2, ing:{legna:3},                           liv:0, cat:'podere' },
   { id:'cancelletto',   out:1, ing:{legna:4},                           liv:0, cat:'podere' },
