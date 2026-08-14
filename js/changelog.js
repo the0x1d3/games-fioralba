@@ -16,6 +16,16 @@
 
 window.CHANGELOG = [
   {
+    v: '3.7',
+    data: 'agosto 2026',
+    titolo: 'La Piazza del Porto ha finalmente un porto',
+    voci: [
+      { tipo:'nuovo',  t:'Il porto, con l\'acqua e le barche ormeggiate', d:'Si chiamava <b>Piazza del Porto</b> e un porto non ce l\'aveva: 445 caselle di lastre, la fontana in mezzo, e tutto il resto ai bordi in simmetria perfetta — due bancarelle, quattro panchine, quattro fioriere, quattro casse, sei lampioni, ognuna col suo gemello dall\'altra parte. Da dentro sembrava un parcheggio. Adesso a levante c\'è l\'insenatura, che scende fino al bordo sud dalla parte in cui si esce verso la Costa, così l\'acqua della piazza e il mare della spiaggia si leggono come la stessa acqua. Il lastricato arriva fino al filo dell\'acqua e ci sono tre barche ormeggiate contro la banchina. Sul lato di ponente, che restava vuoto, c\'è il mercato del pesce con la sua fila di banchi; e panchine, fioriere e casse hanno smesso di stare ai vertici di un quadrato.' },
+      { tipo:'meglio', t:'La Costa non è più un deserto di sabbia', d:'Erano 978 caselle di sabbia con ventun oggetti sopra — quattordici rami e sette sassi — un molo e due cartelli. Adesso c\'è l\'erba delle dune, più fitta sotto la pineta e sempre più rada scendendo verso la battigia, coi suoi cespugli; quattro pozze di marea coi sassi intorno, che l\'acqua borda da sé con la sua riva dentellata; tre barche, una tirata in secca; e il molo ha le casse in fondo e il lampione a metà, così si vede che è un molo e non una striscia di legno. L\'erba delle dune non è solo decorazione: è erbaccia vera, quindi la falce ci lavora e ci si trova della fibra.' },
+      { tipo:'fix',    t:'I due posti cambiano anche nelle partite già avviate', d:'Il terreno e gli oggetti di scena viaggiano nel salvataggio, quindi chi ha una partita in corso si sarebbe riportato dietro la piazza vecchia e la spiaggia vuota per sempre — come sarebbe successo col burrone del bosco, se non ci fosse la stessa cura. Quello che c\'è in un luogo lo decidiamo noi, non il salvataggio: i due posti si ristampano all\'apertura. Le casse e i macchinari che avevi lasciato lì non si perdono: si spostano di qualche passo e restano tuoi.' }
+    ]
+  },
+  {
     v: '3.6',
     data: 'agosto 2026',
     titolo: 'La mappa della valle si vede nitida, e dice chi c\'è',

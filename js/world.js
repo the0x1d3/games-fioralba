@@ -1065,6 +1065,52 @@ function buildSpiaggia(){
   for(let y=17;y<28;y++) for(let x=22;x<24;x++) m.obj[W.idx(m,x,y)]=null;
   m.deco.push({t:'cartello', x:25, y:18, testo:'Molo'});
 
+  /* Il molo si legge come molo solo se ha dei pali: le sole assi, viste
+     dall'alto, sono una striscia di legno che potrebbe essere qualunque
+     cosa — a schermo sembrava una colonna di mattoni. Le casse in fondo
+     e il lampione a metà gli danno un verso e una fine. */
+  setObj(m, 22, 27, {t:'casse', solido:true, v:1});
+  setObj(m, 23, 22, {t:'lampione', solido:false});
+
+  /* Una barca tirata in secca vicino al molo, e due ormeggiate. La costa
+     era 978 caselle di sabbia con ventun oggetti sopra: da dentro non
+     era una spiaggia, era un deserto con un pontile. */
+  setObj(m, 19, 19, {t:'barca', solido:true});
+  setObj(m, 26, 24, {t:'barca', solido:true});
+  setObj(m, 29, 22, {t:'barca', solido:true});
+
+  /* --- LE DUNE ---
+     L'erba che tiene la sabbia, più fitta sotto la pineta e sempre più
+     rada scendendo verso la battigia: è quello che fa sembrare una
+     spiaggia una spiaggia invece di un foglio beige. Non è solo
+     decorazione — sono erbacce e cespugli veri, quindi la falce ci
+     lavora e ci si trova della fibra. */
+  for(let i=0;i<190;i++){
+    const x=1+((R()*(m.w-2))|0), y=1+((R()*19)|0);
+    if(!libero(m,x,y) || W.terreno(m,x,y)!=='sabbia') continue;
+    // più vicino agli alberi, più fitta: a metà spiaggia si dirada
+    const vicinanza = 1 - Math.min(1, y/19);
+    if(R() > 0.18 + vicinanza*0.72) continue;
+    const r=R();
+    if(r<0.62)      setObj(m,x,y, {t:'erbaccia', v:(R()*3)|0});
+    else if(r<0.86) setObj(m,x,y, {t:'cespuglio', v:(R()*3)|0});
+    else            m.deco.push({t:'sassolini', x, y, v:(R()*3)|0});
+  }
+
+  /* --- LE POZZE DI MAREA ---
+     Quattro conche d'acqua rimaste a riva, con i sassi intorno. Sono il
+     posto dove uno si ferma a guardare, e il gioco sa già disegnarle:
+     l'acqua ha i suoi raccordi dentellati e la sua schiuma, che qui
+     cadono a pennello perché la pozza è piccola e tutta bordo. */
+  for(const [px0,py0,pw,ph] of [[7,15,3,2],[13,17,2,2],[33,16,3,2],[39,18,2,2]]){
+    for(let y=py0;y<py0+ph;y++) for(let x=px0;x<px0+pw;x++){
+      if(!W.dentro(m,x,y) || W.terreno(m,x,y)!=='sabbia') continue;
+      m.g[W.idx(m,x,y)]=ti('acqua'); m.obj[W.idx(m,x,y)]=null;
+    }
+    for(const [sx0,sy0] of [[px0-1,py0-1],[px0+pw,py0+ph],[px0-1,py0+ph],[px0+pw,py0-1]])
+      if(libero(m,sx0,sy0) && W.terreno(m,sx0,sy0)==='sabbia') setObj(m,sx0,sy0, sasso('pietra'));
+  }
+
   // legname portato dal mare, sassi e conchiglie
   for(let i=0;i<40;i++){
     const x=2+((R()*(m.w-4))|0), y=2+((R()*18)|0);
@@ -1103,9 +1149,68 @@ function buildPiazza(){
   m.deco.push({t:'fontana', x:18, y:14});
   for(let y=14;y<18;y++) for(let x=18;x<22;x++) m.obj[W.idx(m,x,y)]={t:'fontana', solido:true};
 
-  for(const p of [[10,10],[30,10],[10,22],[30,22],[20,8],[20,24]]) if(libero(m,p[0],p[1])) setObj(m,p[0],p[1],{t:'lampione', solido:false});
-  for(const p of [[14,12,0],[26,12,0],[14,20,1],[26,20,1]]) if(libero(m,p[0],p[1])) setObj(m,p[0],p[1],{t:'panchina', solido:true, dir:p[2]});
-  for(const p of [[16,10],[24,10],[16,22],[24,22]]) if(libero(m,p[0],p[1])) setObj(m,p[0],p[1],{t:'fioriera', solido:true, v:(R()*4)|0});
+  /* --- IL PORTO CHE MANCAVA ---
+
+     Si chiamava «Piazza del Porto» e un porto non ce l'aveva: 445
+     caselle di lastre, la fontana in mezzo, e tutto il resto spinto ai
+     bordi in simmetria perfetta — due bancarelle, quattro panchine,
+     quattro fioriere, quattro casse, sei lampioni, ognuna col suo
+     gemello dall'altra parte. Da dentro sembrava un parcheggio, e il
+     nome prometteva una cosa che non si vedeva da nessuna parte.
+
+     L'insenatura sta a levante e scende fino al bordo sud, dalla parte
+     in cui si esce verso la Costa: così l'acqua della piazza e il mare
+     della spiaggia si leggono come la stessa acqua invece che come due
+     pozze scollegate su due mappe. */
+  for(let y=6;y<m.h;y++) for(let x=34;x<m.w;x++){
+    const i=W.idx(m,x,y); m.g[i]=ti('acqua'); m.obj[i]=null;
+  }
+  /* LA BANCHINA È LA PIAZZA STESSA, in pietra, fino al filo dell'acqua.
+     Il primo tentativo ci metteva una striscia di assi larga due
+     caselle, e a schermo si leggeva come un muro di mattoni: la texture
+     del legno è a doghe orizzontali, e una fascia verticale di doghe
+     sembra muratura, non un pontile. Le lastre invece continuano il
+     lastricato e il bordo lo disegna l'acqua, che ha già i suoi
+     raccordi dentellati e la sua spuma. */
+  fill(m, 30,6, 4, m.h-6, 'lastre');
+  for(let y=6;y<m.h;y++) for(let x=30;x<34;x++) m.obj[W.idx(m,x,y)]=null;
+
+  /* Le barche stanno ORMEGGIATE CONTRO LA BANCHINA, nella prima colonna
+     d'acqua. Il tentativo di mezzo ci metteva dei pontili di legno che
+     entravano in acqua, due caselle a testa: a schermo diventavano una
+     macchia marrone, perché il raccordo dentellato dell'acqua si mangia
+     i bordi di una toppa così piccola e del pontile restava un grumo.
+     Una barca accostata alla pietra si legge da sola, ed è anche come
+     stanno le barche in un porto vero.
+
+     A distanze disuguali: uguali e spaziate a compasso tornerebbero a
+     fare l'effetto parcheggio, che è il difetto da cui nasce tutto
+     questo. */
+  for(const [bx,by] of [[34,11],[34,18],[34,27]]) setObj(m,bx,by,{t:'barca', solido:true});
+
+  /* Il carico sta sulla banchina, ammucchiato dove serve: davanti alle
+     barche, non ai quattro angoli della piazza. */
+  for(const p of [[30,9],[30,10],[29,16],[30,20],[30,21],[29,28]])
+    if(libero(m,p[0],p[1])) setObj(m,p[0],p[1],{t:'casse', solido:true, v:(R()*3)|0});
+  for(const p of [[30,13],[30,25],[10,10],[20,8],[12,23]])
+    if(libero(m,p[0],p[1])) setObj(m,p[0],p[1],{t:'lampione', solido:false});
+
+  /* Le panchine guardano la fontana o l'acqua, e stanno dove uno si
+     siederebbe: due davanti alla fontana, una sulla banchina a guardare
+     le barche. Prima erano quattro ai vertici di un quadrato. */
+  for(const p of [[16,19,0],[24,19,0],[29,12,1],[13,13,1]])
+    if(libero(m,p[0],p[1])) setObj(m,p[0],p[1],{t:'panchina', solido:true, dir:p[2]});
+  for(const p of [[15,12],[25,12],[14,22],[22,25],[18,25]])
+    if(libero(m,p[0],p[1])) setObj(m,p[0],p[1],{t:'fioriera', solido:true, v:(R()*4)|0});
+
+  /* Il mercato: una fila di banchi lungo il lato di ponente, che è la
+     parte che restava vuota. Il paese ci vende quello che arriva dal
+     mare, ed è la ragione per cui una piazza sta attaccata a un porto. */
+  for(let k=0;k<4;k++){
+    const bx=9, by=11+k*4;
+    if(libero(m,bx,by)) setObj(m,bx,by,{t:'bancarella', solido:true, v:k%2});
+  }
+  m.deco.push({t:'cartello', x:8, y:9, testo:'Mercato del pesce'});
 
   // BACHECA delle richieste e BANCO del mercante (bancarelle interattive)
   setObj(m, 12,15, {t:'bancarella', solido:true, v:0, kiosk:'bacheca'});
@@ -1113,7 +1218,9 @@ function buildPiazza(){
   setObj(m, 28,15, {t:'bancarella', solido:true, v:1, kiosk:'mercante'});
   m.deco.push({t:'cartello', x:27, y:13, testo:'Banco del mercante'});
 
-  for(const p of [[9,15],[31,15],[13,19],[27,11]]) if(libero(m,p[0],p[1])) setObj(m,p[0],p[1],{t:'casse', solido:true, v:(R()*3)|0});
+  /* Le casse sparse per la piazza: quelle del carico stanno già sulla
+     banchina, queste sono le due o tre che avanzano in giro. */
+  for(const p of [[13,19],[27,11],[26,23]]) if(libero(m,p[0],p[1])) setObj(m,p[0],p[1],{t:'casse', solido:true, v:(R()*3)|0});
 
   // uscita a nord → Fioralba
   fill(m, 18,0, 4,2, 'sentiero');
@@ -1347,6 +1454,67 @@ W.crea = function(){
    sa se il ponte c'è o no. Casse e macchinari finiti dentro al nuovo
    tracciato traslocano invece di sparire — è successo una volta con un
    letto, basta. */
+/* --- IL PORTO E LA COSTA SI RISTAMPANO ---
+
+   Il terreno viaggia nel salvataggio, e con lui gli oggetti di scena:
+   chi ha una partita avviata si riporterebbe dietro la piazza vecchia —
+   lastricata fino al bordo, senza acqua e senza barche — e la spiaggia
+   senza dune e senza pozze, per sempre. È la stessa faccenda del
+   burrone: com'è fatto un luogo lo decidiamo noi, non il salvataggio.
+
+   Invece di riscrivere qui quello che i costruttori già sanno fare — due
+   copie della stessa piazza che divergono al primo ritocco — se ne
+   costruisce una NUOVA e si trapianta la fascia che abbiamo cambiato.
+   Una fonte sola: se domani si sposta una barca, si sposta in un posto
+   e basta.
+
+   Quello che il giocatore ci ha messo dentro non si cancella: casse e
+   macchinari si sfrattano e si rimettono lì fuori, come per il burrone.
+   Perdere una cassa piena per una modifica di scenografia sarebbe il
+   modo peggiore di migliorare un posto. */
+function trapianta(m, fresca, dentro){
+  const sfrattati = [];
+  for(let y=0;y<m.h;y++) for(let x=0;x<m.w;x++){
+    if(!dentro(x,y)) continue;
+    const i = W.idx(m,x,y);
+    m.g[i] = fresca.g[i];
+    const o = m.obj[i];
+    if(o && (o.t==='macchina' || o.t==='mobile')) sfrattati.push(o);
+    m.obj[i] = fresca.obj[i];
+    if(m.suolo) m.suolo[i] = null;
+  }
+  return sfrattati;
+}
+
+function riparaSfrattati(m, sfrattati, ax, ay){
+  for(const o of sfrattati){
+    const q = W.vicinoLibero(m, ax, ay);
+    if(!q) continue;
+    const i = W.idx(m,q.x,q.y);
+    if(!m.obj[i]) m.obj[i] = o;
+  }
+}
+
+W.ristampaPorto = function(m){
+  if(!m || m.id!=='piazza') return;
+  const fresca = buildPiazza();
+  if(fresca.w!==m.w || fresca.h!==m.h) return;   // misure diverse: meglio non toccare
+  // la banchina, l'acqua e la fila dei banchi al mercato
+  const sfrattati = trapianta(m, fresca, (x,y)=> (x>=29 && y>=6) || (x>=8 && x<=9 && y>=9 && y<=24));
+  riparaSfrattati(m, sfrattati, 20, 20);         // in mezzo alla piazza, dove si passa
+};
+
+W.ristampaCosta = function(m){
+  if(!m || m.id!=='spiaggia') return;
+  const fresca = buildSpiaggia();
+  if(fresca.w!==m.w || fresca.h!==m.h) return;
+  /* Tutta la parte a terra: le dune sono sparse su tutta la spiaggia e
+     non in una fascia, quindi non c'è un rettangolo più stretto da
+     prendere. Il mare sotto non si tocca. */
+  const sfrattati = trapianta(m, fresca, (x,y)=> y>=1 && y<=28);
+  riparaSfrattati(m, sfrattati, 23, 3);          // vicino all'uscita per la Piazza
+};
+
 W.ristampaBurrone = function(m){
   if(!m || !m.burrone) return;
   const p = m.pontePos;

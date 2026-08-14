@@ -277,6 +277,13 @@ function applicaSalvataggio(raw){
      è ancora quello corto e la radura resta aggirabile a piedi. Il
      burrone lo decidiamo noi, non il giocatore, quindi si ristampa. */
   WORLD.ristampaBurrone(G.maps.bosco);
+  /* Stessa ragione, e stesso rimedio, per il porto e la costa: la
+     Piazza del Porto ha preso l'insenatura con la banchina e le barche,
+     la spiaggia le dune e le pozze di marea, e senza questo chi ha una
+     partita avviata continuerebbe a vedere il lastricato vuoto e il
+     deserto di sabbia. */
+  WORLD.ristampaPorto(G.maps.piazza);
+  WORLD.ristampaCosta(G.maps.spiaggia);
   G.p.look = G.look;
   G.p.px = d.px||8*T+16;
   G.p.py = d.py||10*T+16;
