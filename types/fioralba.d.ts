@@ -330,6 +330,8 @@ interface FioData {
   POSTI_SAGRA: Record<string, number[][]>;
   /** I messaggi nelle bottiglie che la marea porta alla Costa. */
   BOTTIGLIE: { id:string; testo:string; firma:string }[];
+  /** I sette pacchi della serie dei giorni veri: il settimo è il regalone. */
+  PREMI_SERIE: { g:number; oro:number; roba:[string,number][]; nota:string }[];
   /** Il frutto del cespuglio, stagione per stagione. */
   CESPUGLIO: Record<string, string>;
   /** Coefficienti dei bonus per abilità: li leggono gioco e scheda. */

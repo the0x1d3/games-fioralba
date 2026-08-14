@@ -77,6 +77,11 @@ function statoIniziale(){
     gatto:{ affetto:0, giorno:-1, nome:null },
     obiettiviRiscossi:{}, sagra:null, mercante:{presente:false, giorno:-1, stock:[]},
     visitati:{podere:true}, collezione:{}, bottiglieLette:[],
+    /* La serie dei giorni VERI in cui hai aperto il gioco. `ultimo` è una
+       data locale «AAAA-MM-GG» e non un timestamp: fra le 23:50 e le
+       00:10 sono due giorni per chi gioca, e devono essere due anche
+       qui. `daPrendere` è il pacco che ti aspetta sull'aia. */
+    serie:{ ultimo:null, giorni:0, daPrendere:0 },
     vicende:{}, persona:{},
     trame:{ torta:{avviata:false, segreto:false, fatta:false},
             pesceluna:{avviata:false, preso:false, fatta:false},
@@ -252,6 +257,13 @@ function avviaGioco(conIntro){
       if(!G.tutorialFatto) setTimeout(()=>TUT.inizia(), 400);
     }), 700);
   }
+  /* Il pacco della valle, se oggi è un giorno nuovo. Dopo la lettera
+     d'apertura e dopo la guida, mai insieme: alla primissima partita si
+     accavallerebbero tre finestre in tre secondi, e il pacco è quello
+     che può aspettare. Chi riprende una partita lo trova subito. */
+  G.controllaSerie();
+  if(G.serie.daPrendere)
+    setTimeout(()=>{ if(G.inGioco && !UI.modalAperta()) UI.pacco(G); }, conIntro ? 2600 : 900);
   ultimo = performance.now();
   /* Un loop solo, sempre. «Cambia partita» dal menu arriva qui con la
      partita vecchia ancora in corsa (`G.inGioco` non è mai tornato
@@ -1494,6 +1506,73 @@ function raccogliForaggio(tx,ty,o){
 /* ===================================================================
    INTERAZIONE (E / clic destro)
    =================================================================== */
+/* ===================================================================
+   IL PACCO DELLA VALLE — la serie dei giorni veri
+
+   Chi torna trova un pacco sull'aia, uno per giorno di calendario. Il
+   settimo è il regalone, poi il giro ricomincia.
+
+   LA DATA SI CONTA IN LOCALE, come «AAAA-MM-GG», non con un timestamp:
+   fra le 23:50 e le 00:10 sono due giorni per chi gioca, e devono essere
+   due anche qui. `toISOString()` avrebbe dato UTC, cioè lo stesso giorno
+   per mezza Europa e il giorno prima per l'altra metà.
+
+   E SALTARE UN GIORNO COSTA UN PASSO, NON TUTTO. Una serie che si azzera
+   mette addosso l'obbligo di collegarsi — «se salto perdo la settimana»
+   — ed è il contrario del tono di questo gioco, che è fatto per essere
+   lasciato lì e ripreso. Si torna indietro di un giorno per ogni giorno
+   saltato, col fondo a uno: una dimenticanza costa poco, un mese di
+   assenza riporta all'inizio, e in nessun caso c'è una punizione. */
+function oggiLocale(d){
+  const g = d || new Date();
+  const p = n => String(n).padStart(2,'0');
+  return g.getFullYear() + '-' + p(g.getMonth()+1) + '-' + p(g.getDate());
+}
+
+/* differenza in giorni fra due «AAAA-MM-GG», a mezzogiorno per non farsi
+   sbagliare il conto dall'ora legale */
+function giorniFra(a, b){
+  const P = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d, 12); };
+  return Math.round((P(b) - P(a)) / 86400000);
+}
+
+G.controllaSerie = function(){
+  const s = G.serie;
+  const oggi = oggiLocale();
+  if(s.ultimo === oggi) return;              // già contato oggi
+
+  if(!s.ultimo){
+    s.giorni = 1;
+  } else {
+    const passati = giorniFra(s.ultimo, oggi);
+    if(passati <= 0){ s.ultimo = oggi; return; }   // orologio all'indietro: si lascia stare
+    if(passati === 1) s.giorni = (s.giorni % 7) + 1;
+    else s.giorni = Math.max(1, s.giorni - (passati - 1));
+  }
+  s.ultimo = oggi;
+  s.daPrendere = s.giorni;
+};
+
+/* Il pacco si apre, e quello che c'è dentro entra. Se lo zaino è pieno
+   non si perde niente: va nei premi sospesi, come per i livelli — ed è
+   il caso normale, non quello raro, perché uno apre il gioco e trova il
+   pacco prima ancora di aver svuotato lo zaino di ieri. */
+G.apriPacco = function(){
+  const s = G.serie;
+  if(!s.daPrendere) return null;
+  const P = DATA.PREMI_SERIE.find(x => x.g === s.daPrendere) || DATA.PREMI_SERIE[0];
+  s.daPrendere = 0;
+  const dato = { g:P.g, oro:P.oro||0, roba:[], sospesi:0 };
+  if(P.oro){ G.oro += P.oro; G.registraVendita(0); }
+  for(const [id, n] of (P.roba||[])){
+    if(G.puoiAggiungere(id, n)) G.aggiungi(id, n);
+    else { G.premiSospesi.push({ item:id, n, da:'pacco', liv:0 }); dato.sospesi++; }
+    dato.roba.push([id, n]);
+  }
+  G.aggiornaHUD();
+  return dato;
+};
+
 /* --- LA BOTTIGLIA DAL MARE ---
    Dentro c'è una delle lettere di DATA.BOTTIGLIE, una volta sola:
    `G.bottiglieLette` ricorda quali sono già arrivate, e viaggia nel

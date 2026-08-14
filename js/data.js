@@ -1691,6 +1691,32 @@ D.PASSANTI = [
 ];
 
 /* ------------------------------------------------------------------
+   IL PACCO DELLA VALLE — sette giorni, sette pacchi.
+
+   Chi torna al podere trova un pacco sull'aia, uno per giorno VERO — non
+   per giornata di gioco: se apri Fioralba oggi e poi domani, sono due.
+   Il settimo è il regalone, e poi il giro ricomincia.
+
+   Sono cose CHE IL GIOCO GIÀ DÀ, non una valuta a parte: monete, semi,
+   materiali, un piatto pronto. Un premio che regala roba irraggiungibile
+   altrove trasformerebbe il collegarsi nella via principale per averla,
+   ed è il contrario di un gioco che si fa i suoi tempi. Il settimo dà
+   più roba, non roba diversa.
+
+   `oro` e `roba` insieme sono ammessi: il settimo giorno il pacco pesa.
+   ------------------------------------------------------------------ */
+D.PREMI_SERIE = [
+  { g:1, oro:150,  roba:[['fibra',5]],                       nota:'Qualcuno ha lasciato un pacco sull\'aia.' },
+  { g:2, oro:0,    roba:[['legna',12],['pietra',8]],         nota:'Ancora tu. Il pacco di oggi è più pesante.' },
+  { g:3, oro:300,  roba:[['concime',3]],                     nota:'Tre giorni di fila. In paese se ne sono accorti.' },
+  { g:4, oro:0,    roba:[['zuppa_contadina',2],['zolla',6]], nota:'Marisol ha cucinato più del necessario, dice lei.' },
+  { g:5, oro:500,  roba:[['carbone',6]],                     nota:'Tobia ha messo dentro del carbone senza dire niente.' },
+  { g:6, oro:0,    roba:[['assi',10],['lastre',10]],         nota:'Domani è il settimo. Lo sanno tutti e nessuno lo dice.' },
+  { g:7, oro:2000, roba:[['lingotto_oro',2],['gemma_luna',1],['torta_zucca',1]],
+                   nota:'Il settimo giorno. Il pacco è grosso e ha un fiocco.' }
+];
+
+/* ------------------------------------------------------------------
    LE BOTTIGLIE DEL MARE — i messaggi che la marea porta a riva.
 
    Terza delle cose da fare della Costa. Ogni tanto sulla battigia c'è

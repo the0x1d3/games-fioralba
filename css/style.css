@@ -2199,3 +2199,67 @@ html.col-dito .sinc-legacy-link{
   .coll-premio{ width:100%; }
   .btn.coll-riscuoti{ min-height:44px; }
 }
+
+/* ===================================================================
+   IL PACCO DELLA VALLE
+   Due tempi: la cassa chiusa che si può solo aprire, e poi la roba che
+   entra una carta per volta. Il ritardo fra una carta e l'altra è quello
+   che fa sembrare un regalo un regalo invece di un elenco.
+   =================================================================== */
+.pacco-punti{ display:flex; gap:7px; justify-content:center; margin:2px 0 10px; }
+.pacco-punto{
+  width:10px; height:10px; border-radius:50%;
+  background:#3a3028; border:1px solid #5b4a38;
+}
+.pacco-punto.fatto{ background:#8a6038; border-color:#a8763c; }
+.pacco-punto.ora{
+  background:#f2c14e; border-color:#fff0c0;
+  box-shadow:0 0 8px rgba(242,193,78,.75);
+}
+.pacco-scena{ min-height:150px; display:flex; align-items:center; justify-content:center; }
+.pacco-cassa{
+  position:relative; padding:16px 22px 12px;
+  border-radius:12px; background:rgba(138,96,56,.16); border:2px solid #8a6038;
+  animation:paccoAttesa 2.2s ease-in-out infinite;
+}
+.pacco-cassa canvas{ width:72px; height:72px; image-rendering:pixelated; display:block; }
+.pacco-cassa.grosso canvas{ width:104px; height:104px; }
+.pacco-invito{ text-align:center; margin-top:6px; color:#f2c14e; font-weight:700; letter-spacing:.04em; }
+.pacco-cassa.apre{ animation:paccoApre .6s ease-out forwards; }
+@keyframes paccoAttesa{
+  0%,100%{ transform:translateY(0) rotate(0deg); }
+  45%    { transform:translateY(-4px) rotate(-1.5deg); }
+  70%    { transform:translateY(-2px) rotate(1.5deg); }
+}
+@keyframes paccoApre{
+  0%  { transform:scale(1) rotate(0deg); }
+  35% { transform:scale(1.14) rotate(-4deg); }
+  70% { transform:scale(1.2) rotate(4deg); opacity:1; }
+  100%{ transform:scale(1.5); opacity:0; }
+}
+.pacco-roba{ display:flex; flex-wrap:wrap; gap:14px; justify-content:center; }
+/* `backwards` e non `forwards`, e nessun `opacity:0` di base: la carta
+   nasce visibile e l'animazione è solo l'entrata. Con `opacity:0` scritto
+   nella regola, una carta la cui animazione non parte — «riduci il
+   movimento» attivo, o un browser che non la esegue — resterebbe
+   invisibile per sempre, e il pacco si aprirebbe sul vuoto. Il regalo
+   non può dipendere dall'animazione del regalo. */
+.pacco-carta{
+  width:96px; padding:10px 6px; border-radius:10px; text-align:center;
+  background:rgba(246,230,200,.08); border:1px solid #8a6038;
+  animation:paccoCarta .42s ease-out backwards;
+}
+.pacco-carta canvas{ width:44px; height:44px; image-rendering:pixelated; }
+.pacco-nome{ margin-top:6px; font-size:.86rem; line-height:1.25; }
+.coin.grande{ width:40px; height:40px; margin:2px auto; }
+@keyframes paccoCarta{
+  from{ opacity:0; transform:translateY(14px) scale(.86); }
+  to  { opacity:1; transform:none; }
+}
+
+/* Chi ha chiesto meno movimento non deve perdersi il regalo: si tolgono
+   il dondolio e l'entrata, la roba resta. */
+@media (prefers-reduced-motion: reduce){
+  .pacco-cassa, .pacco-cassa.apre, .pacco-carta{ animation:none; }
+  .pacco-carta{ opacity:1; transform:none; }
+}

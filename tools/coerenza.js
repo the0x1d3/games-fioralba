@@ -2204,6 +2204,53 @@ verifica('il viale attraversa il ruscello sul ponte, senza aggirarlo', () => {
   return problemi;
 });
 
+/* I sette pacchi della serie. Le regole che tengono, e perché:
+
+   SETTE, numerati da 1 a 7 senza buchi. `apriPacco` cerca il pacco per
+   numero e ripiega sul primo se non lo trova: un buco non farebbe
+   rumore, darebbe il pacco del primo giorno al quarto e nessuno se ne
+   accorgerebbe mai.
+
+   OGNI COSA DENTRO DEVE ESISTERE, se no il pacco si apre su un oggetto
+   fantasma — e quello lo scopre chi gioca, non chi scrive.
+
+   IL SETTIMO DEV'ESSERE IL PIÙ RICCO. È l'unica promessa che la serie
+   fa davvero: se un ritocco ai numeri lo rendesse meno del quinto, la
+   settimana non varrebbe più la pena e niente lo direbbe.
+
+   E NIENTE ROBA IRRAGGIUNGIBILE ALTROVE: un premio che dà cose che il
+   gioco non dà trasformerebbe il collegarsi ogni giorno nella via
+   principale per averle, che è il contrario di un gioco che si fa i
+   suoi tempi. */
+verifica('i sette pacchi della serie stanno in piedi', () => {
+  const problemi = [];
+  const P = DATA.PREMI_SERIE || [];
+  if (P.length !== 7) problemi.push(`i pacchi sono ${P.length}, non sette`);
+  for (let k = 1; k <= 7; k++)
+    if (!P.some(p => p.g === k)) problemi.push(`manca il pacco del giorno ${k}`);
+
+  const valore = p => (p.oro || 0) +
+    (p.roba || []).reduce((a, [id, n]) => a + ((DATA.ITEMS[id] || {}).prezzo || 0) * n, 0);
+
+  for (const p of P) {
+    if (!p.nota) problemi.push(`il pacco del giorno ${p.g} è senza nota`);
+    if (!(p.oro > 0) && !(p.roba || []).length)
+      problemi.push(`il pacco del giorno ${p.g} è vuoto`);
+    for (const [id, n] of (p.roba || [])) {
+      if (!DATA.ITEMS[id]) { problemi.push(`il pacco del giorno ${p.g} dà «${id}», che non esiste`); continue; }
+      if (!(n > 0)) problemi.push(`il pacco del giorno ${p.g} dà zero pezzi di ${id}`);
+      if (!fontiOttenibili().has(id))
+        problemi.push(`il pacco del giorno ${p.g} dà «${id}», che nel gioco non si ottiene in nessun altro modo: ` +
+                      'la serie diventerebbe l\'unica via per averlo');
+    }
+  }
+  const settimo = P.find(p => p.g === 7);
+  if (settimo) for (const p of P)
+    if (p.g !== 7 && valore(p) >= valore(settimo))
+      problemi.push(`il pacco del giorno ${p.g} vale quanto o più del settimo: il regalone non è più un regalone`);
+  return problemi;
+});
+
 verifica('ogni bottiglia del mare si legge, una volta e in due lingue', () => {
   const problemi = [];
   const visti = new Set();

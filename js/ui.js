@@ -1072,6 +1072,88 @@ U.macchina = function(G, obj, ox, oy){
 /* ===================================================================
    REGALO
    =================================================================== */
+/* IL PACCO DELLA VALLE. Due tempi, e i due tempi sono il punto: prima il
+   pacco chiuso che si può solo aprire, poi quello che c'era dentro. Dare
+   subito l'elenco della roba sarebbe lo stesso regalo senza il momento
+   in cui non sai ancora cosa c'è — e quel momento è tutto quello che
+   distingue un pacco da una riga di inventario.
+
+   I sette bollini in cima dicono a che punto è la settimana senza doverlo
+   scrivere: sei pieni e uno acceso valgono più di «giorno 7 di 7». */
+U.pacco = function(G){
+  const giorno = G.serie.daPrendere;
+  if(!giorno) return;
+  const P = DATA.PREMI_SERIE.find(x=>x.g===giorno) || DATA.PREMI_SERIE[0];
+  const settimo = giorno === 7;
+
+  U.modal(settimo ? 'Il pacco del settimo giorno' : 'Un pacco sull\'aia', body=>{
+    const punti=document.createElement('div'); punti.className='pacco-punti';
+    for(let k=1;k<=7;k++){
+      const d=document.createElement('span');
+      d.className='pacco-punto' + (k<giorno?' fatto':'') + (k===giorno?' ora':'');
+      punti.appendChild(d);
+    }
+    body.appendChild(punti);
+
+    const nota=document.createElement('div'); nota.className='muted';
+    nota.style.cssText='text-align:center;margin:2px 0 14px';
+    nota.textContent = T(P.nota);
+    body.appendChild(nota);
+
+    const scena=document.createElement('div'); scena.className='pacco-scena';
+    const cassa=document.createElement('div');
+    cassa.className='pacco-cassa cliccabile' + (settimo?' grosso':'');
+    cassa.appendChild(ico('cassa'));
+    const invito=document.createElement('div'); invito.className='pacco-invito';
+    invito.textContent = T('Apri');
+    cassa.appendChild(invito);
+    scena.appendChild(cassa);
+    body.appendChild(scena);
+
+    let aperto=false;
+    cassa.onclick = ()=>{
+      if(aperto) return; aperto=true;
+      const dato = G.apriPacco();
+      if(!dato) return;
+      cassa.classList.add('apre');
+      SND.play(settimo ? 'livello' : 'regalo');
+      /* Il tempo d'attesa non è un vezzo: l'animazione della cassa dura
+         quanto questo, e mostrare la roba mentre la cassa si sta ancora
+         aprendo toglie proprio il momento per cui esiste la finestra. */
+      setTimeout(()=>{
+        scena.innerHTML='';
+        const riga=document.createElement('div'); riga.className='pacco-roba';
+        const carte=[];
+        if(dato.oro) carte.push([null, dato.oro + ' ' + T('monete')]);
+        for(const [id,n] of dato.roba) carte.push([id, IT.nome(id) + (n>1?' ×'+n:'')]);
+        carte.forEach(([id,testo],k)=>{
+          const c=document.createElement('div'); c.className='pacco-carta';
+          c.style.animationDelay = (k*110)+'ms';
+          if(id) c.appendChild(ico(id));
+          else { const o=document.createElement('div'); o.className='coin grande'; c.appendChild(o); }
+          const t=document.createElement('div'); t.className='pacco-nome'; t.textContent=testo;
+          c.appendChild(t);
+          riga.appendChild(c);
+        });
+        scena.appendChild(riga);
+        if(dato.sospesi){
+          const s=document.createElement('div'); s.className='muted';
+          s.style.cssText='text-align:center;margin-top:10px';
+          s.textContent = T('Lo zaino era pieno: quello che non ci stava ti aspetta nella scheda dei Livelli.');
+          scena.appendChild(s);
+        }
+        /* NIENTE `U.aggiorna()` qui. Ridisegna la finestra chiamando di
+           nuovo il costruttore, e il costruttore rifà la cassa chiusa:
+           la roba appena rivelata spariva e tornava il pulsante «Apri»
+           su un pacco già preso. Misurato — le monete e la fibra erano
+           entrate davvero, ma a schermo sembrava di non aver aperto
+           niente. Qui non c'è niente da riaggiornare: l'oro e lo zaino
+           li ha già sistemati `G.apriPacco`. */
+      }, 620);
+    };
+  });
+};
+
 U.regalo = function(G, npcId){
   const N = DATA.NPCS[npcId];
   U.modal('Cosa regali a '+N.nome+'?', body=>{
