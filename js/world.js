@@ -978,6 +978,57 @@ W.rigeneraMontagna = function(m, seed){
   }
 };
 
+/* rigenera quello che il mare porta a riva, ogni notte
+
+   La Costa aveva una cosa sola da fare, pescare, e per il resto era da
+   guardare: novecentosettantotto caselle di sabbia con ventun oggetti
+   sopra, sempre quelli. Adesso ogni mattina la marea lascia qualcosa
+   sulla battigia — conchiglie, telline, granchi fra gli scogli, e il
+   legname che il mare restituisce.
+
+   Solo sulla BATTIGIA, cioè la sabbia che tocca l'acqua: sparpagliarla
+   su tutta la spiaggia l'avrebbe fatta sembrare roba caduta, non roba
+   portata, e soprattutto avrebbe tolto la ragione di camminare lungo la
+   riva. Le pozze di marea contano come acqua, quindi ne compare anche
+   attorno a quelle, che è il posto dove uno le cercherebbe.
+
+   Si toglie solo quello che aveva messo la marea di ieri (`marea:true`)
+   e non tutti i rami: sulla spiaggia c'è anche il legname scritto nella
+   mappa, e ripulire alla cieca l'avrebbe cancellato la prima notte. */
+W.rigeneraCosta = function(m, seed){
+  if(!m) return;
+  const R = rnd((seed>>>0)||1);
+  for(let i=0;i<m.obj.length;i++){ const o=m.obj[i]; if(o && o.marea) m.obj[i]=null; }
+
+  const battigia = (x,y)=>{
+    if(W.terreno(m,x,y)!=='sabbia') return false;
+    for(const [dx,dy] of [[0,1],[0,-1],[1,0],[-1,0],[1,1],[-1,1],[1,-1],[-1,-1]])
+      if(W.terreno(m,x+dx,y+dy)==='acqua') return true;
+    return false;
+  };
+  /* Le conchiglie sono le più comuni e il granchio il più raro: chi
+     passa tutte le mattine deve trovare quasi sempre qualcosa e ogni
+     tanto qualcosa che vale. */
+  const roba = ['conchiglia','conchiglia','conchiglia','tellina','tellina','granchio'];
+
+  let messi=0, tent=0;
+  while(messi<8 && tent<900){
+    tent++;
+    const x=1+((R()*(m.w-2))|0), y=1+((R()*(m.h-2))|0);
+    if(!libero(m,x,y) || !battigia(x,y)) continue;
+    setObj(m,x,y,{t:'foraggio', item:roba[(R()*roba.length)|0], marea:true});
+    messi++;
+  }
+  let legni=0; tent=0;
+  while(legni<3 && tent<400){
+    tent++;
+    const x=1+((R()*(m.w-2))|0), y=1+((R()*(m.h-2))|0);
+    if(!libero(m,x,y) || !battigia(x,y)) continue;
+    setObj(m,x,y,{t:'ramo', v:(R()*3)|0, marea:true});
+    legni++;
+  }
+};
+
 /* ===================================================================
    MONTAGNA — il Passo Innevato
    =================================================================== */
@@ -1126,6 +1177,8 @@ function buildSpiaggia(){
   warp(m, 21, 0, 5, 1, 'piazza', 24, 30, 'Piazza');
   m.deco.push({t:'cartello', x:20, y:2, testo:'↑ Piazza'});
 
+  // la prima marea: chi ci arriva il primo giorno trova già qualcosa
+  W.rigeneraCosta(m, 7777^0x55);
   return m;
 }
 
@@ -1693,6 +1746,7 @@ W.nuovoGiorno = function(maps, stagione, rngSeed){
     if(g && g.ingresso) W.apriPassaggi(g, g.ingresso[0], g.ingresso[1]);
   }
   if(maps.montagna) W.rigeneraMontagna(maps.montagna,(rngSeed^0x0004)>>>0);
+  if(maps.spiaggia) W.rigeneraCosta(maps.spiaggia,   (rngSeed^0x0005)>>>0);
 };
 
 /* trova una posizione libera vicina */

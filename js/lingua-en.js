@@ -2093,6 +2093,8 @@ Object.assign(window.LINGUA_EN, {
   'Also found on <b>laden bushes</b> in <b>{0}</b>, by cutting them with the <b>scythe</b>.',
 "Si raccoglie da terra sul <b>Passo di montagna</b>, dove è sempre inverno: c'è tutto l'anno.":
   'Picked off the ground on the <b>mountain Pass</b>, where it is always winter: it is there all year.',
+"Si raccoglie sulla <b>battigia della Costa</b>, fra gli scogli e le pozze di marea. Ogni mattina il mare ne riporta.":
+  'Gathered along the <b>shoreline of the Coast</b>, among the rocks and tide pools. Every morning the sea brings more.',
 "Si raccoglie da terra in <b>{0}</b>, sparso per la valle — prato, bosco, radure. Nelle altre stagioni non c'è.":
   'Picked off the ground in <b>{0}</b>, scattered about the valley — meadow, woods, clearings. In other seasons there is none.',
 

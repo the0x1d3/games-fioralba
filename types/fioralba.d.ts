@@ -70,6 +70,8 @@ interface FioItem {
   energia?: number;
   /** Per il foraggio: stagione in cui appare. */
   stagione?: string;
+  /** Per il foraggio di mare: lo porta la marea sulla Costa, e non ha stagione. */
+  mare?: boolean;
   /** Per i pesci: stagioni pescabili. */
   stagioni?: string[];
   /** Per i pesci: 'fiume' | 'lago'. */

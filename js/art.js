@@ -1303,6 +1303,28 @@ function drawForageArt(x,cx,by,id){
       for(let i=0;i<3;i++){ const bx=cx-3+i*3; px(x,bx,by-10,1,10,'#6f9c5a');
         for(let k=0;k<5;k++) px(x,bx-1,by-11-k*2,3,2, k%2?'#9a6fd0':'#8459bd'); }
       break;
+    /* La roba di mare. Tinte chiare e fredde apposta: sullo scaffale
+       dello zaino, in mezzo a viole e funghi, si devono riconoscere come
+       un gruppo che viene da un altro posto. */
+    case 'conchiglia':
+      ellip(x,cx,by-5,9,7,'#f0dcc0'); ellip(x,cx,by-4,8,6,'#e2c9a6');
+      for(let i=0;i<5;i++){ const a=-2.5+i*0.62;
+        px(x,(cx+Math.cos(a)*6)|0,(by-5+Math.sin(a)*5)|0,2,2,'#c9a982'); }
+      px(x,cx-1,by+1,3,2,'#b08f68');
+      break;
+    case 'tellina':
+      ellip(x,cx-2,by-4,6,5,'#dfeef2'); ellip(x,cx+3,by-6,6,5,'#cfe2ea');
+      px(x,cx-4,by-4,2,1,'#a8c2ce'); px(x,cx+2,by-6,2,1,'#a8c2ce');
+      px(x,cx-1,by-3,2,2,'#f4fbfd');
+      break;
+    case 'granchio':
+      ellip(x,cx,by-5,8,6,'#c9563c'); ellip(x,cx,by-6,7,4,'#e06f4e');
+      for(const s of [-1,1]){
+        px(x,cx+s*8,by-8,3,2,'#c9563c'); px(x,cx+s*10,by-10,3,3,'#e06f4e');
+        for(let k=0;k<3;k++) px(x,cx+s*(5+k*2),by-1,2,3,'#b04a32');
+      }
+      px(x,cx-3,by-7,2,2,'#2a1a14'); px(x,cx+2,by-7,2,2,'#2a1a14');
+      break;
     case 'fungo_porcino':
       px(x,cx-2,by-6,5,6,'#f0e2c8'); px(x,cx-2,by-6,2,6,'#fff8ea');
       ellip(x,cx,by-8,8,5,'#8a5230'); ellip(x,cx,by-9,7,4,'#a8683c'); ellip(x,cx-3,by-10,3,2,'#c08a56');

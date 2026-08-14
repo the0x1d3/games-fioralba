@@ -125,6 +125,15 @@ D.ITEMS = {
   nocciola:         { nome:'Nocciola',          cat:'foraggio', prezzo:52, stagione:'autunno',   desc:'Gli scoiattoli ti guardano male.' },
   melagrana:        { nome:'Melagrana',         cat:'foraggio', prezzo:115,stagione:'autunno',   desc:'Cento rubini dentro.' },
   bacca_inverno:    { nome:'Bacca d\'Inverno',  cat:'foraggio', prezzo:62, stagione:'inverno',   desc:'Rossa sulla neve.' },
+  /* La roba di mare. È foraggio come le viole e i funghi — si china e si
+     raccoglie — ma senza `stagione`: il mare non ha un mese in cui le
+     conchiglie non ci sono, e darle a una stagione sola vorrebbe dire
+     che per tre quarti dell'anno la Costa torna a essere sabbia e basta.
+     Non avendo stagione non contano per la sagra, che è giusto: quella
+     chiede i prodotti di stagione, e queste non lo sono per definizione. */
+  conchiglia:       { nome:'Conchiglia',        cat:'foraggio', prezzo:26, mare:true, desc:'Se la avvicini all\'orecchio non fa niente, ma tutti ci provano.' },
+  tellina:          { nome:'Tellina',           cat:'foraggio', prezzo:34, mare:true, desc:'Si nasconde sotto un dito di sabbia bagnata.' },
+  granchio:         { nome:'Granchio',          cat:'foraggio', prezzo:48, mare:true, desc:'Cammina di traverso e ci tiene a farlo sapere.' },
   radice_gelata:    { nome:'Radice Gelata',     cat:'foraggio', prezzo:84, stagione:'inverno',   desc:'Croccante di brina.' },
   fiocco_cristallo: { nome:'Cristallo di Neve', cat:'foraggio', prezzo:105,stagione:'inverno',   desc:'Non si scioglie mai.' },
 

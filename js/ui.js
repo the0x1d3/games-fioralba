@@ -185,6 +185,12 @@ IT.dove = function(id){
     return F('Cresce nel campo dai <b>Semi di {0}</b>, che <b>Bruno</b> vende in <b>{1}</b>. Fuori stagione la pianta appassisce.',
              C.nome, stagioni(C.stagioni));
   }
+  /* La roba di mare è foraggio, ma non di stagione: la riga di sotto
+     parla di stagioni e qui non ce ne sono, quindi si risponde prima. Il
+     mare le rimette ogni notte, e dirlo è metà dell'informazione — se no
+     uno ripulisce la battigia una volta e non ci torna più. */
+  if(I.cat === 'foraggio' && I.mare)
+    return T('Si raccoglie sulla <b>battigia della Costa</b>, fra gli scogli e le pozze di marea. Ogni mattina il mare ne riporta.');
   /* foraggio: si raccoglie per terra, e conta la stagione */
   if(I.cat === 'foraggio'){
     /* Quattro di questi vengono anche dai cespugli carichi, uno per
