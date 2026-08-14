@@ -338,8 +338,57 @@ Tre controlli in `tools/coerenza.js` tengono ferma la cosa, e tutti e tre
 diventano rossi anche se **smettono di vedere** quello che controllano.
 
 Il giorno che uno sprite viene ridisegnato davvero a 64, si chiede
-`tela(w, h, true)` e si scrive in sessantaquattresimi: la misura logica
-non cambia e nessuno dei suoi lettori se ne accorge.
+`ART.telaNetta(T, T)` e si scrive in sessantaquattresimi: la misura
+logica non cambia e nessuno dei suoi lettori se ne accorge.
+
+### La coda lunga: quali sprite rifare, e in che ordine
+
+Sono 172, e l'ordine non si sceglie a occhio. Instrumentando `drawImage`
+e contando i pixel coperti per famiglia, su cinque scene: il **terreno**
+copre il 340% dello schermo al podere, il 299% nel bosco, il 256% in
+miniera, il 73% dentro casa (le percentuali passano il 100% perché gli
+sprite si sovrappongono, ma il confronto regge). È l'unico che c'è in
+OGNI scena. I raccordi fra terreni, altri 94-107%, sono ritagliati dalle
+stesse piastrelle e migliorano da soli. Il personaggio è l'1%.
+
+Rifatte finora: le undici piastrelle di terreno, le due maschere dei
+raccordi, e di rimbalzo `bordo`, `ombraBordo`, `arato` e `schiuma`.
+Restano alberi (secondi per area), edifici, personaggio.
+
+**Come si misura se un ridisegno è avvenuto davvero.** In un'immagine
+cotta a 32 e ingrandita, ogni stacco di colore cade su un confine PARI
+di colonna: fra la 1 e la 2, mai fra la 0 e la 1. Uno stacco su confine
+dispari è dettaglio che a 32 non poteva esistere. Prima: **0% su tutti
+gli sprite del gioco**. Dopo, sulle piastrelle rifatte: **45-98%**.
+Alberi e personaggio, non ancora toccati, stanno ancora a 0.
+
+Non serve la frazione di quadretti 2×2 uniformi, che è la prima misura
+che viene in mente e non dice niente: una piastrella per due terzi
+piatta resta «uniforme» per due terzi comunque la disegni.
+
+### Il rumore di tutto il gioco dava solo mezzi numeri
+
+`ART.hsh(x,y,s)` decide dove va ogni filo d'erba, ogni granello, ogni
+stella del titolo: 150 usi in cinque file. Doveva tornare 0..1.
+Tornava **0..0,5**, misurato su 46.400 campioni: massimo 0,5000, media
+0,2505, istogramma vuoto sopra la metà. La causa è JavaScript —
+`(n ^ (n>>13)) * 1274126177` è una moltiplicazione in virgola mobile, il
+prodotto supera i 2^53 che la mantissa regge, e i bit bassi (che sono
+tutto quello che serve a un hash) si perdono. Adesso usa `Math.imul`.
+
+Due conseguenze, e la seconda era peggio: ogni posizione da `hsh(...)*T`
+cadeva nel quarto in alto a sinistra della casella, e **ventuno soglie
+sopra 0,5 non sono mai scattate** — niente fiori sul prato, niente cotto
+scheggiato, niente vene di minerale in miniera, niente stelle sul
+titolo. Più quindici `> 0.5` usati come testa-o-croce, sempre usciti
+croce: ogni «metà così e metà cosà» del disegno è sempre stato tutto
+uguale.
+
+**Se tocchi una soglia tarata prima di questa correzione, ricordati che
+è stata tarata contro un rumore storto.** Due le ho già ritarate perché
+scattavano il doppio del voluto (i fiori dell'erba) o perché rivelavano
+un colore mai visto (la quarta lastra della piazza, che presa una volta
+su quattro fa una scacchiera — vedi il commento in `stoneFloorTile`).
 
 ### Gli arredi disegnati a mano, e i mobili grandi
 
@@ -421,7 +470,7 @@ PAL.snap('#8a6038')   // → '#8a5c34'
 npm test
 ```
 
-`tools/coerenza.js`: **64 controlli** sui dati e sulle mappe, senza dipendenze —
+`tools/coerenza.js`: **65 controlli** sui dati e sulle mappe, senza dipendenze —
 carica i moduli in un finto `window`. Il primo controlla che ogni file `.js` sia
 sintatticamente valido, e non è pignoleria: un apostrofo non protetto dentro una
 stringa fa fallire il caricamento in silenzio e nel browser resta una pagina

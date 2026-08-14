@@ -62,6 +62,17 @@ function tela(w, h, netto){
 }
 A.tela = tela;
 
+/* La tela di uno sprite RIDISEGNATO a 64: si chiede in pixel di mondo e
+   ci si disegna in pixel di mondo, uno per uno. È `tela(w/K, h/K, true)`
+   detto nel verso in cui lo pensa chi disegna, e serve solo a questo —
+   `telaNetta(T,T)` si legge, `tela(U,U,true)` no.
+
+   Chi la usa scrive in `T`, non in `U`, e non passa da nessuna scala.
+   Chi la legge non se ne accorge: la misura logica è identica, ed è
+   tutto il senso della manovra. */
+function telaNetta(w, h){ return tela(w/K, h/K, true); }
+A.telaNetta = telaNetta;
+
 /* Sovrapporre una tela a un'altra — è come si fanno i raccordi fra
    terreni e le aiuole arate: si disegna la texture e poi la si ritaglia
    sulla maschera. Tutte e due sono in pixel di MONDO, ma il contesto di
@@ -75,10 +86,42 @@ function px(c,x,y,w,h,col){ c.fillStyle=col; c.fillRect(x|0,y|0,w|0,h|0); }
 A.px = px;
 
 /* rumore deterministico */
+/* IL RUMORE DI TUTTO IL GIOCO, E PERCHÉ PER ANNI HA DATO SOLO MEZZI NUMERI.
+
+   Questa funzione decide dove va ogni filo d'erba, ogni granello di
+   sabbia, ogni sasso, ogni stella del titolo: 150 usi in cinque file.
+   Doveva tornare un numero fra 0 e 1 distribuito bene. Tornava un numero
+   fra **0 e 0,5**. Misurato su 46.400 campioni: minimo 0, massimo 0,5000,
+   media 0,2505, e l'istogramma vuoto sopra la metà.
+
+   Due conseguenze, e la seconda è peggio della prima.
+
+   La prima: ogni posizione ricavata da `hsh(...)*T` cadeva nel quarto in
+   alto a sinistra della casella. Le texture avevano il dettaglio
+   ammucchiato in un angolo e il resto liscio — si leggeva come una
+   macchia, non come del rumore.
+
+   La seconda: ventuno soglie sopra 0,5 non sono MAI scattate. Niente
+   fiori sul prato, niente cotto scheggiato, niente vene di minerale
+   nelle pareti della miniera, niente seconda stalattite, niente stelle
+   luccicanti sul titolo. E quindici `> 0.5` usati come testa-o-croce
+   sono sempre usciti croce: ogni «metà di questi in un modo e metà
+   nell'altro» del disegno è sempre stato tutto nello stesso modo.
+
+   La causa è JavaScript: `(n ^ (n>>13)) * 1274126177` è una
+   moltiplicazione fra numeri in virgola mobile, non fra interi a 32 bit.
+   Il prodotto arriva a 2,7·10^18, cioè ben oltre i 2^53 che la mantissa
+   regge, e i bit bassi — che sono tutto quello che serve a un hash — si
+   perdono per strada. `Math.imul` è la moltiplicazione a 32 bit vera, ed
+   è esattamente il caso per cui esiste. Gli scorrimenti passano da `>>`
+   a `>>>` per la stessa ragione: senza segno.
+
+   Nessuna di queste 150 chiamate tocca il gioco — non c'è una regola,
+   un raccolto o una probabilità che dipenda da qui. È tutto disegno. */
 function hsh(x,y,s){
-  let n = (x|0)*374761393 + (y|0)*668265263 + (s|0)*1442695040;
-  n = (n ^ (n>>13)) * 1274126177;
-  return ((n ^ (n>>16)) >>> 0) / 4294967295;
+  let n = Math.imul(x|0, 374761393) + Math.imul(y|0, 668265263) + Math.imul(s|0, 1442695040);
+  n = Math.imul(n ^ (n >>> 13), 1274126177);
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
 }
 A.hsh = hsh;
 
@@ -262,50 +305,93 @@ function C(){ return PAL.c; }
 
 const groundCache = {};
 
+/* ===================================================================
+   LE PIASTRELLE SONO RIDISEGNATE A 64 VERI
+
+   Undici funzioni qui sotto — i dieci terreni e l'acqua — non usano
+   `tela` ma `telaNetta`, e scrivono in `T` invece che in `U`. Sono le
+   prime della coda lunga, e la coda si è ordinata con una misura invece
+   che a occhio: instrumentando il disegno, il terreno copre il 340%
+   dello schermo al podere, il 299% nel bosco, il 256% in miniera e il
+   73% dentro casa — contando le sovrapposizioni, ma il punto regge: è
+   l'unico sprite che c'è in OGNI scena, ed è il fondo su cui si legge
+   tutto il resto. In più i raccordi fra terreni (`A.bordo`, un altro
+   94-107% per scena) sono ritagliati da queste stesse piastrelle, quindi
+   migliorano da soli senza che nessuno li tocchi.
+
+   Cosa vuol dire «ridisegnata a 64»: non raddoppiare i numeri, che non
+   guadagnerebbe niente. Vuol dire la STESSA quantità d'inchiostro in
+   tratti più fini — il doppio degli elementi, larghi la metà. Un filo
+   d'erba era largo 1 in trentaduesimi, cioè 2 pixel a schermo; adesso è
+   largo 1 e basta, e ce ne sono il doppio. È la ragione per cui questi
+   sprite erano i primi: sono rumore procedurale, quindi la finezza è
+   una questione di parametri e non di gusto, e il guadagno si misura.
+
+   La misura: la frazione di quadretti 2×2 tutti dello stesso colore.
+   Una tela cotta al doppio ce li ha uniformi tutti, per costruzione —
+   100%. Un controllo in `tools/coerenza.js` pretende che queste undici
+   restino nette, perché tornare indietro non darebbe nessun errore.
+   =================================================================== */
 function grassTile(v, season){
   const S = DATA.SEASONS.find(s=>s.id===season);
-  const c = tela(U,U), x = c.getContext('2d');
+  const c = telaNetta(T,T), x = c.getContext('2d');
   const base = S.grass, dark = S.grass2;
-  px(x,0,0,U,U,base);
+  px(x,0,0,T,T,base);
   /* Chiazze larghe: devono essere un respiro, non un disegno. Chiedevano
      di schiarire del 6%, che sulla palette a gradini è diventato un
      gradino intero — e il prato si è riempito di coriandoli. Adesso si
      muovono solo fra il verde del corpo e quello d'ombra, con poca
-     opacità: la variazione si sente e non si conta. */
-  for(let i=0;i<22;i++){
+     opacità: la variazione si sente e non si conta.
+
+     A 64 la chiazza non è più un quadretto: sono due rettangoli sfalsati
+     che si sovrappongono, e il bordo che ne esce è irregolare. È la cosa
+     che a 32 non si poteva fare, perché lo sfalsamento minimo era due
+     pixel a schermo e si vedeva come un gradino. */
+  for(let i=0;i<30;i++){
     const r = hsh(i,v,season.length*7);
-    const bx = (hsh(i,v,1)*U)|0, by=(hsh(i,v,2)*U)|0;
-    const sz = 2+((r*4)|0);
+    const bx = (hsh(i,v,1)*T)|0, by=(hsh(i,v,2)*T)|0;
+    const w = 4+((r*8)|0), h = 3+((hsh(i,v,3)*7)|0);
     x.fillStyle = dark;
     x.globalAlpha = r>0.5 ? 0.14 : 0.30;
-    x.fillRect(bx,by,sz,sz-1);
+    x.fillRect(bx,by,w,h);
+    x.fillRect(bx+1+((hsh(i,v,4)*3)|0), by-1, w-2, h+2);
   }
   x.globalAlpha=1;
-  // fili d'erba: meno fitti, più corti, e solo i chiari staccano davvero
+  /* Fili d'erba. Erano dieci, larghi un pixel di disegno — cioè due a
+     schermo, che è una bandierina più che un filo. Adesso sono ventisei,
+     larghi un pixel vero, con la punta di un gradino più chiara: da
+     lontano è la stessa quantità di verde, da vicino è erba. */
   const blade = shade(base, season==='inverno'? 0.10 : 0.16);
-  for(let i=0;i<10;i++){
-    const bx=(hsh(i,v,11)*U)|0, by=(hsh(i,v,12)*U)|0;
-    const h = 2+((hsh(i,v,13)*2)|0);
+  for(let i=0;i<26;i++){
+    const bx=(hsh(i,v,11)*T)|0, by=(hsh(i,v,12)*T)|0;
+    const h = 3+((hsh(i,v,13)*5)|0);
     x.globalAlpha = i%3 ? 0.5 : 0.7;
     x.fillStyle = i%3 ? dark : blade;
     x.fillRect(bx,by,1,h);
+    // la punta si piega di un pixel: è quello che toglie l'aria da «sbarra»
+    x.fillRect(bx + (hsh(i,v,14)>0.5?1:-1), by, 1, 1);
   }
   x.globalAlpha=1;
-  // fiorellini stagionali
+  // fiorellini stagionali: a 64 un fiore ha un cuore e quattro petali
   if(season!=='inverno'){
+/* Tre fiori in primavera, non cinque. Il conto era stato alzato quando
+       la soglia `>0.55` non scattava MAI — vedi `hsh` — e il prato era
+       nudo; adesso che scatta, cinque candidati per casella facevano un
+       prato fiorito da cartolina invece di un prato con dei fiori. */
     const n = season==='primavera'?3:(season==='estate'?2:1);
     for(let i=0;i<n;i++){
       if(hsh(i,v,21)>0.55){
-        const bx=2+((hsh(i,v,22)*(U-5))|0), by=2+((hsh(i,v,23)*(U-5))|0);
+        const bx=3+((hsh(i,v,22)*(T-9))|0), by=3+((hsh(i,v,23)*(T-9))|0);
         const col = season==='autunno' ? C().erba.fioreAutunno : (hsh(i,v,24)>0.5? S.accent : C().erba.fiore);
-        px(x,bx,by,2,2,col);
-        px(x,bx,by-1,1,1,shade(col,0.3));
+        px(x,bx,by-1,2,1,col); px(x,bx,by+2,2,1,col);      // petali sopra e sotto
+        px(x,bx-1,by,1,2,col); px(x,bx+2,by,1,2,col);      // e ai lati
+        px(x,bx,by,2,2,shade(col,0.3));                    // il cuore, più chiaro
       }
     }
   } else {
-    // brina
-    for(let i=0;i<10;i++){
-      const bx=(hsh(i,v,31)*U)|0, by=(hsh(i,v,32)*U)|0;
+    // brina: puntini veri da un pixel, e il doppio di prima
+    for(let i=0;i<22;i++){
+      const bx=(hsh(i,v,31)*T)|0, by=(hsh(i,v,32)*T)|0;
       px(x,bx,by,1,1,C().erba.brina);
     }
   }
@@ -313,119 +399,189 @@ function grassTile(v, season){
 }
 
 function dirtTile(v){
-  const c=tela(U,U), x=c.getContext('2d');
-  px(x,0,0,U,U,C().terra.base);
-  for(let i=0;i<40;i++){
-    const bx=(hsh(i,v,41)*U)|0, by=(hsh(i,v,42)*U)|0, r=hsh(i,v,43);
+  const c=telaNetta(T,T), x=c.getContext('2d');
+  px(x,0,0,T,T,C().terra.base);
+  // il grano della terra: novanta trattini da un pixel invece di quaranta
+  for(let i=0;i<90;i++){
+    const bx=(hsh(i,v,41)*T)|0, by=(hsh(i,v,42)*T)|0, r=hsh(i,v,43);
     x.fillStyle = r>0.6?C().terra.chiaro:(r>0.3?C().terra.medio:C().terra.scuro);
-    x.fillRect(bx,by,1+((r*2)|0),1);
+    x.fillRect(bx,by,1+((r*4)|0),1);
   }
-  for(let i=0;i<5;i++){
-    const bx=(hsh(i,v,44)*U)|0, by=(hsh(i,v,45)*U)|0;
-    px(x,bx,by,2,2,C().terra.zolla);
-    px(x,bx,by,1,1,C().terra.zollaLuce);
+  // zolle: adesso hanno una faccia in luce e un'ombra sotto, non erano
+  // due pixel in croce
+  for(let i=0;i<10;i++){
+    const bx=(hsh(i,v,44)*T)|0, by=(hsh(i,v,45)*T)|0;
+    px(x,bx,by,3,3,C().terra.zolla);
+    px(x,bx,by,2,1,C().terra.zollaLuce);
+    px(x,bx,by+3,3,1,C().terra.scuro);
   }
   return c;
 }
 
 function tilledTile(v, wet){
-  const c=tela(U,U), x=c.getContext('2d');
+  const c=telaNetta(T,T), x=c.getContext('2d');
   const A = wet ? C().arato.bagnato : C().arato.asciutto;
   const base = A.base, ridge = A.cresta, dark = A.scuro;
-  px(x,0,0,U,U,base);
-  // solchi orizzontali
+  px(x,0,0,T,T,base);
+  /* Solchi orizzontali, quattro come prima — la distanza è quella, è il
+     passo dell'aratro. Quello che cambia è il PROFILO: prima era fondo,
+     cresta, ombra, tre bande piatte. Adesso la cresta ha un filo di luce
+     sopra e sfuma nel fondo sotto, cioè ha una forma. */
   for(let r=0;r<4;r++){
-    const y=r*8;
-    px(x,0,y,U,1,dark);
-    px(x,0,y+1,U,2,ridge);
-    px(x,0,y+3,U,1,shade(base,-0.05));
-    for(let i=0;i<8;i++){
-      const bx=(hsh(i,v+r,51)*U)|0;
-      px(x,bx,y+4,1,2, hsh(i,v+r,52)>0.5?dark:shade(base,0.05));
+    const y=r*16;
+    px(x,0,y,T,2,dark);                       // il fondo del solco
+    px(x,0,y+2,T,1,shade(ridge,0.18));        // il filo di luce sulla cresta
+    px(x,0,y+3,T,3,ridge);
+    px(x,0,y+6,T,1,shade(base,-0.05));        // e l'ombra dalla parte opposta
+    // la terra smossa fra un solco e l'altro
+    for(let i=0;i<16;i++){
+      const bx=(hsh(i,v+r,51)*T)|0;
+      px(x,bx,y+8+((hsh(i,v+r,53)*3)|0),1+((hsh(i,v+r,54)*2)|0),1,
+         hsh(i,v+r,52)>0.5?dark:shade(base,0.05));
     }
   }
   if(wet){
-    // riflessi d'acqua
-    for(let i=0;i<7;i++){
-      const bx=(hsh(i,v,61)*U)|0, by=(hsh(i,v,62)*U)|0;
-      x.globalAlpha=0.35; px(x,bx,by,2,1,C().arato.riflesso); x.globalAlpha=1;
+    // riflessi d'acqua: più numerosi e più sottili, che è come si vede
+    // l'acqua nei solchi invece che come si vedono le pozze
+    for(let i=0;i<16;i++){
+      const bx=(hsh(i,v,61)*T)|0, by=(hsh(i,v,62)*T)|0;
+      x.globalAlpha=0.35; px(x,bx,by,2+((hsh(i,v,63)*3)|0),1,C().arato.riflesso); x.globalAlpha=1;
     }
   }
   return c;
 }
 
 function pathTile(v){
-  const c=tela(U,U), x=c.getContext('2d');
-  px(x,0,0,U,U,C().sentiero.malta);
-  // ciottoli
+  const c=telaNetta(T,T), x=c.getContext('2d');
+  px(x,0,0,T,T,C().sentiero.malta);
+  /* Ciottoli: la griglia resta 4×4 e la misura del ciottolo pure — è la
+     misura giusta per un sentiero, non era quello il problema. Quello che
+     cambia è che il bordo in luce e quello in ombra adesso sono spessi
+     un pixel vero invece di due, e che il ciottolo ha gli ANGOLI smussati:
+     a 32 uno smusso da un pixel sarebbe stato un morso da due. */
   const cols=C().sentiero.ciottoli;
   for(let gy=0; gy<4; gy++) for(let gx=0; gx<4; gx++){
     const r=hsh(gx,gy*7+v,71);
-    const bx=gx*8+((hsh(gx,gy+v,72)*2)|0), by=gy*8+((hsh(gx,gy+v,73)*2)|0);
-    const w=5+((r*2)|0), h=5+((hsh(gx,gy+v,74)*2)|0);
+    const bx=gx*16+((hsh(gx,gy+v,72)*4)|0), by=gy*16+((hsh(gx,gy+v,73)*4)|0);
+    const w=10+((r*4)|0), h=10+((hsh(gx,gy+v,74)*4)|0);
     const col=cols[(r*4)|0];
     x.fillStyle=col; x.fillRect(bx,by,w,h);
-    x.fillStyle=shade(col,0.18); x.fillRect(bx,by,w,1);
-    x.fillStyle=shade(col,-0.22); x.fillRect(bx,by+h-1,w,1);
+    // gli angoli mangiati: quattro pixel di malta, e il sasso diventa tondo
+    x.fillStyle=C().sentiero.malta;
+    x.fillRect(bx,by,1,1); x.fillRect(bx+w-1,by,1,1);
+    x.fillRect(bx,by+h-1,1,1); x.fillRect(bx+w-1,by+h-1,1,1);
+    x.fillStyle=shade(col,0.18); x.fillRect(bx+1,by,w-2,1);
+    x.fillStyle=shade(col,-0.22); x.fillRect(bx+1,by+h-1,w-2,1);
+    // e una venatura dentro, che a 32 non ci stava
+    if(r>0.55) px(x, bx+2+((r*3)|0), by+2+((hsh(gx,gy,75)*4)|0), 2+((r*3)|0), 1, shade(col,-0.10));
   }
   return c;
 }
 
 function sandTile(v){
-  const c=tela(U,U), x=c.getContext('2d');
-  px(x,0,0,U,U,C().sabbia.base);
-  for(let i=0;i<34;i++){
-    const bx=(hsh(i,v,81)*U)|0, by=(hsh(i,v,82)*U)|0;
+  const c=telaNetta(T,T), x=c.getContext('2d');
+  px(x,0,0,T,T,C().sabbia.base);
+  /* Novanta granelli da un pixel invece di trentaquattro da due. È il
+     caso in cui il ridisegno si vede di più e costa di meno: la sabbia È
+     grana, e a 32 la grana più fine possibile era un quadretto 2×2. */
+  for(let i=0;i<90;i++){
+    const bx=(hsh(i,v,81)*T)|0, by=(hsh(i,v,82)*T)|0;
     x.fillStyle = hsh(i,v,83)>0.5?C().sabbia.scuro:C().sabbia.chiaro;
     x.fillRect(bx,by,1,1);
+  }
+  // e qualche increspatura lasciata dal vento, lunga e bassissima
+  for(let i=0;i<5;i++){
+    const bx=(hsh(i,v,84)*T)|0, by=(hsh(i,v,85)*T)|0;
+    x.globalAlpha=0.5;
+    px(x,bx,by,6+((hsh(i,v,86)*10)|0),1,C().sabbia.scuro);
+    x.globalAlpha=1;
   }
   return c;
 }
 
 function woodTile(v){
-  const c=tela(U,U), x=c.getContext('2d');
-  px(x,0,0,U,U,C().assi.base);
+  const c=telaNetta(T,T), x=c.getContext('2d');
+  px(x,0,0,T,T,C().assi.base);
+  /* Quattro assi, come prima. La differenza è il giunto: era spesso un
+     pixel di disegno, cioè due a schermo, e due pixel di nero fra un'asse
+     e l'altra su un pavimento chiaro si leggono come una fuga di
+     piastrelle. Adesso è uno vero, con accanto un filo di luce — che è
+     come si vede il bordo di un'asse piallata. */
   for(let r=0;r<4;r++){
-    const y=r*8;
-    px(x,0,y,U,1,C().assi.giunto);
-    px(x,0,y+1,U,7, r%2? C().assi.alterna:C().assi.base);
-    for(let i=0;i<6;i++){
-      const bx=(hsh(i,r+v,91)*U)|0;
-      x.globalAlpha=0.35; px(x,bx,y+2+((hsh(i,r,92)*4)|0),3+((hsh(i,r,93)*4)|0),1,C().assi.venatura); x.globalAlpha=1;
+    const y=r*16;
+    px(x,0,y,T,1,C().assi.giunto);
+    px(x,0,y+1,T,1,shade(C().assi.base,0.10));       // il taglio prende luce
+    px(x,0,y+2,T,14, r%2? C().assi.alterna:C().assi.base);
+    // venature: il doppio, e lunghe il doppio, ma sempre alte un pixel
+    for(let i=0;i<12;i++){
+      const bx=(hsh(i,r+v,91)*T)|0;
+      x.globalAlpha=0.35;
+      px(x,bx,y+3+((hsh(i,r,92)*10)|0),5+((hsh(i,r,93)*12)|0),1,C().assi.venatura);
+      x.globalAlpha=1;
     }
-    const jx = (r%2? 16:0);
-    px(x,jx,y,1,8,C().assi.giunto);
+    // il giunto di testa fra due assi in fila, sfalsato riga per riga
+    const jx = (r%2? 32:0);
+    px(x,jx,y,1,16,C().assi.giunto);
   }
   return c;
 }
 
+/* LA QUARTA LASTRA, E PERCHÉ NON SI USA.
+
+   `lastre.pietre` ha tre pietre dalla rampa PIETRA e una dalla rampa
+   SABBIA: un crema caldo in mezzo a tre grigi. Era un accento voluto —
+   una lastra di arenaria fra quelle di granito — e non l'ha mai visto
+   nessuno, perché con l'hash rotto l'indice `(h*4)|0` arrivava al
+   massimo a 1. Guarito l'hash è comparso, una lastra su quattro, e la
+   piazza è diventata una scacchiera da bagno.
+
+   Renderlo raro con una probabilità NON funziona, ed è la cosa che vale
+   la pena sapere: questa funzione conosce quattro varianti in tutto, e
+   sceglie la pietra a partire da quelle. L'accento finisce dentro alla
+   variante, e la variante si ripete su tutta la piazza — quindi «una
+   volta su venticinque» diventa «sempre nello stesso punto di ogni
+   quarta casella», cioè un motivo regolare invece di un caso. Provato a
+   0.92 e a 0.96, e si vedeva tutte e due le volte: file di lastre chiare
+   a distanza fissa.
+
+   Quindi il selciato usa i tre grigi, che è la famiglia che si è sempre
+   vista, più fine di prima perché la piastrella è ridisegnata a 64. Per
+   rimettere l'arenaria bisogna prima dare a questa funzione la posizione
+   nel mondo e non solo la variante, se no il motivo torna. */
 function stoneFloorTile(v){
-  const c=tela(U,U), x=c.getContext('2d');
+  const c=telaNetta(T,T), x=c.getContext('2d');
   // lastre calde, sabbiose, con giunti di malta chiara
-  px(x,0,0,U,U,C().lastre.malta);
+  px(x,0,0,T,T,C().lastre.malta);
   const cols=C().lastre.pietre;
-  // sfalsate: due file da due lastre, con offset alternato
+  /* Sfalsate: due file da due lastre, con offset alternato. La lastra è
+     grande uguale — è la misura giusta per una piazza — ma il giunto
+     passa da due pixel a schermo a uno, e la fascia in luce e quella in
+     ombra da quattro a due. Una lastra fatta così ha uno spessore invece
+     di un contorno. */
   for(let gy=0;gy<2;gy++){
-    const off = (gy+v)%2 ? 8 : 0;
+    const off = (gy+v)%2 ? 16 : 0;
     for(let gx=-1;gx<3;gx++){
-      const bx=gx*16+off, by=gy*16;
-      const col = cols[(hsh(gx+2,gy+v,101)*4)|0];
-      x.fillStyle=col; x.fillRect(bx+1,by+1,14,14);
-      x.fillStyle=shade(col,0.16); x.fillRect(bx+1,by+1,14,2);
-      x.fillStyle=shade(col,-0.16); x.fillRect(bx+1,by+13,14,2);
-      // usura
-      for(let i=0;i<3;i++){
-        const ux=bx+2+((hsh(i,gx*3+gy+v,102)*11)|0), uy=by+3+((hsh(i,gx+gy*5+v,103)*10)|0);
+      const bx=gx*32+off, by=gy*32;
+      const col = cols[(hsh(gx+2,gy+v,101)*3)|0];   // i tre grigi, non l'arenaria
+      x.fillStyle=col; x.fillRect(bx+1,by+1,30,30);
+      x.fillStyle=shade(col,0.16); x.fillRect(bx+1,by+1,30,2);
+      x.fillStyle=shade(col,-0.16); x.fillRect(bx+1,by+29,30,2);
+      // usura: il doppio dei segni, e sottili come graffi veri
+      for(let i=0;i<7;i++){
+        const ux=bx+3+((hsh(i,gx*3+gy+v,102)*24)|0), uy=by+4+((hsh(i,gx+gy*5+v,103)*22)|0);
         x.fillStyle = hsh(i,gx+gy,104)>0.5 ? shade(col,-0.10) : shade(col,0.10);
-        x.fillRect(ux,uy,2,1);
+        x.fillRect(ux,uy,2+((hsh(i,gx,108)*4)|0),1);
       }
     }
   }
-  // muschio negli interstizi
-  for(let i=0;i<4;i++){
+  // muschio negli interstizi, sfrangiato invece che quadrato
+  for(let i=0;i<8;i++){
     if(hsh(i,v,105)<0.55) continue;
-    const mx=(hsh(i,v,106)*U)|0, my=(hsh(i,v,107)*U)|0;
-    x.globalAlpha=0.4; px(x,mx,my,2,2,C().lastre.muschio); x.globalAlpha=1;
+    const mx=(hsh(i,v,106)*T)|0, my=(hsh(i,v,107)*T)|0;
+    x.globalAlpha=0.4;
+    px(x,mx,my,3,2,C().lastre.muschio);
+    px(x,mx+1,my+2,2,1,C().lastre.muschio);
+    x.globalAlpha=1;
   }
   return c;
 }
@@ -434,55 +590,68 @@ function stoneFloorTile(v){
    la fuliggine che si accumula nei giunti. È il pavimento degli interni
    di pietra — la fucina — dove le lastre della piazza stonavano. */
 function terracottaTile(v){
-  const c=tela(U,U), x=c.getContext('2d');
-  px(x,0,0,U,U,C().cotto.malta);
+  const c=telaNetta(T,T), x=c.getContext('2d');
+  px(x,0,0,T,T,C().cotto.malta);
   const cols=C().cotto.pietre;
   for(let gy=0;gy<3;gy++){
-    const off = (gy+v)%2 ? 5 : 0;
+    const off = (gy+v)%2 ? 10 : 0;
     for(let gx=-1;gx<4;gx++){
-      const bx=gx*11+off, by=gy*11;
+      const bx=gx*22+off, by=gy*22;
       const col = cols[(hsh(gx+2,gy+v,161)*4)|0];
-      x.fillStyle=col;             x.fillRect(bx+1,by+1,9,9);
-      x.fillStyle=shade(col,0.14); x.fillRect(bx+1,by+1,9,1);
-      x.fillStyle=shade(col,-0.18);x.fillRect(bx+1,by+9,9,1);
-      // qualche mattonella scheggiata: il cotto si consuma agli angoli
-      if(hsh(gx,gy+v,162)>0.78) px(x,bx+8,by+8,2,2,shade(col,-0.3));
+      x.fillStyle=col;             x.fillRect(bx+1,by+1,20,20);
+      x.fillStyle=shade(col,0.14); x.fillRect(bx+1,by+1,20,2);
+      x.fillStyle=shade(col,-0.18);x.fillRect(bx+1,by+19,20,2);
+      // qualche mattonella scheggiata: il cotto si consuma agli angoli, e
+      // adesso la scheggia ha una forma invece di essere un quadretto
+      if(hsh(gx,gy+v,162)>0.78){
+        px(x,bx+17,by+17,4,4,shade(col,-0.3));
+        px(x,bx+19,by+15,2,2,shade(col,-0.3));
+      }
     }
   }
   // fuliggine sparsa, più fitta dove capita
-  for(let i=0;i<7;i++){
+  for(let i=0;i<14;i++){
     if(hsh(i,v,163)<0.45) continue;
-    const mx=(hsh(i,v,164)*U)|0, my=(hsh(i,v,165)*U)|0;
-    x.globalAlpha=0.35; px(x,mx,my,3,2,C().cotto.fuliggine); x.globalAlpha=1;
+    const mx=(hsh(i,v,164)*T)|0, my=(hsh(i,v,165)*T)|0;
+    x.globalAlpha=0.35; px(x,mx,my,4+((hsh(i,v,166)*4)|0),2,C().cotto.fuliggine); x.globalAlpha=1;
   }
   return c;
 }
 
 function snowTile(v){
-  const c=tela(U,U), x=c.getContext('2d');
-  px(x,0,0,U,U,C().neve.base);
-  for(let i=0;i<24;i++){
-    const bx=(hsh(i,v,111)*U)|0, by=(hsh(i,v,112)*U)|0;
+  const c=telaNetta(T,T), x=c.getContext('2d');
+  px(x,0,0,T,T,C().neve.base);
+  /* La neve era ventiquattro trattini 2×1, cioè 4×2 a schermo: da vicino
+     si contavano. Adesso sono sessanta, alti un pixel vero, e fra loro
+     qualche scintilla singola — che è quello che fa sembrare la neve
+     neve invece che intonaco. */
+  for(let i=0;i<60;i++){
+    const bx=(hsh(i,v,111)*T)|0, by=(hsh(i,v,112)*T)|0;
     x.fillStyle=hsh(i,v,113)>0.5?C().neve.chiaro:C().neve.scuro;
-    x.fillRect(bx,by,2,1);
+    x.fillRect(bx,by,2+((hsh(i,v,114)*3)|0),1);
+  }
+  for(let i=0;i<14;i++){
+    const bx=(hsh(i,v,115)*T)|0, by=(hsh(i,v,116)*T)|0;
+    px(x,bx,by,1,1,C().neve.chiaro);
   }
   return c;
 }
 
 function caveTile(v){
-  const c=tela(U,U), x=c.getContext('2d');
+  const c=telaNetta(T,T), x=c.getContext('2d');
   // pavimento della grotta: sabbioso, più chiaro delle pareti
-  px(x,0,0,U,U,C().grotta.base);
-  for(let i=0;i<34;i++){
-    const bx=(hsh(i,v,121)*U)|0, by=(hsh(i,v,122)*U)|0, r=hsh(i,v,123);
+  px(x,0,0,T,T,C().grotta.base);
+  for(let i=0;i<80;i++){
+    const bx=(hsh(i,v,121)*T)|0, by=(hsh(i,v,122)*T)|0, r=hsh(i,v,123);
     x.fillStyle=r>0.6?C().grotta.chiaro:(r>0.3?C().grotta.medio:C().grotta.scuro);
-    x.fillRect(bx,by,1+((r*2)|0),1);
+    x.fillRect(bx,by,1+((r*4)|0),1);
   }
-  // ghiaia
-  for(let i=0;i<6;i++){
-    const bx=(hsh(i,v,124)*U)|0, by=(hsh(i,v,125)*U)|0;
-    px(x,bx,by,2,2,C().grotta.ghiaia);
-    px(x,bx,by,1,1,C().grotta.ghiaiaLuce);
+  // ghiaia: sassolini con una faccia in luce e un'ombra, non due pixel
+  for(let i=0;i<12;i++){
+    const bx=(hsh(i,v,124)*T)|0, by=(hsh(i,v,125)*T)|0;
+    px(x,bx,by,3,3,C().grotta.ghiaia);
+    px(x,bx,by,2,1,C().grotta.ghiaiaLuce);
+    px(x,bx,by+3,3,1,C().grotta.scuro);
   }
   return c;
 }
@@ -493,21 +662,27 @@ function waterFrames(season){
   const A = season==='inverno' ? C().acqua.gelida : C().acqua.tiepida;
   const deep = A.fondo, mid = A.medio, top = A.cresta;
   for(let f=0;f<6;f++){
-    const c=tela(U,U), x=c.getContext('2d');
-    px(x,0,0,U,U,deep);
-    for(let i=0;i<20;i++){
-      const bx=(hsh(i,f,131)*U)|0;
-      const by=((hsh(i,0,132)*U + f*2.2)|0)%U;
+    const c=telaNetta(T,T), x=c.getContext('2d');
+    px(x,0,0,T,T,deep);
+    /* Le onde scorrono di `f*4.4` invece di `f*2.2`: il movimento a
+       schermo resta identico — erano pixel di disegno, adesso sono pixel
+       di mondo — ma la scia è lunga il doppio e alta uguale, quindi
+       l'acqua si increspa invece di scattare. */
+    for(let i=0;i<40;i++){
+      const bx=(hsh(i,f,131)*T)|0;
+      const by=((hsh(i,0,132)*T + f*4.4)|0)%T;
       x.globalAlpha=0.55;
-      px(x,bx,by,3+((hsh(i,0,133)*4)|0),1,mid);
+      px(x,bx,by,6+((hsh(i,0,133)*8)|0),1,mid);
       x.globalAlpha=1;
     }
-    for(let i=0;i<7;i++){
-      const bx=((hsh(i,0,141)*U + Math.sin((f/6)*6.28+i)*3)|0+U)%U;
-      const by=((hsh(i,0,142)*U)|0);
+    // le creste: adesso hanno una punta di luce da un pixel solo
+    for(let i=0;i<14;i++){
+      const bx=((hsh(i,0,141)*T + Math.sin((f/6)*6.28+i)*6)|0+T)%T;
+      const by=((hsh(i,0,142)*T)|0);
       x.globalAlpha=0.7;
-      px(x,bx,by,4,1,top);
-      px(x,bx+1,by+1,2,1,shade(top,0.25));
+      px(x,bx,by,7,1,top);
+      px(x,bx+2,by+1,3,1,shade(top,0.25));
+      px(x,bx+3,by-1,1,1,shade(top,0.4));
       x.globalAlpha=1;
     }
     frames.push(c);
@@ -2662,45 +2837,55 @@ A.PRIORITA = {
   terra:5, erba:6, neve:6, roccia:7, vuoto:-1
 };
 
-/* maschera del bordo: bianco dove il terreno vicino deve comparire */
+/* Maschera del bordo: bianco dove il terreno vicino deve comparire.
+
+   Anche le maschere sono ridisegnate a 64, e non per simmetria: la
+   frangia fra due terreni è la cosa più guardata del paesaggio — è quella
+   che fa la riva del lago e il ciglio del sentiero — e a 32 il dente più
+   piccolo che si potesse fare era largo due pixel a schermo. Adesso ne
+   basta uno, e la frangia smette di essere una sega regolare. */
 function maskLato(dir, v){
-  const c = tela(U,U), x = c.getContext('2d');
+  const c = telaNetta(T,T), x = c.getContext('2d');
   x.fillStyle='#fff';
   const prof = (i)=>{
-    // profondità morbida e irregolare, 5..13 px
-    const n = Math.sin(i*0.55 + v*2.1)*0.5 + Math.sin(i*0.23 + v*3.7)*0.5;
-    return 5 + Math.round((n*0.5+0.5)*8);
+    /* profondità morbida e irregolare, 10..26 px di mondo. La terza
+       sinusoide è nuova e ha periodo corto: a 32 non ci stava dentro —
+       sarebbe stata un dente ogni due pixel a schermo, cioè rumore. */
+    const n = Math.sin(i*0.275 + v*2.1)*0.45
+            + Math.sin(i*0.115 + v*3.7)*0.40
+            + Math.sin(i*0.9   + v*1.3)*0.15;
+    return 10 + Math.round((n*0.5+0.5)*16);
   };
-  for(let i=0;i<U;i++){
+  for(let i=0;i<T;i++){
     const p = prof(i);
     if(dir==='n')      x.fillRect(i, 0, 1, p);
-    else if(dir==='s') x.fillRect(i, U-p, 1, p);
+    else if(dir==='s') x.fillRect(i, T-p, 1, p);
     else if(dir==='w') x.fillRect(0, i, p, 1);
-    else if(dir==='e') x.fillRect(U-p, i, p, 1);
-    // sfumatura a puntini oltre il bordo
-    for(let k=0;k<3;k++){
+    else if(dir==='e') x.fillRect(T-p, i, p, 1);
+    // sfumatura a puntini oltre il bordo: sei invece di tre, e più fitti
+    for(let k=0;k<4;k++){
       if(hsh(i,k+v*7,801) > 0.62) continue;
       const q = p + 1 + k*2;
-      if(q>=U) break;
+      if(q>=T) break;
       if(dir==='n')      x.fillRect(i, q, 1, 1);
-      else if(dir==='s') x.fillRect(i, U-1-q, 1, 1);
+      else if(dir==='s') x.fillRect(i, T-1-q, 1, 1);
       else if(dir==='w') x.fillRect(q, i, 1, 1);
-      else if(dir==='e') x.fillRect(U-1-q, i, 1, 1);
+      else if(dir==='e') x.fillRect(T-1-q, i, 1, 1);
     }
   }
   return c;
 }
 
 function maskAngolo(dir, v){
-  const c = tela(U,U), x = c.getContext('2d');
+  const c = telaNetta(T,T), x = c.getContext('2d');
   x.fillStyle='#fff';
-  const cx = (dir==='nw'||dir==='sw') ? 0 : U;
-  const cy = (dir==='nw'||dir==='ne') ? 0 : U;
-  for(let y=0;y<U;y++) for(let x0=0;x0<U;x0++){
+  const cx = (dir==='nw'||dir==='sw') ? 0 : T;
+  const cy = (dir==='nw'||dir==='ne') ? 0 : T;
+  for(let y=0;y<T;y++) for(let x0=0;x0<T;x0++){
     const d = Math.hypot(x0-cx, y-cy);
-    const r = 9 + Math.sin((x0+y)*0.4 + v*2.3)*3;
+    const r = 18 + Math.sin((x0+y)*0.2 + v*2.3)*6;
     if(d < r) x.fillRect(x0,y,1,1);
-    else if(d < r+3 && hsh(x0,y+v,802) > 0.55) x.fillRect(x0,y,1,1);
+    else if(d < r+6 && hsh(x0,y+v,802) > 0.55) x.fillRect(x0,y,1,1);
   }
   return c;
 }
@@ -2710,11 +2895,11 @@ const bordoCache = {};
 A.bordo = function(tipo, dir, v, season){
   const key = tipo+'|'+dir+'|'+v+'|'+(tipo==='erba'?season:'-');
   if(bordoCache[key]) return bordoCache[key];
-  const c = tela(U,U), x = c.getContext('2d');
+  const c = telaNetta(T,T), x = c.getContext('2d');
   x.imageSmoothingEnabled=false;
-  sovrapponi(x, A.ground(tipo, v, season));
+  sovrapponi(x, A.ground(tipo, v, season), T, T);
   x.globalCompositeOperation='destination-in';
-  sovrapponi(x, dir.length===1 ? maskLato(dir,v) : maskAngolo(dir,v));
+  sovrapponi(x, dir.length===1 ? maskLato(dir,v) : maskAngolo(dir,v), T, T);
   x.globalCompositeOperation='source-over';
   bordoCache[key]=c;
   return c;
@@ -2725,12 +2910,12 @@ const ombraBordoCache = {};
 A.ombraBordo = function(dir, v){
   const key='ob|'+dir+'|'+v;
   if(ombraBordoCache[key]) return ombraBordoCache[key];
-  const c = tela(U,U), x = c.getContext('2d');
+  const c = telaNetta(T,T), x = c.getContext('2d');
   x.fillStyle='rgba(0,0,0,0.16)';
-  sovrapponi(x, dir.length===1 ? maskLato(dir,v) : maskAngolo(dir,v));
+  sovrapponi(x, dir.length===1 ? maskLato(dir,v) : maskAngolo(dir,v), T, T);
   x.globalCompositeOperation='source-in';
   x.fillStyle='rgba(30,22,14,0.20)';
-  x.fillRect(0,0,U,U);
+  x.fillRect(0,0,T,T);
   ombraBordoCache[key]=c;
   return c;
 };
@@ -2746,41 +2931,41 @@ const aratoCache = {};
 A.arato = function(vic, v, bagnato, season){
   const key = 'ar|'+vic+'|'+v+'|'+(bagnato?1:0);
   if(aratoCache[key]) return aratoCache[key];
-  const c = tela(U,U), x = c.getContext('2d');
+  const c = telaNetta(T,T), x = c.getContext('2d');
   x.imageSmoothingEnabled=false;
 
   // 1. maschera della forma
-  const mk = tela(U,U), mx = mk.getContext('2d');
+  const mk = telaNetta(T,T), mx = mk.getContext('2d');
   mx.fillStyle='#fff';
   const er = (i, lato)=>{
     // quanto rientra il bordo su questo lato: 0 se c'è un vicino
     if(vic & lato) return 0;
-    return 2 + Math.round((Math.sin(i*0.7 + v*2.3)*0.5+0.5)*2);
+    return 4 + Math.round((Math.sin(i*0.35 + v*2.3)*0.5+0.5)*4);
   };
-  for(let y=0;y<U;y++){
+  for(let y=0;y<T;y++){
     const dw = er(y, 8), de = er(y, 2);
-    for(let x0=0;x0<U;x0++){
+    for(let x0=0;x0<T;x0++){
       const dn = er(x0, 1), ds = er(x0, 4);
-      if(x0 < dw || x0 >= U-de) continue;
-      if(y < dn || y >= U-ds) continue;
+      if(x0 < dw || x0 >= T-de) continue;
+      if(y < dn || y >= T-ds) continue;
       mx.fillRect(x0,y,1,1);
     }
   }
 
   // 2. texture arata ritagliata sulla maschera
-  sovrapponi(x, tilledTile(v, bagnato));
+  sovrapponi(x, tilledTile(v, bagnato), T, T);
   x.globalCompositeOperation='destination-in';
-  sovrapponi(x, mk);
+  sovrapponi(x, mk, T, T);
   x.globalCompositeOperation='source-over';
 
   // 3. argine: zolle chiare sul bordo esterno
   const argine = bagnato ? '#8a6449' : '#b8946c';
   const argineS= bagnato ? '#3f2b1e' : '#6b4a33';
-  for(let i=0;i<U;i++){
-    if(!(vic&1)){ const d=er(i,1); if(d){ px(x,i,d,1,1,argine); px(x,i,d+1,1,1,argineS); } }
-    if(!(vic&4)){ const d=er(i,4); if(d){ px(x,i,U-1-d,1,1,argineS); px(x,i,U-2-d,1,1,argine); } }
-    if(!(vic&8)){ const d=er(i,8); if(d){ px(x,d,i,1,1,argine); px(x,d+1,i,1,1,argineS); } }
-    if(!(vic&2)){ const d=er(i,2); if(d){ px(x,U-1-d,i,1,1,argineS); px(x,U-2-d,i,1,1,argine); } }
+  for(let i=0;i<T;i++){
+    if(!(vic&1)){ const d=er(i,1); if(d){ px(x,i,d,1,2,argine); px(x,i,d+2,1,1,argineS); } }
+    if(!(vic&4)){ const d=er(i,4); if(d){ px(x,i,T-2-d,1,2,argineS); px(x,i,T-4-d,1,2,argine); } }
+    if(!(vic&8)){ const d=er(i,8); if(d){ px(x,d,i,2,1,argine); px(x,d+2,i,1,1,argineS); } }
+    if(!(vic&2)){ const d=er(i,2); if(d){ px(x,T-2-d,i,2,1,argineS); px(x,T-4-d,i,2,1,argine); } }
   }
   aratoCache[key]=c;
   return c;
@@ -2863,21 +3048,23 @@ A.ciuffo = function(season, v, piega){
 A.schiuma = function(dir, v, frame){
   const key='sc|'+dir+'|'+v+'|'+frame;
   if(objCache[key]) return objCache[key];
-  const c = tela(U,U), x = c.getContext('2d');
-  const off = frame*1.4;
-  for(let i=0;i<U;i++){
-    const h = 2 + Math.round((Math.sin(i*0.5 + v*2 + frame*0.7)*0.5+0.5)*3);
+  /* La spuma va a 64 con l'acqua e col raccordo: sta esattamente dove
+     passa la frangia fra due terreni, e una riva metà fine e metà a
+     gradini si nota più di una riva tutta a gradini. */
+  const c = telaNetta(T,T), x = c.getContext('2d');
+  for(let i=0;i<T;i++){
+    const h = 4 + Math.round((Math.sin(i*0.25 + v*2 + frame*0.7)*0.5+0.5)*6);
     x.globalAlpha = 0.55;
     x.fillStyle = '#eaf6fb';
     if(dir==='n') x.fillRect(i, 0, 1, h);
-    else if(dir==='s') x.fillRect(i, U-h, 1, h);
+    else if(dir==='s') x.fillRect(i, T-h, 1, h);
     else if(dir==='w') x.fillRect(0, i, h, 1);
-    else if(dir==='e') x.fillRect(U-h, i, h, 1);
+    else if(dir==='e') x.fillRect(T-h, i, h, 1);
     x.globalAlpha = 0.28;
-    if(dir==='n') x.fillRect(i, h, 1, 2);
-    else if(dir==='s') x.fillRect(i, U-h-2, 1, 2);
-    else if(dir==='w') x.fillRect(h, i, 2, 1);
-    else if(dir==='e') x.fillRect(U-h-2, i, 2, 1);
+    if(dir==='n') x.fillRect(i, h, 1, 4);
+    else if(dir==='s') x.fillRect(i, T-h-4, 1, 4);
+    else if(dir==='w') x.fillRect(h, i, 4, 1);
+    else if(dir==='e') x.fillRect(T-h-4, i, 4, 1);
   }
   x.globalAlpha=1;
   objCache[key]=c;

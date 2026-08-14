@@ -2378,9 +2378,60 @@ verifica('gli sprite nascono su una tela a densità doppia', () => {
   if (grezze.length)
     problemi.push(`${grezze.length} sprite di una casella nascono ancora su \`cv(U,U)\` invece che su ` +
                   '`tela(U,U)`: uscirebbero grandi mezza casella');
-  const quante = (corpo.match(/\btela\(/g) || []).length;
-  if (quante < 30)
-    problemi.push(`solo ${quante} usi di \`tela(\`: erano una quarantina, il controllo non li vede più`);
+  /* Le due strade sono `tela` (l'arte di prima, ingrandita) e `telaNetta`
+     (quella ridisegnata a 64). Si contano insieme, perché uno sprite che
+     passa dalla seconda esce dalla prima: contare solo `tela(` faceva
+     scattare l'allarme a ogni sprite rifatto, che è il contrario di
+     quello che serve. */
+  const quante = (corpo.match(/\btela\(/g) || []).length
+               + (corpo.match(/\btelaNetta\(/g) || []).length;
+  if (quante < 40)
+    problemi.push(`solo ${quante} usi di \`tela(\`/\`telaNetta(\`: erano una quarantina, ` +
+                  'il controllo non li vede più');
+  if (!/function telaNetta\(w, h\)\{ return tela\(w\/K, h\/K, true\); \}/.test(art))
+    problemi.push('`telaNetta` non chiede più una tela netta: chi la usa tornerebbe a 32 senza accorgersene');
+  return problemi;
+});
+
+/* --- CHI È STATO RIDISEGNATO A 64 NON TORNA INDIETRO ---
+
+   Il ridisegno di uno sprite a 64 non lascia nessuna traccia che un
+   errore possa svelare: se qualcuno rimette `tela` al posto di
+   `telaNetta` e dimezza i numeri, il gioco funziona identico e l'unica
+   differenza è che la texture torna a blocchi da due. Nessun test
+   diventerebbe rosso, e chi guarda non se ne accorge subito perché il
+   confronto non ce l'ha davanti.
+
+   Questo elenco è la memoria di cosa è già stato fatto. Cresce man mano
+   che la coda lunga si accorcia, e ogni riga che si aggiunge è una riga
+   che non può più tornare indietro di nascosto. */
+const RIFATTI_A_64 = [
+  'grassTile', 'dirtTile', 'tilledTile', 'pathTile', 'sandTile', 'woodTile',
+  'stoneFloorTile', 'terracottaTile', 'snowTile', 'caveTile', 'waterFrames',
+  'maskLato', 'maskAngolo'
+];
+verifica('gli sprite già ridisegnati a 64 restano a 64', () => {
+  const problemi = [];
+  const art = fs.readFileSync(path.join(RADICE, 'js', 'art.js'), 'utf8');
+  for (const nome of RIFATTI_A_64) {
+    const m = art.match(new RegExp('function ' + nome + '\\s*\\([^)]*\\)\\s*\\{([\\s\\S]*?)\\n\\}'));
+    if (!m) { problemi.push(`non trovo più \`${nome}\` in art.js`); continue; }
+    const corpo = m[1].replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
+    if (!/\btelaNetta\(/.test(corpo))
+      problemi.push(`\`${nome}\` era ridisegnata a 64 e adesso non chiede più \`telaNetta\`: ` +
+                    'la sua texture è tornata a blocchi da due, e non se ne accorgerebbe nessuno');
+    if (/(?<!\w)U(?!\w)/.test(corpo))
+      problemi.push(`\`${nome}\` è ridisegnata a 64 ma parla ancora di \`U\`: ` +
+                    'metà dei suoi numeri sono in trentaduesimi e metà no');
+  }
+  // e le due che compongono i raccordi devono seguire le maschere
+  for (const nome of ['bordo', 'ombraBordo', 'arato']) {
+    const m = art.match(new RegExp('A\\.' + nome + ' = function[^{]*\\{([\\s\\S]*?)\\n\\};'));
+    if (!m) { problemi.push(`non trovo più \`A.${nome}\``); continue; }
+    if (!/\btelaNetta\(/.test(m[1]))
+      problemi.push(`\`A.${nome}\` compone sprite già a 64 su una tela da 32: ` +
+                    'il ritaglio uscirebbe della misura sbagliata');
+  }
   return problemi;
 });
 
