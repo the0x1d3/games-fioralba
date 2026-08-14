@@ -16,6 +16,17 @@
 
 window.CHANGELOG = [
   {
+    v: '3.5',
+    data: 'agosto 2026',
+    titolo: 'Si corre anche col pollice, e la veglia non si perde più',
+    voci: [
+      { tipo:'nuovo',  t:'Il tasto «Corri», sul telefono', d:'Da tastiera si corre tenendo <b>Shift</b>, e chi gioca col pollice quel tasto non ce l\'ha: la valle si attraversava tutta al passo. Adesso accanto a «Usa» e «Parla» c\'è il terzo verbo, azzurro per distinguerlo con la coda dell\'occhio. Si tiene premuto mentre l\'altro pollice tiene la levetta — la stessa presa a due mani di chi gioca col mignolo sullo Shift — e consuma un filo di energia come sempre. Misurato: dieci fotogrammi facevano 11,8 pixel camminando e ne fanno 19 correndo, cioè si andava al 62% della velocità di chi gioca da computer.' },
+      { tipo:'fix',    t:'La veglia al Santuario non si può più perdere', d:'Era il difetto peggiore che ci fosse, e stava proprio in fondo alla storia: quando i sei accettano l\'invito la veglia è fissata per <b>la sera dopo</b>, e chi quella sera andava a dormire presto — o crollava dalla stanchezza a mezzanotte dall\'altra parte della valle — si svegliava con quella data ormai passata. Da lì in poi Fiammella ripeteva «È domani sera» per sempre e l\'atto secondo non si chiudeva più: la partita restava a un passo dal finale senza modo di arrivarci. Adesso una veglia saltata si sposta a stasera, ogni mattina, finché non la fai. I sei hanno già detto di sì, e un sì non scade.' },
+      { tipo:'fix',    t:'Cambiare partita non appesantisce più il gioco', d:'Passando da una partita all\'altra dal menu, senza ricaricare la pagina, il motore ne faceva partire un secondo sopra a quello che stava già girando — e due, e tre, uno per ogni cambio. Il gioco continuava a funzionare ma consumava il doppio, e nessuno poteva capire perché fosse diventato pesante. Sistemato anche il primo istante di ogni partita, dove un conto del tempo poteva partire all\'indietro e far saltare il primo fotogramma: si vedeva come uno sfarfallio all\'apertura, soprattutto sull\'aia dove c\'è la fontana.' },
+      { tipo:'fix',    t:'Due pulsanti che aprivano la cosa sbagliata', d:'Il pulsante <b>Ritira</b> dei premi rimasti fuori dallo zaino ti riportava al Diario, ma sulla scheda dei numeri del podere invece che su quella dei Livelli da cui eri partito. E il buongiorno del mattino, quando la cassa di consegna aveva venduto qualcosa, arrivava due volte di fila.' }
+    ]
+  },
+  {
     v: '3.4',
     data: 'agosto 2026',
     titolo: 'Le scritte non sono più sgranate, e i pixel li scegli tu',
