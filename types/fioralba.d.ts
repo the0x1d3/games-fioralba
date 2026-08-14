@@ -322,6 +322,8 @@ interface FioData {
   PERSONA: Record<string, FioPersona>;
   /** Dove sta ognuno la sera della veglia: coppie di caselle. */
   POSTI_VEGLIA: Record<string, number[][]>;
+  /** Dove sta ognuno il giorno della sagra, in piazza: coppie di caselle. */
+  POSTI_SAGRA: Record<string, number[][]>;
   /** Il frutto del cespuglio, stagione per stagione. */
   CESPUGLIO: Record<string, string>;
   /** Coefficienti dei bonus per abilità: li leggono gioco e scheda. */

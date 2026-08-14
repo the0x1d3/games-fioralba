@@ -1337,7 +1337,7 @@ verifica('index.html carica tutti i js, nell\'ordine portante', () => {
      risultava un vincolo che non esiste — la stessa omonimia che aveva
      già fatto leggere male l'elenco delle dipendenze di game.js.
 
-   Il pericolo non sono questi quattro, che si reggono. È il quinto: una
+   Il pericolo non sono questi sette, che si reggono. È l'ottavo: una
    riga come `SND.init()` messa al livello del file funziona finché
    l'ordine regge, non rompe niente e non lascia traccia — e il giorno
    che qualcuno sposta uno <script> il gioco si apre bianco, con l'errore
@@ -1356,10 +1356,11 @@ const VINCOLI_NOTI = {
   'solstizio.js|data.js':    'const POSTI_VEGLIA = DATA.POSTI_VEGLIA, un alias preso al caricamento',
   'game.js|solstizio.js':    'i quattro alias G.eSeraDiVeglia = SOLSTIZIO.…',
   'game.js|salvataggio.js':  'G.salva = SALVA.salva',
-  'game.js|traguardi.js':    'Object.assign(G, TRAGUARDI)'
+  'game.js|traguardi.js':    'Object.assign(G, TRAGUARDI)',
+  'game.js|abitanti.js':     'Object.assign(G, ABITANTI)'
 };
 
-verifica(TS ? 'nessuno script pretende di stare dopo un altro, oltre ai sei noti'
+verifica(TS ? 'nessuno script pretende di stare dopo un altro, oltre ai sette noti'
             : 'ordine di caricamento: SALTATO, manca typescript (fai npm install)', () => {
   if (!TS) return [];
   const dir = path.join(RADICE, 'js');

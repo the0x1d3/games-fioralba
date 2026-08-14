@@ -48,8 +48,8 @@ tutto, `game.js` per ultimo.
 data.js  lingua-en.js  lingua.js  palette.js  art.js  fx.js  audio.js
 world.js  mobs.js  ui.js  demo.js  changelog.js  landing.js  titolo.js
 salvataggio.js  sincronizza.js  pesca.js  storie.js  vicende.js
-persona.js  solstizio.js  livelli.js  traguardi.js  tutorial.js
-guida.js  tocco.js  render.js  game.js        (poi, in fondo: debug.js)
+persona.js  solstizio.js  livelli.js  traguardi.js  abitanti.js
+tutorial.js  guida.js  tocco.js  render.js  game.js   (in fondo: debug.js)
 ```
 
 Questa lista non va tenuta a mente: un controllo in `tools/coerenza.js`
@@ -59,16 +59,16 @@ caricato non fa rumore — non è un errore di sintassi e non è un test rosso.
 **Ma «portante» era un'impressione, e adesso è un numero.** Fra i moduli ci
 sono 2.490 riferimenti incrociati e 2.479 stanno *dentro* le funzioni: girano a
 partita avviata, quando i file ci sono tutti da un pezzo, e dell'ordine non
-sanno niente. Al caricamento ne restano undici, che fanno **sei** vincoli
+sanno niente. Al caricamento ne restano dodici, che fanno **sette** vincoli
 d'ordine, ed è tutto quello che «portante» vuol dire:
 
 | chi | vuole prima | perché |
 |-----|-------------|--------|
 | `art.js`, `render.js` | `palette.js` | `PAL.suCambio(...)`, per buttare le cache quando la palette cambia (protetti da `if(window.PAL)`) |
 | `solstizio.js` | `data.js`   | `const POSTI_VEGLIA = DATA.POSTI_VEGLIA`, un alias preso subito |
-| `game.js` | `solstizio.js`, `salvataggio.js`, `traguardi.js` | i riagganci a `G` |
+| `game.js` | `solstizio.js`, `salvataggio.js`, `traguardi.js`, `abitanti.js` | i riagganci a `G` |
 
-Il pericolo non sono questi sei, che si reggono: è il settimo. Una riga come
+Il pericolo non sono questi sette, che si reggono: è l'ottavo. Una riga come
 `SND.init()` messa al livello del file funziona finché l'ordine regge, non
 rompe niente e non lascia traccia — e il giorno che qualcuno sposta uno
 `<script>` la pagina si apre bianca. Un controllo ora li conta e pretende che
@@ -99,6 +99,7 @@ viene zero, il corpo della IIFE *è* il caricamento. E `demo.js` ha un
 | `SOLSTIZIO`| solstizio.js  | atto secondo: le sei memorie, la verità, la veglia      |
 | `LIV`      | livelli.js    | barretta, carta del livello, scheda delle abilità       |
 | `TRAGUARDI`| traguardi.js  | traguardi, Collezione del Naturalista, statistiche      |
+| `ABITANTI` | abitanti.js   | agende, cosa dice oggi, passanti e chiacchiere          |
 | `REND`     | render.js     | il disegno di un fotogramma                             |
 | `G`        | game.js       | stato di gioco, input, sistemi (il file più grosso)     |
 | `DEBUG`    | debug.js      | il pannello di prova (dopo game.js: legge `G` subito)   |
@@ -126,8 +127,11 @@ dipendenze si legge, non si crede.
 
 E guarda anche il contrario: cosa di quella sezione serve *fuori*. Con l'atto
 secondo se ne stava andando `FASCE_VEGLIA`, che è una memo usata solo da
-`G.fasciaAgenda` — l'avrebbe lasciata senza. È rimasta in `game.js`, accanto a
-`FASCE_SAGRA` che fa la stessa identica cosa.
+`G.fasciaAgenda` — l'avrebbe lasciata senza. Restò in `game.js` accanto a
+`FASCE_SAGRA`, che fa la stessa identica cosa; poi sono andate via **insieme**,
+tutte e due dentro `abitanti.js`, cioè nel file della loro unica lettrice. È il
+modo giusto di leggere quella regola: non «non si sposta», ma «si sposta dove
+sta chi la usa».
 
 Il prezzo di ogni stacco è nominabile: le funzioni che restano in `game.js` e
 servono al file nuovo vanno appese a `G.` — finora `G.statoIniziale`,
@@ -154,6 +158,27 @@ lo stacco, ricordati di `tools/coerenza.js`: alcuni controlli leggono il
 *sorgente* di `game.js` cercandoci una funzione per nome, e vanno rimandati al
 file nuovo. Ne è saltato uno subito («ogni collezione ha il suo premio»), ed è il
 motivo per cui questi controlli valgono.
+
+**Ma quella misura non basta, e il secondo stacco l'ha dimostrato.** Dice quali
+*funzioni* si incastrano, non quali *comodità* restano indietro: `abitanti.js`
+sembrava pulito — zero private altrui — e appena scritto usava tre nomi che non
+aveva, `T`, `$` e `POSTI_SAGRA`. Tre `ReferenceError` che nessun test avrebbe
+preso, perché saltano fuori solo quando quella riga gira davvero. Dopo ogni
+stacco, quindi, **cerca i nomi orfani**: prendi ogni identificatore del file
+nuovo e controlla che sia dichiarato lì, o sia un globale del gioco, o sia del
+browser. Le prime due si risolvono ridichiarandole (`const T = 32` ce l'hanno
+uguale render.js, mobs.js e pesca.js); la terza era un dato, ed è andata in
+`DATA` accanto al suo gemello `POSTI_VEGLIA`, che ci era finito per la stessa
+identica ragione.
+
+Altra cosa che il conteggio non vede: **l'alias del modulo può essere
+ombreggiato**. In `abitanti.js` il modulo è `AB` e non `A` perché dentro
+`fasciaAgenda` c'era già `const A = DATA.AGENDE[id]`.
+
+E dopo, provalo davvero facendo girare il ciclo a mano (vedi più sotto): con
+`abitanti.js` la prova che vale è che dieci fotogrammi da 16 ms spostino chi sta
+fuori di ~5 px — la velocità nel codice è `0.5*dt/16` — e chi ha la fascia
+`interno` di zero, perché quello resta piantato davanti a casa sua.
 
 Dopo una rinomina meccanica di punti di chiamata, la prova che vale è questa,
 dalla console: prende dal sorgente ogni `MODULO.funzione` che `game.js` chiama e

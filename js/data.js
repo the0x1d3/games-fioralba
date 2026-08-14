@@ -695,6 +695,19 @@ D.POSTI_VEGLIA = {
   serafina: [[39,36],[40,36]]
 };
 
+/* E dove stanno il giorno della sagra, in piazza. Stessa storia del
+   gemello qui sopra, e per lo stesso motivo è finito qui: lo leggono in
+   due, l'agenda (abitanti.js, che per un giorno la scavalca) e chi
+   prepara la piazza (game.js). Finché stava in game.js il primo dei due
+   non poteva vederlo. */
+D.POSTI_SAGRA = {
+  bruno:   [[18,16],[19,17]],
+  tobia:   [[25,16],[24,17]],
+  marisol: [[21,14],[22,15]],
+  elio:    [[24,21],[23,20]],
+  serafina:[[19,21],[20,22]]
+};
+
 /* ===================================================================
    LE VICENDE DEL PAESE — una storia a più passi per ogni abitante.
 
