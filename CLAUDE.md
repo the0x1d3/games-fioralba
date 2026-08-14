@@ -45,16 +45,41 @@ globale. **L'ordine degli script in `index.html` è portante**: `data.js` prima 
 tutto, `game.js` per ultimo.
 
 ```
-data.js  palette.js  art.js  fx.js  audio.js  world.js  mobs.js
-ui.js  demo.js  changelog.js  landing.js  titolo.js  salvataggio.js
-pesca.js  storie.js  vicende.js  persona.js  solstizio.js  tutorial.js
-guida.js
-render.js  game.js
+data.js  lingua-en.js  lingua.js  palette.js  art.js  fx.js  audio.js
+world.js  mobs.js  ui.js  demo.js  changelog.js  landing.js  titolo.js
+salvataggio.js  sincronizza.js  pesca.js  storie.js  vicende.js
+persona.js  solstizio.js  livelli.js  traguardi.js  tutorial.js
+guida.js  tocco.js  render.js  game.js        (poi, in fondo: debug.js)
 ```
 
 Questa lista non va tenuta a mente: un controllo in `tools/coerenza.js`
 confronta `js/*.js` con gli script di `index.html`. Un file scritto e mai
 caricato non fa rumore — non è un errore di sintassi e non è un test rosso.
+
+**Ma «portante» era un'impressione, e adesso è un numero.** Fra i moduli ci
+sono 2.490 riferimenti incrociati e 2.479 stanno *dentro* le funzioni: girano a
+partita avviata, quando i file ci sono tutti da un pezzo, e dell'ordine non
+sanno niente. Al caricamento ne restano undici, che fanno **sei** vincoli
+d'ordine, ed è tutto quello che «portante» vuol dire:
+
+| chi | vuole prima | perché |
+|-----|-------------|--------|
+| `art.js`, `render.js` | `palette.js` | `PAL.suCambio(...)`, per buttare le cache quando la palette cambia (protetti da `if(window.PAL)`) |
+| `solstizio.js` | `data.js`   | `const POSTI_VEGLIA = DATA.POSTI_VEGLIA`, un alias preso subito |
+| `game.js` | `solstizio.js`, `salvataggio.js`, `traguardi.js` | i riagganci a `G` |
+
+Il pericolo non sono questi sei, che si reggono: è il settimo. Una riga come
+`SND.init()` messa al livello del file funziona finché l'ordine regge, non
+rompe niente e non lascia traccia — e il giorno che qualcuno sposta uno
+`<script>` la pagina si apre bianca. Un controllo ora li conta e pretende che
+siano esattamente quelli previsti (`VINCOLI_NOTI` in `tools/coerenza.js`), **e
+diventa rosso anche se smette di vederli**: un rilevatore che non trova più
+niente e dice «tutto a posto» è peggio che non averlo.
+
+Due trappole, se lo tocchi: ogni file è avvolto in una IIFE, che è essa stessa
+una funzione — chiedere «è dentro una funzione?» risponde sempre sì e il conto
+viene zero, il corpo della IIFE *è* il caricamento. E `demo.js` ha un
+`const PESCA` che è la sua dimostrazione, non il modulo: la solita omonimia.
 
 | globale    | file          | cosa tiene                                              |
 |------------|---------------|---------------------------------------------------------|
@@ -73,6 +98,7 @@ caricato non fa rumore — non è un errore di sintassi e non è un test rosso.
 | `PERSONA`  | persona.js    | zaino, resistenza, scarpe, cintura: negozio ed effetti   |
 | `SOLSTIZIO`| solstizio.js  | atto secondo: le sei memorie, la verità, la veglia      |
 | `LIV`      | livelli.js    | barretta, carta del livello, scheda delle abilità       |
+| `TRAGUARDI`| traguardi.js  | traguardi, Collezione del Naturalista, statistiche      |
 | `REND`     | render.js     | il disegno di un fotogramma                             |
 | `G`        | game.js       | stato di gioco, input, sistemi (il file più grosso)     |
 | `DEBUG`    | debug.js      | il pannello di prova (dopo game.js: legge `G` subito)   |
@@ -112,6 +138,22 @@ I file nuovi si caricano **prima** di `game.js` e quindi non possono toccare `G`
 al caricamento: lo usano solo dentro le funzioni. Per questo è `game.js` a
 riappendere `G.salva` e compagnia a `SALVA`, e `G.eSeraDiVeglia` e compagnia a
 `SOLSTIZIO`, e non il contrario.
+
+**Il caso più facile è quello in cui la sezione è già pubblica.** `traguardi.js`
+(traguardi, Collezione del Naturalista, statistiche) è uscito per primo del giro
+nuovo perché di `game.js` non usava niente — zero private prese, zero proprie
+chiamate da fuori — e le sue nove funzioni stavano già tutte appese a `G.`: gli
+mancava solo il file. Lì il prezzo è **una riga sola**, `Object.assign(G,
+TRAGUARDI)`, e nessun punto di chiamata cambia, perché continuano a essere
+`G.obiettivi()` e `G.contaCollezione()` come prima.
+
+Prima di staccare, misura: quante funzioni private della sezione servono fuori,
+e quante private altrui usa lei. Con l'albero della sintassi, non con le regex —
+la trappola delle omonimie ha già fatto leggere male l'elenco una volta. E dopo
+lo stacco, ricordati di `tools/coerenza.js`: alcuni controlli leggono il
+*sorgente* di `game.js` cercandoci una funzione per nome, e vanno rimandati al
+file nuovo. Ne è saltato uno subito («ogni collezione ha il suo premio»), ed è il
+motivo per cui questi controlli valgono.
 
 Dopo una rinomina meccanica di punti di chiamata, la prova che vale è questa,
 dalla console: prende dal sorgente ogni `MODULO.funzione` che `game.js` chiama e
@@ -161,11 +203,18 @@ PAL.snap('#8a6038')   // → '#8a5c34'
 npm test
 ```
 
-`tools/coerenza.js`: **35 controlli** sui dati e sulle mappe, senza dipendenze —
+`tools/coerenza.js`: **54 controlli** sui dati e sulle mappe, senza dipendenze —
 carica i moduli in un finto `window`. Il primo controlla che ogni file `.js` sia
 sintatticamente valido, e non è pignoleria: un apostrofo non protetto dentro una
 stringa fa fallire il caricamento in silenzio e nel browser resta una pagina
 bianca. È scattato due volte per davvero.
+
+L'unico che fa eccezione alla regola «senza dipendenze» è quello sull'ordine di
+caricamento: per sapere se un riferimento è al livello del file o dentro una
+funzione ci vuole un parser vero, e usa `typescript`, che è già lì per
+`npm run check`. Se manca, **si salta dicendolo** — compare nell'elenco come
+`ordine di caricamento: SALTATO` — così `node tools/coerenza.js` continua a
+girare su un clone appena fatto senza `npm install`.
 
 I controlli non descrivono le decisioni: **le impongono**. Quando correggi
 qualcosa che una misura ha scoperto, aggiungi il controllo che la tiene ferma —

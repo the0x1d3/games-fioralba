@@ -1316,6 +1316,143 @@ verifica('index.html carica tutti i js, nell\'ordine portante', () => {
   return problemi;
 });
 
+/* --- e adesso: quanto pesa davvero, quell'ordine ---
+
+   «L'ordine degli script è portante» stava scritto in due posti, e non
+   l'aveva misurato nessuno. Misurato: fra i moduli ci sono 2.490
+   riferimenti incrociati, e 2.479 stanno DENTRO le funzioni — cioè
+   avvengono a partita avviata, quando i file ci sono tutti da un pezzo,
+   e dell'ordine non sanno niente. Al caricamento ne restano sei, ed
+   è l'elenco qui sotto.
+
+   Due trappole ci sono cascate durante la misura, e vale la pena
+   scriverle perché il prossimo che tocca questo controllo ci ricasca:
+
+   - ogni file è avvolto in una IIFE, che è essa stessa una funzione.
+     Chiedere «questo riferimento è dentro una funzione?» risponde
+     sempre sì, e il conto viene zero: il corpo della IIFE È il
+     caricamento del file, e va scoperchiato.
+   - demo.js ha un `const PESCA` che è la sua dimostrazione della pesca,
+     non il modulo PESCA. Cercando i nomi senza guardare chi li dichiara
+     risultava un vincolo che non esiste — la stessa omonimia che aveva
+     già fatto leggere male l'elenco delle dipendenze di game.js.
+
+   Il pericolo non sono questi quattro, che si reggono. È il quinto: una
+   riga come `SND.init()` messa al livello del file funziona finché
+   l'ordine regge, non rompe niente e non lascia traccia — e il giorno
+   che qualcuno sposta uno <script> il gioco si apre bianco, con l'errore
+   in una console che nessuno ha aperto.
+
+   La parte che conta di più è però quella al contrario: se il rilevatore
+   smette di vedere i vincoli NOTI, il controllo diventa rosso invece di
+   diventare verde a vuoto. Un controllo che non trova più niente e dice
+   «tutto a posto» è peggio che non averlo, ed è già successo di prendere
+   per buono un verde che non voleva dire niente. */
+const TS = (() => { try { return require('typescript'); } catch (_) { return null; } })();
+
+const VINCOLI_NOTI = {
+  'art.js|palette.js':       'PAL.suCambio(A.svuotaCache): la cache degli sprite si butta quando la palette cambia (ed è protetto da if(window.PAL))',
+  'render.js|palette.js':    'PAL.suCambio(...): i blocchi di terreno sono precotti coi colori della palette (idem, protetto)',
+  'solstizio.js|data.js':    'const POSTI_VEGLIA = DATA.POSTI_VEGLIA, un alias preso al caricamento',
+  'game.js|solstizio.js':    'i quattro alias G.eSeraDiVeglia = SOLSTIZIO.…',
+  'game.js|salvataggio.js':  'G.salva = SALVA.salva',
+  'game.js|traguardi.js':    'Object.assign(G, TRAGUARDI)'
+};
+
+verifica(TS ? 'nessuno script pretende di stare dopo un altro, oltre ai sei noti'
+            : 'ordine di caricamento: SALTATO, manca typescript (fai npm install)', () => {
+  if (!TS) return [];
+  const dir = path.join(RADICE, 'js');
+  const files = fs.readdirSync(dir).filter(n => n.endsWith('.js'));
+
+  const definisce = {}, sorgenti = {};
+  for (const f of files) {
+    sorgenti[f] = fs.readFileSync(path.join(dir, f), 'utf8');
+    for (const m of sorgenti[f].matchAll(/window\.([A-Z_][A-Z0-9_]*)\s*=/g)) definisce[m[1]] = f;
+  }
+  const noti = new Set(Object.keys(definisce));
+  const trovati = {};                      // 'chi|daChi' -> dove si vede
+
+  for (const f of files) {
+    const sf = TS.createSourceFile(f, sorgenti[f], TS.ScriptTarget.ES2020, true);
+
+    /* le IIFE più esterne: il loro corpo è il caricamento, non «dentro una funzione» */
+    const involucri = new Set();
+    TS.forEachChild(sf, n => {
+      if (!TS.isExpressionStatement(n)) return;
+      const e = n.expression;
+      const ch = TS.isCallExpression(e) ? e
+        : (TS.isParenthesizedExpression(e) && TS.isCallExpression(e.expression) ? e.expression : null);
+      if (!ch) return;
+      const g = TS.isParenthesizedExpression(ch.expression) ? ch.expression.expression : ch.expression;
+      if (TS.isFunctionExpression(g) || TS.isArrowFunction(g)) involucri.add(g);
+    });
+
+    /* i nomi che il file dichiara per sé: sono suoi, non del modulo omonimo */
+    const suoi = new Set();
+    for (const inv of involucri)
+      for (const st of (inv.body && inv.body.statements) || []) {
+        if (TS.isFunctionDeclaration(st) && st.name) suoi.add(st.name.text);
+        if (TS.isVariableStatement(st))
+          for (const d of st.declarationList.declarations)
+            if (TS.isIdentifier(d.name)) suoi.add(d.name.text);
+      }
+
+    const alCaricamento = n => {
+      for (let p = n.parent; p; p = p.parent) {
+        if (involucri.has(p)) continue;
+        if (TS.isFunctionDeclaration(p) || TS.isFunctionExpression(p) || TS.isArrowFunction(p) ||
+            TS.isMethodDeclaration(p) || TS.isGetAccessor(p) || TS.isSetAccessor(p) ||
+            TS.isConstructorDeclaration(p)) return false;
+      }
+      return true;
+    };
+
+    const visita = n => {
+      if (TS.isIdentifier(n) && noti.has(n.text) && definisce[n.text] !== f && !suoi.has(n.text)) {
+        const p = n.parent;
+        const eProprieta = (TS.isPropertyAccessExpression(p) && p.name === n) ||
+                           (TS.isPropertyAssignment(p) && p.name === n) ||
+                           (TS.isBindingElement(p) && p.propertyName === n);
+        if (!eProprieta && alCaricamento(n)) {
+          const k = f + '|' + definisce[n.text];
+          if (!trovati[k]) trovati[k] = `${n.text}, a js/${f}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}`;
+        }
+      }
+      TS.forEachChild(n, visita);
+    };
+    visita(sf);
+  }
+
+  const problemi = [];
+  for (const k of Object.keys(trovati))
+    if (!VINCOLI_NOTI[k]) {
+      const [chi, da] = k.split('|');
+      problemi.push(`js/${chi} tocca ${trovati[k]} al CARICAMENTO: da adesso pretende di stare dopo js/${da}. ` +
+        'Se è voluto, scrivilo in VINCOLI_NOTI qui sopra e mettilo nell\'ordine giusto in index.html; ' +
+        'se no, spostalo dentro una funzione — lì l\'ordine non conta.');
+    }
+  for (const [k, perche] of Object.entries(VINCOLI_NOTI))
+    if (!trovati[k]) {
+      const [chi, da] = k.split('|');
+      problemi.push(`il vincolo noto js/${chi} → js/${da} non si vede più (${perche}). ` +
+        'O è stato tolto davvero, e allora va tolto anche da VINCOLI_NOTI, oppure il rilevatore ' +
+        'ha smesso di funzionare: senza questa riga il controllo stava per diventare verde senza guardare niente.');
+    }
+
+  /* i vincoli veri devono trovare in index.html l'ordine che chiedono */
+  const html = fs.readFileSync(path.join(RADICE, 'index.html'), 'utf8');
+  const caricati = [...html.matchAll(/<script src="js\/([\w.-]+\.js)"><\/script>/g)].map(m => m[1]);
+  for (const [k, perche] of Object.entries(VINCOLI_NOTI)) {
+    const [chi, da] = k.split('|');
+    const i = caricati.indexOf(chi), j = caricati.indexOf(da);
+    if (i >= 0 && j >= 0 && j > i)
+      problemi.push(`index.html carica js/${chi} PRIMA di js/${da}, ma al caricamento gli serve: ${perche}`);
+  }
+
+  return problemi;
+});
+
 /* Chi gioca col pollice ha due soli verbi a schermo, «Usa» e «Parla»,
    e sotto ci sono Spazio ed E. Prima ce n'era uno solo: il tocco sul
    canvas chiamava `usaOggetto()` e mai `interagisci()`, quindi porte,
@@ -1680,14 +1817,16 @@ verifica('ogni collezione ha il suo premio, e i premi esistono', () => {
   const problemi = [];
   const P = DATA.PREMI_COLLEZIONE || {};
 
-  /* Le categorie si leggono dal sorgente di game.js: riscriverle qui
-     vorrebbe dire tenere due elenchi d'accordo per sempre, ed è la
-     cosa che questo file esiste per evitare. */
-  const game = fs.readFileSync(path.join(RADICE, 'js', 'game.js'), 'utf8');
-  const dentro = game.slice(game.indexOf('G.categorieCollezione = function'),
-                            game.indexOf('G.contaCollezione = function'));
+  /* Le categorie si leggono dal sorgente di traguardi.js: riscriverle
+     qui vorrebbe dire tenere due elenchi d'accordo per sempre, ed è la
+     cosa che questo file esiste per evitare. (Stavano in game.js fino
+     allo stacco: le funzioni si chiamano ancora G.categorieCollezione
+     perché game.js le rimette su G, ma il sorgente è di là.) */
+  const traguardi = fs.readFileSync(path.join(RADICE, 'js', 'traguardi.js'), 'utf8');
+  const dentro = traguardi.slice(traguardi.indexOf('TG.categorieCollezione = function'),
+                                 traguardi.indexOf('TG.contaCollezione = function'));
   const cat = [...dentro.matchAll(/\{\s*id:'(\w+)'/g)].map(m => m[1]);
-  if (!cat.length) { problemi.push('non trovo le categorie in G.categorieCollezione'); return problemi; }
+  if (!cat.length) { problemi.push('non trovo le categorie in TG.categorieCollezione (js/traguardi.js)'); return problemi; }
 
   for (const id of cat)
     if (!P[id]) problemi.push(`la collezione «${id}» non ha un premio: si completerebbe senza dare niente`);
@@ -1707,7 +1846,7 @@ verifica('ogni collezione ha il suo premio, e i premi esistono', () => {
      far riscuotere due volte chi li aveva già presi. */
   for (const id in (DATA.COLLEZIONE_DA_TRAGUARDO || {})) {
     const vecchio = DATA.COLLEZIONE_DA_TRAGUARDO[id];
-    if (new RegExp("cont\\('" + vecchio + "'").test(game))
+    if (new RegExp("cont\\('" + vecchio + "'").test(traguardi))
       problemi.push(`il traguardo «${vecchio}» è tornato: pagherebbe due volte la collezione «${id}»`);
   }
 
