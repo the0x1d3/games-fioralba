@@ -278,7 +278,15 @@ D.SHOP = {
   autunno:  ['seme_zucca','seme_uva','seme_cavolo','seme_melanzana','seme_mirtillo','seme_mais'],
   inverno:  ['seme_radice_inverno','seme_cristallia']
 };
-D.SHOP_EXTRA = ['fibra','legna','pietra','concime','sentiero','latte','gallina'];
+/* Quello che Bruno tiene tutto l'anno, oltre ai semi di stagione. Le
+   superfici stanno accanto al sentiero, che era già l'unica: chi vuole
+   rifarsi l'aia in un pomeriggio non deve prima farsi il giro della
+   miniera per l'argilla e del bosco per la legna. Si pagano il doppio
+   scarso di quanto costano al banco da lavoro — è la regola della
+   bottega, `prezzo × 2,2` — e va bene così: è il prezzo della fretta. */
+D.SHOP_EXTRA = ['fibra','legna','pietra','concime',
+                'sentiero','zolla','assi','lastre','cotto',
+                'latte','gallina'];
 
 /* costruzioni dal fabbro / carpentiere */
 D.COSTRUZIONI = [
