@@ -1866,6 +1866,21 @@ A.placeable = function(kind, opt){
       px(x,14,10,20,5,'#8a7458'); px(x,22,4,4,7,'#8a7458');
       if(opt.attivo!==false){ x.globalAlpha=0.3; circ(x,24,23,20,'#ffd98a'); x.globalAlpha=1; }
       break;
+    /* Il lume posato. Quello delle stanze scritte è un braccio a muro e
+       lì va bene, perché un muro ce l'ha sempre dietro; questo si posa
+       in mezzo alla stanza o sull'aia, quindi ha un piede suo — se no
+       resterebbe appeso al nulla. Più basso e più stretto della
+       lanterna, che è la luce da fuori: si devono riconoscere a colpo
+       d'occhio anche spente. */
+    case 'lume':
+      px(x,20,44,8,3,'#4a4640');                       // piede
+      px(x,23,26,2,18,'#6b5a3f');                      // stelo
+      px(x,17,14,14,13,'#7a6a4a');                     // cassa del vetro
+      px(x,19,16,10,9, opt.attivo!==false ? '#ffe9a8':'#3a3630');
+      px(x,20,17,8,6,  opt.attivo!==false ? '#fff8d0':'#3a3630');
+      px(x,16,11,16,4,'#8a7458');                      // cappello
+      if(opt.attivo!==false){ x.globalAlpha=0.26; circ(x,24,21,16,'#ffd98a'); x.globalAlpha=1; }
+      break;
     /* Una staccionata non è un pezzo: è una fila. Il disegno però era
        sempre lo stesso — due pali e due traverse orizzontali larghe
        quanto la casella — quindi una fila che andava su e giù veniva su
@@ -2280,7 +2295,7 @@ function drawIcon(x, id){
       px(x,4,24,24,1,'#3a2a1c'); px(x,27,9,1,16,'#3a2a1c');
       break;
     }
-    case 'recinto': case 'cancelletto': case 'cartello': case 'spaventapasseri': case 'lanterna': case 'cassa':
+    case 'recinto': case 'cancelletto': case 'cartello': case 'spaventapasseri': case 'lanterna': case 'lume': case 'cassa':
     case 'barattoliera': case 'botte': case 'forno': case 'fornace': case 'arnia':
     case 'vaso_lucciole': {
       const src = A.placeable(id==='vaso_lucciole'?'lanterna':id, {attivo:true, pronto:false});

@@ -182,6 +182,13 @@ D.ITEMS = {
      una cassa, e non chiede di premere niente. */
   cartello:   { nome:'Cartello',      cat:'artigianato', prezzo:10, desc:'Un palo e una tavoletta. Ci scrivi sopra quello che vuoi e si legge da lontano, senza doverlo toccare. Per toglierlo, una picconata.', posabile:'cartello' },
   lanterna:   { nome:'Lanterna',      cat:'artigianato', prezzo:120,desc:'Illumina la notte intorno a sé.', posabile:'lanterna' },
+  /* Il lume è quello di casa di Nonna Ilde, che c'era da sempre nelle
+     stanze scritte e che nessuno poteva farsi. La Lanterna esisteva già
+     e resta la luce da fuori: grande, di ferro e rame, cara. Questo è la
+     luce da dentro — piccola, di legno, che si mette dove serve — e
+     costa poco apposta, perché adesso che i mobili di casa si spostano
+     serve poter anche illuminare l'angolo dove li si è messi. */
+  lume:       { nome:'Lume',          cat:'artigianato', prezzo:34, desc:'La luce piccola delle stanze. Si posa dove serve, anche in casa, e di notte fa il suo cerchio caldo.', posabile:'lume' },
   cassa:      { nome:'Cassa',         cat:'artigianato', prezzo:0,  desc:'Deposito da 24 caselle.', posabile:'cassa' },
   barattoliera:{nome:'Barattoliera',  cat:'artigianato', prezzo:0,  desc:'Trasforma un raccolto in conserva (valore x2 + 50).', posabile:'barattoliera' },
   botte:      { nome:'Botte',         cat:'artigianato', prezzo:0,  desc:'Frutta → vino, verdura → succo (valore x3).', posabile:'botte' },
@@ -246,6 +253,7 @@ D.CRAFT = [
   { id:'spaventapasseri',out:1,ing:{fibra:20, legna:8, carbone:1},      liv:2, cat:'podere' },
   { id:'cassa',         out:1, ing:{legna:20},                          liv:0, cat:'podere' },
   { id:'lanterna',      out:1, ing:{legna:6, lingotto_rame:1, carbone:2},liv:0,cat:'podere' },
+  { id:'lume',          out:2, ing:{legna:4, carbone:1},                liv:0, cat:'podere' },
   { id:'vaso_lucciole', out:1, ing:{quarzo:1, fibra:8, legna:4},        liv:0, cat:'podere', stagione:'estate' },
   { id:'fornace',       out:1, ing:{pietra:22, carbone:3},              liv:0, cat:'macchine' },
   { id:'barattoliera',  out:1, ing:{legna:26, pietra:8, lingotto_rame:1},liv:3,cat:'macchine' },

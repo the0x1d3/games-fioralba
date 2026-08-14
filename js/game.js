@@ -2965,6 +2965,10 @@ G.luci = function(){
     else if(o.t==='lume')   out.push({x:x*T+16, y:y*T+12, r:82, i:0.72, caldo:true, f:x*1.3});
     else if(o.t==='camino') out.push({x:x*T+16, y:y*T+22, r:120, i:0.9, caldo:true, f:y*0.6});
     else if(o.t==='mobile' && o.kind==='lanterna') out.push({x:x*T+16, y:y*T+8, r:88, i:0.8, caldo:true, f:x});
+    /* Il lume posato fa la stessa luce di quelli scritti nelle stanze —
+       stesso raggio, stessa intensità — se no lo stesso oggetto
+       illuminerebbe in due modi a seconda di chi ce l'ha messo. */
+    else if(o.t==='mobile' && o.kind==='lume') out.push({x:x*T+16, y:y*T+12, r:82, i:0.72, caldo:true, f:x*1.3});
     else if(o.t==='macchina' && (o.kind==='forno'||o.kind==='fornace') && o.dentro)
       out.push({x:x*T+16, y:y*T+18, r:64, i:0.7, caldo:true, f:y});
   }
