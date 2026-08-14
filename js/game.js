@@ -5,7 +5,13 @@
 (function(){
 'use strict';
 
-const T = 32;
+const T = 64;
+/* Quante volte il mondo è più fitto di quando la casella era 32.
+   Sta davanti a ogni misura in pixel che era stata tarata allora:
+   la velocità del passo, il mezzo hitbox ai piedi, la distanza a cui si
+   attacca discorso, il raggio di un lampione. Le misure scritte in
+   caselle (`x*T`, `T*2.6`) non ne hanno bisogno: si adattano da sole. */
+const K = 2;
 const $ = s=>document.querySelector(s);
 
 const G = {};
@@ -220,7 +226,7 @@ function nuovaPartita(){
   Object.assign(G, statoIniziale());
   G.maps = WORLD.crea();
   G.p.look = G.look;
-  G.p.px = 8*T+16; G.p.py = 10*T+16;
+  G.p.px = 8*T+T/2; G.p.py = 10*T+T/2;
   G.animali = [{tipo:'gatto', mappa:'podere', px:10*T, py:9*T, dir:1, tx:10, ty:9, wait:0}];
   WORLD.nuovoGiorno(G.maps, G.stagione().id, 12345);
   G.richieste = [];
@@ -328,7 +334,7 @@ G.controllaTraguardi = function(annuncia){
       UI.toast(o.premio ? fraseF('Traguardo compiuto: {0} — {1} monete da riscuotere', o.nome, o.premio)
                         : fraseF('Traguardo compiuto: {0}', o.nome),
                'gold', o.icona);
-      particelleTesto(G.p.px, G.p.py-52, 'TRAGUARDO!', '#ffe270');
+      particelleTesto(G.p.px, G.p.py-52*K, 'TRAGUARDO!', '#ffe270');
     }
   }
   traguardiFatti = adesso;
@@ -383,7 +389,7 @@ G.xp = function(k, n){
     G.energia = Math.min(G.energiaMax, G.energia + 20);
     G.stats.livelli = (G.stats.livelli||0) + saliti.length;
 
-    particelleTesto(G.p.px, G.p.py-40, 'LIVELLO '+dopo, '#ffe270');
+    particelleTesto(G.p.px, G.p.py-40*K, 'LIVELLO '+dopo, '#ffe270');
     festaLivello();
     for(const s of saliti) LIV.annuncia(s);
   } else {
@@ -395,11 +401,11 @@ G.xp = function(k, n){
 /* la cascata di stelle attorno al giocatore: sta qui e non in livelli.js
    perché le particelle sono del mondo, non del pannello */
 function festaLivello(){
-  const cx = G.p.px, cy = G.p.py - 22;
+  const cx = G.p.px, cy = G.p.py - 22*K;
   for(let i=0;i<46;i++){
     const a = Math.random()*6.283, v = 0.5+Math.random()*2.1;
     G.particelle.push({ t:'stella', x:cx, y:cy,
-      vx:Math.cos(a)*v, vy:Math.sin(a)*v-0.5, g:0.006,
+      vx:(Math.cos(a)*v)*K, vy:(Math.sin(a)*v-0.5)*K, g:0.006*K,
       vita:900+Math.random()*500, vitaMax:1400, c:i%3?'#ffe270':'#fff6d0' });
   }
 }
@@ -695,13 +701,13 @@ function guardiaGiocatore(){
   if(!p || !m) return;
   if(!isFinite(p.px) || !isFinite(p.py)){
     const s=WORLD.vicinoLibero(m, (m.w/2)|0, (m.h/2)|0);
-    p.px=s.x*T+16; p.py=s.y*T+20; p.vx=0; p.vy=0;
+    p.px=s.x*T+T/2; p.py=s.y*T+20*K; p.vx=0; p.vy=0;
     return;
   }
-  const maxX=m.w*T-2, maxY=m.h*T-2;
-  if(p.px<2||p.py<2||p.px>maxX||p.py>maxY){
-    p.px=Math.max(2,Math.min(maxX,p.px));
-    p.py=Math.max(2,Math.min(maxY,p.py));
+  const maxX=m.w*T-2*K, maxY=m.h*T-2*K;
+  if(p.px<2*K||p.py<2*K||p.px>maxX||p.py>maxY){
+    p.px=Math.max(2*K,Math.min(maxX,p.px));
+    p.py=Math.max(2*K,Math.min(maxY,p.py));
   }
 }
 
@@ -771,9 +777,9 @@ function normalizzaStato(){
   // giocatore incastrato in un solido dopo il caricamento → sblocca (una tantum)
   const p=G.p, m=(G.maps && G.maps[G.mappaId]) ? G.maps[G.mappaId] : null;
   if(p && m){
-    if(!isFinite(p.px)||!isFinite(p.py)){ p.px=8*T+16; p.py=10*T+20; }
+    if(!isFinite(p.px)||!isFinite(p.py)){ p.px=8*T+T/2; p.py=10*T+20*K; }
     const tx=(p.px/T)|0, ty=(p.py/T)|0;
-    if(WORLD.solido(m,tx,ty)){ const s=WORLD.vicinoLibero(m,tx,ty); p.px=s.x*T+16; p.py=s.y*T+20; }
+    if(WORLD.solido(m,tx,ty)){ const s=WORLD.vicinoLibero(m,tx,ty); p.px=s.x*T+T/2; p.py=s.y*T+20*K; }
   }
   dissotterraIlRaccolto();
 }
@@ -888,7 +894,7 @@ function aggiornaGiocatore(dt){
     /* Le scarpe di Oreste. Moltiplicano invece di sommare, come fa il
        sentiero qui accanto: sommare avrebbe dato lo stesso regalo a chi
        cammina e a chi corre, e camminando si sarebbe sentito il doppio. */
-    let vel = (correndo?1.9:1.18) * (duro?1.14:1) * (1 + (window.PERSONA ? PERSONA.valore('scarpe') : 0));
+    let vel = (correndo?1.9:1.18)*K * (duro?1.14:1) * (1 + (window.PERSONA ? PERSONA.valore('scarpe') : 0));
     if(p.usoT>0) vel*=0.35;
     const spd = vel * dt/16;
 
@@ -929,7 +935,7 @@ function aggiornaGiocatore(dt){
 
 function muovi(dx, dy){
   const p = G.p, m = G.mappa();
-  const HW = 7, HH = 5;   // mezzo hitbox ai piedi
+  const HW = 7*K, HH = 5*K;   // mezzo hitbox ai piedi
 
   // X
   if(dx){
@@ -938,8 +944,8 @@ function muovi(dx, dy){
     else {
       // scivolamento sugli angoli
       const step = dx>0?1:-1;
-      if(!collide(m, nx, p.py-3, HW, HH) && !collide(m, p.px, p.py-3, HW, HH)) p.py -= 0.6;
-      else if(!collide(m, nx, p.py+3, HW, HH) && !collide(m, p.px, p.py+3, HW, HH)) p.py += 0.6;
+      if(!collide(m, nx, p.py-3*K, HW, HH) && !collide(m, p.px, p.py-3*K, HW, HH)) p.py -= 0.6*K;
+      else if(!collide(m, nx, p.py+3*K, HW, HH) && !collide(m, p.px, p.py+3*K, HW, HH)) p.py += 0.6*K;
     }
   }
   // Y
@@ -947,12 +953,12 @@ function muovi(dx, dy){
     const ny = p.py + dy;
     if(!collide(m, p.px, ny, HW, HH)) p.py = ny;
     else {
-      if(!collide(m, p.px-3, ny, HW, HH) && !collide(m, p.px-3, p.py, HW, HH)) p.px -= 0.6;
-      else if(!collide(m, p.px+3, ny, HW, HH) && !collide(m, p.px+3, p.py, HW, HH)) p.px += 0.6;
+      if(!collide(m, p.px-3*K, ny, HW, HH) && !collide(m, p.px-3*K, p.py, HW, HH)) p.px -= 0.6*K;
+      else if(!collide(m, p.px+3*K, ny, HW, HH) && !collide(m, p.px+3*K, p.py, HW, HH)) p.px += 0.6*K;
     }
   }
-  p.px = Math.max(4, Math.min(m.w*T-4, p.px));
-  p.py = Math.max(10, Math.min(m.h*T-4, p.py));
+  p.px = Math.max(4*K, Math.min(m.w*T-4*K, p.px));
+  p.py = Math.max(10*K, Math.min(m.h*T-4*K, p.py));
 }
 
 function collide(m, px, py, hw, hh){
@@ -969,8 +975,8 @@ function passo(){
   if(t==='assi') SND.play('passoLegno'); else SND.play('passo');
   // polvere
   if(t==='terra'||t==='sentiero'){
-    G.particelle.push({t:'terra', x:G.p.px+(Math.random()*8-4), y:G.p.py-1,
-      vx:(Math.random()-0.5)*0.3, vy:-0.15, g:0.006, vita:260, vitaMax:260, s:2, c:'#a8875b', alpha:0.6});
+    G.particelle.push({t:'terra', x:G.p.px+(Math.random()*8-4)*K, y:G.p.py-K,
+      vx:((Math.random()-0.5)*0.3)*K, vy:(-0.15)*K, g:0.006*K, vita:260, vitaMax:260, s:2, c:'#a8875b', alpha:0.6});
   }
 }
 
@@ -981,7 +987,7 @@ function aggiornaCamera(subito){
   const m = G.mappa();
   const {VW,VH} = REND.info();
   let tx = G.p.px - VW/2;
-  let ty = G.p.py - VH/2 - 8;
+  let ty = G.p.py - VH/2 - 8*K;
   const maxX = Math.max(0, m.w*T - VW);
   const maxY = Math.max(0, m.h*T - VH);
   tx = Math.max(0, Math.min(maxX, tx));
@@ -1009,7 +1015,7 @@ function calcolaBersaglio(){
   let tx, ty;
   if(mouseWorld){
     tx = (mouseWorld.x/T)|0; ty = (mouseWorld.y/T)|0;
-    const d = Math.hypot(tx*T+16-p.px, ty*T+16-p.py);
+    const d = Math.hypot(tx*T+T/2-p.px, ty*T+T/2-p.py);
     if(d > T*2.6) mouseWorld = null;
   }
   if(!mouseWorld){
@@ -1135,7 +1141,7 @@ function usaOggetto(){
   const terr=WORLD.terreno(m,tx,ty);
 
   // guarda verso il bersaglio
-  const ddx = tx*T+16-p.px, ddy = ty*T+16-p.py;
+  const ddx = tx*T+T/2-p.px, ddy = ty*T+T/2-p.py;
   if(Math.abs(ddx)>Math.abs(ddy)) p.dir = ddx<0?1:2; else p.dir = ddy<0?3:0;
 
   const s = G.slot();
@@ -1167,8 +1173,8 @@ function usaOggetto(){
       p.usoT=280; SND.play('zappa');
       m.suolo[i]={arato:true, bagnato:false, crop:null, concime:null};
       for(let k=0;k<7;k++) G.particelle.push({t:'terra',
-        x:tx*T+8+Math.random()*16, y:ty*T+14+Math.random()*10,
-        vx:(Math.random()-0.5)*1.1, vy:-0.7-Math.random()*0.7, g:0.05,
+        x:tx*T+(8+Math.random()*16)*K, y:ty*T+(14+Math.random()*10)*K,
+        vx:((Math.random()-0.5)*1.1)*K, vy:(-0.7-Math.random()*0.7)*K, g:0.05*K,
         vita:420, vitaMax:420, s:2, c:Math.random()>0.5?'#8a6647':'#6d4d38'});
       // a volte argilla
       if(Math.random()<0.06 && G.aggiungi('argilla',1)){
@@ -1193,8 +1199,8 @@ function usaOggetto(){
         if(m.suolo[j] && !m.suolo[j].bagnato){
           m.suolo[j].bagnato=true;
           for(let k=0;k<3;k++) G.particelle.push({t:'goccia',
-            x:xx*T+6+Math.random()*20, y:yy*T+6+Math.random()*14,
-            vx:(Math.random()-0.5)*0.4, vy:0.5, g:0.03, vita:340, vitaMax:340});
+            x:xx*T+(6+Math.random()*20)*K, y:yy*T+(6+Math.random()*14)*K,
+            vx:((Math.random()-0.5)*0.4)*K, vy:0.5*K, g:0.03*K, vita:340, vitaMax:340});
         }
       }
       if(window.TUT) TUT.notifica('annaffia');
@@ -1241,8 +1247,8 @@ function usaOggetto(){
         }
         G.xp('raccolta', o.stage===2?14:5);
         for(let k=0;k<12;k++) G.particelle.push({t:'foglia',
-          x:tx*T+16+(Math.random()-0.5)*30, y:ty*T+4+Math.random()*20,
-          vx:(Math.random()-0.5)*1.2, vy:-0.5-Math.random(), g:0.014, r:Math.random()*6.3, vr:(Math.random()-0.5)*0.2,
+          x:tx*T+T/2+(Math.random()-0.5)*30*K, y:ty*T+(4+Math.random()*20)*K,
+          vx:((Math.random()-0.5)*1.2)*K, vy:(-0.5-Math.random())*K, g:0.014*K, r:Math.random()*6.3, vr:(Math.random()-0.5)*0.2,
           vita:1200, vitaMax:1200, c:G.stagione().tree});
       }
       return;
@@ -1294,8 +1300,8 @@ function usaOggetto(){
           else G.aggiungi(g,1);
         }
         for(let k=0;k<10;k++) G.particelle.push({t:'pietrisco',
-          x:tx*T+16+(Math.random()-0.5)*22, y:ty*T+16+(Math.random()-0.5)*16,
-          vx:(Math.random()-0.5)*1.6, vy:-0.8-Math.random()*0.8, g:0.055,
+          x:tx*T+T/2+(Math.random()-0.5)*22*K, y:ty*T+T/2+(Math.random()-0.5)*16*K,
+          vx:((Math.random()-0.5)*1.6)*K, vy:(-0.8-Math.random()*0.8)*K, g:0.055*K,
           vita:520, vitaMax:520, s:2, c:'#8a8580'});
       }
       return;
@@ -1309,8 +1315,8 @@ function usaOggetto(){
         G.aggiungi('fibra',n);
         G.xp('raccolta',2);
         for(let k=0;k<6;k++) G.particelle.push({t:'foglia',
-          x:tx*T+16+(Math.random()-0.5)*18, y:ty*T+18,
-          vx:(Math.random()-0.5)*1.1, vy:-0.6-Math.random()*0.5, g:0.02, r:Math.random()*6.3, vr:0.2,
+          x:tx*T+T/2+(Math.random()-0.5)*18*K, y:ty*T+18*K,
+          vx:((Math.random()-0.5)*1.1)*K, vy:(-0.6-Math.random()*0.5)*K, g:0.02*K, r:Math.random()*6.3, vr:0.2,
           vita:700, vitaMax:700, c:'#7fae4a'});
         return;
       }
@@ -1357,8 +1363,8 @@ function usaOggetto(){
     G.togli(id,1);
     SND.play('semina'); p.usoT=220;
     for(let k=0;k<5;k++) G.particelle.push({t:'terra',
-      x:tx*T+10+Math.random()*12, y:ty*T+16+Math.random()*8,
-      vx:(Math.random()-0.5)*0.5, vy:-0.4, g:0.03, vita:300, vitaMax:300, s:2, c:C.c1});
+      x:tx*T+(10+Math.random()*12)*K, y:ty*T+T/2+Math.random()*8*K,
+      vx:((Math.random()-0.5)*0.5)*K, vy:(-0.4)*K, g:0.03*K, vita:300, vitaMax:300, s:2, c:C.c1});
     if(window.TUT) TUT.notifica('semina');
     return;
   }
@@ -1472,11 +1478,11 @@ function raccogliColtura(tx,ty,suolo){
   SND.play('raccolta');
   G.xp('agricoltura', 8 + Math.floor(C.prezzo/12));
   UI.toast('+'+n+' '+C.nome, 'good', suolo.crop.id);
-  particelleTesto(tx*T+16, ty*T, '+'+n, '#b6e06a');
+  particelleTesto(tx*T+T/2, ty*T, '+'+n, '#b6e06a');
 
   for(let k=0;k<8;k++) G.particelle.push({t:'stella',
-    x:tx*T+16+(Math.random()-0.5)*20, y:ty*T+14+(Math.random()-0.5)*16,
-    vx:(Math.random()-0.5)*0.8, vy:-0.5-Math.random()*0.5, g:0.01,
+    x:tx*T+T/2+(Math.random()-0.5)*20*K, y:ty*T+(14+(Math.random()-0.5)*16)*K,
+    vx:((Math.random()-0.5)*0.8)*K, vy:(-0.5-Math.random()*0.5)*K, g:0.01*K,
     vita:600, vitaMax:600, c:'#fff8d0'});
 
   if(C.ricresce){
@@ -1499,8 +1505,8 @@ function raccogliForaggio(tx,ty,o){
   G.xp('raccolta', 7);
   UI.toast('+'+n+' '+IT.nome(o.item),'good',o.item);
   for(let k=0;k<6;k++) G.particelle.push({t:'stella',
-    x:tx*T+16+(Math.random()-0.5)*16, y:ty*T+16,
-    vx:(Math.random()-0.5)*0.6, vy:-0.5, g:0.01, vita:520, vitaMax:520, c:'#fff4c8'});
+    x:tx*T+T/2+(Math.random()-0.5)*16*K, y:ty*T+T/2,
+    vx:((Math.random()-0.5)*0.6)*K, vy:(-0.5)*K, g:0.01*K, vita:520, vitaMax:520, c:'#fff4c8'});
 }
 
 /* ===================================================================
@@ -1621,7 +1627,7 @@ function interagisci(){
 
   // NPC vicino
   for(const n of G.npcVivi()){
-    if(Math.hypot(n.px-p.px, n.py-p.py) < 46){ G.parlaCon(n); return; }
+    if(Math.hypot(n.px-p.px, n.py-p.py) < 46*K){ G.parlaCon(n); return; }
   }
 
   // il gatto, che non è un NPC ma nemmeno un oggetto
@@ -1925,7 +1931,7 @@ function promptContestuale(){
   if(!m) return;
 
   for(const n of G.npcVivi()){
-    if(Math.hypot(n.px-p.px, n.py-p.py) < 46){
+    if(Math.hypot(n.px-p.px, n.py-p.py) < 46*K){
       const N = DATA.NPCS[n.id];
       UI.prompt(fraseF('<kbd>E</kbd> parla con {0}', N ? N.nome : frase('qualcuno')));
       return;
@@ -2067,8 +2073,8 @@ function apriPollaio(){
         UI.toast('Le galline sono felici.','good');
         for(const g of galline) g.felice = Math.min(100,(g.felice||50)+12);
         for(let k=0;k<6;k++) G.particelle.push({t:'cuoricino',
-          x:G.p.px+(Math.random()-0.5)*40, y:G.p.py-20-Math.random()*20,
-          vx:(Math.random()-0.5)*0.3, vy:-0.5, g:0, vita:900, vitaMax:900, c:'#e04a63'});
+          x:G.p.px+(Math.random()-0.5)*40*K, y:G.p.py-(20+Math.random()*20)*K,
+          vx:((Math.random()-0.5)*0.3)*K, vy:(-0.5)*K, g:0, vita:900, vitaMax:900, c:'#e04a63'});
         UI.chiudiModal();
       };
       body.appendChild(b);
@@ -2136,8 +2142,8 @@ G.regala = function(npcId, idx){
   SND.play(punti>0?'regalo':'errore');
   if(punti>0){
     for(let k=0;k<8;k++) G.particelle.push({t:'cuoricino',
-      x:G.p.px+(Math.random()-0.5)*44, y:G.p.py-16-Math.random()*24,
-      vx:(Math.random()-0.5)*0.35, vy:-0.55-Math.random()*0.2, g:0,
+      x:G.p.px+(Math.random()-0.5)*44*K, y:G.p.py-(16+Math.random()*24)*K,
+      vx:((Math.random()-0.5)*0.35)*K, vy:(-0.55-Math.random()*0.2)*K, g:0,
       vita:1100, vitaMax:1100, c:reaz==='ama'?'#e04a63':'#f08a9a'});
   }
   UI.dialogo(npcId, [risposte[(Math.random()*risposte.length)|0]]);
@@ -2201,7 +2207,7 @@ G.nomeGatto = ()=> (G.gatto && G.gatto.nome) || null;
 function gattoVicino(){
   for(const a of G.animali){
     if(a.tipo!=='gatto' || a.mappa!==G.mappaId) continue;
-    if(Math.hypot(a.px-G.p.px, a.py-G.p.py) < 42) return a;
+    if(Math.hypot(a.px-G.p.px, a.py-G.p.py) < 42*K) return a;
   }
   return null;
 }
@@ -2221,8 +2227,8 @@ function accarezzaGatto(a){
   if(g.giorno === G.giornoTot){
     UI.toast(chi + ' ne ha avuto abbastanza, per oggi.','hint');
     for(let k=0;k<3;k++) G.particelle.push({t:'cuoricino',
-      x:a.px+(Math.random()-0.5)*20, y:a.py-14-Math.random()*10,
-      vx:(Math.random()-0.5)*0.25, vy:-0.45, g:0, vita:800, vitaMax:800, c:'#f08a9a'});
+      x:a.px+(Math.random()-0.5)*20*K, y:a.py-(14+Math.random()*10)*K,
+      vx:((Math.random()-0.5)*0.25)*K, vy:(-0.45)*K, g:0, vita:800, vitaMax:800, c:'#f08a9a'});
     return;
   }
 
@@ -2232,13 +2238,13 @@ function accarezzaGatto(a){
   const dopo = faseGatto();
 
   for(let k=0;k<7;k++) G.particelle.push({t:'cuoricino',
-    x:a.px+(Math.random()-0.5)*26, y:a.py-16-Math.random()*16,
-    vx:(Math.random()-0.5)*0.3, vy:-0.5, g:0, vita:1000, vitaMax:1000, c:'#e04a63'});
+    x:a.px+(Math.random()-0.5)*26*K, y:a.py-(16+Math.random()*16)*K,
+    vx:((Math.random()-0.5)*0.3)*K, vy:(-0.5)*K, g:0, vita:1000, vitaMax:1000, c:'#e04a63'});
 
   UI.toast(chi + ': ' + dopo.frasi[(Math.random()*dopo.frasi.length)|0]);
   G.progresso();
 
-  if(dopo !== prima) particelleTesto(a.px, a.py-30, 'si fida di più', '#f0a8b8');
+  if(dopo !== prima) particelleTesto(a.px, a.py-30*K, 'si fida di più', '#f0a8b8');
 
   /* Il nome. Non è un premio da inventario: è la cosa che Ilde non ha
      fatto in tempo a dirti, e arriva quando il gatto ha smesso di essere
@@ -2267,12 +2273,12 @@ function aggiornaAnimali(dt){
       }
       const nx=base.x+((Math.random()*base.r*2)|0)-base.r;
       const ny=base.y+((Math.random()*base.r*2)|0)-base.r;
-      if(WORLD.dentro(m,nx,ny) && !WORLD.solidoPerBestie(m,nx,ny)) a.dest={x:nx*T+16,y:ny*T+20};
+      if(WORLD.dentro(m,nx,ny) && !WORLD.solidoPerBestie(m,nx,ny)) a.dest={x:nx*T+T/2,y:ny*T+20*K};
       else { a.wait=900; continue; }
     }
     const dx=a.dest.x-a.px, dy=a.dest.y-a.py, d=Math.hypot(dx,dy);
-    if(d<4){ a.dest=null; a.wait=1200+Math.random()*3400; continue; }
-    const spd=(a.tipo==='gatto'?0.42:0.3)*dt/16;
+    if(d<4*K){ a.dest=null; a.wait=1200+Math.random()*3400; continue; }
+    const spd=(a.tipo==='gatto'?0.42:0.3)*K*dt/16;
     a.px+=dx/d*spd; a.py+=dy/d*spd;
     a.dir = dx<0?-1:1;
   }
@@ -2296,7 +2302,7 @@ function aggiornaAnimali(dt){
    — un colpo mancato fa scappare tutto quello che c'è intorno. Sbagliare
      deve costare, altrimenti si tira a caso finché non va bene.
    =================================================================== */
-const GITTATA = 210;          // portata dell'arco semplice, in pixel
+const GITTATA = 210*K;        // portata dell'arco semplice, in pixel di mondo
 const CONO = 0.62;            // mezzo angolo del cono di tiro, in radianti
 const COSTO_TIRO = 4;
 
@@ -2305,14 +2311,14 @@ function predaMirata(){
   if(!window.MOBS) return null;
   const p = G.p;
   const liv = G.attrezziLiv.arco || 0;
-  const portata = GITTATA + liv*55;
+  const portata = GITTATA + liv*55*K;
   const versoX = [0,-1,1,0][p.dir], versoY = [1,0,0,-1][p.dir];
   let scelta = null, vicina = Infinity;
   for(const b of MOBS.lista()){
     if(!MOBS.ePreda(b)) continue;
     const dx = b.x - p.px, dy = (b.y - b.z) - p.py;
     const d = Math.hypot(dx, dy);
-    if(d > portata || d < 1) continue;
+    if(d > portata || d < K) continue;
     // dentro al cono davanti a te?
     const cos = (dx*versoX + dy*versoY) / d;
     if(cos < Math.cos(CONO)) continue;
@@ -2325,7 +2331,7 @@ function predaMirata(){
 function colpisce(distanza){
   const liv = G.livello('caccia');
   const liva = G.attrezziLiv.arco || 0;
-  const portata = GITTATA + liva*55;
+  const portata = GITTATA + liva*55*K;
   const vicinanza = 1 - (distanza / portata);          // 1 addosso, 0 al limite
   const prob = 0.42 + vicinanza*0.40 + liv*DATA.BONUS.caccia.mira + liva*0.05;
   return Math.random() < Math.min(0.95, prob);
@@ -2348,10 +2354,10 @@ function tiraDiArco(){
 
   const dx = preda.x - p.px, dy = (preda.y - preda.z) - p.py;
   const d = Math.hypot(dx, dy);
-  freccia(p.px, p.py-16, preda.x, preda.y - preda.z);
+  freccia(p.px, p.py-16*K, preda.x, preda.y - preda.z);
 
   if(!colpisce(d)){
-    MOBS.spaventa(preda.x, preda.y, 190);
+    MOBS.spaventa(preda.x, preda.y, 190*K);
     UI.toast('La freccia passa alta. Sono già lontani.','bad');
     G.xp('caccia', 2);                 // si impara anche sbagliando, poco
     return;
@@ -2360,14 +2366,14 @@ function tiraDiArco(){
   const esito = MOBS.abbatti(preda);
   if(!esito) return;
   SND.play('pesceOk');
-  MOBS.spaventa(preda.x, preda.y, 150);
+  MOBS.spaventa(preda.x, preda.y, 150*K);
   for(const b of esito.bottino){
     if(G.aggiungi(b.id, b.n)) UI.toast('+'+b.n+' '+IT.nome(b.id), 'good', b.id);
     else UI.toast('Zaino pieno: qualcosa è rimasto lì.','bad');
   }
   G.xp('caccia', esito.xp);
   G.stats.prede = (G.stats.prede||0) + 1;
-  particelleTesto(preda.x, preda.y-30, 'Presa!', '#e8c07a');
+  particelleTesto(preda.x, preda.y-30*K, 'Presa!', '#e8c07a');
   if(G.lezioneCaccia) STORIE.avanzaLezioneCaccia('colpito');
 }
 
@@ -2510,11 +2516,11 @@ G.completaBrace = function(bid){
   SND.play('brace');
 
   // esplosione di luce
-  const cx = G.p.px, cy = G.p.py-20;
+  const cx = G.p.px, cy = G.p.py-20*K;
   for(let k=0;k<70;k++){
     const a=Math.random()*6.283, v=0.6+Math.random()*2.4;
     G.particelle.push({t:'stella', x:cx, y:cy,
-      vx:Math.cos(a)*v, vy:Math.sin(a)*v-0.4, g:0.004,
+      vx:(Math.cos(a)*v)*K, vy:(Math.sin(a)*v-0.4)*K, g:0.004*K,
       vita:1800, vitaMax:1800, c:B.colore});
   }
 
@@ -2588,10 +2594,10 @@ G.mangia = function(idx){
   G.togliSlot(idx,1);
   SND.play('raccolta');
   UI.toast('+'+e+' energia','good');
-  particelleTesto(G.p.px, G.p.py-42, '+'+e, '#b6e06a');
+  particelleTesto(G.p.px, G.p.py-42*K, '+'+e, '#b6e06a');
   for(let k=0;k<6;k++) G.particelle.push({t:'stella',
-    x:G.p.px+(Math.random()-0.5)*20, y:G.p.py-24,
-    vx:(Math.random()-0.5)*0.5, vy:-0.5, g:0.005, vita:700, vitaMax:700, c:'#b6e06a'});
+    x:G.p.px+(Math.random()-0.5)*20*K, y:G.p.py-24*K,
+    vx:((Math.random()-0.5)*0.5)*K, vy:(-0.5)*K, g:0.005*K, vita:700, vitaMax:700, c:'#b6e06a'});
   G.aggiornaHUD();
 };
 
@@ -2678,8 +2684,8 @@ function cambiaMappa(id, tx, ty){
   else if(id==='fioralba')G.stats.visitatoPaese=true;
   if(!G.visitati) G.visitati={};
   G.visitati[id]=true;   // per il viaggio rapido dalla mappa
-  G.p.px = pos.x*T+16;
-  G.p.py = pos.y*T+20;
+  G.p.px = pos.x*T+T/2;
+  G.p.py = pos.y*T+20*K;
   G.progresso();
   mouseWorld=null;
   MOBS.reset();          // la fauna di una mappa non segue nell'altra
@@ -2968,7 +2974,7 @@ function nuovoGiorno(svenuto, multa){
       G.p.dorme=false;
       // riporta a casa
       if(G.mappaId!=='podere'){ G.mappaId='podere'; }
-      G.p.px=8*T+16; G.p.py=9*T+20;
+      G.p.px=8*T+T/2; G.p.py=9*T+20*K;
       aggiornaCamera(true);
 
       if(svenuto){
@@ -3083,31 +3089,31 @@ G.luci = function(){
   for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
     const o=m.obj[WORLD.idx(m,x,y)];
     if(!o) continue;
-    if(o.t==='lampione') out.push({x:x*T+16, y:y*T+2, r:96, i:0.85, caldo:true, f:x*0.7});
-    else if(o.t==='lume')   out.push({x:x*T+16, y:y*T+12, r:82, i:0.72, caldo:true, f:x*1.3});
-    else if(o.t==='camino') out.push({x:x*T+16, y:y*T+22, r:120, i:0.9, caldo:true, f:y*0.6});
-    else if(o.t==='mobile' && o.kind==='lanterna') out.push({x:x*T+16, y:y*T+8, r:88, i:0.8, caldo:true, f:x});
+    if(o.t==='lampione') out.push({x:x*T+T/2, y:y*T+2*K, r:96*K, i:0.85, caldo:true, f:x*0.7});
+    else if(o.t==='lume')   out.push({x:x*T+T/2, y:y*T+12*K, r:82*K, i:0.72, caldo:true, f:x*1.3});
+    else if(o.t==='camino') out.push({x:x*T+T/2, y:y*T+22*K, r:120*K, i:0.9, caldo:true, f:y*0.6});
+    else if(o.t==='mobile' && o.kind==='lanterna') out.push({x:x*T+T/2, y:y*T+8*K, r:88*K, i:0.8, caldo:true, f:x});
     /* Il lume posato fa la stessa luce di quelli scritti nelle stanze —
        stesso raggio, stessa intensità — se no lo stesso oggetto
        illuminerebbe in due modi a seconda di chi ce l'ha messo. */
-    else if(o.t==='mobile' && o.kind==='lume') out.push({x:x*T+16, y:y*T+12, r:82, i:0.72, caldo:true, f:x*1.3});
+    else if(o.t==='mobile' && o.kind==='lume') out.push({x:x*T+T/2, y:y*T+12*K, r:82*K, i:0.72, caldo:true, f:x*1.3});
     else if(o.t==='macchina' && (o.kind==='forno'||o.kind==='fornace') && o.dentro)
-      out.push({x:x*T+16, y:y*T+18, r:64, i:0.7, caldo:true, f:y});
+      out.push({x:x*T+T/2, y:y*T+18*K, r:64*K, i:0.7, caldo:true, f:y});
   }
   // funghi luminosi
   for(const d of m.deco){
     if(d.t==='fungo_luce' && d.x>=x0-2 && d.x<=x1+2 && d.y>=y0-2 && d.y<=y1+2)
-      out.push({x:d.x*T+16, y:d.y*T+18, r:52, i:0.55, caldo:false, f:d.v});
+      out.push({x:d.x*T+T/2, y:d.y*T+18*K, r:52*K, i:0.55, caldo:false, f:d.v});
   }
   // finestre degli edifici
   for(const e of m.edifici){
     if(e.azione==='chiuso' && Math.random()>0.5) continue;
-    out.push({x:(e.x+e.w/2)*T, y:(e.y+e.h-1)*T, r:110, i:0.6, caldo:true, f:e.x});
+    out.push({x:(e.x+e.w/2)*T, y:(e.y+e.h-1)*T, r:110*K, i:0.6, caldo:true, f:e.x});
   }
   // santuario
   if(m.id==='bosco' && G.braci>0){
     const s=m.edifici.find(e=>e.kind==='santuario');
-    if(s) out.push({x:(s.x+s.w/2)*T, y:(s.y+s.h-1)*T, r:60+G.braci*34, i:0.5+G.braci*0.12, caldo:true, f:0});
+    if(s) out.push({x:(s.x+s.w/2)*T, y:(s.y+s.h-1)*T, r:(60+G.braci*34)*K, i:0.5+G.braci*0.12, caldo:true, f:0});
   }
   return out;
 };
@@ -3135,23 +3141,23 @@ function aggiornaParticelle(dt){
     const {VW,VH}=REND.info();
     if(st==='autunno' && Math.random()<0.09*f){
       G.particelle.push({t:'foglia',
-        x:G.cam.x-20+Math.random()*(VW+40), y:G.cam.y-20,
-        vx:0.3+Math.random()*0.7, vy:0.25+Math.random()*0.35, g:0,
+        x:G.cam.x-20*K+Math.random()*(VW+40*K), y:G.cam.y-20*K,
+        vx:(0.3+Math.random()*0.7)*K, vy:(0.25+Math.random()*0.35)*K, g:0,
         r:Math.random()*6.3, vr:(Math.random()-0.5)*0.09,
         vita:9000, vitaMax:9000, c:['#d9713c','#c47a2c','#b8562c','#e0a03c'][(Math.random()*4)|0], alpha:0.9});
     }
     if(st==='primavera' && Math.random()<0.07*f){
       G.particelle.push({t:'petalo',
-        x:G.cam.x-20+Math.random()*(VW+40), y:G.cam.y-20,
-        vx:0.25+Math.random()*0.5, vy:0.2+Math.random()*0.3, g:0,
+        x:G.cam.x-20*K+Math.random()*(VW+40*K), y:G.cam.y-20*K,
+        vx:(0.25+Math.random()*0.5)*K, vy:(0.2+Math.random()*0.3)*K, g:0,
         r:Math.random()*6.3, vr:(Math.random()-0.5)*0.07,
         vita:9000, vitaMax:9000, c:['#f5a6c0','#f8c8d8','#fff0f4'][(Math.random()*3)|0], alpha:0.85});
     }
     const notte = G.ora>1090 || G.ora<380;
     if(notte && (st==='estate'||st==='primavera'||m.id==='bosco') && Math.random()<0.05*f){
       G.particelle.push({t:'lucciola',
-        x:G.cam.x+Math.random()*VW, y:G.cam.y+40+Math.random()*(VH-60),
-        vx:(Math.random()-0.5)*0.22, vy:(Math.random()-0.5)*0.16, g:0,
+        x:G.cam.x+Math.random()*VW, y:G.cam.y+40*K+Math.random()*(VH-60*K),
+        vx:((Math.random()-0.5)*0.22)*K, vy:((Math.random()-0.5)*0.16)*K, g:0,
         f:Math.random()*6.3, vita:7000, vitaMax:7000});
     }
   }
@@ -3160,22 +3166,22 @@ function aggiornaParticelle(dt){
 function particelleTesto(x,y,testo,col){
   // anche il testo che vola sopra la testa passa dalla lingua
   if(window.LINGUA) testo = LINGUA.t(testo);
-  G.particelle.push({t:'testo', x, y, vx:0, vy:-0.42, g:0, testo, c:col||'#fff8d0',
+  G.particelle.push({t:'testo', x, y, vx:0, vy:(-0.42)*K, g:0, testo, c:col||'#fff8d0',
                      vita:1100, vitaMax:1100});
 }
 G.particelleTesto = particelleTesto;   // pesca.js: il nome del pesce che sale dalla testa
 
 function schegge(tx,ty,col){
   for(let k=0;k<7;k++) G.particelle.push({t:'schegge',
-    x:tx*T+16+(Math.random()-0.5)*18, y:ty*T+16+(Math.random()-0.5)*14,
-    vx:(Math.random()-0.5)*1.5, vy:-0.7-Math.random()*0.7, g:0.05,
+    x:tx*T+T/2+(Math.random()-0.5)*18*K, y:ty*T+T/2+(Math.random()-0.5)*14*K,
+    vx:((Math.random()-0.5)*1.5)*K, vy:(-0.7-Math.random()*0.7)*K, g:0.05*K,
     vita:420, vitaMax:420, s:2, c:col});
 }
 
 function schizzo(tx,ty){
-  G.particelle.push({t:'splash', x:tx*T+16, y:ty*T+16, vx:0,vy:0,g:0, vita:700, vitaMax:700});
+  G.particelle.push({t:'splash', x:tx*T+T/2, y:ty*T+T/2, vx:0,vy:0,g:0, vita:700, vitaMax:700});
   for(let k=0;k<6;k++) G.particelle.push({t:'goccia',
-    x:tx*T+16, y:ty*T+16, vx:(Math.random()-0.5)*1.4, vy:-0.8-Math.random()*0.6, g:0.06,
+    x:tx*T+T/2, y:ty*T+T/2, vx:((Math.random()-0.5)*1.4)*K, vy:(-0.8-Math.random()*0.6)*K, g:0.06*K,
     vita:500, vitaMax:500});
 }
 G.schizzo = schizzo;   // pesca.js: l'acqua che si apre quando cade la lenza

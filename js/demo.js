@@ -13,7 +13,18 @@
 const D = {};
 window.DEMO = D;
 
-const T = 32;
+/* Le scenette sono rimaste alla misura di prima — 168×100 con la
+   casella da 32 — e va bene così: sono riquadri piccoli dentro a una
+   finestra, non il mondo. Quindi qui `U` è l'unità di disegno, come in
+   art.js, e non la casella del mondo, che è il doppio.
+
+   La tela però è a densità doppia (`ART.tela`), così le demo prendono
+   l'arte fitta insieme al gioco. Il prezzo è una regola sola: uno
+   sprite di ART arriva già in pixel di MONDO e va messo dimezzato — è
+   quello che fa `mez`. */
+const U = 32;
+const K = 2;
+const mez = n => n/K;
 const W = 168, H = 100;          // dimensione logica della scenetta
 
 /* aspetto di riserva se la partita non è ancora cominciata */
@@ -26,9 +37,9 @@ function look(){ return (window.G && G.look) || LOOK_BASE; }
    ------------------------------------------------------------------ */
 function prato(x, tipo, stagione){
   tipo = tipo || 'erba';
-  for(let ty=0; ty<Math.ceil(H/T); ty++)
-    for(let tx=0; tx<Math.ceil(W/T); tx++)
-      x.drawImage(ART.ground(tipo, (tx*3+ty)%4, stagione||'primavera'), tx*T, ty*T);
+  for(let ty=0; ty<Math.ceil(H/U); ty++)
+    for(let tx=0; tx<Math.ceil(W/U); tx++)
+      x.drawImage(ART.ground(tipo, (tx*3+ty)%4, stagione||'primavera'), tx*U, ty*U, U, U);
 }
 
 /* tastino: si illumina quando il tasto è "premuto" */
@@ -98,11 +109,11 @@ const COLTIVA = {
     // il contadino sta a SINISTRA dell'aiuola e la guarda: così non le
     // finisce mai davanti e la pianta resta sempre visibile
     const TX = 78, TY = 50;
-    const PX = 58, PY = TY + T;                   // piedi del contadino
+    const PX = 58, PY = TY + U;                   // piedi del contadino
     const arato = t > 1250;
     const bagnato = t > 4300 && t < 7400;
 
-    if(arato) x.drawImage(ART.arato(0, 1, bagnato, 'primavera'), TX, TY);
+    if(arato) x.drawImage(ART.arato(0, 1, bagnato, 'primavera'), TX, TY, U, U);
 
     /* --- la pianta --- */
     let stage = -1;
@@ -140,7 +151,7 @@ const COLTIVA = {
     if(!dorme && t < 9700){
       x.globalAlpha = 0.45 + Math.sin(t*0.006)*0.16;
       x.strokeStyle = '#ffe9a8'; x.lineWidth = 1;
-      x.strokeRect(TX+1.5, TY+1.5, T-3, T-3);
+      x.strokeRect(TX+1.5, TY+1.5, U-3, U-3);
       x.globalAlpha = 1;
     }
 
@@ -185,9 +196,9 @@ const PESCA = {
   disegna(x, t){
     /* --- riva e acqua --- */
     prato(x, 'erba');
-    for(let ty=0; ty<Math.ceil(H/T); ty++)
-      for(let tx=2; tx<Math.ceil(W/T); tx++)
-        x.drawImage(ART.water('estate', ((t/140)|0)%6), tx*T, ty*T);
+    for(let ty=0; ty<Math.ceil(H/U); ty++)
+      for(let tx=2; tx<Math.ceil(W/U); tx++)
+        x.drawImage(ART.water('estate', ((t/140)|0)%6), tx*U, ty*U, U, U);
 
     const gioco = t > 3400;
 
@@ -202,7 +213,7 @@ const PESCA = {
       x.fillStyle = '#e0503c'; x.fillRect(gx-2, gy-2, 4, 4);
       x.fillStyle = '#f6e6c8'; x.fillRect(gx-2, gy, 4, 2);
       if(t > 2200){
-        x.drawImage(ART.emote('!'), gx-16, gy-30);
+        x.drawImage(ART.emote('!'), gx-16, gy-30, 32, 32);
         tasto(x, gx+26, gy-6, 'SPAZIO', ((t/220)|0)%2===0);
       }
     }
@@ -257,7 +268,7 @@ const PESCA = {
 
       if(t > 9800){
         x.fillStyle = 'rgba(20,16,10,0.55)'; x.fillRect(0,0,W,H);
-        x.drawImage(ART.bolla('trota'), W/2-20, 20);
+        x.drawImage(ART.bolla('trota'), W/2-20, 20, 40, 40);
         scritta(x, W/2, 82, 'Hai preso: Trota!', '#ffe270', 10);
       }
     }
@@ -282,7 +293,7 @@ const MACCHINA = {
 
     // la botte
     const img = ART.placeable('botte', { attivo:lavora, pronto });
-    x.drawImage(img, MX-24, MY-img.height+8);
+    x.drawImage(img, MX-24, MY-mez(img.height)+8, mez(img.width), mez(img.height));
 
     // giorni che passano
     if(lavora){
@@ -306,7 +317,7 @@ const MACCHINA = {
     // la bolla col vino
     if(pronto && t < 9000){
       const bob = Math.sin(t*0.005)*2;
-      x.drawImage(ART.bolla('vino:uva'), MX-20, MY-58+bob);
+      x.drawImage(ART.bolla('vino:uva'), MX-20, MY-58+bob, 40, 40);
     }
     // il ritiro: le scritte in alto, dove non coprono la scena
     if(t >= 9000){
@@ -407,7 +418,7 @@ D.misura = ()=> ({ larghezza:W, altezza:H });
 D.fotogramma = function(id, t, dest){
   const d = PER_ID[id];
   if(!d) return null;
-  const c = dest || ART.cv(W, H);
+  const c = dest || ART.tela(W, H);
   const x = c.getContext('2d');
   x.imageSmoothingEnabled = false;
   x.clearRect(0, 0, W, H);
@@ -467,7 +478,7 @@ D.monta = function(contenitore, idIniziale){
   const ctx = cvs.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
-  const off = ART.cv(W, H);
+  const off = ART.tela(W, H);
   const ox = off.getContext('2d');
   ox.imageSmoothingEnabled = false;
 

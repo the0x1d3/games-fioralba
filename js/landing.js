@@ -109,7 +109,9 @@ function animaGente(t){
     let sp;
     try{ sp = ART.charSprite(r.look, 0, f); }catch(e){ continue; }
     r.ctx.clearRect(0,0,90,120);
-    r.ctx.drawImage(sp, 0, 0, sp.width, sp.height, 0, 0, sp.width*3, sp.height*3);
+    // lo sprite è cotto a densità doppia: l'ingrandimento cala della metà,
+    // e il ritratto resta grande uguale ma con dentro il doppio dei pixel
+    r.ctx.drawImage(sp, 0, 0, sp.width, sp.height, 0, 0, sp.width*3/K, sp.height*3/K);
   }
 }
 
@@ -151,7 +153,8 @@ const POSTI = [
 ];
 
 const LARGO = 9, ALTO = 6;        // caselle del ritaglio
-const TT = 32;
+const TT = 64;                    // la casella del mondo
+const K = 2;                      // quanto il mondo è più fitto della casella da 32
 
 /* Disegna un ritaglio di mappa vera: il terreno, e sopra le cose che
    danno il carattere a un posto — alberi, sassi, cespugli, edifici. */
@@ -173,11 +176,11 @@ function ritaglio(m, x0, y0, stag){
     if(t === 'roccia'){
       const R = PAL.c.roccia;
       ART.px(x, i*TT, j*TT, TT, TT, R.corpo);
-      ART.px(x, i*TT, j*TT, TT, 3, R.corpoChiaro);
+      ART.px(x, i*TT, j*TT, TT, 3*K, R.corpoChiaro);
       for(let k=0;k<5;k++){
         const bx = i*TT + ((ART.hsh(gx,gy+k,71)*TT)|0);
         const by = j*TT + ((ART.hsh(gx+k,gy,72)*TT)|0);
-        ART.px(x, bx, by, 3, 2, ART.hsh(k,gx+gy,73)>0.5 ? R.strato : R.faccia);
+        ART.px(x, bx, by, 3*K, 2*K, ART.hsh(k,gx+gy,73)>0.5 ? R.strato : R.faccia);
       }
       continue;
     }
@@ -199,10 +202,10 @@ function ritaglio(m, x0, y0, stag){
     if(!o) continue;
     const v = (gx*7+gy*13)&3;
     let img = null, dy = 0;
-    if(o.t==='albero'){ img = ART.tree(o.kind, stag, o.stage, v); dy = -img.height+TT+2; }
-    else if(o.t==='ceppo'){ img = ART.stump(v); dy = -img.height+TT+2; }
-    else if(o.t==='sasso'){ img = ART.rock(o.kind, v); dy = -img.height+TT+2; }
-    else if(o.t==='cespuglio'){ img = ART.bush(stag, v, o.bacche); dy = -img.height+TT+2; }
+    if(o.t==='albero'){ img = ART.tree(o.kind, stag, o.stage, v); dy = -img.height+TT+2*K; }
+    else if(o.t==='ceppo'){ img = ART.stump(v); dy = -img.height+TT+2*K; }
+    else if(o.t==='sasso'){ img = ART.rock(o.kind, v); dy = -img.height+TT+2*K; }
+    else if(o.t==='cespuglio'){ img = ART.bush(stag, v, o.bacche); dy = -img.height+TT+2*K; }
     if(img) x.drawImage(img, (i*TT)-((img.width-TT)>>1), j*TT+dy);
   }
   return c;

@@ -9,8 +9,29 @@
 const A = {};
 window.ART = A;
 
-const T = 32;              // dimensione tile in pixel d'arte
+/* ---- l'unità di disegno e la casella ----
+
+   Non sono più la stessa cosa, e la distinzione è tutto quello che
+   serve sapere per leggere questo file.
+
+   `U` è l'unità in cui sono scritti i disegni qui dentro: 32, la
+   casella com'era prima che il gioco raddoppiasse la densità. Le 590
+   `px(x, 3, 5, …)` di questo file parlano quella lingua, e riscriverle
+   una per una voleva dire riscrivere il file.
+
+   `T` è la casella vera, quella che il mondo conosce: 64. Fuori di qui
+   non esiste altro che questa.
+
+   In mezzo c'è `K`: la tela di uno sprite nasce grande K volte e col
+   contesto già scalato (vedi `tela`), così le coordinate restano quelle
+   che sono e lo sprite esce della misura che il mondo si aspetta.
+   Il nome `U` e non `T` è apposta: un `T` che qui vale 32 e altrove 64
+   è l'omonimia che in questo repo ha già fatto leggere male un elenco. */
+const U = 32;              // unità di disegno: la casella di prima
+const K = 2;               // quante volte la tela è più fitta del disegno
+const T = U*K;             // la casella, come la conosce il mondo
 A.T = T;
+A.K = K;
 
 /* ---------------- utilità ---------------- */
 function cv(w,h){
@@ -21,6 +42,34 @@ function cv(w,h){
   return c;
 }
 A.cv = cv;
+
+/* La tela di uno sprite: nasce K volte più grande di quello che le si
+   chiede, e il contesto parte già scalato di K. Chi disegna continua a
+   parlare in unità di disegno e non se ne accorge; chi lo mette a
+   schermo trova uno sprite già in pixel di mondo.
+
+   `netto` serve a chi un giorno ridisegnerà lo sprite davvero a 64: la
+   tela resta grande uguale, il contesto no, e le coordinate si scrivono
+   in sessantaquattresimi. Nessuno dei lettori dello sprite cambia.
+
+   `cv` invece resta grezza, e deve restarci: la scena, la luce, i
+   blocchi di terreno e le pozze sono GIÀ in pixel di mondo — scalarle
+   le farebbe grandi il doppio del doppio. */
+function tela(w, h, netto){
+  const c = cv(w*K, h*K);
+  if(!netto) c.getContext('2d').setTransform(K,0,0,K,0,0);
+  return c;
+}
+A.tela = tela;
+
+/* Sovrapporre una tela a un'altra — è come si fanno i raccordi fra
+   terreni e le aiuole arate: si disegna la texture e poi la si ritaglia
+   sulla maschera. Tutte e due sono in pixel di MONDO, ma il contesto di
+   chi riceve parla in unità di disegno, quindi la misura va detta a
+   voce: `drawImage(src, 0, 0)` prende la misura naturale della sorgente
+   e la maschera uscirebbe grande il doppio della casella, cioè fuori
+   dalla tela — e il ritaglio non ritaglierebbe più niente. */
+function sovrapponi(x, src, w, h){ x.drawImage(src, 0, 0, w||U, h||U); }
 
 function px(c,x,y,w,h,col){ c.fillStyle=col; c.fillRect(x|0,y|0,w|0,h|0); }
 A.px = px;
@@ -215,9 +264,9 @@ const groundCache = {};
 
 function grassTile(v, season){
   const S = DATA.SEASONS.find(s=>s.id===season);
-  const c = cv(T,T), x = c.getContext('2d');
+  const c = tela(U,U), x = c.getContext('2d');
   const base = S.grass, dark = S.grass2;
-  px(x,0,0,T,T,base);
+  px(x,0,0,U,U,base);
   /* Chiazze larghe: devono essere un respiro, non un disegno. Chiedevano
      di schiarire del 6%, che sulla palette a gradini è diventato un
      gradino intero — e il prato si è riempito di coriandoli. Adesso si
@@ -225,7 +274,7 @@ function grassTile(v, season){
      opacità: la variazione si sente e non si conta. */
   for(let i=0;i<22;i++){
     const r = hsh(i,v,season.length*7);
-    const bx = (hsh(i,v,1)*T)|0, by=(hsh(i,v,2)*T)|0;
+    const bx = (hsh(i,v,1)*U)|0, by=(hsh(i,v,2)*U)|0;
     const sz = 2+((r*4)|0);
     x.fillStyle = dark;
     x.globalAlpha = r>0.5 ? 0.14 : 0.30;
@@ -235,7 +284,7 @@ function grassTile(v, season){
   // fili d'erba: meno fitti, più corti, e solo i chiari staccano davvero
   const blade = shade(base, season==='inverno'? 0.10 : 0.16);
   for(let i=0;i<10;i++){
-    const bx=(hsh(i,v,11)*T)|0, by=(hsh(i,v,12)*T)|0;
+    const bx=(hsh(i,v,11)*U)|0, by=(hsh(i,v,12)*U)|0;
     const h = 2+((hsh(i,v,13)*2)|0);
     x.globalAlpha = i%3 ? 0.5 : 0.7;
     x.fillStyle = i%3 ? dark : blade;
@@ -247,7 +296,7 @@ function grassTile(v, season){
     const n = season==='primavera'?3:(season==='estate'?2:1);
     for(let i=0;i<n;i++){
       if(hsh(i,v,21)>0.55){
-        const bx=2+((hsh(i,v,22)*(T-5))|0), by=2+((hsh(i,v,23)*(T-5))|0);
+        const bx=2+((hsh(i,v,22)*(U-5))|0), by=2+((hsh(i,v,23)*(U-5))|0);
         const col = season==='autunno' ? C().erba.fioreAutunno : (hsh(i,v,24)>0.5? S.accent : C().erba.fiore);
         px(x,bx,by,2,2,col);
         px(x,bx,by-1,1,1,shade(col,0.3));
@@ -256,7 +305,7 @@ function grassTile(v, season){
   } else {
     // brina
     for(let i=0;i<10;i++){
-      const bx=(hsh(i,v,31)*T)|0, by=(hsh(i,v,32)*T)|0;
+      const bx=(hsh(i,v,31)*U)|0, by=(hsh(i,v,32)*U)|0;
       px(x,bx,by,1,1,C().erba.brina);
     }
   }
@@ -264,15 +313,15 @@ function grassTile(v, season){
 }
 
 function dirtTile(v){
-  const c=cv(T,T), x=c.getContext('2d');
-  px(x,0,0,T,T,C().terra.base);
+  const c=tela(U,U), x=c.getContext('2d');
+  px(x,0,0,U,U,C().terra.base);
   for(let i=0;i<40;i++){
-    const bx=(hsh(i,v,41)*T)|0, by=(hsh(i,v,42)*T)|0, r=hsh(i,v,43);
+    const bx=(hsh(i,v,41)*U)|0, by=(hsh(i,v,42)*U)|0, r=hsh(i,v,43);
     x.fillStyle = r>0.6?C().terra.chiaro:(r>0.3?C().terra.medio:C().terra.scuro);
     x.fillRect(bx,by,1+((r*2)|0),1);
   }
   for(let i=0;i<5;i++){
-    const bx=(hsh(i,v,44)*T)|0, by=(hsh(i,v,45)*T)|0;
+    const bx=(hsh(i,v,44)*U)|0, by=(hsh(i,v,45)*U)|0;
     px(x,bx,by,2,2,C().terra.zolla);
     px(x,bx,by,1,1,C().terra.zollaLuce);
   }
@@ -280,25 +329,25 @@ function dirtTile(v){
 }
 
 function tilledTile(v, wet){
-  const c=cv(T,T), x=c.getContext('2d');
+  const c=tela(U,U), x=c.getContext('2d');
   const A = wet ? C().arato.bagnato : C().arato.asciutto;
   const base = A.base, ridge = A.cresta, dark = A.scuro;
-  px(x,0,0,T,T,base);
+  px(x,0,0,U,U,base);
   // solchi orizzontali
   for(let r=0;r<4;r++){
     const y=r*8;
-    px(x,0,y,T,1,dark);
-    px(x,0,y+1,T,2,ridge);
-    px(x,0,y+3,T,1,shade(base,-0.05));
+    px(x,0,y,U,1,dark);
+    px(x,0,y+1,U,2,ridge);
+    px(x,0,y+3,U,1,shade(base,-0.05));
     for(let i=0;i<8;i++){
-      const bx=(hsh(i,v+r,51)*T)|0;
+      const bx=(hsh(i,v+r,51)*U)|0;
       px(x,bx,y+4,1,2, hsh(i,v+r,52)>0.5?dark:shade(base,0.05));
     }
   }
   if(wet){
     // riflessi d'acqua
     for(let i=0;i<7;i++){
-      const bx=(hsh(i,v,61)*T)|0, by=(hsh(i,v,62)*T)|0;
+      const bx=(hsh(i,v,61)*U)|0, by=(hsh(i,v,62)*U)|0;
       x.globalAlpha=0.35; px(x,bx,by,2,1,C().arato.riflesso); x.globalAlpha=1;
     }
   }
@@ -306,8 +355,8 @@ function tilledTile(v, wet){
 }
 
 function pathTile(v){
-  const c=cv(T,T), x=c.getContext('2d');
-  px(x,0,0,T,T,C().sentiero.malta);
+  const c=tela(U,U), x=c.getContext('2d');
+  px(x,0,0,U,U,C().sentiero.malta);
   // ciottoli
   const cols=C().sentiero.ciottoli;
   for(let gy=0; gy<4; gy++) for(let gx=0; gx<4; gx++){
@@ -323,10 +372,10 @@ function pathTile(v){
 }
 
 function sandTile(v){
-  const c=cv(T,T), x=c.getContext('2d');
-  px(x,0,0,T,T,C().sabbia.base);
+  const c=tela(U,U), x=c.getContext('2d');
+  px(x,0,0,U,U,C().sabbia.base);
   for(let i=0;i<34;i++){
-    const bx=(hsh(i,v,81)*T)|0, by=(hsh(i,v,82)*T)|0;
+    const bx=(hsh(i,v,81)*U)|0, by=(hsh(i,v,82)*U)|0;
     x.fillStyle = hsh(i,v,83)>0.5?C().sabbia.scuro:C().sabbia.chiaro;
     x.fillRect(bx,by,1,1);
   }
@@ -334,14 +383,14 @@ function sandTile(v){
 }
 
 function woodTile(v){
-  const c=cv(T,T), x=c.getContext('2d');
-  px(x,0,0,T,T,C().assi.base);
+  const c=tela(U,U), x=c.getContext('2d');
+  px(x,0,0,U,U,C().assi.base);
   for(let r=0;r<4;r++){
     const y=r*8;
-    px(x,0,y,T,1,C().assi.giunto);
-    px(x,0,y+1,T,7, r%2? C().assi.alterna:C().assi.base);
+    px(x,0,y,U,1,C().assi.giunto);
+    px(x,0,y+1,U,7, r%2? C().assi.alterna:C().assi.base);
     for(let i=0;i<6;i++){
-      const bx=(hsh(i,r+v,91)*T)|0;
+      const bx=(hsh(i,r+v,91)*U)|0;
       x.globalAlpha=0.35; px(x,bx,y+2+((hsh(i,r,92)*4)|0),3+((hsh(i,r,93)*4)|0),1,C().assi.venatura); x.globalAlpha=1;
     }
     const jx = (r%2? 16:0);
@@ -351,9 +400,9 @@ function woodTile(v){
 }
 
 function stoneFloorTile(v){
-  const c=cv(T,T), x=c.getContext('2d');
+  const c=tela(U,U), x=c.getContext('2d');
   // lastre calde, sabbiose, con giunti di malta chiara
-  px(x,0,0,T,T,C().lastre.malta);
+  px(x,0,0,U,U,C().lastre.malta);
   const cols=C().lastre.pietre;
   // sfalsate: due file da due lastre, con offset alternato
   for(let gy=0;gy<2;gy++){
@@ -375,7 +424,7 @@ function stoneFloorTile(v){
   // muschio negli interstizi
   for(let i=0;i<4;i++){
     if(hsh(i,v,105)<0.55) continue;
-    const mx=(hsh(i,v,106)*T)|0, my=(hsh(i,v,107)*T)|0;
+    const mx=(hsh(i,v,106)*U)|0, my=(hsh(i,v,107)*U)|0;
     x.globalAlpha=0.4; px(x,mx,my,2,2,C().lastre.muschio); x.globalAlpha=1;
   }
   return c;
@@ -385,8 +434,8 @@ function stoneFloorTile(v){
    la fuliggine che si accumula nei giunti. È il pavimento degli interni
    di pietra — la fucina — dove le lastre della piazza stonavano. */
 function terracottaTile(v){
-  const c=cv(T,T), x=c.getContext('2d');
-  px(x,0,0,T,T,C().cotto.malta);
+  const c=tela(U,U), x=c.getContext('2d');
+  px(x,0,0,U,U,C().cotto.malta);
   const cols=C().cotto.pietre;
   for(let gy=0;gy<3;gy++){
     const off = (gy+v)%2 ? 5 : 0;
@@ -403,17 +452,17 @@ function terracottaTile(v){
   // fuliggine sparsa, più fitta dove capita
   for(let i=0;i<7;i++){
     if(hsh(i,v,163)<0.45) continue;
-    const mx=(hsh(i,v,164)*T)|0, my=(hsh(i,v,165)*T)|0;
+    const mx=(hsh(i,v,164)*U)|0, my=(hsh(i,v,165)*U)|0;
     x.globalAlpha=0.35; px(x,mx,my,3,2,C().cotto.fuliggine); x.globalAlpha=1;
   }
   return c;
 }
 
 function snowTile(v){
-  const c=cv(T,T), x=c.getContext('2d');
-  px(x,0,0,T,T,C().neve.base);
+  const c=tela(U,U), x=c.getContext('2d');
+  px(x,0,0,U,U,C().neve.base);
   for(let i=0;i<24;i++){
-    const bx=(hsh(i,v,111)*T)|0, by=(hsh(i,v,112)*T)|0;
+    const bx=(hsh(i,v,111)*U)|0, by=(hsh(i,v,112)*U)|0;
     x.fillStyle=hsh(i,v,113)>0.5?C().neve.chiaro:C().neve.scuro;
     x.fillRect(bx,by,2,1);
   }
@@ -421,17 +470,17 @@ function snowTile(v){
 }
 
 function caveTile(v){
-  const c=cv(T,T), x=c.getContext('2d');
+  const c=tela(U,U), x=c.getContext('2d');
   // pavimento della grotta: sabbioso, più chiaro delle pareti
-  px(x,0,0,T,T,C().grotta.base);
+  px(x,0,0,U,U,C().grotta.base);
   for(let i=0;i<34;i++){
-    const bx=(hsh(i,v,121)*T)|0, by=(hsh(i,v,122)*T)|0, r=hsh(i,v,123);
+    const bx=(hsh(i,v,121)*U)|0, by=(hsh(i,v,122)*U)|0, r=hsh(i,v,123);
     x.fillStyle=r>0.6?C().grotta.chiaro:(r>0.3?C().grotta.medio:C().grotta.scuro);
     x.fillRect(bx,by,1+((r*2)|0),1);
   }
   // ghiaia
   for(let i=0;i<6;i++){
-    const bx=(hsh(i,v,124)*T)|0, by=(hsh(i,v,125)*T)|0;
+    const bx=(hsh(i,v,124)*U)|0, by=(hsh(i,v,125)*U)|0;
     px(x,bx,by,2,2,C().grotta.ghiaia);
     px(x,bx,by,1,1,C().grotta.ghiaiaLuce);
   }
@@ -444,18 +493,18 @@ function waterFrames(season){
   const A = season==='inverno' ? C().acqua.gelida : C().acqua.tiepida;
   const deep = A.fondo, mid = A.medio, top = A.cresta;
   for(let f=0;f<6;f++){
-    const c=cv(T,T), x=c.getContext('2d');
-    px(x,0,0,T,T,deep);
+    const c=tela(U,U), x=c.getContext('2d');
+    px(x,0,0,U,U,deep);
     for(let i=0;i<20;i++){
-      const bx=(hsh(i,f,131)*T)|0;
-      const by=((hsh(i,0,132)*T + f*2.2)|0)%T;
+      const bx=(hsh(i,f,131)*U)|0;
+      const by=((hsh(i,0,132)*U + f*2.2)|0)%U;
       x.globalAlpha=0.55;
       px(x,bx,by,3+((hsh(i,0,133)*4)|0),1,mid);
       x.globalAlpha=1;
     }
     for(let i=0;i<7;i++){
-      const bx=((hsh(i,0,141)*T + Math.sin((f/6)*6.28+i)*3)|0+T)%T;
-      const by=((hsh(i,0,142)*T)|0);
+      const bx=((hsh(i,0,141)*U + Math.sin((f/6)*6.28+i)*3)|0+U)%U;
+      const by=((hsh(i,0,142)*U)|0);
       x.globalAlpha=0.7;
       px(x,bx,by,4,1,top);
       px(x,bx+1,by+1,2,1,shade(top,0.25));
@@ -759,7 +808,7 @@ A.CH_W = 30; A.CH_H = 40;
 A.charSprite = function(look, dir, frame){
   const key = chiaveLook(look)+'|'+dir+'|'+frame;
   if(charCache[key]) return charCache[key];
-  const c = cv(A.CH_W, A.CH_H);
+  const c = tela(A.CH_W, A.CH_H);
   const x = c.getContext('2d');
   x.imageSmoothingEnabled=false;
   A.drawChar(x, A.CH_W/2, A.CH_H-2, look, dir, frame, {senzaOmbra:true});
@@ -1009,7 +1058,7 @@ A.tree = function(kind, season, stage, v){
   const key = 'tree|'+kind+'|'+season+'|'+stage+'|'+v;
   if(objCache[key]) return objCache[key];
   const W=96, H=112;
-  const c=cv(W,H), x=c.getContext('2d');
+  const c=tela(W,H), x=c.getContext('2d');
   const S = DATA.SEASONS.find(s=>s.id===season);
   const cxx=W/2, base=H-6;
   const R = i => hsh(i, v*101+7, 181);      // numeri stabili per questa variante
@@ -1132,7 +1181,7 @@ A.stump = function(v){
   v = (((v|0) % 4) + 4) % 4;
   const key='stump|'+v;
   if(objCache[key]) return objCache[key];
-  const c=cv(40,32), x=c.getContext('2d');
+  const c=tela(40,32), x=c.getContext('2d');
   const P = C().ceppo;
   const R = i => hsh(i, v*67+3, 191);
   // permutazioni invece di numeri a caso: garantiscono quattro sagome
@@ -1165,7 +1214,7 @@ A.stump = function(v){
 A.rock = function(kind, v){
   const key='rock|'+kind+'|'+v;
   if(objCache[key]) return objCache[key];
-  const c=cv(40,40), x=c.getContext('2d');
+  const c=tela(40,40), x=c.getContext('2d');
   const P = {
     pietra:  ['#8a8580','#a8a29a','#6b6762'],
     rame:    ['#8a7568','#b08a6a','#6b5a50'],
@@ -1202,7 +1251,7 @@ A.rock = function(kind, v){
 A.bush = function(season, v, bacche){
   const key='bush|'+season+'|'+v+'|'+!!bacche;
   if(objCache[key]) return objCache[key];
-  const c=cv(40,36), x=c.getContext('2d');
+  const c=tela(40,36), x=c.getContext('2d');
   const S=DATA.SEASONS.find(s=>s.id===season);
   ellip(x,20,32,12,4,'rgba(0,0,0,0.2)');
   foliageBlob(x,14,22,10,S.tree,season);
@@ -1252,7 +1301,7 @@ function fruttoCespuglio(x, v, item){
 A.weed = function(season,v){
   const key='weed|'+season+'|'+v;
   if(objCache[key]) return objCache[key];
-  const c=cv(32,32), x=c.getContext('2d');
+  const c=tela(32,32), x=c.getContext('2d');
   const S=DATA.SEASONS.find(s=>s.id===season);
   const col = season==='inverno' ? '#9aa8ae' : shade(S.grass,-0.12);
   const col2= shade(col,0.2);
@@ -1270,7 +1319,7 @@ A.weed = function(season,v){
 A.forage = function(itemId, v){
   const key='for|'+itemId+'|'+v;
   if(objCache[key]) return objCache[key];
-  const c=cv(32,32), x=c.getContext('2d');
+  const c=tela(32,32), x=c.getContext('2d');
   x.globalAlpha=0.2; ellip(x,16,27,7,3,'#000'); x.globalAlpha=1;
   drawForageArt(x,16,26,itemId);
   objCache[key]=c; return c;
@@ -1463,7 +1512,7 @@ function sign(x, sx, sy, testo, col){
 }
 
 function bCasa(o){
-  const W=192,H=168, c=cv(W,H), x=c.getContext('2d');
+  const W=192,H=168, c=tela(W,H), x=c.getContext('2d');
   const liv = o.liv||0;
   const wall='#d8c49a', roof= liv>0? '#7a4f8a' : '#b04a3c';
   // ombra
@@ -1506,7 +1555,7 @@ function bCasa(o){
 }
 
 function bBottega(o){
-  const W=192,H=160, c=cv(W,H), x=c.getContext('2d');
+  const W=192,H=160, c=tela(W,H), x=c.getContext('2d');
   x.globalAlpha=0.22; ellip(x,W/2,H-8,72,11,'#000'); x.globalAlpha=1;
   baseWalls(x, 20, 56, 152, 96, '#e0d0a8');
   shingleRoof(x, 6, 18, 180, 40, '#3f7a6a');
@@ -1552,7 +1601,7 @@ function bBottega(o){
 }
 
 function bFucina(o){
-  const W=176,H=160, c=cv(W,H), x=c.getContext('2d');
+  const W=176,H=160, c=tela(W,H), x=c.getContext('2d');
   x.globalAlpha=0.22; ellip(x,W/2,H-8,66,11,'#000'); x.globalAlpha=1;
   // muri di pietra
   px(x,24,60,128,92,'#8a8078');
@@ -1587,7 +1636,7 @@ function bFucina(o){
 }
 
 function bLocanda(o){
-  const W=208,H=176, c=cv(W,H), x=c.getContext('2d');
+  const W=208,H=176, c=tela(W,H), x=c.getContext('2d');
   x.globalAlpha=0.22; ellip(x,W/2,H-8,80,12,'#000'); x.globalAlpha=1;
   // piano terra
   baseWalls(x, 20, 92, 168, 76, '#e8d4a8');
@@ -1627,7 +1676,7 @@ function bLocanda(o){
 }
 
 function bCottage(o){
-  const W=144,H=136, c=cv(W,H), x=c.getContext('2d');
+  const W=144,H=136, c=tela(W,H), x=c.getContext('2d');
   x.globalAlpha=0.22; ellip(x,W/2,H-6,54,9,'#000'); x.globalAlpha=1;
   baseWalls(x, 20, 56, 104, 72, o.wall||'#cbb68e');
   // tetto di paglia
@@ -1655,7 +1704,7 @@ function bCottage(o){
 }
 
 function bSantuario(o){
-  const W=176,H=176, c=cv(W,H), x=c.getContext('2d');
+  const W=176,H=176, c=tela(W,H), x=c.getContext('2d');
   const acceso = o.liv||0;   // 0..4 braci accese
   x.globalAlpha=0.24; ellip(x,W/2,H-10,64,12,'#000'); x.globalAlpha=1;
   // basamento a gradini
@@ -1716,7 +1765,7 @@ function bSantuario(o){
 }
 
 function bPollaio(o){
-  const W=160,H=136, c=cv(W,H), x=c.getContext('2d');
+  const W=160,H=136, c=tela(W,H), x=c.getContext('2d');
   x.globalAlpha=0.22; ellip(x,W/2,H-6,60,10,'#000'); x.globalAlpha=1;
   baseWalls(x, 22, 60, 116, 68, '#d8bd8a');
   shingleRoof(x, 8, 24, 144, 36, '#b0563c');
@@ -1742,7 +1791,7 @@ function bPollaio(o){
 }
 
 function bSerra(o){
-  const W=192,H=160, c=cv(W,H), x=c.getContext('2d');
+  const W=192,H=160, c=tela(W,H), x=c.getContext('2d');
   x.globalAlpha=0.22; ellip(x,W/2,H-8,72,11,'#000'); x.globalAlpha=1;
   // basamento
   px(x,16,132,160,24,'#8d867c');
@@ -1783,7 +1832,7 @@ function bSerra(o){
 }
 
 function bCapanna(o){
-  const W=112,H=104, c=cv(W,H), x=c.getContext('2d');
+  const W=112,H=104, c=tela(W,H), x=c.getContext('2d');
   x.globalAlpha=0.2; ellip(x,W/2,H-6,42,8,'#000'); x.globalAlpha=1;
   // tronchi
   for(let r=0;r<6;r++){
@@ -1808,7 +1857,7 @@ A.placeable = function(kind, opt){
   opt=opt||{};
   const key='p|'+kind+'|'+(opt.attivo?1:0)+'|'+(opt.pronto?1:0)+'|'+(opt.lati|0);
   if(objCache[key]) return objCache[key];
-  const c=cv(48,56), x=c.getContext('2d');
+  const c=tela(48,56), x=c.getContext('2d');
   x.globalAlpha=0.22; ellip(x,24,50,14,5,'#000'); x.globalAlpha=1;
   switch(kind){
     case 'cassa':
@@ -1999,7 +2048,7 @@ A.placeable = function(kind, opt){
 A.gallina = function(frame, dir){
   const key='gal|'+frame+'|'+dir;
   if(objCache[key]) return objCache[key];
-  const c=cv(32,32), x=c.getContext('2d');
+  const c=tela(32,32), x=c.getContext('2d');
   const bob = frame%2?0:1;
   x.globalAlpha=0.22; ellip(x,16,27,7,3,'#000'); x.globalAlpha=1;
   const f = dir<0?-1:1;
@@ -2023,7 +2072,7 @@ A.gallina = function(frame, dir){
 A.gatto = function(frame){
   const key='gatto|'+frame;
   if(objCache[key]) return objCache[key];
-  const c=cv(32,32), x=c.getContext('2d');
+  const c=tela(32,32), x=c.getContext('2d');
   const bob=frame%2;
   x.globalAlpha=0.2; ellip(x,16,27,7,3,'#000'); x.globalAlpha=1;
   ellip(x,15,20-bob,9,6,'#c9853c');
@@ -2308,7 +2357,10 @@ function drawIcon(x, id){
       const tipo = id==='zolla' ? 'erba' : id;
       x.save();
       x.beginPath(); x.rect(4,9,24,16); x.clip();
-      x.drawImage(A.ground(tipo, 1, 'primavera'), 0, 0);
+      // l'icona è una tela grezza da 32: il terreno arriva in pixel di
+      // mondo e va rimesso all'unità di disegno, o si vedrebbe solo il
+      // quarto in alto a sinistra della casella
+      x.drawImage(A.ground(tipo, 1, 'primavera'), 0, 0, U, U);
       x.restore();
       /* Cornice: chiara sopra e a sinistra, scura sotto e a destra, così
          la piastrella ha uno spessore e non sembra un buco nel foglio.
@@ -2565,7 +2617,7 @@ A.cloudSprite = function(v){
 A.bolla = function(itemId){
   const key='bolla|'+itemId;
   if(objCache[key]) return objCache[key];
-  const c=cv(40,40), x=c.getContext('2d');
+  const c=tela(40,40), x=c.getContext('2d');
   ellip(x,20,16,15,13,'rgba(0,0,0,0.18)');
   ellip(x,20,15,15,13,'#f6e6c8');
   ellip(x,20,14,13,11,'#fff8e4');
@@ -2580,7 +2632,7 @@ A.bolla = function(itemId){
 A.emote = function(kind){
   const key='em|'+kind;
   if(objCache[key]) return objCache[key];
-  const c=cv(32,32), x=c.getContext('2d');
+  const c=tela(32,32), x=c.getContext('2d');
   ellip(x,16,15,13,11,'rgba(0,0,0,0.18)');
   ellip(x,16,14,13,11,'#fff8e4');
   x.fillStyle='#fff8e4';
@@ -2612,39 +2664,39 @@ A.PRIORITA = {
 
 /* maschera del bordo: bianco dove il terreno vicino deve comparire */
 function maskLato(dir, v){
-  const c = cv(T,T), x = c.getContext('2d');
+  const c = tela(U,U), x = c.getContext('2d');
   x.fillStyle='#fff';
   const prof = (i)=>{
     // profondità morbida e irregolare, 5..13 px
     const n = Math.sin(i*0.55 + v*2.1)*0.5 + Math.sin(i*0.23 + v*3.7)*0.5;
     return 5 + Math.round((n*0.5+0.5)*8);
   };
-  for(let i=0;i<T;i++){
+  for(let i=0;i<U;i++){
     const p = prof(i);
     if(dir==='n')      x.fillRect(i, 0, 1, p);
-    else if(dir==='s') x.fillRect(i, T-p, 1, p);
+    else if(dir==='s') x.fillRect(i, U-p, 1, p);
     else if(dir==='w') x.fillRect(0, i, p, 1);
-    else if(dir==='e') x.fillRect(T-p, i, p, 1);
+    else if(dir==='e') x.fillRect(U-p, i, p, 1);
     // sfumatura a puntini oltre il bordo
     for(let k=0;k<3;k++){
       if(hsh(i,k+v*7,801) > 0.62) continue;
       const q = p + 1 + k*2;
-      if(q>=T) break;
+      if(q>=U) break;
       if(dir==='n')      x.fillRect(i, q, 1, 1);
-      else if(dir==='s') x.fillRect(i, T-1-q, 1, 1);
+      else if(dir==='s') x.fillRect(i, U-1-q, 1, 1);
       else if(dir==='w') x.fillRect(q, i, 1, 1);
-      else if(dir==='e') x.fillRect(T-1-q, i, 1, 1);
+      else if(dir==='e') x.fillRect(U-1-q, i, 1, 1);
     }
   }
   return c;
 }
 
 function maskAngolo(dir, v){
-  const c = cv(T,T), x = c.getContext('2d');
+  const c = tela(U,U), x = c.getContext('2d');
   x.fillStyle='#fff';
-  const cx = (dir==='nw'||dir==='sw') ? 0 : T;
-  const cy = (dir==='nw'||dir==='ne') ? 0 : T;
-  for(let y=0;y<T;y++) for(let x0=0;x0<T;x0++){
+  const cx = (dir==='nw'||dir==='sw') ? 0 : U;
+  const cy = (dir==='nw'||dir==='ne') ? 0 : U;
+  for(let y=0;y<U;y++) for(let x0=0;x0<U;x0++){
     const d = Math.hypot(x0-cx, y-cy);
     const r = 9 + Math.sin((x0+y)*0.4 + v*2.3)*3;
     if(d < r) x.fillRect(x0,y,1,1);
@@ -2658,11 +2710,11 @@ const bordoCache = {};
 A.bordo = function(tipo, dir, v, season){
   const key = tipo+'|'+dir+'|'+v+'|'+(tipo==='erba'?season:'-');
   if(bordoCache[key]) return bordoCache[key];
-  const c = cv(T,T), x = c.getContext('2d');
+  const c = tela(U,U), x = c.getContext('2d');
   x.imageSmoothingEnabled=false;
-  x.drawImage(A.ground(tipo, v, season), 0, 0);
+  sovrapponi(x, A.ground(tipo, v, season));
   x.globalCompositeOperation='destination-in';
-  x.drawImage(dir.length===1 ? maskLato(dir,v) : maskAngolo(dir,v), 0, 0);
+  sovrapponi(x, dir.length===1 ? maskLato(dir,v) : maskAngolo(dir,v));
   x.globalCompositeOperation='source-over';
   bordoCache[key]=c;
   return c;
@@ -2673,12 +2725,12 @@ const ombraBordoCache = {};
 A.ombraBordo = function(dir, v){
   const key='ob|'+dir+'|'+v;
   if(ombraBordoCache[key]) return ombraBordoCache[key];
-  const c = cv(T,T), x = c.getContext('2d');
+  const c = tela(U,U), x = c.getContext('2d');
   x.fillStyle='rgba(0,0,0,0.16)';
-  x.drawImage(dir.length===1 ? maskLato(dir,v) : maskAngolo(dir,v), 0, 0);
+  sovrapponi(x, dir.length===1 ? maskLato(dir,v) : maskAngolo(dir,v));
   x.globalCompositeOperation='source-in';
   x.fillStyle='rgba(30,22,14,0.20)';
-  x.fillRect(0,0,T,T);
+  x.fillRect(0,0,U,U);
   ombraBordoCache[key]=c;
   return c;
 };
@@ -2694,41 +2746,41 @@ const aratoCache = {};
 A.arato = function(vic, v, bagnato, season){
   const key = 'ar|'+vic+'|'+v+'|'+(bagnato?1:0);
   if(aratoCache[key]) return aratoCache[key];
-  const c = cv(T,T), x = c.getContext('2d');
+  const c = tela(U,U), x = c.getContext('2d');
   x.imageSmoothingEnabled=false;
 
   // 1. maschera della forma
-  const mk = cv(T,T), mx = mk.getContext('2d');
+  const mk = tela(U,U), mx = mk.getContext('2d');
   mx.fillStyle='#fff';
   const er = (i, lato)=>{
     // quanto rientra il bordo su questo lato: 0 se c'è un vicino
     if(vic & lato) return 0;
     return 2 + Math.round((Math.sin(i*0.7 + v*2.3)*0.5+0.5)*2);
   };
-  for(let y=0;y<T;y++){
+  for(let y=0;y<U;y++){
     const dw = er(y, 8), de = er(y, 2);
-    for(let x0=0;x0<T;x0++){
+    for(let x0=0;x0<U;x0++){
       const dn = er(x0, 1), ds = er(x0, 4);
-      if(x0 < dw || x0 >= T-de) continue;
-      if(y < dn || y >= T-ds) continue;
+      if(x0 < dw || x0 >= U-de) continue;
+      if(y < dn || y >= U-ds) continue;
       mx.fillRect(x0,y,1,1);
     }
   }
 
   // 2. texture arata ritagliata sulla maschera
-  x.drawImage(tilledTile(v, bagnato), 0, 0);
+  sovrapponi(x, tilledTile(v, bagnato));
   x.globalCompositeOperation='destination-in';
-  x.drawImage(mk, 0, 0);
+  sovrapponi(x, mk);
   x.globalCompositeOperation='source-over';
 
   // 3. argine: zolle chiare sul bordo esterno
   const argine = bagnato ? '#8a6449' : '#b8946c';
   const argineS= bagnato ? '#3f2b1e' : '#6b4a33';
-  for(let i=0;i<T;i++){
+  for(let i=0;i<U;i++){
     if(!(vic&1)){ const d=er(i,1); if(d){ px(x,i,d,1,1,argine); px(x,i,d+1,1,1,argineS); } }
-    if(!(vic&4)){ const d=er(i,4); if(d){ px(x,i,T-1-d,1,1,argineS); px(x,i,T-2-d,1,1,argine); } }
+    if(!(vic&4)){ const d=er(i,4); if(d){ px(x,i,U-1-d,1,1,argineS); px(x,i,U-2-d,1,1,argine); } }
     if(!(vic&8)){ const d=er(i,8); if(d){ px(x,d,i,1,1,argine); px(x,d+1,i,1,1,argineS); } }
-    if(!(vic&2)){ const d=er(i,2); if(d){ px(x,T-1-d,i,1,1,argineS); px(x,T-2-d,i,1,1,argine); } }
+    if(!(vic&2)){ const d=er(i,2); if(d){ px(x,U-1-d,i,1,1,argineS); px(x,U-2-d,i,1,1,argine); } }
   }
   aratoCache[key]=c;
   return c;
@@ -2741,7 +2793,7 @@ A.arato = function(vic, v, bagnato, season){
 A.appassita = function(v){
   const key = 'app|'+v;
   if(objCache[key]) return objCache[key];
-  const c = cv(T,T), x = c.getContext('2d');
+  const c = tela(U,U), x = c.getContext('2d');
   x.imageSmoothingEnabled=false;
   const steli = 2 + (v%2);
   for(let i=0;i<steli;i++){
@@ -2770,7 +2822,7 @@ A.ciuffo = function(season, v, piega){
   const key = 'ci|'+season+'|'+v+'|'+piega;
   if(ciuffoCache[key]) return ciuffoCache[key];
   const S = DATA.SEASONS.find(s=>s.id===season) || DATA.SEASONS[0];
-  const c = cv(20,20), x = c.getContext('2d');
+  const c = tela(20,20), x = c.getContext('2d');
   const base = season==='inverno' ? '#b8c8d0' : S.grass;
   /* Chiaro, corpo, ombra: un gradino per parte e basta. Prima il filo
      più chiaro saliva di un gradino e la sua punta di altri due, cioè
@@ -2811,21 +2863,21 @@ A.ciuffo = function(season, v, piega){
 A.schiuma = function(dir, v, frame){
   const key='sc|'+dir+'|'+v+'|'+frame;
   if(objCache[key]) return objCache[key];
-  const c = cv(T,T), x = c.getContext('2d');
+  const c = tela(U,U), x = c.getContext('2d');
   const off = frame*1.4;
-  for(let i=0;i<T;i++){
+  for(let i=0;i<U;i++){
     const h = 2 + Math.round((Math.sin(i*0.5 + v*2 + frame*0.7)*0.5+0.5)*3);
     x.globalAlpha = 0.55;
     x.fillStyle = '#eaf6fb';
     if(dir==='n') x.fillRect(i, 0, 1, h);
-    else if(dir==='s') x.fillRect(i, T-h, 1, h);
+    else if(dir==='s') x.fillRect(i, U-h, 1, h);
     else if(dir==='w') x.fillRect(0, i, h, 1);
-    else if(dir==='e') x.fillRect(T-h, i, h, 1);
+    else if(dir==='e') x.fillRect(U-h, i, h, 1);
     x.globalAlpha = 0.28;
     if(dir==='n') x.fillRect(i, h, 1, 2);
-    else if(dir==='s') x.fillRect(i, T-h-2, 1, 2);
+    else if(dir==='s') x.fillRect(i, U-h-2, 1, 2);
     else if(dir==='w') x.fillRect(h, i, 2, 1);
-    else if(dir==='e') x.fillRect(T-h-2, i, 2, 1);
+    else if(dir==='e') x.fillRect(U-h-2, i, 2, 1);
   }
   x.globalAlpha=1;
   objCache[key]=c;

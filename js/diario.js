@@ -775,8 +775,13 @@ U.mappa = function(G){
       const z = zone.find(z=>z.id===zidQui);
       if(z){
         const m=G.mappa();
-        const pxp = z.x + 10 + (G.p.px/(m.w*32))*(z.w-20);
-        const pyp = z.y + 34 + (G.p.py/(m.h*32))*(z.h-44);
+        /* La casella del mondo è 64. Qui serve solo a ridurre la
+           posizione a una frazione della mappa, ma col 32 di prima la
+           frazione veniva doppia e il segnalino «sei qui» finiva fuori
+           dal riquadro, oltre il bordo destro e sotto. */
+        const CASELLA = 64;
+        const pxp = z.x + 10 + (G.p.px/(m.w*CASELLA))*(z.w-20);
+        const pyp = z.y + 34 + (G.p.py/(m.h*CASELLA))*(z.h-44);
         x.fillStyle='rgba(0,0,0,0.25)';
         x.beginPath(); x.ellipse(pxp,pyp+7,7,3,0,0,6.3); x.fill();
         // spillo

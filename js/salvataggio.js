@@ -19,7 +19,8 @@
    =================================================================== */
 (function(){
 
-const T = 32;
+const T = 64;
+const K = 2;              // quante volte il mondo è più fitto della casella da 32
 
 const S = {};
 window.SALVA = S;
@@ -150,7 +151,9 @@ function deserializzaMappa(m, d){
 
 function costruisciDati(){
   return {
-    v:2,
+    /* v3: la casella è passata da 32 a 64, e con lei ogni posizione in
+       pixel scritta qui dentro. Vedi `raddoppiaPosizioni`. */
+    v:3,
     nomeGiocatore:G.nomeGiocatore, mappaId:G.mappaId,
     oro:G.oro, energia:G.energia, energiaMax:G.energiaMax, energiaBonus:G.energiaBonus,
     giorno:G.giorno, stagioneIdx:G.stagioneIdx, anno:G.anno, giornoTot:G.giornoTot,
@@ -244,11 +247,44 @@ S.applicaTesto = function(testo){
   return {ok:true};
 };
 
+/* ---- I salvataggi nati con la casella da 32 ----
+
+   Gli INDICI DI CASELLA non cambiano: un oggetto in `i = y*larghezza + x`
+   sta dov'era, e il terreno pure. Cambiano le POSIZIONI IN PIXEL, che
+   sono solo due cose: dove sta il giocatore, e dove stanno il gatto e le
+   galline (con la meta verso cui stavano andando).
+
+   Senza questo, chi riapre una partita si ritrova mezzo dentro un muro:
+   `p.px = 300` in un mondo dove la stessa casella adesso comincia a 600
+   vuol dire cinque caselle più a sinistra, e se lì c'è la parete della
+   casa il normalizzatore lo sposta di forza in un punto che non è il suo.
+
+   `d.v` non c'era prima della versione 2, quindi «manca» vuol dire
+   «vecchio»: si raddoppia lo stesso. Raddoppiare due volte lo stesso
+   file non può succedere, perché quello che si riscrive dopo è già v3. */
+const DENSITA_NUOVA = 3;          // da questa versione le posizioni sono a 64
+function raddoppiaPosizioni(d){
+  if((d.v||0) >= DENSITA_NUOVA) return;
+  const doppio = n => (typeof n === 'number' && isFinite(n)) ? n*K : n;
+  d.px = doppio(d.px); d.py = doppio(d.py);
+  if(Array.isArray(d.animali)) for(const a of d.animali){
+    if(!a || typeof a !== 'object') continue;
+    a.px = doppio(a.px); a.py = doppio(a.py);
+    if(a.dest && typeof a.dest === 'object'){
+      a.dest.x = doppio(a.dest.x); a.dest.y = doppio(a.dest.y);
+    }
+  }
+}
+
 /* applica un salvataggio (testo JSON) allo stato. Ritorna true se riuscito. */
 function applicaSalvataggio(raw){
   if(!raw) return false;
   const d = JSON.parse(raw);                 // può lanciare: gestito dal chiamante
   if(!d || typeof d!=='object' || !d.maps) return false;
+  /* Prima di tutto il resto: le posizioni in pixel dei salvataggi nati
+     con la casella da 32 vanno raddoppiate, o il ripristino qui sotto
+     copia numeri che vogliono dire un altro posto. */
+  raddoppiaPosizioni(d);
   Object.assign(G, G.statoIniziale());
   G.maps = WORLD.crea();
   for(const k of ['nomeGiocatore','mappaId','oro','energia','energiaMax','energiaBonus','giorno','stagioneIdx',
@@ -289,8 +325,8 @@ function applicaSalvataggio(raw){
   WORLD.ristampaPorto(G.maps.piazza);
   WORLD.ristampaCosta(G.maps.spiaggia);
   G.p.look = G.look;
-  G.p.px = d.px||8*T+16;
-  G.p.py = d.py||10*T+16;
+  G.p.px = d.px||8*T+T/2;
+  G.p.py = d.py||10*T+T/2;
   G.normalizzaStato();                         // salvataggi vecchi/parziali resi validi
   return true;
 }

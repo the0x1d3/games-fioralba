@@ -11,7 +11,8 @@
    =================================================================== */
 (function(){
 
-const T = 32;
+const T = 64;
+const K = 2;              // quante volte il mondo è più fitto della casella da 32
 const $ = s=>document.querySelector(s);
 
 /* Il nome del pesce dentro alla frase, non incollato davanti: `UI.toast`
@@ -122,7 +123,7 @@ function scegliPesce(){
      parte, salire sul molo avrebbe *tolto* il branzino, che sarebbe
      assurdo. */
   const dalMolo = luogo==='mare' &&
-    WORLD.terreno(m, (G.p.px/32)|0, (G.p.py/32)|0) === 'assi';
+    WORLD.terreno(m, (G.p.px/T)|0, (G.p.py/T)|0) === 'assi';
   // durante la storia del Pesce Luna, di notte al lago abbocca più spesso
   const TL = G.trame && G.trame.pesceluna;
   if(TL && TL.avviata && !TL.preso && luogo==='lago' && notte &&
@@ -159,7 +160,7 @@ function aggiornaPesca(dt){
       pesca.fase='abbocca'; pesca.t=0;
       SND.play('abbocca');
       UI.prompt('Abbocca! Premi <kbd>Spazio</kbd>');
-      G.particelle.push({t:'splash', x:pesca.tx*T+16, y:pesca.ty*T+16, vx:0,vy:0,g:0, vita:600, vitaMax:600});
+      G.particelle.push({t:'splash', x:pesca.tx*T+T/2, y:pesca.ty*T+T/2, vx:0,vy:0,g:0, vita:600, vitaMax:600});
     }
     return;
   }
@@ -255,7 +256,7 @@ function finePesca(ok, msg){
       if(!I.spazzatura){
         G.xp('pesca', 12 + (I.diff||1)*6);
         G.stats.pesci++;
-        G.particelleTesto(G.p.px, G.p.py-46, I.nome, '#9fd8ee');
+        G.particelleTesto(G.p.px, G.p.py-46*K, I.nome, '#9fd8ee');
       }
       if(id==='pesce_luna' && G.trame && G.trame.pesceluna.avviata && !G.trame.pesceluna.preso){
         G.trame.pesceluna.preso = true;

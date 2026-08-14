@@ -9,14 +9,19 @@
 const M = {};
 window.MOBS = M;
 
-const T = 32;
+const T = 64;
+/* Quante volte il mondo è più fitto di quando la casella era 32: sta
+   davanti alle velocità delle bestie, ai raggi di timidezza e alle
+   distanze di comparsa e di sparizione. Gli sprite qui sotto invece
+   restano scritti in unità di disegno, e li raddoppia `ART.tela`. */
+const K = 2;
 const px = (c,x,y,w,h,col)=>{ c.fillStyle=col; c.fillRect(x|0,y|0,w|0,h|0); };
 
 /* Il nome della coltura va **dentro** la frase, non incollato davanti:
    `UI.toast` traduce quello che riceve, e riceveva già montato
    «Un corvo ti ha beccato Turnip!» — una chiave che nel catalogo non
    c'è e non ci sarà mai, quindi in inglese restava tutta in italiano
-   tranne il nome. Come `fraseF` in game.js, e qui pure `T` è 32. */
+   tranne il nome. Come `fraseF` in game.js. */
 function fraseF(modello, ...pezzi){
   return window.LINGUA ? LINGUA.f(modello, ...pezzi)
                        : modello.replace(/\{(\d+)\}/g, (_,i)=>pezzi[i]);
@@ -28,7 +33,7 @@ function fraseF(modello, ...pezzi){
 const cache = {};
 function spr(key, w, h, dis){
   if(cache[key]) return cache[key];
-  const c = ART.cv(w,h);
+  const c = ART.tela(w,h);
   const x = c.getContext('2d');
   x.imageSmoothingEnabled=false;
   dis(x);
@@ -357,13 +362,13 @@ M.abbatti = function(b){
 M.spaventa = function(wx, wy, raggio){
   for(const b of mobs){
     const d = Math.hypot(b.x-wx, b.y-wy);
-    if(d > (raggio||150)) continue;
+    if(d > (raggio||150*K)) continue;
     const S = SPECIE[b.tipo];
     const a = Math.atan2(b.y-wy, b.x-wx);
     b.stato='fugge'; b.t=1100+Math.random()*800;
-    b.vx = Math.cos(a)*(S.vel||0.5)*2.4;
-    b.vy = Math.sin(a)*(S.vel||0.5)*2.4;
-    if(S.vola) b.z = Math.max(b.z, 12);
+    b.vx = Math.cos(a)*(S.vel||0.5)*2.4*K;
+    b.vy = Math.sin(a)*(S.vel||0.5)*2.4*K;
+    if(S.vola) b.z = Math.max(b.z, 12*K);
   }
 };
 
@@ -391,7 +396,7 @@ function puntoComparsa(G, S){
   const info = REND.info();
   for(let tent=0; tent<26; tent++){
     const a = Math.random()*6.283;
-    const d = 150 + Math.random()*130;
+    const d = (150 + Math.random()*130)*K;
     const wx = G.p.px + Math.cos(a)*d;
     const wy = G.p.py + Math.sin(a)*d;
     const tx = (wx/T)|0, ty = (wy/T)|0;
@@ -414,7 +419,7 @@ function puntoComparsa(G, S){
 function nuovo(id, pos){
   const S = SPECIE[id];
   return {
-    tipo:id, x:pos.x, y:pos.y, z:S.vola? 14+Math.random()*22 : 0,
+    tipo:id, x:pos.x, y:pos.y, z:S.vola? (14+Math.random()*22)*K : 0,
     vx:0, vy:0, dir:1, frame:0, animT:0,
     stato:'gira', t:600+Math.random()*1800,
     col: id==='farfalla' ? COLORI_FARFALLA[(Math.random()*COLORI_FARFALLA.length)|0]
@@ -467,15 +472,15 @@ M.aggiorna = function(G, dt){
 
     const d = distPl(b);
     // troppo lontano o scaduto → sparisce
-    if(d > 620 || b.vita<=0){ mobs.splice(i,1); continue; }
+    if(d > 620*K || b.vita<=0){ mobs.splice(i,1); continue; }
 
     /* fuga */
-    if(S.timido && d < S.timido*udito && b.stato!=='fugge'){
+    if(S.timido && d < S.timido*K*udito && b.stato!=='fugge'){
       b.stato='fugge'; b.t=900+Math.random()*700;
       const a = Math.atan2(b.y-G.p.py, b.x-G.p.px);
-      b.vx = Math.cos(a)*S.vel*2.1;
-      b.vy = Math.sin(a)*S.vel*2.1;
-      if(S.vola) b.z = Math.max(b.z, 10);
+      b.vx = Math.cos(a)*S.vel*2.1*K;
+      b.vy = Math.sin(a)*S.vel*2.1*K;
+      if(S.vola) b.z = Math.max(b.z, 10*K);
       if(b.tipo==='corvo' && b.stato!=='vola'){ SND.play('gallina'); }
     }
 
@@ -485,7 +490,7 @@ M.aggiorna = function(G, dt){
           if(Math.random()<0.45){ b.stato='fermo'; b.t=900+Math.random()*2600; b.vx=b.vy=0; }
           else {
             const a=Math.random()*6.283;
-            b.vx=Math.cos(a)*S.vel; b.vy=Math.sin(a)*S.vel;
+            b.vx=Math.cos(a)*S.vel*K; b.vy=Math.sin(a)*S.vel*K;
             b.t=800+Math.random()*1600;
           }
         }
@@ -517,29 +522,29 @@ M.aggiorna = function(G, dt){
       if(bersaglio){
         b.bersaglio = bersaglio;
         const a = Math.atan2(bersaglio.wy-b.y, bersaglio.wx-b.x);
-        b.vx = Math.cos(a)*S.vel; b.vy = Math.sin(a)*S.vel;
+        b.vx = Math.cos(a)*S.vel*K; b.vy = Math.sin(a)*S.vel*K;
         b.t = 2600;
       }
     }
     if(S.ladro && b.bersaglio && b.stato==='gira'){
       const dd = Math.hypot(b.bersaglio.wx-b.x, b.bersaglio.wy-b.y);
-      if(dd < 12){ b.stato='mangia'; b.t=1400; b.z=0; }
-      else if(b.z>2) b.z -= dt*0.02;
+      if(dd < 12*K){ b.stato='mangia'; b.t=1400; b.z=0; }
+      else if(b.z>2*K) b.z -= dt*0.02*K;
     }
 
     /* volo: oscillazione verticale */
     if(S.vola){
       b.fase += dt*0.004;
       if(b.stato!=='mangia'){
-        const alt = b.stato==='fugge' ? 34 : 20;
-        b.z += ((alt + Math.sin(b.fase)*7) - b.z) * 0.03;
+        const alt = (b.stato==='fugge' ? 34 : 20)*K;
+        b.z += ((alt + Math.sin(b.fase)*7*K) - b.z) * 0.03;
       }
       // le farfalle svolazzano invece di andare dritte
       if(b.tipo==='farfalla'){
-        b.vx += Math.sin(b.fase*2.3)*0.06;
-        b.vy += Math.cos(b.fase*1.7)*0.05;
+        b.vx += Math.sin(b.fase*2.3)*0.06*K;
+        b.vy += Math.cos(b.fase*1.7)*0.05*K;
         const v=Math.hypot(b.vx,b.vy);
-        if(v>S.vel*1.6){ b.vx*=S.vel*1.6/v; b.vy*=S.vel*1.6/v; }
+        if(v>S.vel*1.6*K){ b.vx*=S.vel*1.6*K/v; b.vy*=S.vel*1.6*K/v; }
       }
     }
 
@@ -555,17 +560,17 @@ M.aggiorna = function(G, dt){
       else b.vy=-b.vy;
     }
     // dentro i bordi
-    b.x = Math.max(8, Math.min(m.w*T-8, b.x));
-    b.y = Math.max(8, Math.min(m.h*T-8, b.y));
+    b.x = Math.max(8*K, Math.min(m.w*T-8*K, b.x));
+    b.y = Math.max(8*K, Math.min(m.h*T-8*K, b.y));
 
-    if(Math.abs(b.vx)>0.01) b.dir = b.vx<0?-1:1;
+    if(Math.abs(b.vx)>0.01*K) b.dir = b.vx<0?-1:1;
 
     /* animazione */
     const rit = S.vola ? (b.tipo==='farfalla'?70:(b.tipo==='libellula'?45:110))
                        : (b.stato==='fugge'?110:190);
     if(b.animT > rit){ b.animT=0; b.frame=(b.frame+1)%4; }
 
-    b.volo = S.vola && b.z > 4;
+    b.volo = S.vola && b.z > 4*K;
   }
 };
 
@@ -583,7 +588,7 @@ function cercaColtura(G, b){
     const C = DATA.CROPS[s.crop.id];
     if(s.crop.stage < C.fasi.length) continue;
     if(protettoDaSpaventapasseri(m,tx,ty)) continue;
-    return { tx, ty, wx:tx*T+16, wy:ty*T+22 };
+    return { tx, ty, wx:tx*T+T/2, wy:ty*T+22*K };
   }
   return null;
 }
@@ -614,8 +619,8 @@ function rubaRaccolto(G, b){
   UI.toast(fraseF('Un corvo ti ha beccato {0}! Servirebbe uno spaventapasseri.', C.nome),'bad');
   SND.play('errore');
   for(let k=0;k<8;k++) G.particelle.push({t:'foglia',
-    x:t.wx+(Math.random()-0.5)*16, y:t.wy-6,
-    vx:(Math.random()-0.5)*1.1, vy:-0.5-Math.random()*0.5, g:0.02,
+    x:t.wx+(Math.random()-0.5)*16*K, y:t.wy-6*K,
+    vx:((Math.random()-0.5)*1.1)*K, vy:(-0.5-Math.random()*0.5)*K, g:0.02*K,
     r:Math.random()*6.3, vr:0.2, vita:800, vitaMax:800, c:C.c1});
 }
 
@@ -628,13 +633,13 @@ M.disegnaUno = function(sx, b, ox, oy){
   const px0 = b.x+ox, py0 = b.y+oy;
   const img = M.sprite(b.tipo, b.frame, b.volo, b.col);
   const w=img.width, h=img.height;
-  const scala = Math.max(0.25, 1 - b.z/60);
+  const scala = Math.max(0.25, 1 - b.z/(60*K));
   FX.ombraTerra(sx, px0, py0, (w*0.28)*scala, (h*0.16)*scala, 0.22*scala);
   const dy = py0 - b.z;
-  sx.drawImage(FX.contorno(img), (px0-w/2-1)|0, (dy-h+1)|0);
+  sx.drawImage(FX.contorno(img), (px0-w/2-K)|0, (dy-h+K)|0);
   sx.save();
   if(b.dir<0){ sx.translate(px0,0); sx.scale(-1,1); sx.translate(-px0,0); }
-  sx.drawImage(img, (px0-w/2)|0, (dy-h+2)|0);
+  sx.drawImage(img, (px0-w/2)|0, (dy-h+2*K)|0);
   sx.restore();
 };
 

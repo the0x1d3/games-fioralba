@@ -1735,17 +1735,32 @@ verifica('il contorno e i ritratti sono agganciati dove devono', () => {
   if (!anc) { problemi.push('charSprite non ancora più il personaggio a (CH_W/2, CH_H-n)'); return problemi; }
   const cx = CH_W / 2, cy = CH_H - (+anc[1]);
 
-  /* FX.contorno allarga la tela di un pixel per lato */
-  const bordo = /c\.width\s*=\s*src\.width\+2;\s*c\.height\s*=\s*src\.height\+2/.test(fx) ? 1 : null;
-  if (bordo === null) { problemi.push('FX.contorno non allarga più di 1px per lato: il conto qui sotto non vale'); return problemi; }
+  /* FX.contorno allarga la tela di `K` pixel per lato — uno di disegno,
+     due di mondo — e `charSprite` è una tela cotta a densità doppia.
+     Il conto però si continua a fare in unità di DISEGNO, perché è lì
+     che stanno CH_W e CH_H e l'ancoraggio ai piedi; il renderer poi lo
+     scrive moltiplicato per K, ed è quello che si va a leggere. */
+  const bordo = /c\.width\s*=\s*src\.width\+2\*K;\s*c\.height\s*=\s*src\.height\+2\*K/.test(fx) ? 1 : null;
+  if (bordo === null) { problemi.push('FX.contorno non allarga più di K per lato: il conto qui sotto non vale'); return problemi; }
 
   const attesoX = -(cx + bordo), attesoY = -(cy + bordo);
-  const usati = [...rend.matchAll(/FX\.contorno\(ART\.charSprite\([^)]*\)\),\s*\(px([+-]\d+)\)\|0,\s*\(py([+-]\d+)\)\|0/g)];
-  if (!usati.length) problemi.push('il renderer non disegna più il contorno dei personaggi');
+  const usati = [...rend.matchAll(/FX\.contorno\(ART\.charSprite\([^)]*\)\),\s*\(px([+-]\d+)\*K\)\|0,\s*\(py([+-]\d+)\*K\)\|0/g)];
+  if (!usati.length) problemi.push('il renderer non disegna più il contorno dei personaggi in pixel di mondo (px-n*K)');
   for (const u of usati) {
     if (+u[1] !== attesoX || +u[2] !== attesoY)
-      problemi.push(`contorno disegnato a (px${u[1]}, py${u[2]}) invece di (px${attesoX}, py${attesoY}): ` +
+      problemi.push(`contorno disegnato a (px${u[1]}*K, py${u[2]}*K) invece di (px${attesoX}*K, py${attesoY}*K): ` +
                     'sborda da due lati e i personaggi sembrano storti');
+  }
+
+  /* E il personaggio vero va dentro a un blocco raddoppiato, ancorato a
+     zero: `drawChar` disegna pixel per pixel in unità di disegno, e
+     chiamato in pixel di mondo verrebbe fuori mezzo. */
+  const chiamate = [...rend.matchAll(/ART\.drawChar\(sx,\s*([^,]+),\s*([^,]+),/g)];
+  if (!chiamate.length) problemi.push('il renderer non disegna più i personaggi');
+  for (const c of chiamate) {
+    if (c[1].trim() !== '0' || c[2].trim() !== '0')
+      problemi.push(`ART.drawChar chiamato a (${c[1].trim()}, ${c[2].trim()}) invece che a (0, 0): ` +
+                    'fuori da un blocco raddoppiato il personaggio esce mezza casella più piccolo');
   }
 
   /* Il ritratto del dialogo inquadra la testa, ma la statura la sposta
@@ -2265,6 +2280,107 @@ verifica('ogni bottiglia del mare si legge, una volta e in due lingue', () => {
         problemi.push(`la bottiglia «${b.id}» ha un ${campo} senza traduzione inglese`);
   }
   if (!(DATA.BOTTIGLIE || []).length) problemi.push('DATA.BOTTIGLIE è vuoto: la bottiglia si aprirebbe sul niente');
+  return problemi;
+});
+
+/* --- LA DENSITÀ, CHE NON PUÒ ESSERE DUE ---
+
+   La casella del mondo vale 64 e sta dichiarata in nove file, perché
+   questo repo non ha un modulo di costanti e non ne vuole uno: si
+   ridichiara e si controlla. Un file rimasto a 32 non è un errore di
+   sintassi e non fa fallire niente — fa camminare il giocatore a metà
+   velocità, o mette le prede a fuggire a metà distanza, o disegna la
+   mappa del Diario col segnalino fuori dal riquadro. Cose che si vedono
+   giocando e non si vedono leggendo.
+
+   Tre grandezze, tre significati diversi che non vanno confusi:
+     `T`  la casella del mondo: 64
+     `K`  quanto il mondo è più fitto di quando la casella era 32: 2
+     `U`  l'unità in cui restano scritti i disegni a mano: 32
+   In `landing.js` la casella si chiama `TT` per non pestare altro.
+
+   E il controllo pretende di TROVARLE, non solo di trovarle giuste: se
+   un giorno smettesse di vedere le dichiarazioni direbbe «tutto a
+   posto» su un repo che potrebbe essere tornato a 32 dappertutto. */
+const DENSITA_ATTESA = { T: 64, TT: 64, K: 2, U: 32 };
+const QUANTE_ALMENO = { T: 6, TT: 1, K: 10, U: 2 };
+verifica('la casella del mondo vale 64 dappertutto, e l\'unità di disegno 32', () => {
+  const problemi = [];
+  const conte = { T: 0, TT: 0, K: 0, U: 0 };
+  for (const f of fs.readdirSync(path.join(RADICE, 'js')).filter(n => n.endsWith('.js'))) {
+    const src = fs.readFileSync(path.join(RADICE, 'js', f), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
+    // solo le dichiarazioni con un NUMERO a destra: `const T = s => …` in
+    // mezza interfaccia è la scorciatoia della traduzione, non la casella
+    for (const m of src.matchAll(/\bconst (T|TT|K|U) *= *(\d+)/g)) {
+      const nome = m[1], valore = +m[2];
+      conte[nome]++;
+      if (valore !== DENSITA_ATTESA[nome])
+        problemi.push(`js/${f}: \`const ${nome} = ${valore}\` invece di ${DENSITA_ATTESA[nome]}`);
+    }
+  }
+  for (const nome in QUANTE_ALMENO)
+    if (conte[nome] < QUANTE_ALMENO[nome])
+      problemi.push(`trovate solo ${conte[nome]} dichiarazioni di \`${nome}\` invece di almeno ` +
+                    `${QUANTE_ALMENO[nome]}: o il controllo non le vede più, e allora non protegge niente`);
+  return problemi;
+});
+
+/* --- OGNI BLOCCO DISEGNATO A MANO PASSA DAL RADDOPPIO ---
+
+   In render.js le funzioni che disegnano a mano sono spaccate in due: un
+   guscio che chiama `raddoppia` e un corpo `…Dentro` scritto in unità di
+   disegno. Il corpo da solo, chiamato senza guscio, disegna tutto grande
+   la metà e nel quarto in alto a sinistra della casella — e non se ne
+   accorge nessuno finché non lo si guarda. */
+verifica('i blocchi disegnati a mano di render.js passano tutti dal raddoppio', () => {
+  const problemi = [];
+  const src = fs.readFileSync(path.join(RADICE, 'js/render.js'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
+  const corpi = [...src.matchAll(/function (\w+)Dentro\s*\(/g)].map(m => m[1]);
+  if (corpi.length < 8)
+    problemi.push(`trovati solo ${corpi.length} corpi \`…Dentro\` invece di almeno 8: ` +
+                  'il controllo non li vede più e non protegge niente');
+  for (const nome of corpi) {
+    const guscio = src.match(new RegExp('function ' + nome + '\\s*\\([^)]*\\)\\s*\\{([\\s\\S]*?)\\n\\}'));
+    if (!guscio) { problemi.push(`\`${nome}Dentro\` non ha un guscio \`${nome}\``); continue; }
+    if (guscio[1].indexOf('raddoppia(') < 0)
+      problemi.push(`\`${nome}\` non chiama \`raddoppia\`: il suo disegno esce grande la metà`);
+    if (guscio[1].indexOf('.restore()') < 0)
+      problemi.push(`\`${nome}\` raddoppia e non ripristina: da lì in poi tutta la scena è doppia`);
+  }
+  // e le chiamate ai corpi partono dall'origine, non da una posizione vera
+  // `(?<!\w)` per partire da un confine di parola — se no la regex si
+  // sposta di un carattere e ripesca la dichiarazione che stiamo
+  // scartando — e `(?<!function )` per scartarla davvero
+  for (const m of src.matchAll(/(?<!\w)(?<!function )(\w+)Dentro\((?:[^,]+,\s*)([^,]+),\s*([^,)]+)/g)) {
+    if (m[2].trim() !== '0' || m[3].trim() !== '0')
+      problemi.push(`\`${m[1]}Dentro\` è chiamata con l'origine (${m[2].trim()}, ${m[3].trim()}) ` +
+                    'invece di (0, 0): dentro al blocco raddoppiato l\'origine l\'ha già messa `raddoppia`');
+  }
+  return problemi;
+});
+
+/* --- LA TELA DEGLI SPRITE NASCE DOPPIA ---
+   `tela()` è il patto su cui si regge tutta la conversione: se qualcuno
+   «semplifica» via il `setTransform`, ogni sprite del gioco resta della
+   misura di prima dentro una tela grande il doppio — cioè un disegnino
+   nell'angolo in alto a sinistra di ogni casella. */
+verifica('gli sprite nascono su una tela a densità doppia', () => {
+  const problemi = [];
+  const art = fs.readFileSync(path.join(RADICE, 'js/art.js'), 'utf8');
+  if (!/function tela\([\s\S]{0,200}setTransform\(K,0,0,K,0,0\)/.test(art))
+    problemi.push('`tela()` non scala più il contesto di K: gli sprite resterebbero alla misura di prima');
+  if (!/const c = cv\(w\*K, h\*K\)/.test(art))
+    problemi.push('`tela()` non crea più la tela K volte più grande');
+  const corpo = art.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
+  const grezze = [...corpo.matchAll(/\bcv\(U\s*,\s*U\)/g)];
+  if (grezze.length)
+    problemi.push(`${grezze.length} sprite di una casella nascono ancora su \`cv(U,U)\` invece che su ` +
+                  '`tela(U,U)`: uscirebbero grandi mezza casella');
+  const quante = (corpo.match(/\btela\(/g) || []).length;
+  if (quante < 30)
+    problemi.push(`solo ${quante} usi di \`tela(\`: erano una quarantina, il controllo non li vede più`);
   return problemi;
 });
 

@@ -282,7 +282,10 @@ U.menu = function(G){
         const c = REND.caselleInVista();
         nota.textContent = F('In vista: {0} caselle in larghezza, {1} in altezza.', c.larghe, c.alte);
       };
-      for(const [n,lab] of [[null,'Automatica'],[2,'Pixel piccoli'],[3,'Medi'],[4,'Pixel grandi']]){
+      /* Due gradini e non più tre: con la casella da 64 lo zoom va da 1
+         a 2, e in mezzo non c'è niente di intero. Vedi CHIAVE_ZOOM in
+         render.js per come si migra la scelta di chi già giocava. */
+      for(const [n,lab] of [[null,'Automatica'],[1,'Pixel piccoli'],[2,'Pixel grandi']]){
         const b=document.createElement('button');
         const attivo = REND.zoomScelto() === n;
         b.className='btn' + (attivo ? ' gold' : ' blue');

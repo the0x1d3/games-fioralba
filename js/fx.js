@@ -9,6 +9,13 @@
 const F = {};
 window.FX = F;
 
+/* Quanto è più fitto il mondo di quando la casella era 32. Serve nei
+   pochi punti di questo file che hanno una misura in pixel scritta a
+   mano: lo spessore del contorno dei personaggi e la fase spaziale del
+   vento. Tutto il resto qui dentro lavora su misure che gli arrivano da
+   fuori, e quelle sono già raddoppiate all'origine. */
+const K = 2;
+
 /* ===================================================================
    1. VENTO GLOBALE
    Un solo valore condiviso: erba, chiome, colture, panni e particelle
@@ -37,10 +44,15 @@ F.aggiornaVento = function(dt, forza){
 };
 
 /* forza del vento in questo istante, con sfasamento spaziale:
-   le folate attraversano la mappa invece di muovere tutto insieme */
+   le folate attraversano la mappa invece di muovere tutto insieme.
+
+   `x, y` sono pixel di MONDO, e i due coefficienti sono divisi per `K`
+   perché il mondo ha raddoppiato: lasciandoli com'erano, la stessa
+   folata avrebbe attraversato metà delle caselle di prima — cioè
+   raffiche larghe la metà, che è una cosa che si vede sul prato. */
 F.vento = function(x, y){
   if(x===undefined) return ventoVal;
-  const fase = (x||0)*0.013 + (y||0)*0.007;
+  const fase = ((x||0)*0.013 + (y||0)*0.007) / K;
   return ventoVal * (0.72 + 0.28*Math.sin(ventoT*0.0016 - fase));
 };
 
@@ -116,11 +128,16 @@ F.contorno = function(src, col){
   let c = contornoCache.get(src);
   if(c) return c;
   c = document.createElement('canvas');
-  c.width = src.width+2; c.height = src.height+2;
+  /* Il bordo è spesso `K` pixel di mondo e non uno: gli sprite sono
+     cotti a densità doppia, e un contorno da un pixel su uno sprite
+     grande il doppio si legge come metà del contorno di prima — sparisce
+     proprio dove serve, cioè sul fondo chiaro. Cresce tutto insieme:
+     la tela di `K` per lato, e gli otto scostamenti moltiplicati. */
+  c.width = src.width+2*K; c.height = src.height+2*K;
   const x = c.getContext('2d');
   x.imageSmoothingEnabled=false;
   const sil = silhouette(src);
-  for(const d of [[0,1],[1,0],[2,1],[1,2],[0,0],[2,0],[0,2],[2,2]]) x.drawImage(sil, d[0], d[1]);
+  for(const d of [[0,1],[1,0],[2,1],[1,2],[0,0],[2,0],[0,2],[2,2]]) x.drawImage(sil, d[0]*K, d[1]*K);
   x.globalCompositeOperation='source-in';
   x.fillStyle = col||'rgba(24,16,10,0.55)';
   x.fillRect(0,0,c.width,c.height);
@@ -136,7 +153,13 @@ F.contorno = function(src, col){
 let bl1=null, bl2=null, blW=0, blH=0;
 
 function assicuraBuffer(w,h){
-  const dw = Math.max(1, w>>2), dh = Math.max(1, h>>2);
+  /* Un quarto della scena diviso `K`. Il diviso K è arrivato con la
+     casella da 64: la scena ha il doppio dei pixel per lato, quindi a
+     parità di formula il buffer sarebbe quadruplicato — quattro volte
+     il costo — e la sfocatura, che è di uno-due-tre pixel di BUFFER,
+     avrebbe coperto metà dello schermo di prima. Così invece il buffer
+     resta della misura di sempre, e l'alone pure. */
+  const dw = Math.max(1, (w/(4*K))|0), dh = Math.max(1, (h/(4*K))|0);
   if(bl1 && blW===dw && blH===dh) return;
   blW=dw; blH=dh;
   bl1 = document.createElement('canvas'); bl1.width=dw; bl1.height=dh;
@@ -240,17 +263,21 @@ F.raggi = function(ctx, w, h, ora, meteo){
   ctx.save();
   ctx.globalCompositeOperation='lighter';
   const ox = mattino ? w*0.86 : w*0.14;
+  /* Le misure in frazione di schermo (w*0.55) si adattano da sole; la
+     larghezza dei fasci e la loro distanza no, sono pixel, e con la
+     scena raddoppiata cinque fasci da 26 sarebbero diventati cinque
+     fili in mezzo al prato. */
   for(let i=0;i<5;i++){
-    const g = ctx.createLinearGradient(ox, -30, ox+(mattino?-1:1)*w*0.55, h);
+    const g = ctx.createLinearGradient(ox, -30*K, ox+(mattino?-1:1)*w*0.55, h);
     g.addColorStop(0, `rgba(255,232,170,${a*(1-i*0.13)})`);
     g.addColorStop(1, 'rgba(255,220,150,0)');
     ctx.fillStyle = g;
     ctx.beginPath();
-    const sx0 = ox + (i-2)*34;
-    ctx.moveTo(sx0, -20);
-    ctx.lineTo(sx0+26, -20);
-    ctx.lineTo(sx0+26+(mattino?-1:1)*w*0.5, h+20);
-    ctx.lineTo(sx0+(mattino?-1:1)*w*0.5 - 40, h+20);
+    const sx0 = ox + (i-2)*34*K;
+    ctx.moveTo(sx0, -20*K);
+    ctx.lineTo(sx0+26*K, -20*K);
+    ctx.lineTo(sx0+26*K+(mattino?-1:1)*w*0.5, h+20*K);
+    ctx.lineTo(sx0+(mattino?-1:1)*w*0.5 - 40*K, h+20*K);
     ctx.closePath(); ctx.fill();
   }
   ctx.restore();
@@ -272,7 +299,8 @@ F.riflesso = function(ctx, src, bx, by, w, h, t, alpha){
   // a fette orizzontali, ognuna sfalsata: dà l'increspatura
   const fette = 8;
   for(let i=0;i<fette;i++){
-    const off = Math.sin(t*0.003 + i*0.9)*(1.2+i*0.22);
+    // l'increspatura è in pixel di mondo: raddoppia con tutto il resto
+    const off = Math.sin(t*0.003 + i*0.9)*(1.2+i*0.22)*K;
     ctx.drawImage(src,
       0, src.height-(src.height/fette)*(i+1), src.width, src.height/fette,
       bx-sw/2+off, by+(sh/fette)*i*0.55, sw, (sh/fette)*0.58);

@@ -21,6 +21,12 @@
 
 const $ = s=>document.querySelector(s);
 
+/* Quante volte il mondo è più fitto di quando la casella era 32. Serve
+   ai pochi bottoni che spostano qualcuno «al tuo fianco»: quaranta
+   pixel erano un passo e mezzo, adesso sono mezzo passo, e il passante
+   chiamato qui finirebbe addosso al giocatore invece che accanto. */
+const K = 2;
+
 const D = {};
 window.DEBUG = D;
 
@@ -388,7 +394,7 @@ function costruisciStoria(){
     let n = 0;
     for(const p of G.passanti){
       p.mappa = G.mappaId;
-      p.px = G.p.px + 40 + (n%3)*30; p.py = G.p.py + ((n/3)|0)*26;
+      p.px = G.p.px + (40 + (n%3)*30)*K; p.py = G.p.py + ((n/3)|0)*26*K;
       p.dest = null; p.wait = 0; p.tacePer = 0; n++;
     }
     nota(n + ' passanti al tuo fianco');
@@ -396,7 +402,7 @@ function costruisciStoria(){
   bottone(ch, 'Tutti insieme (prova incastri)', ()=>{
     /* tre nuvolette nello stesso punto: è il caso per cui esiste
        l'anti-sovrapposizione, e l'unico modo per vederla lavorare */
-    for(const p of G.passanti){ p.mappa=G.mappaId; p.px=G.p.px+50; p.py=G.p.py; p.tacePer=0; }
+    for(const p of G.passanti){ p.mappa=G.mappaId; p.px=G.p.px+50*K; p.py=G.p.py; p.tacePer=0; }
     let n=0;
     for(const p of G.passanti.slice(0,3)) if(G.chiacchiera(p.id)) n++;
     nota(n + ' fumetti nello stesso punto: devono scansarsi da soli');
@@ -407,7 +413,7 @@ function costruisciStoria(){
   bottone(gt, 'Portalo qui', ()=>{
     const a = G.animali.find(x=>x.tipo==='gatto');
     if(!a){ nota('nessun gatto in questa partita', false); return; }
-    a.mappa = G.mappaId; a.px = G.p.px + 24; a.py = G.p.py; a.dest = null; a.wait = 0;
+    a.mappa = G.mappaId; a.px = G.p.px + 24*K; a.py = G.p.py; a.dest = null; a.wait = 0;
     nota('il gatto è al tuo fianco: premi E');
   });
   for(const n of [0, 45, 69, 100])

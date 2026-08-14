@@ -8,7 +8,28 @@
 const R = {};
 window.REND = R;
 
-const T = 32;
+/* ---- la casella, e l'unità in cui è scritto il disegno a mano ----
+
+   `T` è la casella del mondo: 64. Tutto quello che entra e esce da
+   questo file — la camera, le posizioni della gente, i confini delle
+   mappe — parla in pixel di mondo, e un pixel di mondo è un pixel della
+   tela della scena.
+
+   `U` è mezza casella, ed è l'unità in cui sono scritti i disegni fatti
+   a mano qui dentro: la cassetta della posta, il lampione, la barca, la
+   parete della miniera, il tappeto. Erano 1.351 numeri tarati sulla
+   casella da 32, e riscriverli uno per uno voleva dire riscrivere il
+   file sbagliandone qualcuno — senza che nessuno dei 54 controlli se ne
+   accorgesse, perché nessun controllo sa dove va un pixel.
+
+   Quindi non si riscrivono: si sposta l'origine sulla casella e si
+   raddoppia il contesto (vedi `raddoppia`). Dentro al blocco l'unità
+   torna quella di prima e ogni numero finisce dov'era, grande il
+   doppio. È lo stesso patto che `tela()` fa in art.js, visto dall'altra
+   parte: là la tela nasce doppia, qua nasce doppio il contesto. */
+const T = 64;
+const K = 2;               // quante volte il mondo è più fitto del disegno a mano
+const U = T/K;             // l'unità dei disegni scritti a mano in questo file
 let cvs, ctx;
 let scene, sx;
 let light, lx;
@@ -52,16 +73,38 @@ function dprCorrente(){
    dell'APPARECCHIO: la stessa partita aperta sul telefono e sul computer
    vuole due valori diversi, e portarsela dietro nel file sarebbe un
    dispetto. Come la lingua. */
-const CHIAVE_ZOOM = 'fioralba_zoom';
+/* Con la casella da 64 lo zoom scende di un giro: quello che prima si
+   otteneva ingrandendo tre volte un disegno da 32 adesso lo dà un
+   disegno da 64 ingrandito una volta e mezza — cioè metà zoom, stessa
+   misura all'occhio e il doppio dei pixel dentro. Quindi la scelta va da
+   1 a 2 e non più da 2 a 4, e i tre gradini diventano due.
+
+   La preferenza vecchia però esiste, sui computer di chi già gioca, e
+   dimenticarla vorrebbe dire riaprire il gioco con lo zoom di qualcun
+   altro. Si migra una volta sola, dimezzando: chi aveva scelto «pixel
+   piccoli» (2) si ritrova «pixel piccoli» (1), chi aveva «grandi» (4)
+   ritrova «grandi» (2). La chiave è nuova apposta, se no un 2 sarebbe
+   ambiguo — voleva dire il minimo, adesso vuol dire il massimo. */
+const CHIAVE_ZOOM = 'fioralba_zoom64';
+const CHIAVE_ZOOM_VECCHIA = 'fioralba_zoom';
+const ZOOM_MIN = 1, ZOOM_MAX = 2;
 let zoomScelto = null;               // null = decide il gioco
 try{
-  const v = parseInt(localStorage.getItem(CHIAVE_ZOOM), 10);
-  if(v >= 2 && v <= 4) zoomScelto = v;
+  let v = parseInt(localStorage.getItem(CHIAVE_ZOOM), 10);
+  if(!(v >= ZOOM_MIN && v <= ZOOM_MAX)){
+    const vecchio = parseInt(localStorage.getItem(CHIAVE_ZOOM_VECCHIA), 10);
+    if(vecchio >= 2 && vecchio <= 4){
+      v = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(vecchio/2)));
+      localStorage.setItem(CHIAVE_ZOOM, String(v));
+      localStorage.removeItem(CHIAVE_ZOOM_VECCHIA);
+    }
+  }
+  if(v >= ZOOM_MIN && v <= ZOOM_MAX) zoomScelto = v;
 }catch(e){}
 
 R.zoomScelto = ()=>zoomScelto;
 R.impostaZoom = function(n){
-  zoomScelto = (n >= 2 && n <= 4) ? n : null;
+  zoomScelto = (n >= ZOOM_MIN && n <= ZOOM_MAX) ? n : null;
   try{
     if(zoomScelto) localStorage.setItem(CHIAVE_ZOOM, String(zoomScelto));
     else localStorage.removeItem(CHIAVE_ZOOM);
@@ -90,8 +133,13 @@ R.resize = function(){
 
   // quanto zoom vogliamo — cioè quante caselle si vedono — dipende da quanto
   // è grande la finestra per l'occhio, quindi dalla misura in pixel CSS
-  let zoom = Math.max(2, Math.min(4, Math.round(cssW/(19*T))));
-  if(cssW < 760) zoom = Math.max(2, Math.min(3, Math.round(cssW/(13*T))));
+  /* I conti dentro al `round` si adattano da soli — sono scritti in
+     caselle, e la casella è raddoppiata — ma le pinze no: erano 2..4 su
+     un disegno da 32 e vanno dimezzate, se no su un 1280 lo zoom minimo
+     di 2 darebbe dieci caselle in vista invece di venti, cioè un
+     corridoio. Misurato: 1280/(19·64) = 1,05, la pinza lo tirava a 2. */
+  let zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(cssW/(19*T))));
+  if(cssW < 760) zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(cssW/(13*T))));
   // la scelta del giocatore, se l'ha fatta, vale più del conto qui sopra
   if(zoomScelto) zoom = zoomScelto;
   // ...ma l'ingrandimento effettivo dev'essere un numero INTERO di pixel fisici
@@ -144,17 +192,42 @@ R.schermoAMondo = function(px, py, cam){
 };
 
 /* ===================================================================
+   I BLOCCHI RADDOPPIATI
+
+   `raddoppia` porta l'origine sulla casella e raddoppia le unità: da lì
+   in poi si disegna in `U` e viene fuori in `T`. Va sempre in coppia con
+   un `restore`, e le funzioni qui sotto lo fanno per conto loro — chi
+   disegna a mano non lo vede nemmeno.
+
+   E poi la trappola, che è una sola e vale la pena tenerla in mente:
+   dentro a un blocco raddoppiato uno sprite di ART è GIÀ in pixel di
+   mondo — la sua tela nasce doppia — quindi messo alla misura naturale
+   esce grande il doppio del doppio. Va messo dimezzato, ed è quello che
+   fanno `spr` e `mez`: `spr` per lo sprite intero, `mez` per quando la
+   misura serve anche in un conto (l'ancoraggio ai piedi, di solito).
+   =================================================================== */
+function raddoppia(x, ox, oy){ x.save(); x.translate(ox, oy); x.scale(K, K); }
+const mez = n => n/K;
+function spr(img, dx, dy){ sx.drawImage(img, dx, dy, img.width/K, img.height/K); }
+
+/* ===================================================================
    TERRENO PRE-COTTO A BLOCCHI (con raccordi)
    I raccordi costano, ma il terreno cambia di rado: lo disegniamo una
    volta per blocco di 8×8 caselle e poi lo ricopiamo.
    =================================================================== */
 const CH = 8;
-/* Ogni blocco è un canvas 256×256 = 256 KB di memoria video. Una Map tiene
+/* Ogni blocco è un canvas 512×512 = 1 MB di memoria video. Una Map tiene
    l'ordine d'uso, così a essere buttato è il blocco che non guardi da più
    tempo (e non, come prima, il primo che era entrato — che poteva benissimo
    essere quello sotto ai piedi del giocatore, ricostruito a ogni frame).
-   120 blocchi = ~30 MB, con sei volte il margine sul campo visivo. */
-const CACHE_MAX = 120;
+
+   Il numero è sceso da 120 a 40 con la casella da 64, e non è una scelta
+   di gusto: il blocco copre sempre 8×8 caselle ma ci mette dentro quattro
+   volte i pixel, quindi 256 KB sono diventati 1 MB e i 120 di prima
+   facevano 120 MB di memoria video per un gioco che ne usava 30. Quaranta
+   blocchi sono di nuovo ~40 MB, e restano quattro volte il campo visivo:
+   a SCALE 1 sullo schermo ce ne stanno tre per due, contati. */
+const CACHE_MAX = 40;
 let chunkCache = new Map();
 
 /* diagnostica: quanti blocchi di terreno sono in cache e quanti ne ha
@@ -261,9 +334,13 @@ function scriviTestiSopra(){
        per SCALE, e NON si arrotondano. Arrotondando al pixel fisico il
        testo scatterebbe di un pixel intero mentre la telecamera scorre
        liscia, e si vedrebbe tremolare. */
+    /* L'ombra è spostata di `SCALE*K` e non di `SCALE`: con la casella
+       da 64 l'ingrandimento è sceso della metà, e uno scostamento di un
+       pixel virtuale diventerebbe la metà dei pixel fisici di prima —
+       cioè un filo di ombra sotto una scritta rimasta grande uguale. */
     if(t.ombra){
       ctx.fillStyle = t.ombra;
-      ctx.fillText(t.testo, t.x*SCALE + SCALE, t.y*SCALE + SCALE);
+      ctx.fillText(t.testo, t.x*SCALE + SCALE*K, t.y*SCALE + SCALE*K);
     }
     ctx.fillStyle = t.colore;
     ctx.fillText(t.testo, t.x*SCALE, t.y*SCALE);
@@ -287,11 +364,18 @@ function larghezzaTesto(testo, px, famiglia){
    Due casse affiancate hanno i coperchi a trentadue pixel di distanza e
    le targhette sono larghe il triplo: si sovrapponevano e non si leggeva
    nessuna delle due. Quella che arriva dopo sale finché trova posto. */
+/* Le misure qui dentro — e in `fumetto` qui sotto — sono in unità di
+   disegno, come tutta la roba scritta a mano di questo file: la
+   tavoletta si costruisce a 32 e si stampa raddoppiata. Chi chiama
+   passa il punto in pixel di MONDO, e la prima riga lo riporta a casa.
+   Anche `targhettePoste` è in unità di disegno: la leggono solo queste
+   due funzioni, e si confrontano fra loro. */
 let targhettePoste = [];
 const ALTA_T = 13, SALTO_T = 15;
 
 const CAR_T = 'system-ui, sans-serif';
-function targhetta(testo, cx, cy){
+function targhetta(testo, cxMondo, cyMondo){
+  const cx = cxMondo/K, cy = cyMondo/K;
   const s = String(testo).slice(0, 18);
   const w = Math.ceil(larghezzaTesto(s, 9, CAR_T)) + 8;
   let x0 = Math.round(cx - w/2), y0 = Math.round(cy - 7);
@@ -310,10 +394,17 @@ function targhetta(testo, cx, cy){
   targhettePoste.push({ x:x0, y:y0, w });
 
   const I = PAL.c.interno;
+  raddoppia(sx, 0, 0);
   ART.px(sx, x0, y0, w, ALTA_T, I.legnoOmbra);
   ART.px(sx, x0+1, y0+1, w-2, ALTA_T-2, I.legno);
   ART.px(sx, x0+1, y0+1, w-2, 1, I.legnoLuce);
-  testoNitido(s, x0 + w/2, y0 + 7, { px:9, famiglia:CAR_T, colore:'#2a1d12' });
+  sx.restore();
+  /* La scritta no: quella si stampa dopo l'ingrandimento, alla
+     risoluzione vera dello schermo (vedi il cappello di `testoNitido`),
+     quindi vuole il punto in pixel di mondo e un corpo raddoppiato —
+     che moltiplicato per SCALE, sceso della metà, fa gli stessi pixel
+     fisici di prima. */
+  testoNitido(s, (x0 + w/2)*K, (y0 + 7)*K, { px:9*K, famiglia:CAR_T, colore:'#2a1d12' });
 }
 
 /* ===================================================================
@@ -385,7 +476,8 @@ function spezza(testo){
 }
 
 const CAR_F = 'Nunito, system-ui, sans-serif';
-function fumetto(testo, cx, cy, opacita){
+function fumetto(testo, cxMondo, cyMondo, opacita){
+  const cx = cxMondo/K, cy = cyMondo/K;   // in unità di disegno, come la targhetta
   const righe = spezza(testo);
   if(!righe.length) return;
 
@@ -404,11 +496,13 @@ function fumetto(testo, cx, cy, opacita){
   targhettePoste.push({ x:x0, y:y0, w, h });
 
   /* dentro lo schermo per forza: un fumetto mezzo fuori dal bordo è
-     peggio di un fumetto spostato */
-  x0 = Math.max(2, Math.min(VW - w - 2, x0));
+     peggio di un fumetto spostato. `VW` è in pixel di mondo, qui si
+     ragiona in unità di disegno: va riportato anche lui. */
+  x0 = Math.max(2, Math.min(VW/K - w - 2, x0));
   y0 = Math.max(2, y0);
 
   const a = opacita === undefined ? 1 : opacita;
+  raddoppia(sx, 0, 0);
   sx.globalAlpha = a;
   ART.px(sx, x0,   y0,   w,   h,   '#2a1d12');
   ART.px(sx, x0+1, y0+1, w-2, h-2, '#fdf6e4');
@@ -419,11 +513,12 @@ function fumetto(testo, cx, cy, opacita){
   ART.px(sx, tx+1, y0+h+1, 2, 1, '#2a1d12');
 
   sx.globalAlpha = 1;
+  sx.restore();
   /* L'opacità viaggia col testo: le nuvolette svaniscono, e una scritta
      che resta piena su una nuvoletta che se ne va è la cosa più strana
      che si possa vedere. */
-  righe.forEach((r, i)=> testoNitido(r, x0 + w/2, y0 + 4 + i*FUM_ALTA + 4,
-    { px:9, famiglia:CAR_F, colore:'#3a2a1a', alfa:a }));
+  righe.forEach((r, i)=> testoNitido(r, (x0 + w/2)*K, (y0 + 4 + i*FUM_ALTA + 4)*K,
+    { px:9*K, famiglia:CAR_F, colore:'#3a2a1a', alfa:a }));
 }
 
 /* Variante di un oggetto ricavata dalla sua casella: due alberi vicini
@@ -453,6 +548,11 @@ const DETTAGLIO = {
 };
 
 function dettaglioSuperficie(x, dx, dy, gx, gy, tipo, season){
+  raddoppia(x, dx, dy);
+  dettaglioSuperficieDentro(x, 0, 0, gx, gy, tipo, season);
+  x.restore();
+}
+function dettaglioSuperficieDentro(x, dx, dy, gx, gy, tipo, season){
   // d'inverno l'erba è disegnata come neve: prende il dettaglio della neve.
   // L'erba nelle altre stagioni non ne ha bisogno: ha già i ciuffi animati.
   const D = DETTAGLIO[(tipo==='erba' && season==='inverno') ? 'neve' : tipo];
@@ -468,7 +568,7 @@ function dettaglioSuperficie(x, dx, dy, gx, gy, tipo, season){
     for(let k=0;k<8;k++){
       const ry = (k*4);
       const inizio = ((ART.hsh(gx, gy*8+k, 401)*5)|0);
-      const largo  = T - inizio - ((ART.hsh(gx*3, gy+k, 402)*5)|0);
+      const largo  = U - inizio - ((ART.hsh(gx*3, gy+k, 402)*5)|0);
       if(largo > 0) x.fillRect(dx+inizio, dy+ry, largo, 4);
     }
     x.globalAlpha = 1;
@@ -477,8 +577,8 @@ function dettaglioSuperficie(x, dx, dy, gx, gy, tipo, season){
   /* 2. detriti radi: qualche sassolino, conchiglia, crepa */
   for(let k=0; k<D.quanti; k++){
     if(ART.hsh(gx, gy*7+k, 411) < 0.86) continue;
-    const bx = dx + 3 + ((ART.hsh(gx+k, gy, 412)*(T-7))|0);
-    const by = dy + 3 + ((ART.hsh(gx, gy+k, 413)*(T-7))|0);
+    const bx = dx + 3 + ((ART.hsh(gx+k, gy, 412)*(U-7))|0);
+    const by = dy + 3 + ((ART.hsh(gx, gy+k, 413)*(U-7))|0);
     const col = D.detriti[(ART.hsh(gx+k, gy+k, 414)*D.detriti.length)|0];
     const forma = ART.hsh(gx*5+k, gy, 415);
     x.globalAlpha = 0.75;
@@ -506,21 +606,26 @@ function dettaglioSuperficie(x, dx, dy, gx, gy, tipo, season){
    stalattiti e vene di minerale.
    =================================================================== */
 function pareteRoccia(x, dx, dy, gx, gy, m){
+  raddoppia(x, dx, dy);
+  pareteRocciaDentro(x, 0, 0, gx, gy, m);
+  x.restore();
+}
+function pareteRocciaDentro(x, dx, dy, gx, gy, m){
   const R = PAL.c.roccia;
   const roccia = (ax,ay)=> WORLD.terreno(m,ax,ay)==='roccia';
   const sotto = !roccia(gx,gy+1);          // affaccia sul vuoto: si vede la parete
 
   /* --- corpo della roccia, a strati orizzontali --- */
-  x.fillStyle = R.corpo; x.fillRect(dx,dy,T,T);
-  for(let k=0;k<T;k+=4){
+  x.fillStyle = R.corpo; x.fillRect(dx,dy,U,U);
+  for(let k=0;k<U;k+=4){
     const n = ART.hsh(gx, gy*8+k, 421);
     x.fillStyle = n>0.62 ? R.corpoChiaro : (n>0.3 ? R.corpo : R.strato);
-    x.fillRect(dx, dy+k, T, 4);
+    x.fillRect(dx, dy+k, U, 4);
   }
   // fratture verticali
   for(let k=0;k<3;k++){
     if(ART.hsh(gx*3+k, gy, 422) < 0.55) continue;
-    const bx = dx + 3 + ((ART.hsh(gx+k, gy*2, 423)*(T-6))|0);
+    const bx = dx + 3 + ((ART.hsh(gx+k, gy*2, 423)*(U-6))|0);
     x.fillStyle = R.strato;
     x.fillRect(bx, dy + ((ART.hsh(gx,gy+k,424)*10)|0), 1, 10+((ART.hsh(gx,gy-k,425)*14)|0));
   }
@@ -534,24 +639,24 @@ function pareteRoccia(x, dx, dy, gx, gy, m){
   }
 
   /* --- bordi laterali: spigolo illuminato dove la roccia finisce --- */
-  if(!roccia(gx-1,gy)){ x.fillStyle=R.facciaLuce; x.fillRect(dx,dy,1,T);
-                        x.fillStyle=R.faccia;     x.fillRect(dx+1,dy,1,T); }
-  if(!roccia(gx+1,gy)){ x.fillStyle=R.facciaLuce; x.fillRect(dx+T-1,dy,1,T);
-                        x.fillStyle=R.faccia;     x.fillRect(dx+T-2,dy,1,T); }
-  if(!roccia(gx,gy-1)){ x.fillStyle=R.strato; x.fillRect(dx,dy,T,2); }
+  if(!roccia(gx-1,gy)){ x.fillStyle=R.facciaLuce; x.fillRect(dx,dy,1,U);
+                        x.fillStyle=R.faccia;     x.fillRect(dx+1,dy,1,U); }
+  if(!roccia(gx+1,gy)){ x.fillStyle=R.facciaLuce; x.fillRect(dx+U-1,dy,1,U);
+                        x.fillStyle=R.faccia;     x.fillRect(dx+U-2,dy,1,U); }
+  if(!roccia(gx,gy-1)){ x.fillStyle=R.strato; x.fillRect(dx,dy,U,2); }
 
   if(!sotto) return;
 
   /* --- la faccia che guarda la caverna --- */
   const FH = 15;                            // altezza della parete visibile
-  const fy = dy + T - FH;
-  x.fillStyle = R.cornice; x.fillRect(dx, fy-2, T, 2);      // cornicione in luce
-  x.fillStyle = R.facciaLuce; x.fillRect(dx, fy, T, 3);
-  x.fillStyle = R.faccia; x.fillRect(dx, fy+3, T, FH-6);
-  x.fillStyle = R.base;   x.fillRect(dx, dy+T-3, T, 3);     // base in ombra
+  const fy = dy + U - FH;
+  x.fillStyle = R.cornice; x.fillRect(dx, fy-2, U, 2);      // cornicione in luce
+  x.fillStyle = R.facciaLuce; x.fillRect(dx, fy, U, 3);
+  x.fillStyle = R.faccia; x.fillRect(dx, fy+3, U, FH-6);
+  x.fillStyle = R.base;   x.fillRect(dx, dy+U-3, U, 3);     // base in ombra
 
   // scanalature verticali della parete
-  for(let k=0;k<T;k+=5){
+  for(let k=0;k<U;k+=5){
     const off = ((ART.hsh(k, gy, 431)*3)|0);
     x.fillStyle = R.giunto;
     x.fillRect(dx+k+off, fy+3, 1, FH-5);
@@ -568,11 +673,16 @@ function pareteRoccia(x, dx, dy, gx, gy, m){
 /* stalattiti che pendono dalla parete soprastante, disegnate sul
    pavimento così restano dentro la casella */
 function stalattiti(x, dx, dy, gx, gy){
+  raddoppia(x, dx, dy);
+  stalattitiDentro(x, 0, 0, gx, gy);
+  x.restore();
+}
+function stalattitiDentro(x, dx, dy, gx, gy){
   const R = PAL.c.roccia;
   const sopra = gy-1;                       // il seme viene dalla parete
   const quante = ART.hsh(gx, sopra, 441) > 0.5 ? (ART.hsh(gx, sopra, 442)>0.72 ? 2 : 1) : 0;
   for(let k=0;k<quante;k++){
-    const bx = dx + 3 + ((ART.hsh(gx+k*7, sopra, 443)*(T-8))|0);
+    const bx = dx + 3 + ((ART.hsh(gx+k*7, sopra, 443)*(U-8))|0);
     const h  = 4 + ((ART.hsh(gx, sopra+k*5, 444)*8)|0);
     for(let i=0;i<h;i++){
       const w = i < h*0.45 ? 3 : (i < h*0.8 ? 2 : 1);
@@ -612,10 +722,12 @@ function costruisciChunk(m, cx, cy, season){
     /* ombra della parete sul pavimento sottostante: stacca il piano
        verticale da quello orizzontale, che prima si toccavano di netto */
     if(tipo==='grotta' && WORLD.terreno(m,gx,gy-1)==='roccia'){
-      const g = x.createLinearGradient(0, dy, 0, dy+10);
+      // 10 unità di disegno, cioè 20 di mondo: la sfumatura deve
+      // coprire la stessa fetta di casella di prima
+      const g = x.createLinearGradient(0, dy, 0, dy+10*K);
       g.addColorStop(0, 'rgba(0,0,0,0.38)');
       g.addColorStop(1, 'rgba(0,0,0,0)');
-      x.fillStyle = g; x.fillRect(dx, dy, T, 10);
+      x.fillStyle = g; x.fillRect(dx, dy, T, 10*K);
       stalattiti(x, dx, dy, gx, gy);
     }
 
@@ -808,9 +920,9 @@ R.disegna = function(G){
      che deriva col vento, e hanno il bordo sfumato invece che netto. */
   if(m.esterno && (G.meteo==='sereno'||G.meteo==='nuvoloso')){
     const forza = G.meteo==='nuvoloso' ? 0.20 : 0.10;
-    const PASSO = 460;                       // distanza media fra una nuvola e l'altra
-    const deriva = t*0.010;                  // il banco di nuvole scorre verso est
-    const RX = 150, RY = 62;
+    const PASSO = 460*K;                       // distanza media fra una nuvola e l'altra
+    const deriva = t*0.010*K;                  // il banco di nuvole scorre verso est
+    const RX = 150*K, RY = 62*K;
     /* Il margine deve coprire il raggio MASSIMO (la scala arriva a 1.4) più
        lo scarto del reticolo: se una nuvola di bordo entra con una camera e
        non con l'altra, la stessa zolla di terra risulta illuminata in due
@@ -848,8 +960,8 @@ R.disegna = function(G){
 
   for(const e of m.edifici){
     const by = (e.y+e.h)*T;
-    if((e.x+e.w)*T < cam.x-200 || e.x*T > cam.x+VW+200) continue;
-    if(by < cam.y-300 || e.y*T > cam.y+VH+140) continue;
+    if((e.x+e.w)*T < cam.x-200*K || e.x*T > cam.x+VW+200*K) continue;
+    if(by < cam.y-300*K || e.y*T > cam.y+VH+140*K) continue;
     lista.push({
       y:by,
       s:()=>ombraEdificio(e, ox, oy, G, stag, sole),
@@ -874,7 +986,7 @@ R.disegna = function(G){
         const px=(x*T+ox)|0, py=(y*T+oy)|0;
         lista.push({
           y:(y+1)*T-2,
-          s:()=>{ FX.ombraTerra(sx, px+16, py+27, 7, 2.6, 0.18); },
+          s:()=>{ FX.ombraTerra(sx, px+T/2, py+27*K, 7*K, 2.6*K, 0.18); },
           d:()=>disegnaColtura(s, px, py, x, y, t)
         });
       }
@@ -908,14 +1020,21 @@ R.disegna = function(G){
      e con lo sfondo chiaro sembra sdoppiato. */
   for(const n of G.npcVivi()){
     const px = Math.round(n.px)+ox, py = Math.round(n.py)+oy;
-    if(px<-60||px>VW+60||py<-90||py>VH+60) continue;
+    if(px<-60*K||px>VW+60*K||py<-90*K||py>VH+60*K) continue;
     lista.push({ y:n.py,
-      s:()=>{ FX.ombraTerra(sx, px, py-1, 8, 3, 0.24); },
+      s:()=>{ FX.ombraTerra(sx, px, py-K, 8*K, 3*K, 0.24); },
       d:()=>{
         const look = DATA.NPCS[n.id].look;
-        if(!look.spirito) sx.drawImage(FX.contorno(ART.charSprite(look, n.dir, n.frame)), (px-16)|0, (py-39)|0);
-        ART.drawChar(sx, px|0, py|0, look, n.dir, n.frame, {t:t, blink:n.blink, senzaOmbra:true});
-        if(n.emote) sx.drawImage(ART.emote(n.emote), (px-16)|0, (py-58)|0);
+        if(!look.spirito) sx.drawImage(FX.contorno(ART.charSprite(look, n.dir, n.frame)), (px-16*K)|0, (py-39*K)|0);
+        /* `drawChar` disegna il personaggio DENTRO al contesto, pixel per
+           pixel, e i suoi pixel sono unità di disegno come tutto il resto
+           dell'arte: va nel blocco raddoppiato, ancorato ai piedi. Il
+           contorno qui sopra no — quello è già una tela cotta a densità
+           doppia, e si mette in pixel di mondo. */
+        raddoppia(sx, px|0, py|0);
+        ART.drawChar(sx, 0, 0, look, n.dir, n.frame, {t:t, blink:n.blink, senzaOmbra:true});
+        sx.restore();
+        if(n.emote) sx.drawImage(ART.emote(n.emote), (px-16*K)|0, (py-58*K)|0);
       }});
   }
 
@@ -923,25 +1042,27 @@ R.disegna = function(G){
   for(const p of (G.passanti||[])){
     if(p.mappa!==m.id) continue;
     const px = Math.round(p.px)+ox, py = Math.round(p.py)+oy;
-    if(px<-60||px>VW+60||py<-90||py>VH+60) continue;
+    if(px<-60*K||px>VW+60*K||py<-90*K||py>VH+60*K) continue;
     lista.push({ y:p.py,
-      s:()=>{ FX.ombraTerra(sx, px, py-1, 8, 3, 0.24); },
+      s:()=>{ FX.ombraTerra(sx, px, py-K, 8*K, 3*K, 0.24); },
       d:()=>{
-        sx.drawImage(FX.contorno(ART.charSprite(p.look, p.dir, p.frame||0)), (px-16)|0, (py-39)|0);
-        ART.drawChar(sx, px|0, py|0, p.look, p.dir, p.frame||0, {t:t, senzaOmbra:true});
+        sx.drawImage(FX.contorno(ART.charSprite(p.look, p.dir, p.frame||0)), (px-16*K)|0, (py-39*K)|0);
+        raddoppia(sx, px|0, py|0);
+        ART.drawChar(sx, 0, 0, p.look, p.dir, p.frame||0, {t:t, senzaOmbra:true});
+        sx.restore();
       }});
   }
 
   for(const a of G.animali){
     if(a.mappa!==m.id) continue;
     const px=Math.round(a.px)+ox, py=Math.round(a.py)+oy;
-    if(px<-60||px>VW+60||py<-70||py>VH+60) continue;
+    if(px<-60*K||px>VW+60*K||py<-70*K||py>VH+60*K) continue;
     lista.push({ y:a.py,
-      s:()=>{ FX.ombraTerra(sx, px, py-1, 7, 2.6, 0.22); },
+      s:()=>{ FX.ombraTerra(sx, px, py-K, 7*K, 2.6*K, 0.22); },
       d:()=>{
         const img = a.tipo==='gatto' ? ART.gatto((t/300|0)%2) : ART.gallina((t/260|0)%2, a.dir);
-        sx.drawImage(FX.contorno(img), (px-17)|0, (py-29)|0);
-        sx.drawImage(img, (px-16)|0, (py-28)|0);
+        sx.drawImage(FX.contorno(img), (px-17*K)|0, (py-29*K)|0);
+        sx.drawImage(img, (px-16*K)|0, (py-28*K)|0);
       }});
   }
 
@@ -949,7 +1070,7 @@ R.disegna = function(G){
   if(window.MOBS){
     for(const b of MOBS.lista()){
       const px=Math.round(b.x)+ox, py=Math.round(b.y)+oy;
-      if(px<-80||px>VW+80||py<-90||py>VH+80) continue;
+      if(px<-80*K||px>VW+80*K||py<-90*K||py>VH+80*K) continue;
       lista.push({ y:b.y, d:()=>MOBS.disegnaUno(sx, b, ox, oy) });
     }
   }
@@ -958,12 +1079,14 @@ R.disegna = function(G){
   {
     const px=Math.round(G.p.px)+ox, py=Math.round(G.p.py)+oy;
     lista.push({ y:G.p.py,
-      s:()=>{ if(!G.p.dorme) FX.ombraTerra(sx, px, py-1, 8.5, 3.2, 0.26); },
+      s:()=>{ if(!G.p.dorme) FX.ombraTerra(sx, px, py-K, 8.5*K, 3.2*K, 0.26); },
       d:()=>{
         if(G.p.dorme) return;
-        sx.drawImage(FX.contorno(ART.charSprite(G.p.look, G.p.dir, G.p.frame)), (px-16)|0, (py-39)|0);
-        ART.drawChar(sx, px|0, py|0, G.p.look, G.p.dir, G.p.frame,
+        sx.drawImage(FX.contorno(ART.charSprite(G.p.look, G.p.dir, G.p.frame)), (px-16*K)|0, (py-39*K)|0);
+        raddoppia(sx, px|0, py|0);
+        ART.drawChar(sx, 0, 0, G.p.look, G.p.dir, G.p.frame,
           { attrezzo:G.p.attrezzoVisibile, uso:G.p.usoT>0, blink:G.p.blink, t:t, senzaOmbra:true });
+        sx.restore();
       }});
   }
 
@@ -979,8 +1102,8 @@ R.disegna = function(G){
   if(G.chiacchiere) for(const c of G.chiacchiere){
     if(c.mappa !== m.id) continue;
     const px = Math.round(c.x)+ox, py = Math.round(c.y)+oy;
-    if(px<-80||px>VW+80||py<-90||py>VH+60) continue;
-    fumetto(c.testo, px, py-42, c.opacita);
+    if(px<-80*K||px>VW+80*K||py<-90*K||py>VH+60*K) continue;
+    fumetto(c.testo, px, py-42*K, c.opacita);
   }
 
   /* ---------- 9. PARTICELLE ---------- */
@@ -992,11 +1115,11 @@ R.disegna = function(G){
     const px=(b.x*T+ox)|0, py=(b.y*T+oy)|0;
     sx.globalAlpha = 0.45+Math.sin(t*0.006)*0.16;
     sx.strokeStyle = b.ok ? '#ffe9a8' : '#e88a72';
-    sx.lineWidth = 1;
-    sx.strokeRect(px+1.5, py+1.5, T-3, T-3);
+    sx.lineWidth = K;
+    sx.strokeRect(px+1.5*K, py+1.5*K, T-3*K, T-3*K);
     sx.globalAlpha = 0.12;
     sx.fillStyle = b.ok ? '#ffe9a8' : '#e88a72';
-    sx.fillRect(px+1, py+1, T-2, T-2);
+    sx.fillRect(px+K, py+K, T-2*K, T-2*K);
     sx.globalAlpha=1;
   }
 
@@ -1013,7 +1136,7 @@ R.disegna = function(G){
     lx.globalCompositeOperation='destination-out';
     for(const L of luci){
       const px=Math.round(L.x)+ox, py=Math.round(L.y)+oy;
-      if(px<-160||px>VW+160||py<-160||py>VH+160) continue;
+      if(px<-160*K||px>VW+160*K||py<-160*K||py>VH+160*K) continue;
       /* Il tremolio della fiamma sta sull'intensità e non più sul
          raggio: un raggio che respira vuol dire una pozza diversa a ogni
          fotogramma, e con il retino i puntini striscerebbero verso fuori
@@ -1034,7 +1157,7 @@ R.disegna = function(G){
     for(const L of luci){
       if(!L.caldo) continue;
       const px=Math.round(L.x)+ox, py=Math.round(L.y)+oy;
-      if(px<-200||px>VW+200||py<-200||py>VH+200) continue;
+      if(px<-200*K||px>VW+200*K||py<-200*K||py>VH+200*K) continue;
       const r = L.r*0.55;              // alone stretto: il bloom deve
       const g = bx.createRadialGradient(px,py,0,px,py,r);   // accennare, non annebbiare
       const inten = Math.min(1, amb.a*1.5)*L.i;
@@ -1048,10 +1171,10 @@ R.disegna = function(G){
     for(const p of G.particelle){
       if(p.t!=='lucciola') continue;
       const px=Math.round(p.x)+ox, py=Math.round(p.y)+oy;
-      const g = bx.createRadialGradient(px,py,0,px,py,7);
+      const g = bx.createRadialGradient(px,py,0,px,py,7*K);
       g.addColorStop(0,'rgba(230,250,150,0.42)');
       g.addColorStop(1,'rgba(200,240,120,0)');
-      bx.fillStyle=g; bx.beginPath(); bx.arc(px,py,7,0,6.3); bx.fill();
+      bx.fillStyle=g; bx.beginPath(); bx.arc(px,py,7*K,0,6.3); bx.fill();
     }
     FX.applicaBloom(sx, VW, VH, 0.42);
   }
@@ -1110,10 +1233,10 @@ function riflessi(m, x0,y0,x1,y1, ox,oy, stag, t, G){
     if(o.t==='albero'){
       if(!acquaSotto(m,x,y)) continue;
       const img = ART.tree(o.kind, stag, o.stage, varianteDi(x,y));
-      specchia(m, sx, img, x*T+16, (y+1)*T, ox, oy, t, 0.20, img.height*0.8);
+      specchia(m, sx, img, x*T+T/2, (y+1)*T, ox, oy, t, 0.20, img.height*0.8);
     } else if(o.t==='cespuglio'){
       if(!acquaSotto(m,x,y)) continue;
-      specchia(m, sx, ART.bush(stag,o.v,o.bacche), x*T+16, (y+1)*T, ox, oy, t, 0.18);
+      specchia(m, sx, ART.bush(stag,o.v,o.bacche), x*T+T/2, (y+1)*T, ox, oy, t, 0.18);
     }
   }
 
@@ -1124,7 +1247,7 @@ function riflessi(m, x0,y0,x1,y1, ox,oy, stag, t, G){
   for(const g of gente){
     if(!g.look || g.look.spirito) continue;
     const px = g.px+ox;
-    if(px < -60 || px > VW+60) continue;
+    if(px < -60*K || px > VW+60*K) continue;
     const tx=(g.px/T)|0, ty=(g.py/T)|0;
     if(!acquaSotto(m,tx,ty)) continue;
     specchia(m, sx, ART.charSprite(g.look, g.dir, g.frame), g.px, (ty+1)*T, ox, oy, t, 0.26);
@@ -1151,18 +1274,18 @@ function stratoErba(m, x0,y0,x1,y1, ox,oy, stag, t, G){
     for(let k=0;k<quanti;k++){
       const h = ART.hsh(x, y, 900+k);
       if(h > 0.30 + dens*0.55) continue;
-      const bx = x*T + 4 + Math.round(ART.hsh(x,y,910+k)*22);
-      const by = y*T + 6 + Math.round(ART.hsh(x,y,920+k)*22);
+      const bx = x*T + 4*K + Math.round(ART.hsh(x,y,910+k)*22*K);
+      const by = y*T + 6*K + Math.round(ART.hsh(x,y,920+k)*22*K);
       const v  = (ART.hsh(x,y,930+k)*6)|0;
 
       // vento + spinta del giocatore che passa
       let piega = FX.vento(bx, by) * 3.1;
       const dx = bx-px0, dy = by-py0;
       const dist = Math.hypot(dx, dy);
-      if(dist < 26) piega += (dx>0?1:-1) * (1 - dist/26) * 4.5;
+      if(dist < 26*K) piega += (dx>0?1:-1) * (1 - dist/(26*K)) * 4.5;
       piega = Math.max(-4, Math.min(4, Math.round(piega)));
 
-      sx.drawImage(ART.ciuffo(stag, v, piega), (bx+ox-10)|0, (by+oy-14)|0);
+      sx.drawImage(ART.ciuffo(stag, v, piega), (bx+ox-10*K)|0, (by+oy-14*K)|0);
     }
   }
 }
@@ -1180,6 +1303,11 @@ function ombraEdificio(e, ox, oy, G, stag, sole){
 }
 
 function ombraOggetto(o, px, py, gx, gy, t, stag, sole){
+  raddoppia(sx, px, py);
+  ombraOggettoDentro(o, 0, 0, gx, gy, t, stag, sole);
+  sx.restore();
+}
+function ombraOggettoDentro(o, px, py, gx, gy, t, stag, sole){
   if(sole.a < 0.03){
     if(o.t==='albero'&&o.stage===2) FX.ombraTerra(sx, px+16, py+30, 13, 4, 0.16);
     return;
@@ -1189,7 +1317,7 @@ function ombraOggetto(o, px, py, gx, gy, t, stag, sole){
       // stessa variante del disegno, altrimenti l'ombra non è la sua
       const img = ART.tree(o.kind, stag, o.stage, varianteDi(gx,gy));
       const sway = FX.vento(gx*T, gy*T) * (o.stage===2?2.2:0.9);
-      FX.ombraSprite(sx, img, px+16, py+T, sole, img.width, img.height, sway);
+      FX.ombraSprite(sx, img, px+16, py+U, sole, mez(img.width), mez(img.height), sway);
       break;
     }
     case 'ceppo':  FX.ombraTerra(sx, px+16, py+26, 11, 3.4, sole.a*0.8); break;
@@ -1204,7 +1332,7 @@ function ombraOggetto(o, px, py, gx, gy, t, stag, sole){
       // l'ombra deve venire dal pezzo giusto, non da quello isolato
       if(o.kind==='recinto' || o.kind==='cancelletto') opt.lati = latiRecinto(G.mappa(), gx, gy);
       const img = ART.placeable(o.kind, opt);
-      FX.ombraSprite(sx, img, px+16, py+T, sole, img.width, img.height, 0);
+      FX.ombraSprite(sx, img, px+16, py+U, sole, mez(img.width), mez(img.height), 0);
       break;
     }
     case 'pietra_rituale': FX.ombraTerra(sx, px+16, py+30, 9, 3, sole.a*0.8); break;
@@ -1234,10 +1362,10 @@ function disegnaEdificio(e, ox, oy, G, stag){
     sx.globalAlpha=0.28;
     for(let i=0;i<6;i++){
       const tt=(G.tempoMs*0.0006 + i*0.17)%1;
-      const r=3+tt*10;
+      const r=(3+tt*10)*K;
       sx.fillStyle='#cfc8bc';
       sx.beginPath();
-      sx.arc(cxp + Math.sin(tt*5+i)*7 + vento*tt*22, cyp - tt*38, r, 0, 6.3);
+      sx.arc(cxp + (Math.sin(tt*5+i)*7 + vento*tt*22)*K, cyp - tt*38*K, r, 0, 6.3);
       sx.fill();
     }
     sx.globalAlpha=1;
@@ -1245,7 +1373,7 @@ function disegnaEdificio(e, ox, oy, G, stag){
   if(e.kind==='santuario' && G.braci>=4){
     sx.globalAlpha=0.18+Math.sin(G.tempoMs*0.003)*0.05;
     sx.fillStyle='#ffe9a8';
-    sx.beginPath(); sx.arc(px+w/2, py+dh*sc*0.55, 70, 0, 6.3); sx.fill();
+    sx.beginPath(); sx.arc(px+w/2, py+dh*sc*0.55, 70*K, 0, 6.3); sx.fill();
     sx.globalAlpha=1;
   }
 }
@@ -1263,7 +1391,16 @@ function latiRecinto(m, x, y){
        | (eRecinto(m,x,y+1) ? 4 : 0) | (eRecinto(m,x-1,y) ? 8 : 0);
 }
 
+/* `wx, wy` sono l'origine della casella in pixel di MONDO, e servono
+   alle due targhette qui dentro: quelle non si disegnano nel blocco
+   raddoppiato — sono scritte, e le scritte si stampano dopo
+   l'ingrandimento — quindi vogliono il punto vero e non quello relativo. */
 function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
+  raddoppia(sx, px, py);
+  disegnaOggettoDentro(o, 0, 0, gx, gy, t, stag, G, px, py);
+  sx.restore();
+}
+function disegnaOggettoDentro(o, px, py, gx, gy, t, stag, G, wx, wy){
   switch(o.t){
     case 'albero': {
       const img = ART.tree(o.kind, stag, o.stage, varianteDi(gx,gy));
@@ -1271,18 +1408,18 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
       const sway = vento * (o.stage===2?2.6:1.1) + Math.sin(t*0.0011 + gx*0.7 + gy*0.3)*0.5;
       const shake = o.shake ? Math.sin(t*0.05)*o.shake : 0;
       sx.save();
-      sx.translate(px+T/2 + shake, py+T);
+      sx.translate(px+U/2 + shake, py+U);
       // il tronco resta fermo, la chioma ondeggia: leggera inclinazione
       sx.transform(1, 0, sway*0.012, 1, 0, 0);
-      sx.drawImage(img, -img.width/2, -img.height+6);
+      spr(img, -mez(img.width)/2, -mez(img.height)+6);
       sx.restore();
       break;
     }
-    case 'ceppo': sx.drawImage(ART.stump(varianteDi(gx,gy)), px-4, py+2); break;
+    case 'ceppo': spr(ART.stump(varianteDi(gx,gy)), px-4, py+2); break;
     case 'sasso': {
       const img = ART.rock(o.carbone?'geode':o.kind, (gx*3+gy)%4);
       const shake = o.shake? Math.sin(t*0.06)*o.shake : 0;
-      sx.drawImage(img, px-4+shake, py-4);
+      spr(img, px-4+shake, py-4);
       if(o.kind!=='pietra'||o.carbone){
         sx.globalAlpha=0.20+Math.sin(t*0.003+gx)*0.09;
         const col = o.carbone?'#8a6038':{rame:'#e08a4a',ferro:'#d8dce8',oro:'#ffd24a',
@@ -1298,7 +1435,7 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
       sx.save();
       sx.translate(px+16, py+26);
       sx.transform(1,0,vento*0.09,1,0,0);
-      sx.drawImage(ART.weed(stag,o.v), -16, -26);
+      spr(ART.weed(stag,o.v), -16, -26);
       sx.restore();
       break;
     }
@@ -1313,7 +1450,7 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
       sx.save();
       sx.translate(px+16, py+30);
       sx.transform(1,0,vento*0.045,1,0,0);
-      sx.drawImage(ART.bush(stag,o.v,o.bacche), -20, -32);
+      spr(ART.bush(stag,o.v,o.bacche), -20, -32);
       sx.restore();
       break;
     }
@@ -1332,7 +1469,7 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
       break;
     }
     case 'foraggio': {
-      sx.drawImage(ART.forage(o.item,(gx+gy)%3), px, py);
+      spr(ART.forage(o.item,(gx+gy)%3), px, py);
       sx.globalAlpha=0.2+Math.sin(t*0.004+gx)*0.1;
       sx.fillStyle='#fff4c8'; sx.beginPath(); sx.arc(px+16,py+18,10,0,6.3); sx.fill();
       sx.globalAlpha=1;
@@ -1495,29 +1632,29 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
     case 'stalagmite': {
       const h=14+o.v*6;
       sx.fillStyle='#565149';
-      sx.beginPath(); sx.moveTo(px+10,py+T); sx.lineTo(px+16,py+T-h); sx.lineTo(px+22,py+T); sx.fill();
+      sx.beginPath(); sx.moveTo(px+10,py+U); sx.lineTo(px+16,py+U-h); sx.lineTo(px+22,py+U); sx.fill();
       sx.fillStyle='#68625a';
-      sx.beginPath(); sx.moveTo(px+12,py+T); sx.lineTo(px+16,py+T-h+3); sx.lineTo(px+18,py+T); sx.fill();
+      sx.beginPath(); sx.moveTo(px+12,py+U); sx.lineTo(px+16,py+U-h+3); sx.lineTo(px+18,py+U); sx.fill();
       break;
     }
     case 'pietra_rituale': {
       const h=26;
       sx.fillStyle='#6b6762';
-      sx.beginPath(); sx.moveTo(px+9,py+T); sx.lineTo(px+11,py+T-h); sx.lineTo(px+21,py+T-h+2); sx.lineTo(px+23,py+T); sx.fill();
-      sx.fillStyle='#7d786f'; sx.fillRect(px+12,py+T-h+2,7,h-3);
+      sx.beginPath(); sx.moveTo(px+9,py+U); sx.lineTo(px+11,py+U-h); sx.lineTo(px+21,py+U-h+2); sx.lineTo(px+23,py+U); sx.fill();
+      sx.fillStyle='#7d786f'; sx.fillRect(px+12,py+U-h+2,7,h-3);
       sx.globalAlpha=0.5+Math.sin(t*0.002+o.v)*0.3;
       sx.fillStyle= G.braci>=4?'#ffe9a8':'#8fd0c8';
-      sx.fillRect(px+14,py+T-18,4,2); sx.fillRect(px+15,py+T-14,2,5);
+      sx.fillRect(px+14,py+U-18,4,2); sx.fillRect(px+15,py+U-14,2,5);
       sx.globalAlpha=1;
       break;
     }
     /* ---------- ARREDI DEGLI INTERNI ---------- */
     case 'bancone': {
       const I = PAL.c.interno;
-      ART.px(sx,px,py+10,T,4,I.legnoLuce);              // piano
-      ART.px(sx,px,py+14,T,12,I.legno);                 // fronte
-      ART.px(sx,px,py+25,T,3,I.legnoOmbra);
-      ART.px(sx,px,py+18,T,1,I.legnoOmbra);             // fascia
+      ART.px(sx,px,py+10,U,4,I.legnoLuce);              // piano
+      ART.px(sx,px,py+14,U,12,I.legno);                 // fronte
+      ART.px(sx,px,py+25,U,3,I.legnoOmbra);
+      ART.px(sx,px,py+18,U,1,I.legnoOmbra);             // fascia
       if(o.v===0){ ART.px(sx,px+6,py+4,8,6,I.legnoOmbra); ART.circ(sx,px+10,py+5,2.4,'#d8452c'); }
       if(o.v===1){ ART.px(sx,px+4,py+5,10,5,'#c9b48c'); ART.px(sx,px+4,py+5,10,1,'#e8dcc0'); }
       break;
@@ -1531,9 +1668,9 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
                      ['#d86a2c','#8ab04a','#b03f4a']][ (o.v||0) % 3 ];
       for(let r=0;r<2;r++){
         const y0 = py + 2 + r*13;
-        ART.px(sx, px, y0+8, T, 3, I.legno);              // il ripiano
-        ART.px(sx, px, y0+8, T, 1, I.legnoLuce);
-        ART.px(sx, px, y0+11, T, 1, I.legnoOmbra);
+        ART.px(sx, px, y0+8, U, 3, I.legno);              // il ripiano
+        ART.px(sx, px, y0+8, U, 1, I.legnoLuce);
+        ART.px(sx, px, y0+11, U, 1, I.legnoOmbra);
         // la merce sopra, allineata come la mette chi la vende
         for(let k=0;k<3;k++){
           if(ART.hsh(k, (o.v||0)*3+r, 771) < 0.22) continue;   // qualche vuoto
@@ -1545,7 +1682,7 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
       }
       // i montanti laterali, che tengono insieme la fila
       ART.px(sx, px, py+2, 2, 24, I.legnoOmbra);
-      ART.px(sx, px+T-2, py+2, 2, 24, I.legnoOmbra);
+      ART.px(sx, px+U-2, py+2, 2, 24, I.legnoOmbra);
       break;
     }
     case 'incudine': {
@@ -1599,7 +1736,7 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
     }
     case 'cucina': {
       const img = ART.placeable('forno',{attivo:true});
-      sx.drawImage(img, px-8, py+T-img.height+2);
+      spr(img, px-8, py+U-mez(img.height)+2);
       break;
     }
     case 'scrivania': {
@@ -1648,15 +1785,15 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
     }
     case 'macchina': {
       const img = ART.placeable(o.kind, {attivo:!!o.dentro, pronto:!!o.pronto});
-      sx.drawImage(img, px-8, py+T-img.height+2);
+      spr(img, px-8, py+U-mez(img.height)+2);
       if(o.pronto && o.out){
         const bob = Math.sin(t*0.004)*2;
-        sx.drawImage(ART.bolla(o.out), px-4, py-32+bob);
+        spr(ART.bolla(o.out), px-4, py-32+bob);
       }
       /* La targhetta di una cassa con un nome. Serve a non aprirne
          dieci per trovare i semi: il nome si legge da fuori, come su un
          cassetto vero. */
-      if(o.kind==='cassa' && o.nome) targhetta(o.nome, px+16, py-3);
+      if(o.kind==='cassa' && o.nome) targhetta(o.nome, wx+T/2, wy-6);
       break;
     }
     case 'mobile': {
@@ -1666,12 +1803,12 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
       if(o.kind==='spaventapasseri'){
         const vento = FX.vento(gx*T, gy*T);
         sx.save();
-        sx.translate(px+16, py+T);
+        sx.translate(px+16, py+U);
         sx.transform(1,0,vento*0.05,1,0,0);
-        sx.drawImage(img, -24, -img.height+2);
+        spr(img, -24, -mez(img.height)+2);
         sx.restore();
       } else {
-        sx.drawImage(img, px-8, py+T-img.height+2);
+        spr(img, px-8, py+U-mez(img.height)+2);
       }
       /* Il cartello scritto dal giocatore. Quelli del paese («↑ Miniera»)
          il testo ce l'hanno da sempre, ma si legge solo standoci accanto
@@ -1684,13 +1821,18 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
          della tavoletta, e disegnata prima ci finirebbe sotto. Un
          cartello appena piantato non ha ancora testo, e una targhetta
          vuota sarebbe una toppa di legno sospesa a mezz'aria. */
-      if(o.kind==='cartello' && o.testo) targhetta(o.testo, px+16, py-12);
+      if(o.kind==='cartello' && o.testo) targhetta(o.testo, wx+T/2, wy-24);
       break;
     }
   }
 }
 
 function disegnaColtura(s, px, py, gx, gy, t){
+  raddoppia(sx, px, py);
+  disegnaColturaDentro(s, 0, 0, gx, gy, t);
+  sx.restore();
+}
+function disegnaColturaDentro(s, px, py, gx, gy, t){
   const C = DATA.CROPS[s.crop.id];
   if(!C) return;
   const n = C.fasi.length;
@@ -1709,7 +1851,11 @@ function disegnaColtura(s, px, py, gx, gy, t){
    DECORAZIONI
    =================================================================== */
 function disegnaDecoPiatta(d, ox, oy, t, stag){
-  const px=(d.x*T+ox)|0, py=(d.y*T+oy)|0;
+  raddoppia(sx, (d.x*T+ox)|0, (d.y*T+oy)|0);
+  disegnaDecoPiattaDentro(d, 0, 0, t, stag);
+  sx.restore();
+}
+function disegnaDecoPiattaDentro(d, px, py, t, stag){
   switch(d.t){
     case 'ninfea': {
       const bob=Math.sin(t*0.0013+d.v*2)*1.5;
@@ -1735,38 +1881,38 @@ function disegnaDecoPiatta(d, ox, oy, t, stag){
       const h = d.h || 2;
       // le travi trasversali, una ogni mezza casella
       for(let k=0;k<h*2;k++){
-        ART.px(sx, px+2, py+k*(T/2)+3, d.w*T-4, 2, '#7a5432');
+        ART.px(sx, px+2, py+k*(U/2)+3, d.w*U-4, 2, '#7a5432');
       }
       // le due ringhiere, in cima e in fondo all'altezza vera
       for(let i=0;i<d.w;i++){
-        const bx=px+i*T;
-        ART.px(sx,bx,py+2,T,3,'#8a6038');
-        ART.px(sx,bx,py+h*T-6,T,3,'#8a6038');
+        const bx=px+i*U;
+        ART.px(sx,bx,py+2,U,3,'#8a6038');
+        ART.px(sx,bx,py+h*U-6,U,3,'#8a6038');
       }
       // i pali agli angoli, che è quello che dice «questo sta in piedi»
-      for(const bx of [px+1, px+d.w*T-5]){
+      for(const bx of [px+1, px+d.w*U-5]){
         ART.px(sx,bx,py,4,7,'#96704a');
-        ART.px(sx,bx,py+h*T-8,4,8,'#96704a');
+        ART.px(sx,bx,py+h*U-8,4,8,'#96704a');
       }
       break;
     }
     case 'ponte_grande': {
       for(let i=0;i<d.w;i++) for(let k=0;k<d.h;k++){
-        ART.px(sx,px+i*T,py+k*T,T,2,'#7a5432');
+        ART.px(sx,px+i*U,py+k*U,U,2,'#7a5432');
       }
       for(let i=0;i<=d.w;i++){
-        ART.px(sx,px+i*T-2,py-14,4,16,'#96704a');
-        ART.px(sx,px+i*T-2,py+d.h*T-2,4,16,'#96704a');
+        ART.px(sx,px+i*U-2,py-14,4,16,'#96704a');
+        ART.px(sx,px+i*U-2,py+d.h*U-2,4,16,'#96704a');
       }
-      ART.px(sx,px-2,py-12,d.w*T+4,4,'#8a6038');
-      ART.px(sx,px-2,py+d.h*T+2,d.w*T+4,4,'#8a6038');
+      ART.px(sx,px-2,py-12,d.w*U+4,4,'#8a6038');
+      ART.px(sx,px-2,py+d.h*U+2,d.w*U+4,4,'#8a6038');
       break;
     }
     case 'molo': {
       for(let i=0;i<d.w;i++){
-        ART.px(sx,px+i*T,py+4,T,2,'#7a5432');
-        ART.px(sx,px+i*T,py+T*2-8,T,2,'#7a5432');
-        if(i%2===0){ ART.px(sx,px+i*T+4,py+T*2-4,5,10,'#5f4028'); }
+        ART.px(sx,px+i*U,py+4,U,2,'#7a5432');
+        ART.px(sx,px+i*U,py+U*2-8,U,2,'#7a5432');
+        if(i%2===0){ ART.px(sx,px+i*U+4,py+U*2-4,5,10,'#5f4028'); }
       }
       break;
     }
@@ -1776,8 +1922,8 @@ function disegnaDecoPiatta(d, ox, oy, t, stag){
        luce, parete interna di fondo in ombra e acqua incassata. */
     case 'fontana': {
       const F = PAL.c.fontana;
-      const cxp = px + T*2, cyp = py + T*1.35;
-      const RX = T*2 - 3, RY = T*1.05;      // più schiacciata: sta in piedi, non sdraiata
+      const cxp = px + U*2, cyp = py + U*1.35;
+      const RX = U*2 - 3, RY = U*1.05;      // più schiacciata: sta in piedi, non sdraiata
       const MURO = 11;                       // spessore visibile della parete
 
       // ombra a terra, sotto il piede della vasca
@@ -1863,7 +2009,7 @@ function disegnaDecoPiatta(d, ox, oy, t, stag){
        decorazioni: continuano a vedersi, anche se le nuove sono oggetti. */
     case 'recinto': {
       const img=ART.placeable('recinto',{});
-      sx.drawImage(img, px-8, py+T-img.height+2);
+      spr(img, px-8, py+U-mez(img.height)+2);
       break;
     }
     case 'ciuffo': {
@@ -1901,7 +2047,7 @@ function disegnaDecoPiatta(d, ox, oy, t, stag){
       break;
     }
     case 'bucato': {
-      const w=d.w*T;
+      const w=d.w*U;
       const vento = FX.vento(d.x*T, d.y*T);
       ART.px(sx,px+2,py-26,3,30,'#8a6038');
       ART.px(sx,px+w-4,py-26,3,30,'#8a6038');
@@ -1928,7 +2074,7 @@ function disegnaDecoPiatta(d, ox, oy, t, stag){
        di assi che galleggia nel nero e non si legge come stanza */
     case 'parete': {
       const I = PAL.c.interno;
-      const w = d.w*T, H = 26;
+      const w = d.w*U, H = 26;
       const y0 = py - H;
       /* la fucina ha muri di pietra: il legno caldo, lì, sembrava una
          stalla e non un posto dove si batte il ferro */
@@ -1943,12 +2089,12 @@ function disegnaDecoPiatta(d, ox, oy, t, stag){
       ART.px(sx, px, y0+H-3, w, 3, I.battiscopa);               // battiscopa
       for(let k=0;k<d.w;k++){                                    // fughe verticali
         sx.globalAlpha = 0.25;
-        ART.px(sx, px+k*T, y0+3, 1, H-12, scuro);
+        ART.px(sx, px+k*U, y0+3, 1, H-12, scuro);
         sx.globalAlpha = 1;
       }
       // una finestrella ogni tanto, per non avere una parete cieca
       for(let k=2;k<d.w-2;k+=5){
-        const wx = px + k*T + 6;
+        const wx = px + k*U + 6;
         ART.px(sx, wx-2, y0+4, 20, 14, I.battiscopa);
         ART.px(sx, wx,   y0+6, 16, 10, '#4a6478');
         ART.px(sx, wx,   y0+6, 16, 3,  '#6f8ea4');
@@ -1976,7 +2122,7 @@ function disegnaDecoPiatta(d, ox, oy, t, stag){
       const base  = freddo ? I.tappetoFreddo : I.tappeto;
       const trama = freddo ? I.tappetoFreddoTrama : I.tappetoTrama;
       const filo  = freddo ? I.metalloLuce : I.tappetoFilo;
-      const w = d.w*T, h = d.h*T;
+      const w = d.w*U, h = d.h*U;
       ART.px(sx, px, py, w, h, I.tappetoOmbra);              // il bordo consumato
       ART.px(sx, px+2, py+2, w-4, h-4, base);
       ART.px(sx, px+2, py+2, w-4, 1, trama);                 // il lato in luce
@@ -1997,11 +2143,15 @@ function disegnaDecoPiatta(d, ox, oy, t, stag){
 }
 
 function disegnaDecoAlta(d, ox, oy, t, stag){
-  const px=(d.x*T+ox)|0, py=(d.y*T+oy)|0;
+  raddoppia(sx, (d.x*T+ox)|0, (d.y*T+oy)|0);
+  disegnaDecoAltaDentro(d, 0, 0, t, stag);
+  sx.restore();
+}
+function disegnaDecoAltaDentro(d, px, py, t, stag){
   switch(d.t){
     case 'cartello': {
       const img=ART.placeable('cartello',{});
-      sx.drawImage(img, px-8, py+T-img.height+2);
+      spr(img, px-8, py+U-mez(img.height)+2);
       break;
     }
     case 'erbe': {
@@ -2037,8 +2187,18 @@ function disegnaDecoAlta(d, ox, oy, t, stag){
 /* ===================================================================
    PARTICELLE
    =================================================================== */
+/* Le particelle vivono nel mondo — posizione, velocità e gravità sono
+   in pixel di mondo, e le tira game.js — ma il DISEGNO di ognuna, e la
+   sua misura `p.s`, sono roba scritta a mano: un fiocco di neve grande
+   2, un cuoricino di sei pixel. Quindi si raddoppia sul posto e dentro
+   non cambia niente, `p.s` compreso. */
 function disegnaParticella(p, ox, oy){
-  const px=(p.x+ox)|0, py=(p.y+oy)|0;
+  const wx=(p.x+ox)|0, wy=(p.y+oy)|0;
+  raddoppia(sx, wx, wy);
+  disegnaParticellaDentro(p, 0, 0, wx, wy);
+  sx.restore();
+}
+function disegnaParticellaDentro(p, px, py, wx, wy){
   const a = p.vita/p.vitaMax;
   sx.globalAlpha = Math.max(0, Math.min(1, a*(p.alpha===undefined?1:p.alpha)));
   switch(p.t){
@@ -2078,8 +2238,12 @@ function disegnaParticella(p, ox, oy){
          le più corte, cioè quelle che una lisciatura a blocchetti da 3
          rendeva più difficili da leggere di quanto siano. Vanno sopra,
          alla risoluzione vera, con l'opacità loro perché svaniscono
-         salendo. `a` è già l'opacità calcolata per questa particella. */
-      testoNitido(p.testo, px, py, { px:9, famiglia:'Nunito, sans-serif',
+         salendo. `a` è già l'opacità calcolata per questa particella.
+
+         Il punto è `wx, wy` e non `px, py`: le scritte si stampano dopo
+         l'ingrandimento e vogliono i pixel di mondo, non le coordinate
+         relative del blocco raddoppiato — che qui sono zero. */
+      testoNitido(p.testo, wx, wy, { px:9*K, famiglia:'Nunito, sans-serif',
         colore:p.c, base:'alphabetic', ombra:'rgba(0,0,0,0.55)', alfa:a });
       break;
     }
@@ -2108,11 +2272,19 @@ function disegnaParticella(p, ox, oy){
 /* ===================================================================
    METEO
    =================================================================== */
+/* La pioggia e la neve stanno in unità di disegno, come tutto quello
+   che è scritto a mano: 170 gocce lunghe 6..14 pixel su uno schermo
+   largo `VW/K`. Ragionandoci in pixel di mondo sarebbe cambiato tutto
+   insieme — con la scena larga il doppio in tutte e due le direzioni le
+   stesse 170 gocce si sarebbero sparse su quattro volte l'area, cioè
+   un quarto della pioggia, e ognuna spessa la metà. */
 let gocce=[], fiocchi=[];
+const meteoW = ()=>VW/K, meteoH = ()=>VH/K;
 function initMeteo(){
   gocce=[]; fiocchi=[];
-  for(let i=0;i<170;i++) gocce.push({x:Math.random()*VW, y:Math.random()*VH, v:5+Math.random()*4, l:6+Math.random()*8});
-  for(let i=0;i<120;i++) fiocchi.push({x:Math.random()*VW, y:Math.random()*VH, v:0.4+Math.random()*0.7, s:1+((Math.random()*2)|0), f:Math.random()*6.28});
+  const LW = meteoW(), LH = meteoH();
+  for(let i=0;i<170;i++) gocce.push({x:Math.random()*LW, y:Math.random()*LH, v:5+Math.random()*4, l:6+Math.random()*8});
+  for(let i=0;i<120;i++) fiocchi.push({x:Math.random()*LW, y:Math.random()*LH, v:0.4+Math.random()*0.7, s:1+((Math.random()*2)|0), f:Math.random()*6.28});
 }
 R.initMeteo = initMeteo;
 
@@ -2126,7 +2298,9 @@ R.initMeteo = initMeteo;
    schermo in un colpo. */
 let meteoT = 0;
 function disegnaMeteo(G, t){
+  const LW = meteoW(), LH = meteoH();
   if(!gocce.length) initMeteo();
+  raddoppia(sx, 0, 0);
   const k = Math.min(100, Math.max(0, t - meteoT)) / 16.667;
   meteoT = t;
   const M = G.meteo;
@@ -2138,27 +2312,27 @@ function disegnaMeteo(G, t){
     sx.beginPath();
     for(const g of gocce){
       g.y += g.v*(forte?1.5:1)*k; g.x += ((forte?1.6:0.9) + vento*1.4)*k;
-      if(g.y>VH){ g.y=-10; g.x=Math.random()*VW; }
-      if(g.x>VW) g.x=0; if(g.x<0) g.x=VW;
+      if(g.y>LH){ g.y=-10; g.x=Math.random()*LW; }
+      if(g.x>LW) g.x=0; if(g.x<0) g.x=LW;
       sx.moveTo(g.x,g.y); sx.lineTo(g.x-(forte?4:2), g.y-g.l);
     }
     sx.stroke();
     sx.globalAlpha=0.28;
     for(let i=0;i<12;i++){
-      const px=(ART.hsh(i,(t/220|0),501)*VW)|0, py=(ART.hsh(i,(t/220|0),502)*VH)|0;
+      const px=(ART.hsh(i,(t/220|0),501)*LW)|0, py=(ART.hsh(i,(t/220|0),502)*LH)|0;
       sx.strokeStyle='#cfe8f2';
       sx.beginPath(); sx.ellipse(px,py,4,1.6,0,0,6.3); sx.stroke();
     }
     sx.globalAlpha=1;
     if(forte && Math.sin(t*0.0007)>0.9993){
-      sx.fillStyle='rgba(255,255,255,0.5)'; sx.fillRect(0,0,VW,VH);
+      sx.fillStyle='rgba(255,255,255,0.5)'; sx.fillRect(0,0,LW,LH);
     }
   }
   else if(M==='neve'){
     for(const f of fiocchi){
       f.y += f.v*k; f.x += (Math.sin(f.f + t*0.0012)*0.5 + vento*0.9)*k;
-      if(f.y>VH){ f.y=-6; f.x=Math.random()*VW; }
-      if(f.x>VW) f.x=0; if(f.x<0) f.x=VW;
+      if(f.y>LH){ f.y=-6; f.x=Math.random()*LW; }
+      if(f.x>LW) f.x=0; if(f.x<0) f.x=LW;
       sx.globalAlpha=0.85;
       ART.px(sx, f.x|0, f.y|0, f.s, f.s, '#ffffff');
     }
@@ -2168,12 +2342,13 @@ function disegnaMeteo(G, t){
     sx.globalAlpha=0.18;
     sx.strokeStyle='#e8f0f4'; sx.lineWidth=1;
     for(let i=0;i<9;i++){
-      const yy=(i*VH/9 + Math.sin(t*0.001+i)*10)|0;
-      const xx=((t*0.22 + i*180)%(VW+200))-100;
+      const yy=(i*LH/9 + Math.sin(t*0.001+i)*10)|0;
+      const xx=((t*0.22 + i*180)%(LW+200))-100;
       sx.beginPath(); sx.moveTo(xx,yy); sx.quadraticCurveTo(xx+30,yy-6,xx+60,yy); sx.stroke();
     }
     sx.globalAlpha=1;
   }
+  sx.restore();
 }
 
 })();

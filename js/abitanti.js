@@ -37,7 +37,12 @@ window.ABITANTI = AB;
 /* Le due comodità che ogni modulo si ridichiara — la casella è 32 px e
    basta, e `$` è quello che è. Le hanno uguali render.js, mobs.js e
    pesca.js: dividerle vorrebbe dire un modulo in più per due righe. */
-const T = 32;
+const T = 64;
+/* Quante volte il mondo è più fitto della casella da 32: sta davanti
+   alla velocità di chi cammina, alle distanze di arrivo e ai raggi
+   entro cui uno si accorge di te. Gli scostamenti dal centro casella
+   (+16, +24) sono diventati T/2 e 24*K per la stessa ragione. */
+const K = 2;
 const $ = s=>document.querySelector(s);
 
 /* ===================================================================
@@ -103,7 +108,7 @@ function sincronizzaInterni(m){
       // px/py subito: chi entra nella stanza dev'essere già in piedi al
       // primo fotogramma, non al secondo
       m.npc.push({ id, x, y, giro:posti,
-                   px:x*T+16, py:y*T+24, dir:0, frame:0, animT:0,
+                   px:x*T+T/2, py:y*T+24*K, dir:0, frame:0, animT:0,
                    wait:Math.random()*2000 });
     } else if(!ciSta && i>=0){
       m.npc.splice(i,1);
@@ -139,7 +144,7 @@ function aggiornaNPC(dt){
   const m=G.mappa();
   sincronizzaInterni(m);
   for(const n of (m.npc||[])){
-    if(n.px===undefined){ n.px = n.x*T+16; n.py = n.y*T+24; n.dir=0; n.frame=0; n.animT=0; n.wait=Math.random()*3000; }
+    if(n.px===undefined){ n.px = n.x*T+T/2; n.py = n.y*T+24*K; n.dir=0; n.frame=0; n.animT=0; n.wait=Math.random()*3000; }
 
     const fascia = G.fasciaAgenda(n.id);
     if(n.fisso || (fascia && fascia.fisso)){
@@ -152,7 +157,7 @@ function aggiornaNPC(dt){
        Se però la stanza è proprio questa, allora è a casa sua: cammina. */
     if(fascia && (fascia.dentro || (fascia.interno && fascia.interno !== m.id))){
       const posto = (fascia.giro && fascia.giro[0]) || [n.x, n.y];
-      n.px = posto[0]*T+16; n.py = posto[1]*T+24;
+      n.px = posto[0]*T+T/2; n.py = posto[1]*T+24*K;
       n.dest = null; n.frame = 0; n.emote = null;
       continue;
     }
@@ -164,12 +169,12 @@ function aggiornaNPC(dt){
     if(n.wait>0){ n.frame=0; continue; }
     if(!n.dest){
       const g = giro[(Math.random()*giro.length)|0];
-      n.dest = {x:g[0]*T+16, y:g[1]*T+24};
+      n.dest = {x:g[0]*T+T/2, y:g[1]*T+24*K};
     }
     const dx=n.dest.x-n.px, dy=n.dest.y-n.py;
     const d=Math.hypot(dx,dy);
-    if(d<3){ n.dest=null; n.wait=2200+Math.random()*5200; n.frame=0; continue; }
-    const spd = 0.5*dt/16;
+    if(d<3*K){ n.dest=null; n.wait=2200+Math.random()*5200; n.frame=0; continue; }
+    const spd = 0.5*K*dt/16;
     const nx = n.px+dx/d*spd, ny=n.py+dy/d*spd;
     if(!WORLD.solido(m,(nx/T)|0,(ny/T)|0)){ n.px=nx; n.py=ny; }
     else { n.dest=null; n.wait=800; }
@@ -177,7 +182,7 @@ function aggiornaNPC(dt){
     n.animT += dt;
     if(n.animT>170){ n.animT=0; n.frame=(n.frame+1)%4; }
     // emote se non gli hai ancora parlato oggi
-    n.emote = (!G.parlatoOggi[n.id] && Math.hypot(n.px-G.p.px,n.py-G.p.py)<160) ? '!' : null;
+    n.emote = (!G.parlatoOggi[n.id] && Math.hypot(n.px-G.p.px,n.py-G.p.py)<160*K) ? '!' : null;
   }
 }
 
@@ -339,7 +344,7 @@ function parlaCon(n){
 const CHIACCHIERA_DURATA = 4200;    // quanto resta a schermo
 const CHIACCHIERA_PAUSA  = 6000;    // fra una e l'altra, in tutto il paese
 const CHIACCHIERA_RIPOSO = 42000;   // prima che la stessa persona riparli
-const CHIACCHIERA_RAGGIO = 190;     // entro cui si sente
+const CHIACCHIERA_RAGGIO = 190*K;   // entro cui si sente, in pixel di mondo
 
 let chiacchieraT = 0;
 
@@ -356,7 +361,7 @@ function passantiDiOggi(){
 AB.rifaiPassanti = function(){
   G.passanti = passantiDiOggi().map(p => ({
     id:p.id, mappa:p.dove, look:p.look, giro:p.giro, dice:p.dice,
-    px:p.giro[0][0]*T+16, py:p.giro[0][1]*T+20,
+    px:p.giro[0][0]*T+T/2, py:p.giro[0][1]*T+20*K,
     dir:1, frame:0, animT:0, wait:Math.random()*2500, dest:null, tacePer:0
   }));
 };
@@ -371,12 +376,12 @@ function aggiornaPassanti(dt){
       const m = G.maps[p.mappa];
       const meta = p.giro[(Math.random()*p.giro.length)|0];
       if(WORLD.dentro(m, meta[0], meta[1]) && !WORLD.solido(m, meta[0], meta[1]))
-        p.dest = { x:meta[0]*T+16, y:meta[1]*T+20 };
+        p.dest = { x:meta[0]*T+T/2, y:meta[1]*T+20*K };
       else { p.wait = 1200; continue; }
     }
     const dx = p.dest.x-p.px, dy = p.dest.y-p.py, d = Math.hypot(dx,dy);
-    if(d < 3){ p.dest = null; p.wait = 1800+Math.random()*4200; p.frame = 0; continue; }
-    const v = 0.28*dt/16;
+    if(d < 3*K){ p.dest = null; p.wait = 1800+Math.random()*4200; p.frame = 0; continue; }
+    const v = 0.28*K*dt/16;
     p.px += dx/d*v; p.py += dy/d*v;
     p.dir = Math.abs(dx) > Math.abs(dy) ? (dx<0?1:2) : (dy<0?3:0);
     p.animT += dt;

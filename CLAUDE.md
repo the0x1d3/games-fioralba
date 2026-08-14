@@ -172,7 +172,7 @@ aveva, `T`, `$` e `POSTI_SAGRA`. Tre `ReferenceError` che nessun test avrebbe
 preso, perché saltano fuori solo quando quella riga gira davvero. Dopo ogni
 stacco, quindi, **cerca i nomi orfani**: prendi ogni identificatore del file
 nuovo e controlla che sia dichiarato lì, o sia un globale del gioco, o sia del
-browser. Le prime due si risolvono ridichiarandole (`const T = 32` ce l'hanno
+browser. Le prime due si risolvono ridichiarandole (`const T = 64` ce l'hanno
 uguale render.js, mobs.js e pesca.js); la terza era un dato, ed è andata in
 `DATA` accanto al suo gemello `POSTI_VEGLIA`, che ci era finito per la stessa
 identica ragione.
@@ -285,6 +285,54 @@ solo quanti pixel veri ci finiscono dentro. Tre trappole, tutte pagate:
 - Metti `aspect-ratio` nel CSS della tela, o la finestra si apre con un salto:
   senza, la tela nasce 300×150 e l'altezza cambia al primo disegno.
 
+### La casella è 64, ma i disegni sono scritti in 32
+
+È la cosa che sorprende di più leggendo questo codice, quindi va detta per
+prima: **`T` vale 64 e `U` vale 32, e non sono la stessa grandezza scritta
+due volte.**
+
+- **`T` = 64** è la casella del MONDO. Le posizioni del giocatore, delle
+  bestie e dei passanti, la camera, i confini delle mappe, le velocità, i
+  raggi: tutto quello che attraversa un confine fra due file parla in
+  pixel di mondo. È il valore che sta in `game.js`, `render.js`,
+  `mobs.js`, `pesca.js`, `salvataggio.js`, `abitanti.js`.
+- **`U` = 32** è l'unità in cui restano **scritti i disegni a mano** —
+  le 590 `px(x, 3, 5, …)` di `art.js` e i 1.351 numeri di `render.js`.
+  Erano tarati sulla casella da 32 e non sono stati riscritti.
+- **`K` = 2** è il ponte fra le due, ed è dichiarato in undici file.
+
+Il ponte si attraversa in due punti, uno per parte:
+
+```js
+ART.tela(w, h)                 // art.js: tela K volte più grande,
+                               // contesto già scalato di K
+raddoppia(sx, ox, oy); …; sx.restore();   // render.js: origine sulla
+                               // casella e unità raddoppiate
+```
+
+Dentro a un blocco raddoppiato vale **una regola sola, ed è la trappola**:
+uno sprite di `ART` è già in pixel di mondo, quindi va messo **dimezzato**
+(`spr()` e `mez()` in render.js) o esce grande il doppio del doppio. Fuori
+dal blocco, invece, `img.width` è già la misura giusta e non si tocca.
+
+Le scritte non entrano mai nei blocchi raddoppiati: si stampano dopo
+l'ingrandimento, alla risoluzione vera dello schermo (vedi `testoNitido`),
+e vogliono il punto in pixel di mondo. È il motivo per cui
+`disegnaOggettoDentro` riceve anche `wx, wy`.
+
+**Perché non si è convertito tutto a 64 e via.** Perché i numeri in pixel
+sono 5.455, di cui 4.489 sono disegno: riscriverli a mano voleva dire
+sbagliarne qualcuno senza che nessun controllo se ne accorgesse — un
+pixel storto non è un test rosso. I 966 che restano sono logica vera
+(velocità, hitbox, raggi) e quelli sì, sono stati raddoppiati uno per uno.
+
+Tre controlli in `tools/coerenza.js` tengono ferma la cosa, e tutti e tre
+diventano rossi anche se **smettono di vedere** quello che controllano.
+
+Il giorno che uno sprite viene ridisegnato davvero a 64, si chiede
+`tela(w, h, true)` e si scrive in sessantaquattresimi: la misura logica
+non cambia e nessuno dei suoi lettori se ne accorge.
+
 ### Firme che sorprendono
 
 Diverse funzioni prendono `G` come **primo parametro**, non dal globale. Chiamarle
@@ -321,7 +369,7 @@ PAL.snap('#8a6038')   // → '#8a5c34'
 npm test
 ```
 
-`tools/coerenza.js`: **54 controlli** sui dati e sulle mappe, senza dipendenze —
+`tools/coerenza.js`: **60 controlli** sui dati e sulle mappe, senza dipendenze —
 carica i moduli in un finto `window`. Il primo controlla che ogni file `.js` sia
 sintatticamente valido, e non è pignoleria: un apostrofo non protetto dentro una
 stringa fa fallire il caricamento in silenzio e nel browser resta una pagina
@@ -421,7 +469,9 @@ che vive dentro al fotogramma — la velocità di cammino, le prede che scappano
 il tempo che passa. La richiamata di `requestAnimationFrame` si intercetta
 **prima** che la partita cominci, e poi la si chiama con l'orologio che decidi
 tu. Con la prova di taratura davanti: dieci fotogrammi da 16 ms devono spostare
-il giocatore di 11,8 px, che è la velocità base (`1.18`) per dieci.
+il giocatore di 23,6 px: la velocità base (`1.18`) per dieci, per la densità
+doppia. Prima della casella da 64 erano 11,8, e il confronto è stato fatto
+davvero — stessa scena sui due rami, stesse 20 caselle in vista.
 
 ```js
 window.__giri=[];
