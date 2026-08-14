@@ -48,7 +48,7 @@ tutto, `game.js` per ultimo.
 data.js  lingua-en.js  lingua.js  palette.js  art.js  fx.js  audio.js
 world.js  mobs.js  ui.js  demo.js  changelog.js  landing.js  titolo.js
 salvataggio.js  sincronizza.js  pesca.js  storie.js  vicende.js
-persona.js  solstizio.js  livelli.js  traguardi.js  abitanti.js
+persona.js  solstizio.js  livelli.js  traguardi.js  abitanti.js  paese.js
 tutorial.js  guida.js  tocco.js  render.js  game.js   (in fondo: debug.js)
 ```
 
@@ -57,18 +57,18 @@ confronta `js/*.js` con gli script di `index.html`. Un file scritto e mai
 caricato non fa rumore — non è un errore di sintassi e non è un test rosso.
 
 **Ma «portante» era un'impressione, e adesso è un numero.** Fra i moduli ci
-sono 2.490 riferimenti incrociati e 2.479 stanno *dentro* le funzioni: girano a
+sono 2.653 riferimenti incrociati e 2.640 stanno *dentro* le funzioni: girano a
 partita avviata, quando i file ci sono tutti da un pezzo, e dell'ordine non
-sanno niente. Al caricamento ne restano dodici, che fanno **sette** vincoli
+sanno niente. Al caricamento ne restano tredici, che fanno **otto** vincoli
 d'ordine, ed è tutto quello che «portante» vuol dire:
 
 | chi | vuole prima | perché |
 |-----|-------------|--------|
 | `art.js`, `render.js` | `palette.js` | `PAL.suCambio(...)`, per buttare le cache quando la palette cambia (protetti da `if(window.PAL)`) |
 | `solstizio.js` | `data.js`   | `const POSTI_VEGLIA = DATA.POSTI_VEGLIA`, un alias preso subito |
-| `game.js` | `solstizio.js`, `salvataggio.js`, `traguardi.js`, `abitanti.js` | i riagganci a `G` |
+| `game.js` | `solstizio.js`, `salvataggio.js`, `traguardi.js`, `abitanti.js`, `paese.js` | i riagganci a `G` |
 
-Il pericolo non sono questi sette, che si reggono: è l'ottavo. Una riga come
+Il pericolo non sono questi otto, che si reggono: è il nono. Una riga come
 `SND.init()` messa al livello del file funziona finché l'ordine regge, non
 rompe niente e non lascia traccia — e il giorno che qualcuno sposta uno
 `<script>` la pagina si apre bianca. Un controllo ora li conta e pretende che
@@ -100,11 +100,12 @@ viene zero, il corpo della IIFE *è* il caricamento. E `demo.js` ha un
 | `LIV`      | livelli.js    | barretta, carta del livello, scheda delle abilità       |
 | `TRAGUARDI`| traguardi.js  | traguardi, Collezione del Naturalista, statistiche      |
 | `ABITANTI` | abitanti.js   | agende, cosa dice oggi, passanti e chiacchiere          |
+| `PAESE`    | paese.js      | mercato del giorno, eventi notturni, bacheca, sagre, mercante |
 | `REND`     | render.js     | il disegno di un fotogramma                             |
 | `G`        | game.js       | stato di gioco, input, sistemi (il file più grosso)     |
 | `DEBUG`    | debug.js      | il pannello di prova (dopo game.js: legge `G` subito)   |
 
-`game.js` è ~3500 righe e quasi tutte le sue funzioni sono **private al modulo**.
+`game.js` è ~3200 righe e quasi tutte le sue funzioni sono **private al modulo**.
 Solo quelle appese a `G.` si chiamano da fuori. Se ti serve provare una funzione
 privata dalla console, o la esponi apposta (`G.postaDovuta` nasce così) oppure
 la raggiungi dal percorso vero degli eventi.
@@ -179,6 +180,20 @@ E dopo, provalo davvero facendo girare il ciclo a mano (vedi più sotto): con
 `abitanti.js` la prova che vale è che dieci fotogrammi da 16 ms spostino chi sta
 fuori di ~5 px — la velocità nel codice è `0.5*dt/16` — e chi ha la fascia
 `interno` di zero, perché quello resta piantato davanti a casa sua.
+
+**Non tutto vive nel fotogramma, però.** `paese.js` vive nel *passaggio del
+giorno*, e lì il ciclo non c'entra: `dormi()` fa `setTimeout(nuovoGiorno, 1100)`.
+Chiamarlo otto volte di fila non fa passare otto giorni — la prima chiamata mette
+`G.p.dorme` e le altre sette escono subito dalla guardia in cima. Per far
+scorrere i giorni bisogna aspettare davvero fra l'una e l'altra, e rimettere
+`G.p.dorme = false`. Con quello si vede il mercato cambiare ogni giorno, il
+mercante arrivare al settimo, e la sagra montare a stagione.
+
+E la prova che vale di più dopo uno stacco è quella che **attraversa i file**.
+Per la sagra sono tre: `paese.js` dice che oggi è festa (`G.eGiornoDiSagra`),
+`abitanti.js` per un giorno scavalca l'agenda, e i posti in piazza li legge da
+`DATA.POSTI_SAGRA`. Che il giro di Bruno restituito dall'agenda sia *identico* a
+`DATA.POSTI_SAGRA.bruno` è una riga di verifica che tiene insieme tre moduli.
 
 Dopo una rinomina meccanica di punti di chiamata, la prova che vale è questa,
 dalla console: prende dal sorgente ogni `MODULO.funzione` che `game.js` chiama e

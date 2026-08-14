@@ -1319,8 +1319,8 @@ verifica('index.html carica tutti i js, nell\'ordine portante', () => {
 /* --- e adesso: quanto pesa davvero, quell'ordine ---
 
    «L'ordine degli script è portante» stava scritto in due posti, e non
-   l'aveva misurato nessuno. Misurato: fra i moduli ci sono 2.490
-   riferimenti incrociati, e 2.479 stanno DENTRO le funzioni — cioè
+   l'aveva misurato nessuno. Misurato: fra i moduli ci sono 2.653
+   riferimenti incrociati, e 2.640 stanno DENTRO le funzioni — cioè
    avvengono a partita avviata, quando i file ci sono tutti da un pezzo,
    e dell'ordine non sanno niente. Al caricamento ne restano sei, ed
    è l'elenco qui sotto.
@@ -1337,7 +1337,7 @@ verifica('index.html carica tutti i js, nell\'ordine portante', () => {
      risultava un vincolo che non esiste — la stessa omonimia che aveva
      già fatto leggere male l'elenco delle dipendenze di game.js.
 
-   Il pericolo non sono questi sette, che si reggono. È l'ottavo: una
+   Il pericolo non sono questi otto, che si reggono. È il nono: una
    riga come `SND.init()` messa al livello del file funziona finché
    l'ordine regge, non rompe niente e non lascia traccia — e il giorno
    che qualcuno sposta uno <script> il gioco si apre bianco, con l'errore
@@ -1357,10 +1357,11 @@ const VINCOLI_NOTI = {
   'game.js|solstizio.js':    'i quattro alias G.eSeraDiVeglia = SOLSTIZIO.…',
   'game.js|salvataggio.js':  'G.salva = SALVA.salva',
   'game.js|traguardi.js':    'Object.assign(G, TRAGUARDI)',
-  'game.js|abitanti.js':     'Object.assign(G, ABITANTI)'
+  'game.js|abitanti.js':     'Object.assign(G, ABITANTI)',
+  'game.js|paese.js':        'Object.assign(G, PAESE)'
 };
 
-verifica(TS ? 'nessuno script pretende di stare dopo un altro, oltre ai sette noti'
+verifica(TS ? 'nessuno script pretende di stare dopo un altro, oltre agli otto noti'
             : 'ordine di caricamento: SALTATO, manca typescript (fai npm install)', () => {
   if (!TS) return [];
   const dir = path.join(RADICE, 'js');
