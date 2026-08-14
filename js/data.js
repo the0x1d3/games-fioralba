@@ -152,7 +152,14 @@ D.ITEMS = {
   orata:      { nome:'Orata',           cat:'pesce', prezzo:115, diff:3, stagioni:['primavera','estate','autunno'], luogo:'mare' },
   sgombro:    { nome:'Sgombro',         cat:'pesce', prezzo:70,  diff:2, stagioni:['estate','autunno'], luogo:'mare' },
   polpo:      { nome:'Polpo',           cat:'pesce', prezzo:155, diff:4, stagioni:['primavera','estate','autunno','inverno'], luogo:'mare' },
-  ricciola:   { nome:'Ricciola',        cat:'pesce', prezzo:240, diff:5, stagioni:['estate','autunno'], luogo:'mare', raro:true },
+  /* Il pesce d'altura: abbocca solo stando SUL MOLO, dove sotto c'è
+     acqua alta. La Costa dava gli stessi quattro pesci da riva e dal
+     molo, quindi il molo era una passerella di legno senza una ragione
+     di esistere — ci si andava per guardare il mare. Adesso ci si va
+     perché di là si prende altro. */
+  cernia:     { nome:'Cernia',          cat:'pesce', prezzo:265, diff:5, stagioni:['primavera','estate','autunno','inverno'], luogo:'mare', profondo:true },
+  pesce_lanterna:{ nome:'Pesce Lanterna', cat:'pesce', prezzo:340, diff:5, stagioni:['autunno','inverno'], luogo:'mare', profondo:true, notte:true, raro:true, desc:'Si accende da sé, giù dove non arriva la luce.' },
+  ricciola:   { nome:'Ricciola',        cat:'pesce', prezzo:240, diff:5, stagioni:['estate','autunno'], luogo:'mare', raro:true, profondo:true },
   scarpa_vecchia:{nome:'Scarpa Vecchia', cat:'pesce', prezzo:2,   diff:1, spazzatura:true },
   alga:       { nome:'Alga',             cat:'pesce', prezzo:8,   diff:1, spazzatura:true },
   lattina:    { nome:'Lattina Arrugginita',cat:'pesce',prezzo:2,  diff:1, spazzatura:true },

@@ -111,6 +111,18 @@ function scegliPesce(){
   const notte = G.ora>1020 || G.ora<400;
   const m=G.mappa();
   const luogo = (G.mappaId==='fioralba') ? 'fiume' : (G.mappaId==='spiaggia' ? 'mare' : 'lago');
+  /* DAL MOLO si prende altro. Il molo è la striscia di assi che entra in
+     mare: chi ci sta sopra ha l'acqua alta sotto i piedi, e i pesci
+     d'altura abboccano solo lì. Prima da riva e dal molo venivano su
+     esattamente gli stessi quattro pesci, quindi il molo era una
+     passerella senza una ragione — bella e inutile.
+
+     Non è un luogo a sé ma un di più: dal molo si prende tutto quello
+     che si prende da riva, e in più il pesce profondo. Fosse un luogo a
+     parte, salire sul molo avrebbe *tolto* il branzino, che sarebbe
+     assurdo. */
+  const dalMolo = luogo==='mare' &&
+    WORLD.terreno(m, (G.p.px/32)|0, (G.p.py/32)|0) === 'assi';
   // durante la storia del Pesce Luna, di notte al lago abbocca più spesso
   const TL = G.trame && G.trame.pesceluna;
   if(TL && TL.avviata && !TL.preso && luogo==='lago' && notte &&
@@ -123,6 +135,7 @@ function scegliPesce(){
     if(I.spazzatura) return false;
     if(I.stagioni && I.stagioni.indexOf(st)<0) return false;
     if(I.luogo && I.luogo!==luogo) return false;
+    if(I.profondo && !dalMolo) return false;
     if(I.notte && !notte) return false;
     if(I.raro && Math.random()>0.12) return false;
     return true;
@@ -259,6 +272,12 @@ P.avvia      = iniziaPesca;
 P.aggiorna   = aggiornaPesca;
 P.inCorso    = ()=> pesca.attiva;
 P.rilasciato = ()=>{ pesca.tenuto = false; };
+/* Esposta apposta, e non per il gioco: è l'unico modo di verificare che
+   un posto dia i pesci che deve dare. Provarlo dal percorso vero
+   vorrebbe dire giocare il minigioco qualche centinaio di volte, e la
+   domanda «dal molo abbocca la cernia e da riva no?» si risponde
+   tirando il dado mille volte in un secondo. */
+P.scegliPesce = scegliPesce;
 P.abbandona  = ()=> finePesca(false, 'Hai mollato la lenza.');
 
 /* Queste due righe stavano copiate tre volte in game.js — tastiera, mouse

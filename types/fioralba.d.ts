@@ -78,6 +78,8 @@ interface FioItem {
   luogo?: string;
   /** Per i pesci: difficoltà del minigioco. */
   diff?: number;
+  /** Per i pesci d'altura: abboccano solo stando sul molo della Costa. */
+  profondo?: boolean;
   notte?: boolean;
   raro?: boolean;
   spazzatura?: boolean;
