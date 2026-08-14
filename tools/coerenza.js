@@ -1325,8 +1325,8 @@ verifica('index.html carica tutti i js, nell\'ordine portante', () => {
 /* --- e adesso: quanto pesa davvero, quell'ordine ---
 
    «L'ordine degli script è portante» stava scritto in due posti, e non
-   l'aveva misurato nessuno. Misurato: fra i moduli ci sono 2.706
-   riferimenti incrociati, e 2.690 stanno DENTRO le funzioni — cioè
+   l'aveva misurato nessuno. Misurato: fra i moduli ci sono 2.737
+   riferimenti incrociati, e 2.720 stanno DENTRO le funzioni — cioè
    avvengono a partita avviata, quando i file ci sono tutti da un pezzo,
    e dell'ordine non sanno niente. Al caricamento ne restano sei, ed
    è l'elenco qui sotto.
@@ -1343,7 +1343,7 @@ verifica('index.html carica tutti i js, nell\'ordine portante', () => {
      risultava un vincolo che non esiste — la stessa omonimia che aveva
      già fatto leggere male l'elenco delle dipendenze di game.js.
 
-   Il pericolo non sono questi undici, che si reggono. È il dodicesimo: una
+   Il pericolo non sono questi dodici, che si reggono. È il tredicesimo: una
    riga come `SND.init()` messa al livello del file funziona finché
    l'ordine regge, non rompe niente e non lascia traccia — e il giorno
    che qualcuno sposta uno <script> il gioco si apre bianco, con l'errore
@@ -1367,10 +1367,11 @@ const VINCOLI_NOTI = {
   'game.js|paese.js':        'Object.assign(G, PAESE)',
   'partite.js|ui.js':        'const U = UI: le nove finestre delle partite si appendono allo stesso oggetto UI',
   'diario.js|ui.js':         'const U = UI, e const ico = U.ico: il Diario e la Mappa si appendono allo stesso oggetto',
-  'botteghe.js|ui.js':       'const U = UI, e const ico = U.ico: zaino, negozio, artigianato, cucina, fucina e santuario'
+  'botteghe.js|ui.js':       'const U = UI, e const ico = U.ico: zaino, negozio, artigianato, cucina, fucina e santuario',
+  'menu.js|ui.js':           'const U = UI, e const ico = U.ico: le Impostazioni, il «come si gioca» e le demo'
 };
 
-verifica(TS ? 'nessuno script pretende di stare dopo un altro, oltre agli undici noti'
+verifica(TS ? 'nessuno script pretende di stare dopo un altro, oltre ai dodici noti'
             : 'ordine di caricamento: SALTATO, manca typescript (fai npm install)', () => {
   if (!TS) return [];
   const dir = path.join(RADICE, 'js');
@@ -1607,7 +1608,7 @@ verifica('il salvataggio passa dal server, e non torna in locale', () => {
      due file stiano scritte. Senza questa riga lo stacco faceva sparire
      sei finestre agli occhi del controllo, che è esattamente quello che
      è successo — ed è la terza volta che uno stacco inciampa qui. */
-  const ui    = ['ui.js', 'partite.js', 'diario.js', 'botteghe.js'].map(senzaCommenti).join('\n');
+  const ui    = ['ui.js', 'partite.js', 'diario.js', 'botteghe.js', 'menu.js'].map(senzaCommenti).join('\n');
   const game  = senzaCommenti('game.js');
   const html  = fs.readFileSync(path.join(RADICE, 'index.html'), 'utf8');
 
@@ -1874,7 +1875,7 @@ verifica('ogni collezione ha il suo premio, e i premi esistono', () => {
      controllo che cerca del codice per nome dentro a un file preciso, e
      ogni volta la correzione è la stessa — guardare l'interfaccia
      intera invece di uno dei file in cui è divisa. */
-  const ui = ['ui.js', 'diario.js', 'partite.js', 'botteghe.js']
+  const ui = ['ui.js', 'diario.js', 'partite.js', 'botteghe.js', 'menu.js']
     .map(f => fs.readFileSync(path.join(RADICE, 'js', f), 'utf8')).join('\n')
     .replace(/\/\*[\s\S]*?\*\//g, '');
   if (!/G\.costruzioni && G\.costruzioni\.ponte/.test(ui))
