@@ -116,6 +116,23 @@ function deserializzaMappa(m, d){
       }
       if(dove>=0) m.obj[dove] = o;
     }
+
+    /* L'arredamento scritto non si rilegge — vedi qui sopra il perché —
+       ma gli SPOSTAMENTI sì: non sono l'arredamento, sono le differenze.
+       Si riapplicano sulla stanza appena rifatta, e ognuno si controlla
+       da sé: se al posto di partenza non c'è più quel mobile — perché la
+       stanza è cambiata fra due versioni — lo spostamento si salta e la
+       casa resta com'è scritta, invece di mettere il letto dietro al
+       camino per sempre come successe l'altra volta. */
+    for(const s of (G.arrediSpostati || [])){
+      if(s.m !== m.id) continue;
+      const o = m.obj[s.da];
+      if(!o || o.t !== s.t) continue;
+      if(s.a < 0 || s.a >= m.obj.length || m.obj[s.a]) continue;
+      if(WORLD.solido(m, s.a % m.w, (s.a / m.w)|0)) continue;
+      m.obj[s.da] = null;
+      m.obj[s.a] = o;
+    }
     return;
   }
 
@@ -149,7 +166,7 @@ function costruisciDati(){
     tutorialFatto:G.tutorialFatto, guidaAperta:G.guidaAperta, guidaNascosta:G.guidaNascosta,
     regaloRicevuto:G.regaloRicevuto,
     mercato:G.mercato, gelo:G.gelo,
-    richieste:G.richieste, richiestaSeq:G.richiestaSeq, premiSospesi:G.premiSospesi, gatto:G.gatto,
+    richieste:G.richieste, richiestaSeq:G.richiestaSeq, premiSospesi:G.premiSospesi, arrediSpostati:G.arrediSpostati, gatto:G.gatto,
     obiettiviRiscossi:G.obiettiviRiscossi, sagra:G.sagra, mercante:G.mercante, trame:G.trame, vicende:G.vicende, persona:G.persona, visitati:G.visitati, collezione:G.collezione,
     px:G.p.px, py:G.p.py,
     maps:(function(){ const o={}; for(const k in G.maps) o[k]=serializzaMappa(G.maps[k]); return o; })()
@@ -240,7 +257,7 @@ function applicaSalvataggio(raw){
                   'braci','lettere','ricetteNote','cassaConsegna','stats','animali','look',
                   'vistoFiammella','introSerafina','vistoPesca','sacaccia','lezioneCaccia','tutorialFatto','guidaAperta','guidaNascosta','regaloRicevuto',
                   'mercato','gelo',
-                  'richieste','richiestaSeq','premiSospesi','gatto','obiettiviRiscossi','sagra','mercante','trame','vicende','persona','visitati','collezione']){
+                  'richieste','richiestaSeq','premiSospesi','arrediSpostati','gatto','obiettiviRiscossi','sagra','mercante','trame','vicende','persona','visitati','collezione']){
     if(d[k]!==undefined) G[k]=d[k];
   }
   /* Salvataggi fatti quando la giornata era 180: i punti guadagnati coi

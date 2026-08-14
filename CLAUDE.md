@@ -504,6 +504,14 @@ dire niente.
   salvataggio si è riscritto l'arredamento sbagliato con le misure nuove, e da lì
   in poi il controllo sulle misure non se ne accorgeva più — il letto restava
   dietro al camino per sempre.
+  **Quello che si salva sono le DIFFERENZE, non l'arredamento**: `G.arrediSpostati`
+  è un elenco di `{mappa, t, da, a}` che si riapplica sulla stanza appena
+  ricostruita, e ogni riga si controlla da sé — se al posto di partenza non c'è
+  più quel mobile, lo spostamento si salta e la casa resta com'è scritta. È la
+  forma che permette di aggiungere roba spostabile senza riaprire quel difetto:
+  se un domani serve tenere altro degli interni, si tiene com'è cambiato, non
+  com'è fatto. Una riga per mobile, non una per spostamento: se il giro riporta
+  il mobile dov'era nato, la riga sparisce invece di restare a dire «da qui a qui».
 - Quando sposti roba del giocatore, **traslocala, non cancellarla**, e verso un
   posto che sia raggiungibile nello stato in cui si trova la partita.
 

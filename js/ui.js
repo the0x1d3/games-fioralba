@@ -963,6 +963,26 @@ U.menu = function(G){
                      ' · ' + G.braci + '/4 ' + T('braci accese');
     s1.appendChild(info);
 
+    /* ---- 1b. RIORDINARE LA CASA ----
+       Sta qui e non su ogni mobile perché su di loro E è già preso: il
+       letto apre «Dormi», la cucina i fornelli, la scrivania le lettere.
+       Una modalità cambia il significato di E per il tempo che serve,
+       invece di infilare un pulsante dentro a cinque finestre diverse e
+       lasciarne fuori due. */
+    const sCasa = sezione(wrap, 'La casa');
+    const dentro = !!(G.mappa() && G.mappa().interno);
+    const bRi = document.createElement('button');
+    bRi.className = 'btn' + (G.riordino ? ' gold' : '');
+    bRi.textContent = T(G.riordino ? 'Smetti di riordinare' : 'Riordina i mobili');
+    bRi.disabled = !dentro && !G.riordino;
+    bRi.onclick = ()=>{ U.chiudiModal(); G.riordina(!G.riordino); };
+    sCasa.appendChild(bRi);
+    const nRi=document.createElement('div'); nRi.className='muted imp-nota';
+    nRi.innerHTML = dentro
+      ? T('Con il riordino acceso, <b>E</b> su un mobile lo prende invece di usarlo: scegli dove rimetterlo, o <b>Esc</b> per lasciarlo dov\'era. Si spegne da sé quando esci.')
+      : T('Si riordina stando dentro: entra in casa e riapri queste impostazioni.');
+    sCasa.appendChild(nRi);
+
     /* ---- 2. IL SALVATAGGIO ---- */
     if(window.SINC){
       const s2 = sezione(wrap, 'Il salvataggio');

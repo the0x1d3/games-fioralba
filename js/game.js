@@ -67,6 +67,13 @@ function statoIniziale(){
            visitatoBosco:false, visitatoGrotta:false, visitatoPaese:false},
     guidaAperta:true, guidaNascosta:false,
     mercato:null, gelo:false, richieste:[], richiestaSeq:0, premiSospesi:[],
+    /* Dove sono finiti i mobili che hai spostato in casa. NON è
+       l'arredamento: è l'elenco delle differenze. Le stanze sono scritte
+       e si rifanno da `world.js` a ogni caricamento — rileggerle da un
+       salvataggio ha già fatto danno una volta, col letto rimasto dietro
+       al camino per sempre — quindi si tiene solo «questo letto l'ho
+       messo là», e uno spostamento che non torna più si salta da sé. */
+    arrediSpostati: [],
     gatto:{ affetto:0, giorno:-1, nome:null },
     obiettiviRiscossi:{}, sagra:null, mercante:{presente:false, giorno:-1, stock:[]},
     visitati:{podere:true}, collezione:{},
@@ -1512,6 +1519,14 @@ function interagisci(){
     if(o.t==='porta'){ apriPorta(o.ed); return; }
     if(o.t==='consegna'){ SOLSTIZIO.apriConsegna(); return; }
 
+    /* Col riordino acceso E prende il mobile invece di usarlo. Le porte
+       e i muri restano quello che sono, sopra: una casa senza uscita
+       sarebbe uno scherzo di cattivo gusto. */
+    if(G.riordino && m.interno && o.t!=='muro'){
+      G.iniziaSpostamento(o, tx, ty);
+      return;
+    }
+
     /* --- arredi degli interni --- */
     if(o.t==='bancone'){
       if(o.uso==='bottega'){ SND.play('menu'); UI.negozio(G,'bruno'); }
@@ -1601,6 +1616,31 @@ function interagisci(){
    =================================================================== */
 G.spostamento = null;      // { obj, mappa, x, y }
 
+/* --- RIORDINARE LA CASA ---
+
+   Le cose che si posa il giocatore hanno il loro «Sposta» nella
+   finestrella che si apre con E. I mobili di casa no, e non potevano
+   averlo: su di loro E è già preso quasi tutto — il letto apre «Dormi»,
+   la cucina i fornelli, la scrivania le lettere — e infilare «Sposta»
+   dentro a ognuna di quelle strade voleva dire cambiarne cinque e
+   lasciarne fuori due, perché per la cucina e la scrivania un posto
+   ovvio dove metterlo non c'era.
+
+   Quindi è una modalità: la si accende dalle Impostazioni e finché è
+   accesa E, in casa, vuol dire «prendi questo e spostalo» invece di
+   quello che vuol dire di solito. Si spegne da sola uscendo di casa,
+   che è il momento in cui non serve più e in cui uno si dimenticherebbe
+   di spegnerla. */
+G.riordino = false;
+
+G.riordina = function(acceso){
+  G.riordino = !!acceso;
+  if(!G.riordino && G.spostamento) G.annullaSpostamento();
+  UI.toast(G.riordino
+    ? 'Riordino acceso: con E prendi un mobile, poi scegli dove metterlo.'
+    : 'Riordino spento.', G.riordino ? 'good' : null);
+};
+
 G.iniziaSpostamento = function(o, x, y){
   const m = G.mappa();
   G.spostamento = { obj:o, mappa:m.id, x, y };
@@ -1632,6 +1672,27 @@ G.posaSpostamento = function(tx, ty){
     return false;
   }
   m.obj[i] = s.obj;
+  /* Se è un mobile SCRITTO dentro a una stanza, l'unico modo di
+     ritrovarlo lì domani è annotarselo: il salvataggio degli interni
+     tiene le casse e i macchinari del giocatore e null'altro. Quelli non
+     hanno bisogno di niente e infatti si saltano.
+
+     Si tiene una riga sola per mobile, non una per spostamento: se
+     esiste già un'annotazione che finiva dove questo comincia, le si
+     cambia l'arrivo. E se il giro riporta il mobile dov'era nato,
+     l'annotazione si toglie invece di restare a dire «da qui a qui». */
+  const daInterno = G.maps[s.mappa] && G.maps[s.mappa].interno;
+  const scritto = s.obj.t !== 'macchina' && s.obj.t !== 'mobile';
+  if(daInterno && scritto && s.mappa === m.id){
+    const partenza = WORLD.idx(m, s.x, s.y);
+    const gia = G.arrediSpostati.find(r => r.m===m.id && r.t===s.obj.t && r.a===partenza);
+    if(gia){
+      if(gia.da === i) G.arrediSpostati.splice(G.arrediSpostati.indexOf(gia), 1);
+      else gia.a = i;
+    } else {
+      G.arrediSpostati.push({ m:m.id, t:s.obj.t, da:partenza, a:i });
+    }
+  }
   G.spostamento = null;
   SND.play('costruisci');
   UI.prompt(null);
@@ -2484,6 +2545,10 @@ function chiCeDentro(m){
 function cambiaMappa(id, tx, ty){
   const dest = G.maps[id];
   if(!dest) return;
+  /* Il riordino si spegne cambiando stanza: è il momento in cui non
+     serve più, ed è l'unico in cui uno si dimenticherebbe di spegnerlo
+     e poi si ritroverebbe a raccogliere un bancone invece di parlarci. */
+  if(G.riordino) G.riordina(false);
   const pos = WORLD.vicinoLibero(dest, tx, ty);
   G.mappaId = id;
   if(id==='bosco')        G.stats.visitatoBosco=true;
