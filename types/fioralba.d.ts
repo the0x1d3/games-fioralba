@@ -334,6 +334,14 @@ interface FioData {
   PREMI_SERIE: { g:number; oro:number; roba:[string,number][]; nota:string }[];
   /** Il frutto del cespuglio, stagione per stagione. */
   CESPUGLIO: Record<string, string>;
+  /**
+   * Gli arredi disegnati a mano che stanno in `img/`: `w` e `h` sono la
+   * misura del PNG in caselle e possono essere frazionarie. L'impronta
+   * solida è un'altra cosa e sta sul singolo mobile (`iw`, `ih`).
+   */
+  ARREDI: Record<string, { file: string; w: number; h: number }>;
+  /** File in `img/` disegnati ma non ancora collegati, col perché. */
+  ARREDI_IN_ATTESA: Record<string, string>;
   /** Coefficienti dei bonus per abilità: li leggono gioco e scheda. */
   BONUS: Record<string, FioBonus>;
   /** I bonus raccontati a parole, per livello: [nome, valore][]. */

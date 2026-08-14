@@ -129,10 +129,17 @@ function deserializzaMappa(m, d){
       if(s.m !== m.id) continue;
       const o = m.obj[s.da];
       if(!o || o.t !== s.t) continue;
-      if(s.a < 0 || s.a >= m.obj.length || m.obj[s.a]) continue;
-      if(WORLD.solido(m, s.a % m.w, (s.a / m.w)|0)) continue;
-      m.obj[s.da] = null;
-      m.obj[s.a] = o;
+      if(s.a < 0 || s.a >= m.obj.length) continue;
+      /* Un mobile grande si toglie e si rimette per intero, e l'arrivo
+         va provato PRIMA di togliere: se al posto nuovo non ci sta —
+         perché la stanza è cambiata fra due versioni, o perché ci si è
+         messo qualcos'altro — meglio lasciarlo dov'è scritto che
+         lasciarlo in mano a nessuno. */
+      const ax = s.a % m.w, ay = (s.a / m.w)|0;
+      const via = WORLD.togliArredo(m, s.da % m.w, (s.da / m.w)|0);
+      if(!via) continue;
+      if(WORLD.ciStaArredo(m, ax, ay, via.obj)) WORLD.arredo(m, ax, ay, via.obj);
+      else WORLD.arredo(m, via.x, via.y, via.obj);      // torna dov'era
     }
     return;
   }

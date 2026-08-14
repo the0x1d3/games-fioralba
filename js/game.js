@@ -118,6 +118,13 @@ G.p = {
 function init(){
   cvs = $('#game');
   REND.init(cvs);
+  /* Gli arredi disegnati a mano partono subito, e nessuno li aspetta:
+     finché non arrivano il gioco disegna l'arte in codice di sempre, e
+     se non arrivano mai continua a disegnarla. Sta qui e non al
+     caricamento di immagini.js perché quel file si carica prima di
+     data.js: toccare `DATA` mentre si carica sarebbe un tredicesimo
+     vincolo d'ordine preso per niente. */
+  if(window.IMG) IMG.precarica(DATA.ARREDI);
   window.addEventListener('resize', ()=>{ REND.resize(); REND.initMeteo(); });
   collegaInput();
   collegaTitolo();
@@ -1639,9 +1646,16 @@ function interagisci(){
   const cand=[[px+off[0],py+off[1]],[px,py]];
   for(const [tx,ty] of cand){
     if(!WORLD.dentro(m,tx,ty)) continue;
-    const i=WORLD.idx(m,tx,ty);
-    const o=m.obj[i];
-    if(!o) continue;
+    /* `WORLD.oggetto` risolve i rimandi: un letto grande due per tre
+       occupa sei caselle, e premere E sull'angolo dei piedi dev'essere
+       identico a premerlo sulla testata. Da qui in poi `ax, ay` sono
+       l'ANCORA del mobile — che può non essere la casella toccata — e
+       vanno usate ogni volta che qualcuno se lo deve ricordare: aprirlo,
+       spostarlo, guardarci dentro. */
+    const trovato = WORLD.oggetto(m, tx, ty);
+    if(!trovato) continue;
+    const o = trovato.obj, ax = trovato.x, ay = trovato.y;
+    const i = WORLD.idx(m, ax, ay);
 
     if(o.t==='porta'){ apriPorta(o.ed); return; }
     if(o.t==='consegna'){ SOLSTIZIO.apriConsegna(); return; }
@@ -1651,7 +1665,7 @@ function interagisci(){
        e i muri restano quello che sono, sopra: una casa senza uscita
        sarebbe uno scherzo di cattivo gusto. */
     if(G.riordino && m.interno && o.t!=='muro'){
-      G.iniziaSpostamento(o, tx, ty);
+      G.iniziaSpostamento(o, ax, ay);
       return;
     }
 
@@ -1680,6 +1694,8 @@ function interagisci(){
     if(o.t==='scrivania'){ SND.play('menu'); UI.diario(G,'lettere'); return; }
     if(o.t==='camino'){ UI.toast('Il fuoco scoppietta piano. Fa un bell\'effetto, stare qui.'); return; }
     if(o.t==='tavolo'){ UI.toast('Un tavolo di legno, segnato da anni di piatti.'); return; }
+    if(o.t==='sedia'){ UI.toast('Una sedia impagliata. Scricchiola come faceva allora.'); return; }
+    if(o.t==='baule'){ UI.toast('Il baule della dispensa. Dentro c\'è quello che serve, e un po\' di polvere.'); return; }
     if(o.t==='bancarella' && o.kiosk){
       SND.play('menu');
       if(o.kiosk==='bacheca') UI.diario(G, 'richieste');
@@ -1690,9 +1706,9 @@ function interagisci(){
       return;
     }
     if(o.t==='macchina'){
-      if(o.kind==='cassa'){ UI.cassa(G,o,tx,ty); return; }
+      if(o.kind==='cassa'){ UI.cassa(G,o,ax,ay); return; }
       if(o.pronto){ G.ritiraMacchina(o); return; }
-      UI.macchina(G,o,tx,ty); return;
+      UI.macchina(G,o,ax,ay); return;
     }
     /* Con E si raccoglieva quello che si era posato, e con E si sbaglia:
        uno cammina lungo la propria staccionata, preme E per parlare o
@@ -1769,10 +1785,16 @@ G.riordina = function(acceso){
     : 'Riordino spento.', G.riordino ? 'good' : null);
 };
 
+/* Prendere in mano un mobile vuol dire liberare TUTTE le sue caselle,
+   non quella che si è toccata: un letto lasciato indietro con cinque
+   rimandi che puntano al vuoto è un buco solido in mezzo alla stanza,
+   invisibile e impossibile da togliere. `WORLD.togliArredo` risolve
+   anche il rimando, quindi si può prendere un letto per i piedi. */
 G.iniziaSpostamento = function(o, x, y){
   const m = G.mappa();
-  G.spostamento = { obj:o, mappa:m.id, x, y };
-  m.obj[WORLD.idx(m,x,y)] = null;
+  const via = WORLD.togliArredo(m, x, y);
+  if(!via) return;
+  G.spostamento = { obj:via.obj, mappa:m.id, x:via.x, y:via.y };
   SND.play('prendi');
   UI.toast('Scegli dove metterlo. Esc per rimetterlo dov\'era.', 'good');
 };
@@ -1781,7 +1803,7 @@ G.annullaSpostamento = function(){
   const s = G.spostamento;
   if(!s) return false;
   const m = G.maps[s.mappa];
-  if(m && !m.obj[WORLD.idx(m,s.x,s.y)]) m.obj[WORLD.idx(m,s.x,s.y)] = s.obj;
+  if(m) WORLD.arredo(m, s.x, s.y, s.obj);
   G.spostamento = null;
   UI.prompt(null);
   UI.toast('Rimesso dov\'era.');
@@ -1793,13 +1815,20 @@ G.posaSpostamento = function(tx, ty){
   if(!s) return false;
   const m = G.mappa();
   const i = WORLD.idx(m,tx,ty);
-  const terr = WORLD.terreno(m,tx,ty);
-  if(!WORLD.dentro(m,tx,ty) || m.obj[i] || m.suolo[i] ||
-     terr==='acqua' || terr==='roccia' || terr==='vuoto'){
-    nonSiPuo('Qui non ci sta: serve una casella libera, senza acqua e senza terra dissodata.');
+  /* La casella scelta è l'ANGOLO IN ALTO A SINISTRA di quello che si
+     posa, e per un mobile grande devono essere libere tutte quelle che
+     copre: un letto due per tre chiede sei caselle e le chiede tutte
+     insieme. Il messaggio lo dice, se no chi prova a metterlo contro il
+     muro vede solo un rifiuto e non capisce che gli manca lo spazio a
+     destra. */
+  if(!WORLD.ciStaArredo(m, tx, ty, s.obj)){
+    const f = WORLD.impronta(s.obj);
+    nonSiPuo(f.w>1 || f.h>1
+      ? fraseF('Qui non ci sta: questo mobile occupa {0}×{1} caselle, e le vuole libere tutte.', f.w, f.h)
+      : 'Qui non ci sta: serve una casella libera, senza acqua e senza terra dissodata.');
     return false;
   }
-  m.obj[i] = s.obj;
+  WORLD.arredo(m, tx, ty, s.obj);
   /* Se è un mobile SCRITTO dentro a una stanza, l'unico modo di
      ritrovarlo lì domani è annotarselo: il salvataggio degli interni
      tiene le casse e i macchinari del giocatore e null'altro. Quelli non

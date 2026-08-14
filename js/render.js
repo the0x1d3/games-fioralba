@@ -210,6 +210,14 @@ function raddoppia(x, ox, oy){ x.save(); x.translate(ox, oy); x.scale(K, K); }
 const mez = n => n/K;
 function spr(img, dx, dy){ sx.drawImage(img, dx, dy, img.width/K, img.height/K); }
 
+/* Quanto si allarga la finestra di raccolta degli oggetti, in caselle:
+   l'impronta più alta che un mobile può avere. Il letto è tre, e tre
+   basta — un controllo in `tools/coerenza.js` diventa rosso il giorno
+   che qualcuno ne scrive uno più alto, invece di lasciare che sparisca
+   dal bordo dello schermo e che se ne accorga chi ci gioca. */
+const SBORDO_ARREDI = 3;
+R.sbordoArredi = ()=>SBORDO_ARREDI;
+
 /* ===================================================================
    TERRENO PRE-COTTO A BLOCCHI (con raccordi)
    I raccordi costano, ma il terreno cambia di rado: lo disegniamo una
@@ -969,13 +977,27 @@ R.disegna = function(G){
     });
   }
 
-  for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
+  /* Gli oggetti si raccolgono su una finestra PIÙ LARGA delle caselle in
+     vista, e non è pignoleria: un letto è ancorato in alto a sinistra e
+     scende per tre caselle, quindi con l'ancora appena sopra il bordo
+     dello schermo il letto sparirebbe tutto mentre due terzi di lui sono
+     ancora in vista. Il margine è l'impronta più alta che esista, e da
+     lì in giù il ciclo è quello di prima: le caselle in più sono quasi
+     tutte vuote e costano un confronto a testa. */
+  const yo0 = Math.max(0, y0 - SBORDO_ARREDI), xo0 = Math.max(0, x0 - SBORDO_ARREDI);
+  for(let y=yo0;y<=y1;y++) for(let x=xo0;x<=x1;x++){
     const i=y*m.w+x;
     const o=m.obj[i];
-    if(o && o.t!=='muro' && o.t!=='porta'){
+    /* Un rimando non disegna niente: è la casella occupata da un mobile
+       che sta altrove, e a disegnarlo verrebbe fuori sei volte. */
+    if(o && o.t!=='muro' && o.t!=='porta' && o.t!=='rimando'){
       const px=(x*T+ox)|0, py=(y*T+oy)|0;
+      const f = WORLD.impronta(o);
       lista.push({
-        y:(y+1)*T,
+        // la profondità è il bordo BASSO dell'impronta: un letto alto tre
+        // caselle passa dietro a chi gli cammina davanti, non a chi gli
+        // sta accanto alla testata
+        y:(y+f.h)*T,
         s:()=>ombraOggetto(o, px, py, x, y, t, stag, sole),
         d:()=>disegnaOggetto(o, px, py, x, y, t, stag, G)
       });
@@ -1391,11 +1413,48 @@ function latiRecinto(m, x, y){
        | (eRecinto(m,x,y+1) ? 4 : 0) | (eRecinto(m,x-1,y) ? 8 : 0);
 }
 
+/* ===================================================================
+   GLI ARREDI DISEGNATI A MANO
+
+   Sette mobili non sono disegnati in codice: sono PNG in `img/`, e
+   quando ci sono prendono il posto del disegno di sempre. Quando NON ci
+   sono — i primi fotogrammi di ogni partita, o una cartella `img/` che
+   non è stata impacchettata — questa funzione dice di no e il disegno
+   di sempre resta al suo posto. Non è un caso raro da tollerare: è il
+   caso normale finché la rete non ha risposto.
+
+   L'immagine si CENTRA sull'impronta e APPOGGIA sul suo bordo basso.
+   È la stessa regola degli alberi e degli edifici, e serve perché il
+   PNG quasi mai combacia con l'impronta: una sedia è alta una casella e
+   mezza e ne occupa una, quindi sborda in su di mezza — che è esattamente
+   come si vede una sedia guardandola da davanti. Il letto invece è due
+   per tre esatte e non sborda di niente.
+
+   Le coordinate sono in pixel di MONDO, non di disegno: qui non si entra
+   nel blocco raddoppiato. Un PNG è già alla densità del mondo — è nato
+   per la casella da 64 — e raddoppiarlo lo farebbe grande il doppio. */
+function arredoDaImmagine(o, wx, wy){
+  if(!window.IMG || !window.DATA || !DATA.ARREDI) return false;
+  const a = DATA.ARREDI[o.t];
+  if(!a) return false;
+  const img = IMG.prendi(o.t);
+  if(!img) return false;
+
+  const f = WORLD.impronta(o);
+  const iw = a.w*T, ih = a.h*T;                 // il PNG, in pixel di mondo
+  const dx = wx + (f.w*T - iw)/2;               // centrato sull'impronta
+  const dy = wy + f.h*T - ih;                   // appoggiato al suo bordo basso
+  sx.drawImage(img, Math.round(dx), Math.round(dy), iw, ih);
+  return true;
+}
+
 /* `wx, wy` sono l'origine della casella in pixel di MONDO, e servono
    alle due targhette qui dentro: quelle non si disegnano nel blocco
    raddoppiato — sono scritte, e le scritte si stampano dopo
    l'ingrandimento — quindi vogliono il punto vero e non quello relativo. */
 function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
+  // il PNG, se c'è, sostituisce tutto il blocco disegnato a mano
+  if(arredoDaImmagine(o, px, py)) return;
   raddoppia(sx, px, py);
   disegnaOggettoDentro(o, 0, 0, gx, gy, t, stag, G, px, py);
   sx.restore();
@@ -1555,6 +1614,12 @@ function disegnaOggettoDentro(o, px, py, gx, gy, t, stag, G, wx, wy){
       ART.px(sx, x0+31, y0+8,  5,  4,  '#8a6a3e');
       break;
     }
+    /* `sedia` e `baule` esistono solo dentro casa e il loro disegno
+       vero è un PNG. Questi sono i due ripieghi, e servono davvero: sono
+       quello che si vede nei primi fotogrammi, prima che le immagini
+       arrivino, e per sempre se la cartella img/ non c'è. Una sedia è
+       una panchina corta e un baule è una cassa, e vanno benissimo. */
+    case 'sedia':
     case 'panchina': {
       const w=28, y0=py+10;
       ART.px(sx,px+3,y0+8,3,12,'#4a4640'); ART.px(sx,px+26,y0+8,3,12,'#4a4640');
@@ -1610,6 +1675,7 @@ function disegnaOggettoDentro(o, px, py, gx, gy, t, stag, G, wx, wy){
       ART.px(sx,px-7,py-11,3,28,'#7a5432'); ART.px(sx,px+36,py-11,3,28,'#7a5432');
       break;
     }
+    case 'baule':
     case 'casse': {
       ART.px(sx,px+2,py+12,20,18,'#a8763c');
       ART.px(sx,px+2,py+12,20,3,'#c99a5e');

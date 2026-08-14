@@ -118,6 +118,106 @@ function albero(kind, stage){
 function sasso(kind){
   return { t:'sasso', kind, hp: kind==='pietra'?2:(kind==='oro'||kind==='ametista'?5:3), solido:true };
 }
+/* ===================================================================
+   MOBILI CHE OCCUPANO PIÙ DI UNA CASELLA
+
+   Fino a qui una casella teneva un oggetto e l'oggetto stava in una
+   casella. Un letto grande due per tre rompe la corrispondenza, e le
+   strade per tenerla erano due:
+
+   1. mettere lo STESSO oggetto in tutte e sei le caselle. Comodo per
+      chi ci cammina contro e per chi ci preme E — `m.obj[i]` è già il
+      mobile giusto da qualunque parte lo tocchi — ma il salvataggio
+      scrive gli oggetti per indice, quindi il letto verrebbe serializzato
+      sei volte e riaperto come sei letti distinti. Da lì in poi
+      spostarne uno ne lascia indietro cinque.
+   2. la casella d'ANCORA tiene il mobile vero, le altre tengono un
+      RIMANDO che dice dov'è l'ancora.
+
+   È la seconda. Il rimando è un oggetto minuscolo e SOLIDO, e questo è
+   il punto: `WORLD.solido`, `libero`, `vicinoLibero` e il camminare non
+   sanno niente di impronte e continuano a funzionare com'erano scritti,
+   perché per loro quella casella è occupata e basta. Solo chi deve
+   *disegnare* il mobile o *aprirlo* ha bisogno di risalire all'ancora,
+   ed è per quello che c'è `oggetto()`.
+
+   L'ancora è in alto a sinistra, e l'impronta si scrive sul mobile
+   (`iw`, `ih`, in caselle intere). Chi non le ha occupa una casella,
+   che è come stava scritto tutto il gioco finora.
+   =================================================================== */
+function impronta(o){
+  return { w: Math.max(1, (o && o.iw) || 1), h: Math.max(1, (o && o.ih) || 1) };
+}
+W.impronta = impronta;
+
+/* Posa un mobile e i suoi rimandi. Torna false senza toccare niente se
+   l'impronta non ci sta: metà mobile posato è peggio di nessun mobile. */
+function arredo(m, x, y, o){
+  const f = impronta(o);
+  for(let j=0;j<f.h;j++) for(let i=0;i<f.w;i++){
+    if(!W.dentro(m, x+i, y+j)) return false;
+    if(m.obj[W.idx(m, x+i, y+j)]) return false;
+  }
+  for(let j=0;j<f.h;j++) for(let i=0;i<f.w;i++){
+    m.obj[W.idx(m, x+i, y+j)] = (i===0 && j===0)
+      ? o
+      : { t:'rimando', ax:x, ay:y, solido:true };
+  }
+  return true;
+}
+W.arredo = arredo;
+
+/* Il mobile vero che sta su questa casella, rimandi risolti, insieme
+   alla sua ancora. Chi apre una cassa o preme E su un letto passa da
+   qui: premere E sull'angolo del letto dev'essere identico a premerlo
+   sul suo centro, se no un mobile grande si comporta come sei mobili
+   piccoli di cui cinque rotti. */
+function oggetto(m, x, y){
+  if(!W.dentro(m,x,y)) return null;
+  const o = m.obj[W.idx(m,x,y)];
+  if(!o) return null;
+  if(o.t !== 'rimando') return { obj:o, x, y };
+  /* Un rimando che punta al vuoto è un mobile tolto male: si comporta
+     come casella vuota invece di far esplodere il disegno. */
+  if(!W.dentro(m, o.ax, o.ay)) return null;
+  const vero = m.obj[W.idx(m, o.ax, o.ay)];
+  if(!vero || vero.t === 'rimando') return null;
+  return { obj:vero, x:o.ax, y:o.ay };
+}
+W.oggetto = oggetto;
+
+/* Toglie un mobile e tutti i suoi rimandi, partendo da una casella
+   qualunque delle sue. Torna l'ancora, che serve a chi lo riposa. */
+function togliArredo(m, x, y){
+  const t = oggetto(m, x, y);
+  if(!t) return null;
+  const f = impronta(t.obj);
+  for(let j=0;j<f.h;j++) for(let i=0;i<f.w;i++){
+    const k = W.idx(m, t.x+i, t.y+j);
+    const c = m.obj[k];
+    if(c === t.obj || (c && c.t === 'rimando' && c.ax === t.x && c.ay === t.y)) m.obj[k] = null;
+  }
+  return { obj:t.obj, x:t.x, y:t.y };
+}
+W.togliArredo = togliArredo;
+
+/* Ci sta, un mobile con quell'impronta, con l'ancora qui? Chiede anche
+   il terreno, perché un letto non si posa sull'acqua nemmeno per un
+   angolo. */
+function ciStaArredo(m, x, y, o){
+  const f = impronta(o);
+  for(let j=0;j<f.h;j++) for(let i=0;i<f.w;i++){
+    const ax = x+i, ay = y+j;
+    if(!W.dentro(m, ax, ay)) return false;
+    if(m.obj[W.idx(m, ax, ay)]) return false;
+    if(m.suolo && m.suolo[W.idx(m, ax, ay)]) return false;
+    const t = W.terreno(m, ax, ay);
+    if(t==='acqua' || t==='roccia' || t==='vuoto') return false;
+  }
+  return true;
+}
+W.ciStaArredo = ciStaArredo;
+
 W.setObj = setObj;
 W.albero = albero;
 W.sasso  = sasso;
@@ -1477,16 +1577,38 @@ function buildLocanda(){
 function buildCasa(){
   const m = stanza('int_casa','Casa', 17, 13, { pavimento:'assi', sfondo:'#2a1e14', musica:'notte' });
   // la zona notte a sinistra, il fuoco e la cucina al centro, lo studio a destra
-  setObj(m, 2, 2, {t:'letto', solido:true});
-  m.deco.push({t:'tappeto', x:2, y:4, w:2, h:2});      // scendiletto
-  setObj(m, 8, 2, {t:'camino', solido:true});
+  /* Casa è la stanza degli ARREDI DISEGNATI A MANO, e l'unica dove
+     hanno un'impronta più grande di una casella. Le misure non sono a
+     occhio: il letto è due per tre perché il suo PNG è due per tre
+     esatte, e un letto che occupa una casella sola è la cosa che
+     faceva sembrare la camera una miniatura. Il camino ne prende due
+     per due perché un focolare col suo ingombro davanti non ci si passa
+     accanto di striscio, e il tavolo due per una perché ci si siede
+     intorno in quattro.
+
+     Chi non ha `iw`/`ih` occupa una casella, come tutto il resto del
+     gioco. Il disegno può comunque sbordare: la sedia è alta una casella
+     e mezza e ne occupa una, ed è giusto così — è alta, non ingombrante. */
+  arredo(m, 2, 2, {t:'letto', solido:true, iw:2, ih:3});
+  m.deco.push({t:'tappeto', x:2, y:5, w:2, h:2});      // scendiletto, ai piedi
+  arredo(m, 8, 2, {t:'camino', solido:true, iw:2, ih:2});
   setObj(m, 11, 2, {t:'cucina', solido:true});
-  setObj(m, 12, 2, {t:'casse', solido:true, v:0});     // la dispensa, accanto alla cucina
+  setObj(m, 13, 2, {t:'baule', solido:true, v:0});     // la dispensa, di là dal fuoco
   setObj(m, 14, 5, {t:'scrivania', solido:true});
-  setObj(m, 14, 9, {t:'casse', solido:true, v:1});
-  // il tavolo dove si mangia, con le sue panche, sul tappeto buono
+  setObj(m, 14, 9, {t:'baule', solido:true, v:1});
+  /* Il tavolo dove si mangia, con le sue quattro sedie, sul tappeto
+     buono. Due DIETRO e due DI FIANCO, e non due dietro e due davanti:
+     provate davanti, le sedie coprivano le gambe del tavolo e il gruppo
+     si leggeva come una catasta di mobili invece che come un posto dove
+     ci si siede. Dietro va bene — una sedia dietro al tavolo è mezza
+     nascosta anche nella vita — e di fianco meglio ancora, perché lì
+     non si sovrappone niente e si capisce quanto è lungo il tavolo. */
   m.deco.push({t:'tappeto', x:6, y:7, w:4, h:3});
-  tavolata(m, 7, 8);
+  arredo(m, 7, 8, {t:'tavolo', solido:true, iw:2, ih:1});
+  setObj(m, 7, 7, {t:'sedia', solido:true});
+  setObj(m, 8, 7, {t:'sedia', solido:true});
+  setObj(m, 6, 8, {t:'sedia', solido:true});
+  setObj(m, 9, 8, {t:'sedia', solido:true});
   for(const [x,y] of [[5,2],[14,2],[3,9]]) setObj(m, x, y, {t:'lume', solido:false});
   m.deco.push({t:'cartello', x:11, y:10, testo:'La teiera di Nonna Ilde è ancora sul tavolo.'});
   uscita(m, 8, 11, 'podere', 7, 8);

@@ -33,8 +33,14 @@ contraddetto la prima ipotesi. Se la misura dice che il tuo primo tentativo è
 sbagliato, buttalo: è già successo più volte e ogni volta era la misura ad avere
 ragione.
 
-**Niente file inventati.** Nessuna dipendenza, nessun asset: sprite e suoni sono
-disegnati e sintetizzati nel codice. Se serve un'immagine, si disegna.
+**Niente file inventati.** Nessuna dipendenza, e sprite e suoni disegnati e
+sintetizzati nel codice. Se serve un'immagine, si disegna.
+
+L'unica eccezione sono i **sette arredi in `img/`**, disegnati a mano dal
+proprietario a una densità che in codice non si riproduce. È un'eccezione
+circoscritta e con una rete sotto: se i file non arrivano, il gioco disegna
+l'arte in codice di sempre e resta giocabile (vedi «Gli arredi disegnati a
+mano», più sotto). Non è il permesso di aggiungere asset a piacere.
 
 ---
 
@@ -45,7 +51,8 @@ globale. **L'ordine degli script in `index.html` è portante**: `data.js` prima 
 tutto, `game.js` per ultimo.
 
 ```
-data.js  lingua-en.js  lingua.js  palette.js  art.js  fx.js  audio.js
+data.js  lingua-en.js  lingua.js  palette.js  art.js  immagini.js  fx.js
+audio.js
 world.js  mobs.js  ui.js  demo.js  changelog.js  landing.js  titolo.js
 salvataggio.js  sincronizza.js  pesca.js  storie.js  vicende.js
 persona.js  partite.js  diario.js  botteghe.js  menu.js  solstizio.js  livelli.js  traguardi.js  abitanti.js  paese.js
@@ -87,6 +94,7 @@ viene zero, il corpo della IIFE *è* il caricamento. E `demo.js` ha un
 | `DATA`     | data.js       | oggetti, colture, ricette, NPC, agende, lettere, sagre  |
 | `PAL`      | palette.js    | rampe di colore e lo *snap* (vedi sotto)                |
 | `ART`      | art.js        | tutti gli sprite, disegnati e messi in cache            |
+| `IMG`      | immagini.js   | i sette arredi disegnati a mano, e la loro ripiegatura  |
 | `FX`, `SND`| fx.js, audio.js | particelle e ombre; suoni sintetizzati               |
 | `WORLD`    | world.js      | mappe, collisioni, rigenerazione giornaliera            |
 | `MOBS`     | mobs.js       | fauna e prede                                           |
@@ -333,6 +341,50 @@ Il giorno che uno sprite viene ridisegnato davvero a 64, si chiede
 `tela(w, h, true)` e si scrive in sessantaquattresimi: la misura logica
 non cambia e nessuno dei suoi lettori se ne accorge.
 
+### Gli arredi disegnati a mano, e i mobili grandi
+
+Sette PNG in `img/` — letto, camino, tavolo, forno, sedia, baule, lanterna —
+sono l'unica arte che non nasce nel codice. Tre cose da sapere, e sono tutte
+e tre trappole se non si sanno.
+
+**1. Il disegno non aspetta niente e nessuno.** `IMG.prendi(id)` torna
+l'immagine se è pronta e `null` altrimenti, e `null` è il caso NORMALE per i
+primi fotogrammi di ogni partita. Chi disegna, davanti a un `null`, disegna
+l'arte in codice di sempre. È anche quello che tiene in piedi il gioco se la
+cartella `img/` non c'è: aperto da `file://`, o dentro a un APK dove qualcuno
+si è dimenticato di impacchettarla. Si vede l'arte vecchia, e si gioca.
+
+**2. La misura del PNG e l'impronta del mobile sono due cose diverse.**
+`DATA.ARREDI` dice quanto è grande il *file* in caselle (`letto.png` è 2×3,
+`sedia.png` è 1×1,5). Quante caselle il mobile *occupa* lo decide la stanza,
+con `iw`/`ih` sul singolo mobile: lo stesso `tavolo.png` è il tavolo da pranzo
+di casa, che prende due caselle, e il banco della fucina, che ne prende una.
+L'immagine si centra sull'impronta e appoggia sul suo bordo basso, quindi
+sborda in su e di lato dove è più grande — che è come si vede una sedia alta.
+
+**3. Un mobile grande sta in più caselle, e le caselle in più sono rimandi.**
+L'ancora è in alto a sinistra e tiene il mobile vero; le altre tengono
+`{t:'rimando', ax, ay, solido:true}`. Il perché è il salvataggio: mettere lo
+STESSO oggetto in sei caselle lo serializza sei volte, e riaperto diventa sei
+letti distinti di cui cinque fantasma. Conseguenze pratiche:
+
+```js
+WORLD.arredo(m, x, y, o)     // posa mobile + rimandi; false se non ci sta
+WORLD.oggetto(m, x, y)       // → {obj, x, y} coi rimandi risolti
+WORLD.togliArredo(m, x, y)   // lo toglie tutto, anche preso per un rimando
+WORLD.ciStaArredo(m, x, y, o)
+```
+
+Chi deve *aprire* o *spostare* un mobile passa da `WORLD.oggetto`, se no
+premere E sull'angolo del letto non apre il letto. Chi deve solo sapere se
+una casella è occupata **non tocca niente**: il rimando è solido, quindi
+collisioni, `libero` e `vicinoLibero` continuano a funzionare come erano
+scritti. E chi *disegna* salta i rimandi, o il mobile esce sei volte.
+
+Il renderer allarga la finestra di raccolta di `SBORDO_ARREDI` caselle: un
+letto alto tre ancorato appena sopra il bordo dello schermo sparirebbe tutto
+mentre due terzi di lui sono ancora in vista.
+
 ### Firme che sorprendono
 
 Diverse funzioni prendono `G` come **primo parametro**, non dal globale. Chiamarle
@@ -369,7 +421,7 @@ PAL.snap('#8a6038')   // → '#8a5c34'
 npm test
 ```
 
-`tools/coerenza.js`: **60 controlli** sui dati e sulle mappe, senza dipendenze —
+`tools/coerenza.js`: **63 controlli** sui dati e sulle mappe, senza dipendenze —
 carica i moduli in un finto `window`. Il primo controlla che ogni file `.js` sia
 sintatticamente valido, e non è pignoleria: un apostrofo non protetto dentro una
 stringa fa fallire il caricamento in silenzio e nel browser resta una pagina

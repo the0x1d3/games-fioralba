@@ -393,6 +393,7 @@ Object.assign(window.LINGUA_EN, {
 "Scegli dove metterlo. Esc per rimetterlo dov'era.": 'Choose where to put it. Esc to leave it where it was.',
 "Rimesso dov'era.": 'Put back where it was.',
 'Qui non ci sta: serve una casella libera, senza acqua e senza terra dissodata.': 'It will not fit here: you need a clear tile, with no water and no tilled soil.',
+'Qui non ci sta: questo mobile occupa {0}×{1} caselle, e le vuole libere tutte.': 'It will not fit here: this piece takes up {0}×{1} tiles, and it wants all of them clear.',
 
 /* --- luoghi e arredi --- */
 'Il letto': 'The bed',
@@ -400,6 +401,9 @@ Object.assign(window.LINGUA_EN, {
 'Il fuoco scoppietta piano. Fa un bell’effetto, stare qui.': 'The fire crackles quietly. It is rather nice, standing here.',
 'Il fuoco scoppietta piano. Fa un bell\'effetto, stare qui.': 'The fire crackles quietly. It is rather nice, standing here.',
 'Un tavolo di legno, segnato da anni di piatti.': 'A wooden table, marked by years of plates.',
+'Una sedia impagliata. Scricchiola come faceva allora.': 'A rush-seated chair. It creaks just as it used to.',
+'Il baule della dispensa. Dentro c’è quello che serve, e un po’ di polvere.': 'The pantry chest. Inside is what you need, and a little dust.',
+'Il baule della dispensa. Dentro c\'è quello che serve, e un po\' di polvere.': 'The pantry chest. Inside is what you need, and a little dust.',
 'Il banco è chiuso: il mercante non è in paese oggi.': 'The stall is shut: the pedlar is not in the village today.',
 'Fa il suo lavoro in silenzio.': 'It does its work in silence.',
 'Rune consumate dal tempo. Sembrano aspettare qualcosa.': 'Runes worn down by time. They seem to be waiting for something.',

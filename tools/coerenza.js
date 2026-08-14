@@ -2384,6 +2384,170 @@ verifica('gli sprite nascono su una tela a densità doppia', () => {
   return problemi;
 });
 
+/* --- GLI ARREDI DISEGNATI A MANO ---
+
+   `DATA.ARREDI` dichiara che `letto.png` è due caselle per tre. Se un
+   giorno lo si riesporta da `sprite-new/` a una misura diversa e ci si
+   dimentica di aggiornare la riga, il gioco non si rompe: `drawImage`
+   con misura esplicita RISCALA in silenzio, e il letto viene fuori
+   schiacciato o stirato senza un errore da nessuna parte. Un occhio
+   distratto lo prende per uno sbaglio di disegno.
+
+   Qui la misura dichiarata si confronta coi pixel veri, letti
+   dall'intestazione del PNG: 25 byte, nessuna dipendenza. */
+const CASELLA = 64;
+verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', () => {
+  const problemi = [];
+  const dir = path.join(RADICE, 'img');
+  if (!fs.existsSync(dir)) return ['manca la cartella img/'];
+  const usati = new Set();
+
+  for (const id in DATA.ARREDI) {
+    const a = DATA.ARREDI[id];
+    const f = path.join(dir, a.file);
+    usati.add(a.file);
+    if (!fs.existsSync(f)) { problemi.push(`«${id}» vuole img/${a.file}, che non c'è`); continue; }
+    const b = fs.readFileSync(f);
+    // PNG: la firma è di 8 byte, poi IHDR con larghezza e altezza a 16 e 20
+    if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) {
+      problemi.push(`img/${a.file} non è un PNG`); continue;
+    }
+    const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+    const attesoW = a.w * CASELLA, attesoH = a.h * CASELLA;
+    if (w !== attesoW || h !== attesoH)
+      problemi.push(`img/${a.file} è ${w}×${h} ma «${id}» lo dichiara ${a.w}×${a.h} caselle, ` +
+                    `cioè ${attesoW}×${attesoH}: verrebbe riscalato senza che nessuno se ne accorga`);
+    if (a.w <= 0 || a.h <= 0) problemi.push(`«${id}» ha una misura non positiva`);
+  }
+
+  /* Un file in img/ che non usa nessuno è peso morto scaricato da chi
+     gioca. Non basta però dire «toglilo»: qualcuno può essere disegnato
+     e in attesa di poter entrare, e allora la risposta sta in
+     `DATA.ARREDI_IN_ATTESA` con scritto cosa manca. Quello che non è né
+     usato né in attesa è dimenticato, e si nomina. */
+  const inAttesa = DATA.ARREDI_IN_ATTESA || {};
+  for (const f of fs.readdirSync(dir))
+    if (f.endsWith('.png') && !usati.has(f) && !inAttesa[f])
+      problemi.push(`img/${f} non lo usa nessuno: o si collega in DATA.ARREDI, ` +
+                    'o si spiega in DATA.ARREDI_IN_ATTESA cosa gli manca, o si toglie');
+
+  // e il contrario: un'attesa per un file che non c'è più è una nota stantia
+  for (const f in inAttesa)
+    if (!fs.existsSync(path.join(dir, f)))
+      problemi.push(`DATA.ARREDI_IN_ATTESA parla di img/${f}, che non c'è`);
+    else if (usati.has(f))
+      problemi.push(`img/${f} è collegato in DATA.ARREDI: la sua riga in ARREDI_IN_ATTESA va tolta`);
+
+  return problemi;
+});
+
+/* --- LE IMPRONTE MULTI-CASELLA ---
+
+   Un mobile grande scritto male non dà nessun errore: `WORLD.arredo`
+   torna false e il mobile semplicemente NON C'È. La stanza si apre, si
+   cammina, e manca il letto — che è esattamente il genere di cosa che
+   si scopre giocando invece che leggendo. */
+verifica('i mobili grandi ci stanno, non si pestano, e non chiudono la stanza', () => {
+  const maps = WORLD.crea();
+  const problemi = [];
+  let grandi = 0;
+
+  for (const id of WORLD.MAPPE) {
+    const m = maps[id];
+    if (!m) continue;
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+      const o = m.obj[WORLD.idx(m, x, y)];
+      if (!o || o.t === 'rimando') continue;
+      const f = WORLD.impronta(o);
+      if (f.w === 1 && f.h === 1) continue;
+      grandi++;
+      // ogni casella dell'impronta dev'essere sua: o il mobile, o un suo rimando
+      for (let j = 0; j < f.h; j++) for (let i = 0; i < f.w; i++) {
+        if (!WORLD.dentro(m, x + i, y + j)) {
+          problemi.push(`in «${id}» il ${o.t} in (${x},${y}) esce dalla mappa`); continue;
+        }
+        const c = m.obj[WORLD.idx(m, x + i, y + j)];
+        if (i === 0 && j === 0) continue;
+        if (!c || c.t !== 'rimando' || c.ax !== x || c.ay !== y)
+          problemi.push(`in «${id}» il ${o.t} in (${x},${y}) non tiene la casella ` +
+                        `(${x + i},${y + j}): o è stato posato con setObj invece che con arredo, ` +
+                        'o ce n\'è un altro sopra');
+      }
+    }
+    /* E nessun rimando deve puntare al vuoto: sarebbe un blocco solido
+       invisibile, che non si vede e non si toglie. */
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+      const c = m.obj[WORLD.idx(m, x, y)];
+      if (!c || c.t !== 'rimando') continue;
+      const a = WORLD.oggetto(m, x, y);
+      if (!a) problemi.push(`in «${id}» la casella (${x},${y}) è occupata da un rimando che non punta a niente`);
+    }
+  }
+
+  if (!grandi) problemi.push('nessun mobile occupa più di una casella: il controllo non protegge niente');
+
+  /* La stanza dev'essere ancora attraversabile DALLA PORTA, che è una
+     domanda diversa da «quante caselle sono libere»: un letto due per
+     tre messo di traverso può lasciare libera mezza stanza e chiuderne
+     l'altra metà. BFS a 8 vicini, che è più permissiva del movimento
+     vero: se dice chiuso, è chiuso. */
+  for (const azione in WORLD.INTERNI) {
+    const m = maps[WORLD.INTERNI[azione]];
+    if (!m || !m.warps.length) continue;
+    const porta = m.warps[0];
+    const visti = new Set([WORLD.idx(m, porta.x, porta.y)]);
+    const coda = [[porta.x, porta.y]];
+    while (coda.length) {
+      const [x, y] = coda.pop();
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const nx = x + dx, ny = y + dy;
+        if (!WORLD.dentro(m, nx, ny) || WORLD.solido(m, nx, ny)) continue;
+        const k = WORLD.idx(m, nx, ny);
+        if (visti.has(k)) continue;
+        visti.add(k); coda.push([nx, ny]);
+      }
+    }
+    let liberi = 0;
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++)
+      if (!WORLD.solido(m, x, y)) liberi++;
+    if (visti.size < liberi)
+      problemi.push(`in «${m.id}» ${liberi - visti.size} caselle libere su ${liberi} non si raggiungono ` +
+                    'dalla porta: un mobile ha tagliato la stanza in due');
+  }
+
+  return problemi;
+});
+
+/* Il renderer allarga la finestra di raccolta degli oggetti di
+   `SBORDO_ARREDI` caselle, perché un mobile alto tre ancorato appena
+   sopra il bordo dello schermo non sparisca. Se un giorno se ne scrive
+   uno più alto, il margine va alzato con lui — e questo lo dice, invece
+   di lasciare che il mobile scompaia a chi ci gioca. */
+verifica('il margine di disegno copre il mobile più alto che esiste', () => {
+  const problemi = [];
+  const rend = fs.readFileSync(path.join(RADICE, 'js/render.js'), 'utf8');
+  const m = rend.match(/const SBORDO_ARREDI = (\d+)/);
+  if (!m) return ['non trovo SBORDO_ARREDI in render.js: il margine non è più dichiarato lì'];
+  const margine = +m[1];
+
+  const maps = WORLD.crea();
+  let piuAlto = 1, dove = '';
+  for (const id of WORLD.MAPPE) {
+    const mm = maps[id];
+    if (!mm) continue;
+    for (const o of mm.obj) {
+      if (!o || o.t === 'rimando') continue;
+      const f = WORLD.impronta(o);
+      const g = Math.max(f.w, f.h);
+      if (g > piuAlto) { piuAlto = g; dove = `${o.t} in «${id}»`; }
+    }
+  }
+  if (margine < piuAlto)
+    problemi.push(`SBORDO_ARREDI è ${margine} ma il mobile più ingombrante ne occupa ${piuAlto} ` +
+                  `(${dove}): ancorato appena fuori dallo schermo sparirebbe tutto`);
+  return problemi;
+});
+
 const larghezza = 62;
 console.log('\n  Fioralba — coerenza dei dati\n  ' + '─'.repeat(larghezza));
 for (const nome of fatti) console.log('  [32m✓[0m ' + nome);

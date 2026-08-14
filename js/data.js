@@ -1743,6 +1743,56 @@ D.BOTTIGLIE = [
                     firma:'La cartografa del Levante' }
 ];
 
+/* ===================================================================
+   GLI ARREDI DISEGNATI A MANO
+
+   L'unico posto che sa quali file esistono in `img/`: lo legge il
+   caricatore (`IMG.precarica`), lo legge il renderer per sapere quale
+   immagine tocca a quale oggetto, e lo legge il controllo di coerenza
+   per confrontare la misura dichiarata coi pixel veri del file.
+
+   `w` e `h` sono la misura del PNG IN CASELLE, e possono essere
+   frazionarie: il letto è due caselle per tre esatte, il tavolo è largo
+   due e alto una e mezza. Sono la misura del DISEGNO, non del pavimento
+   che occupa.
+
+   **L'impronta solida è un'altra cosa, e non sta qui.** Quante caselle
+   un mobile occupa davvero lo decide la stanza, non il file: lo stesso
+   `tavolo.png` è il tavolo da pranzo di casa, che prende due caselle, e
+   il banco da lavoro della fucina, che ne prende una. Sta scritta sul
+   singolo mobile (`iw`, `ih`) dove lo si posa, in world.js.
+
+   Il disegno si centra sull'impronta e appoggia sul suo bordo basso,
+   come alberi ed edifici: dove il PNG è più grande, sborda in su e di
+   lato. È il motivo per cui una sedia alta una casella e mezza sta
+   dentro a una casella sola senza sembrare schiacciata.
+
+   `omino.png` non è in elenco apposta: è il personaggio, e di lui serve
+   la camminata nelle quattro direzioni, non una posa sola. Finché non
+   c'è, il giocatore resta quello disegnato in codice. */
+D.ARREDI = {
+  letto:   { file:'letto.png',    w:2,    h:3   },
+  camino:  { file:'camino.png',   w:1.5,  h:2   },
+  tavolo:  { file:'tavolo.png',   w:2,    h:1.5 },
+  cucina:  { file:'forno.png',    w:1.5,  h:1.5 },
+  sedia:   { file:'sedia.png',    w:1,    h:1.5 },
+  baule:   { file:'baule.png',    w:1.5,  h:1   },
+  lume:    { file:'lanterna.png', w:0.75, h:1.5 }
+};
+
+/* Disegnati, committati, e non ancora collegati a niente — col perché.
+
+   Un PNG in `img/` che non usa nessuno è peso che scarica chi gioca, e
+   il controllo di coerenza lo segnala apposta. Questa non è una deroga
+   al controllo: è la risposta, scritta dove la si legge, con dentro
+   cosa manca perché il file entri in gioco. Il giorno che manca niente,
+   la riga si sposta di sopra e sparisce da qui. */
+D.ARREDI_IN_ATTESA = {
+  'omino.png': 'il personaggio, ma di lui serve la camminata nelle quattro ' +
+               'direzioni: una posa sola non si può animare, e il giocatore ' +
+               'passa metà del gioco visto di spalle'
+};
+
 D.CONSIGLI = [
   'Dormi prima di mezzanotte o ti sveglierai a pezzi.',
   'La pioggia annaffia il campo al posto tuo.',
