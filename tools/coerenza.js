@@ -1319,8 +1319,8 @@ verifica('index.html carica tutti i js, nell\'ordine portante', () => {
 /* --- e adesso: quanto pesa davvero, quell'ordine ---
 
    «L'ordine degli script è portante» stava scritto in due posti, e non
-   l'aveva misurato nessuno. Misurato: fra i moduli ci sono 2.653
-   riferimenti incrociati, e 2.640 stanno DENTRO le funzioni — cioè
+   l'aveva misurato nessuno. Misurato: fra i moduli ci sono 2.655
+   riferimenti incrociati, e 2.641 stanno DENTRO le funzioni — cioè
    avvengono a partita avviata, quando i file ci sono tutti da un pezzo,
    e dell'ordine non sanno niente. Al caricamento ne restano sei, ed
    è l'elenco qui sotto.
@@ -1337,7 +1337,7 @@ verifica('index.html carica tutti i js, nell\'ordine portante', () => {
      risultava un vincolo che non esiste — la stessa omonimia che aveva
      già fatto leggere male l'elenco delle dipendenze di game.js.
 
-   Il pericolo non sono questi otto, che si reggono. È il nono: una
+   Il pericolo non sono questi nove, che si reggono. È il decimo: una
    riga come `SND.init()` messa al livello del file funziona finché
    l'ordine regge, non rompe niente e non lascia traccia — e il giorno
    che qualcuno sposta uno <script> il gioco si apre bianco, con l'errore
@@ -1358,10 +1358,11 @@ const VINCOLI_NOTI = {
   'game.js|salvataggio.js':  'G.salva = SALVA.salva',
   'game.js|traguardi.js':    'Object.assign(G, TRAGUARDI)',
   'game.js|abitanti.js':     'Object.assign(G, ABITANTI)',
-  'game.js|paese.js':        'Object.assign(G, PAESE)'
+  'game.js|paese.js':        'Object.assign(G, PAESE)',
+  'partite.js|ui.js':        'const U = UI: le nove finestre delle partite si appendono allo stesso oggetto UI'
 };
 
-verifica(TS ? 'nessuno script pretende di stare dopo un altro, oltre agli otto noti'
+verifica(TS ? 'nessuno script pretende di stare dopo un altro, oltre ai nove noti'
             : 'ordine di caricamento: SALTATO, manca typescript (fai npm install)', () => {
   if (!TS) return [];
   const dir = path.join(RADICE, 'js');
@@ -1592,7 +1593,13 @@ verifica('il salvataggio passa dal server, e non torna in locale', () => {
     .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
   const salva = senzaCommenti('salvataggio.js');
   const sinc  = senzaCommenti('sincronizza.js');
-  const ui    = senzaCommenti('ui.js');
+  /* L'interfaccia è in due file da quando le finestre delle partite
+     sono uscite in partite.js, e qui si guarda l'insieme: a questo
+     controllo interessa che quelle strade esistano, non in quale dei
+     due file stiano scritte. Senza questa riga lo stacco faceva sparire
+     sei finestre agli occhi del controllo, che è esattamente quello che
+     è successo — ed è la terza volta che uno stacco inciampa qui. */
+  const ui    = senzaCommenti('ui.js') + '\n' + senzaCommenti('partite.js');
   const game  = senzaCommenti('game.js');
   const html  = fs.readFileSync(path.join(RADICE, 'index.html'), 'utf8');
 
@@ -1616,7 +1623,7 @@ verifica('il salvataggio passa dal server, e non torna in locale', () => {
 
      Il controllo guarda quindi la scrittura, non la lettura: niente
      `download=`, niente Blob salvati, niente `esporta`. */
-  for (const [dove, src] of [['salvataggio.js', salva], ['ui.js', ui], ['game.js', game],
+  for (const [dove, src] of [['salvataggio.js', salva], ['ui.js o partite.js', ui], ['game.js', game],
                              ['sincronizza.js', sinc]])
     if (/download\s*=|createObjectURL|S\.esporta|G\.esporta/.test(src))
       problemi.push(dove + ' è tornato a esportare la partita in un file: da lì ricominciano le due copie che divergono');
