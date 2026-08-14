@@ -48,7 +48,7 @@ tutto, `game.js` per ultimo.
 data.js  lingua-en.js  lingua.js  palette.js  art.js  fx.js  audio.js
 world.js  mobs.js  ui.js  demo.js  changelog.js  landing.js  titolo.js
 salvataggio.js  sincronizza.js  pesca.js  storie.js  vicende.js
-persona.js  partite.js  diario.js  solstizio.js  livelli.js  traguardi.js  abitanti.js  paese.js
+persona.js  partite.js  diario.js  botteghe.js  solstizio.js  livelli.js  traguardi.js  abitanti.js  paese.js
 tutorial.js  guida.js  tocco.js  render.js  game.js   (in fondo: debug.js)
 ```
 
@@ -57,9 +57,9 @@ confronta `js/*.js` con gli script di `index.html`. Un file scritto e mai
 caricato non fa rumore — non è un errore di sintassi e non è un test rosso.
 
 **Ma «portante» era un'impressione, e adesso è un numero.** Fra i moduli ci
-sono 2.669 riferimenti incrociati e 2.654 stanno *dentro* le funzioni: girano a
+sono 2.706 riferimenti incrociati e 2.690 stanno *dentro* le funzioni: girano a
 partita avviata, quando i file ci sono tutti da un pezzo, e dell'ordine non
-sanno niente. Al caricamento ne restano quindici, che fanno **dieci** vincoli
+sanno niente. Al caricamento ne restano sedici, che fanno **undici** vincoli
 d'ordine, ed è tutto quello che «portante» vuol dire:
 
 | chi | vuole prima | perché |
@@ -67,9 +67,9 @@ d'ordine, ed è tutto quello che «portante» vuol dire:
 | `art.js`, `render.js` | `palette.js` | `PAL.suCambio(...)`, per buttare le cache quando la palette cambia (protetti da `if(window.PAL)`) |
 | `solstizio.js` | `data.js`   | `const POSTI_VEGLIA = DATA.POSTI_VEGLIA`, un alias preso subito |
 | `game.js` | `solstizio.js`, `salvataggio.js`, `traguardi.js`, `abitanti.js`, `paese.js` | i riagganci a `G` |
-| `partite.js`, `diario.js` | `ui.js` | `const U = UI`: scrivono le loro finestre sullo stesso oggetto |
+| `partite.js`, `diario.js`, `botteghe.js` | `ui.js` | `const U = UI`: scrivono le loro finestre sullo stesso oggetto |
 
-Il pericolo non sono questi dieci, che si reggono: è l'undicesimo. Una riga come
+Il pericolo non sono questi undici, che si reggono: è il dodicesimo. Una riga come
 `SND.init()` messa al livello del file funziona finché l'ordine regge, non
 rompe niente e non lascia traccia — e il giorno che qualcuno sposta uno
 `<script>` la pagina si apre bianca. Un controllo ora li conta e pretende che
@@ -93,6 +93,7 @@ viene zero, il corpo della IIFE *è* il caricamento. E `demo.js` ha un
 | `UI`, `IT` | ui.js         | finestre e HUD; `IT` sono i testi derivati dagli oggetti |
 | *(`UI`)*   | partite.js    | le finestre delle partite sul server: **scrive sullo stesso `UI`** |
 | *(`UI`)*   | diario.js     | il Diario e la Mappa: **scrive sullo stesso `UI`**       |
+| *(`UI`)*   | botteghe.js   | zaino, negozio, banco, fornelli, fucina, Santuario: idem |
 | `TITOLO`   | titolo.js     | la scena animata dietro la schermata iniziale           |
 | `SALVA`    | salvataggio.js| localStorage, backup, esporta/importa in `.json`        |
 | `PESCA`    | pesca.js      | il minigioco: lancio, abboccata, lotta                  |
@@ -245,10 +246,12 @@ attributo `title`): stava scritta accanto a `IT.dove`, ma il solo posto che la
 usava era il Diario. Stessa regola delle fasce dell'agenda — una comodità non
 sta dove è nata, sta dove sta chi la usa.
 
-Fatti finora: `partite.js` (578 righe) e `diario.js` (Diario + Mappa, 766).
-**Restano due blocchi contigui, già misurati:** zaino+negozio+artigianato+
-cucina+fucina+santuario (607 righe, gli serve solo `ico`) e `IL MENU`+demo
-animate (400, idem). Portati via anche quelli, `ui.js` starebbe sulle ~1.130.
+Fatti finora: `partite.js` (578 righe), `diario.js` (Diario + Mappa, 766) e
+`botteghe.js` (zaino, negozio, banco, fornelli, fucina, Santuario: 610). `ui.js`
+da 3.483 a 1.540 righe. **Resta un blocco solo**, `IL MENU` + le demo animate
+(400 righe, gli serve solo `ico`); dopo quello `ui.js` starebbe sulle ~1.130, e
+quello che rimane è il nocciolo vero — `IT` e «dove si trova», toast, modale,
+dialogo, «quante ne prendi», cassa, macchina, regalo, cartello.
 
 ### Firme che sorprendono
 
