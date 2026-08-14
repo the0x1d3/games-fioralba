@@ -1719,11 +1719,34 @@ function disegnaDecoPiatta(d, ox, oy, t, stag){
       if(d.v===1){ ART.ellip(sx,px+18,py+13+bob,3,3,'#f0e0f0'); ART.circ(sx,px+18,py+13+bob,1.4,'#ffe270'); }
       break;
     }
+    /* Il ponticello sul ruscello. Prima erano due sole strisce di legno
+       in cima e in fondo, e in mezzo restava la texture nuda delle assi:
+       a schermo si legge come muratura — è lo stesso motivo per cui la
+       banchina del porto sembrava un muro di mattoni — quindi il
+       ponticello sembrava un pezzo di pavimento buttato sul prato, non
+       un ponte.
+
+       Adesso ha le TRAVI DI TRAVERSO, che sono quelle che si vedono
+       camminando su un ponte vero, e i pali agli angoli. E l'altezza la
+       dice il deco (`d.h`) invece di essere due caselle fisse: il
+       ponticello ne è alto tre, e con l'altezza sbagliata la ringhiera
+       di valle finiva a metà del ponte. */
     case 'ponte': {
+      const h = d.h || 2;
+      // le travi trasversali, una ogni mezza casella
+      for(let k=0;k<h*2;k++){
+        ART.px(sx, px+2, py+k*(T/2)+3, d.w*T-4, 2, '#7a5432');
+      }
+      // le due ringhiere, in cima e in fondo all'altezza vera
       for(let i=0;i<d.w;i++){
         const bx=px+i*T;
         ART.px(sx,bx,py+2,T,3,'#8a6038');
-        ART.px(sx,bx,py+T*2-6,T,3,'#8a6038');
+        ART.px(sx,bx,py+h*T-6,T,3,'#8a6038');
+      }
+      // i pali agli angoli, che è quello che dice «questo sta in piedi»
+      for(const bx of [px+1, px+d.w*T-5]){
+        ART.px(sx,bx,py,4,7,'#96704a');
+        ART.px(sx,bx,py+h*T-8,4,8,'#96704a');
       }
       break;
     }

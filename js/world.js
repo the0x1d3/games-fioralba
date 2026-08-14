@@ -366,8 +366,20 @@ function buildPodere(){
   linea(m, 24,0, 26,10, 2, 'acqua');
   linea(m, 26,10, 32,20, 2, 'acqua');
   linea(m, 32,20, 36,27, 2, 'acqua');
-  fill(m, 30,16, 3,3, 'assi');
-  m.deco.push({t:'ponte', x:30, y:16, w:3});
+  /* IL PONTICELLO DEVE COPRIRE IL RUSCELLO, non stargli accanto.
+
+     Segnalato in partita: «il ponte ha due blocchi invisibili che non te
+     lo fanno attraversare, e si vede anche male». Misurato: il viale
+     corre sulle righe 16 e 17, e lì il ruscello passa per la casella
+     x=29 — ma il ponte cominciava a x=30. Quei due quadrati d'acqua
+     stavano fra il selciato e le assi, sotto il bordo della ringhiera
+     disegnata, quindi non si leggevano come acqua: si leggevano come
+     ponte che non si attraversa. Si passava solo scendendo a y=18, cioè
+     fuori dal viale e fuori dal ponte disegnato.
+
+     Adesso il ponte parte da x=29 ed è largo quattro: il viale ci entra
+     e ne esce sulla stessa riga da cui arriva. */
+  ponticello(m);
 
   /* ------------------------------------------------------------------
      LO STAGNO — riva curata, canneti, un pontile per pescare
@@ -1585,6 +1597,53 @@ W.ristampaCosta = function(m){
      prendere. Il mare sotto non si tocca. */
   const sfrattati = trapianta(m, fresca, (x,y)=> y>=1 && y<=28);
   riparaSfrattati(m, sfrattati, 23, 3);          // vicino all'uscita per la Piazza
+};
+
+/* Il ponticello sul ruscello del podere: dove sta e quanto è largo lo
+   decidiamo noi, in un posto solo, perché lo stampano in due —
+   `buildPodere` quando la valle nasce e `W.ristampaPonticello` quando si
+   riapre una partita vecchia. Due copie di queste quattro righe
+   divergerebbero al primo ritocco, e il difetto tornerebbe per metà dei
+   giocatori. */
+const PONTICELLO = { x:29, y:16, w:4, h:3 };
+
+function ponticello(m){
+  const p = PONTICELLO;
+  fill(m, p.x, p.y, p.w, p.h, 'assi');
+  for(let y=p.y;y<p.y+p.h;y++) for(let x=p.x;x<p.x+p.w;x++) m.obj[W.idx(m,x,y)] = null;
+  m.deco.push({t:'ponte', x:p.x, y:p.y, w:p.w, h:p.h});
+}
+
+/* Il terreno viaggia nel salvataggio, quindi chi ha una partita avviata
+   si riporta dietro il ponticello vecchio — quello che non copriva il
+   ruscello — e i due quadrati d'acqua invisibili con lui. Come per il
+   burrone: com'è fatto un passaggio lo decide il gioco.
+
+   Si ristampa solo il rettangolo del ponte, non il ruscello intorno: il
+   podere è la mappa dove il giocatore zappa, costruisce e posa, e più in
+   là di quelle dodici caselle non abbiamo niente da dirgli. Il deco si
+   rifà solo se manca, se no a ogni caricamento se ne impilerebbe uno. */
+W.ristampaPonticello = function(m){
+  if(!m || m.id!=='podere') return;
+  const p = PONTICELLO;
+  const sfrattati = [];
+  for(let y=p.y;y<p.y+p.h;y++) for(let x=p.x;x<p.x+p.w;x++){
+    if(!W.dentro(m,x,y)) continue;
+    const i = W.idx(m,x,y);
+    m.g[i] = ti('assi');
+    if(m.suolo) m.suolo[i] = null;
+    const o = m.obj[i];
+    if(o && (o.t==='macchina' || o.t==='mobile')) sfrattati.push(o);
+    m.obj[i] = null;
+  }
+  if(!m.deco.some(d=>d.t==='ponte'))
+    m.deco.push({t:'ponte', x:p.x, y:p.y, w:p.w, h:p.h});
+  for(const o of sfrattati){
+    const q = W.vicinoLibero(m, p.x-2, p.y+1);   // sul viale, di qua dal ruscello
+    if(!q) continue;
+    const i = W.idx(m,q.x,q.y);
+    if(!m.obj[i]) m.obj[i] = o;
+  }
 };
 
 W.ristampaBurrone = function(m, ponteCostruito){

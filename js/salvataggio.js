@@ -277,6 +277,10 @@ function applicaSalvataggio(raw){
      è ancora quello corto e la radura resta aggirabile a piedi. Il
      burrone lo decidiamo noi, non il giocatore, quindi si ristampa. */
   WORLD.ristampaBurrone(G.maps.bosco, !!G.costruzioni.ponte);
+  /* E il ponticello del podere, che nei salvataggi vecchi non copriva il
+     ruscello: due caselle d'acqua restavano fra il viale e le assi, e il
+     viale si interrompeva senza che si capisse perché. */
+  WORLD.ristampaPonticello(G.maps.podere);
   /* Stessa ragione, e stesso rimedio, per il porto e la costa: la
      Piazza del Porto ha preso l'insenatura con la banchina e le barche,
      la spiaggia le dune e le pozze di marea, e senza questo chi ha una

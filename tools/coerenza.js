@@ -2155,6 +2155,55 @@ verifica('il ponte non si tappa, e le costruzioni non seppelliscono il campo', (
    rumore — l'inglese mostrerebbe l'italiano in silenzio. Il confronto
    col sorgente regge perché le chiavi del catalogo sono fra virgolette
    doppie e i testi non ne contengono. */
+/* IL VIALE NON SI INTERROMPE AL RUSCELLO.
+
+   Segnalato in partita: «il ponte ha due blocchi invisibili che non te
+   lo fanno attraversare». Erano due caselle d'acqua fra il selciato e le
+   assi, sulle righe del viale: il ponte cominciava una casella più in
+   là del ruscello, quindi da lì non si passava — si passava solo
+   scendendo di una riga, fuori dal viale e fuori dal ponte disegnato.
+
+   I controlli di camminabilità che c'erano non lo vedevano, ed è il
+   punto: chiedono che dal podere si raggiunga OGNI USCITA, e l'uscita si
+   raggiungeva davvero — aggirando. Un giro che funziona nasconde un
+   passaggio rotto. Questo invece cammina sul viale e basta, dentro una
+   fascia stretta attorno al ruscello: se per andare da una parte
+   all'altra bisogna uscire dal viale, è rosso. */
+verifica('il viale attraversa il ruscello sul ponte, senza aggirarlo', () => {
+  const problemi = [];
+  const m = WORLD.crea().podere;
+  const ponte = m.deco.find(d => d.t === 'ponte');
+  if (!ponte) return ['il ponticello del podere non c\'è più fra le decorazioni'];
+
+  // ogni casella del ponte disegnato dev'essere camminabile: se il
+  // disegno promette un ponte più largo del legno, è una bugia
+  for (let y = ponte.y; y < ponte.y + (ponte.h||2); y++)
+    for (let x = ponte.x; x < ponte.x + ponte.w; x++)
+      if (WORLD.solido(m, x, y))
+        problemi.push(`il ponticello è disegnato su (${x},${y}) ma lì non si passa`);
+
+  /* E UN PONTE CHE FINISCE NELL'ACQUA NON È UN PONTE. Su ogni riga che
+     attraversa, la casella subito prima e quella subito dopo devono
+     essere terra: se c'è ancora ruscello, vuol dire che il ponte non
+     arriva alla riva, e quel quadrato d'acqua — stretto fra il selciato
+     e le assi, sotto il bordo della ringhiera — non si legge come acqua.
+     Si legge come ponte che non si attraversa.
+
+     È l'affermazione giusta, e la prima versione di questo controllo
+     sbagliava: cercava un cammino in una fascia che comprendeva anche la
+     riga di sotto, cioè proprio l'aggiramento, e restava verde col ponte
+     rotto. Un controllo che non distingue il difetto è peggio di
+     nessun controllo. */
+  for (let y = ponte.y; y < ponte.y + (ponte.h||2); y++) {
+    for (const [x, lato] of [[ponte.x - 1, 'a ponente'], [ponte.x + ponte.w, 'a levante']]) {
+      if (WORLD.terreno(m, x, y) === 'acqua')
+        problemi.push(`il ponticello non arriva alla riva ${lato}: (${x},${y}) è ancora ruscello, ` +
+                      'e da lì non si passa pur sembrando ponte');
+    }
+  }
+  return problemi;
+});
+
 verifica('ogni bottiglia del mare si legge, una volta e in due lingue', () => {
   const problemi = [];
   const visti = new Set();
