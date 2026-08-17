@@ -2792,6 +2792,58 @@ verifica(TS ? 'niente raddoppio relativo dentro a un blocco già raddoppiato'
    scritto qui sopra e in ui.js. È già successo, ed è successo due
    volte: lo stesso inciampo l'aveva fatto il controllo sul raddoppio,
    che si segnalava la propria dichiarazione. */
+/* IL MOLO STA SULLE ASSI, DA MAPPA NUOVA E DA SALVATAGGIO VECCHIO.
+
+   Segnalato in partita: al laghetto due assi di legno galleggiano
+   sull'acqua staccate da tutto. Erano le due traverse e il palo del
+   deco `molo`, rimasti senza il pavimento sotto: il terreno viaggia nel
+   salvataggio e i deco no, quindi `buildPodere` ridisegnava il pontile
+   a ogni apertura mentre le tre caselle di assi arrivavano dal
+   salvataggio — e in una partita cominciata prima che il molo fosse lì,
+   sono acqua.
+
+   Terzo caso della stessa famiglia dopo il burrone e il ponticello, e
+   si controlla come quelli: che il deco stia sulle assi appena nata la
+   valle, e che la ristampa rimetta a posto un terreno vecchio. La
+   seconda metà ha la sua taratura davanti — prima si controlla che
+   sporcare il terreno si veda davvero — se no sarebbe un verde che
+   viene comunque. */
+verifica('il molo del laghetto poggia sulle assi, anche da una partita vecchia', () => {
+  const problemi = [];
+  const m = WORLD.crea().podere;
+  const moli = (m.deco||[]).filter(d => d.t === 'molo');
+  if (!moli.length) return ['nel podere non c\'è nessun molo: questo controllo non guarda più niente'];
+
+  const caselle = d => {
+    const c = [];
+    for (let k = 0; k < 3; k++) c.push({ x:d.x, y:d.y+k });
+    return c;
+  };
+  for (const d of moli)
+    for (const q of caselle(d))
+      if (WORLD.terreno(m, q.x, q.y) !== 'assi')
+        problemi.push(`il molo (${d.x},${d.y}) ha ${WORLD.terreno(m,q.x,q.y)} in (${q.x},${q.y}) invece di assi: ` +
+                      'la ringhiera si disegna sul niente');
+
+  // taratura: se sporcare il terreno non si vede, la prova qui sotto non vale
+  const v = WORLD.crea().podere;
+  for (const q of caselle(moli[0])) v.g[WORLD.idx(v, q.x, q.y)] = WORLD.ti('acqua');
+  if (caselle(moli[0]).every(q => WORLD.terreno(v, q.x, q.y) === 'assi'))
+    return problemi.concat('non riesco a togliere le assi da sotto al molo: questa prova non distingue più niente');
+
+  WORLD.ristampaMolo(v);
+  for (const q of caselle(moli[0]))
+    if (WORLD.terreno(v, q.x, q.y) !== 'assi')
+      problemi.push(`ristampaMolo non rimette le assi in (${q.x},${q.y}): ` +
+                    'chi ha una partita avviata continua a vedere il pontile galleggiare');
+  // e non se ne impila un secondo a ogni caricamento
+  WORLD.ristampaMolo(v);
+  const quanti = (v.deco||[]).filter(d => d.t === 'molo').length;
+  if (quanti !== moli.length)
+    problemi.push(`dopo due ristampe i moli sono ${quanti} invece di ${moli.length}: se ne impila uno a ogni caricamento`);
+  return problemi;
+});
+
 verifica('niente float nelle finestre: stringe la prima riga flex', () => {
   const problemi = [];
   const dir = path.join(RADICE, 'js');

@@ -499,13 +499,7 @@ function buildPodere(){
     const x=31+((R()*17)|0), y=25+((R()*15)|0);
     if(libero(m,x,y) && W.terreno(m,x,y)==='sabbia') m.deco.push({t:'erbe',x,y,v:(R()*4)|0});
   }
-  for(let k=0;k<3;k++){
-    const px2=36, py2=30+k;
-    if(!W.dentro(m,px2,py2)) continue;
-    m.g[W.idx(m,px2,py2)] = ti('assi');
-    m.obj[W.idx(m,px2,py2)] = null;
-  }
-  m.deco.push({t:'molo', x:36, y:30, w:1});
+  molo(m);
   m.deco.push({t:'cartello', x:35, y:29, testo:'Il laghetto di Ilde'});
 
   /* ------------------------------------------------------------------
@@ -1729,6 +1723,22 @@ W.ristampaCosta = function(m){
    giocatori. */
 const PONTICELLO = { x:29, y:16, w:4, h:3 };
 
+/* Il molo del laghetto di Ilde, e vale la stessa regola del ponticello:
+   dove sta e quanto è lungo si scrive UNA volta, perché lo stampano in
+   due — `buildPodere` quando la valle nasce e `W.ristampaMolo` quando si
+   riapre una partita vecchia. */
+const MOLO = { x:36, y:30, h:3 };
+
+function molo(m){
+  for(let k=0;k<MOLO.h;k++){
+    const x=MOLO.x, y=MOLO.y+k;
+    if(!W.dentro(m,x,y)) continue;
+    m.g[W.idx(m,x,y)] = ti('assi');
+    m.obj[W.idx(m,x,y)] = null;
+  }
+  m.deco.push({t:'molo', x:MOLO.x, y:MOLO.y, w:1});
+}
+
 function ponticello(m){
   const p = PONTICELLO;
   fill(m, p.x, p.y, p.w, p.h, 'assi');
@@ -1762,6 +1772,46 @@ W.ristampaPonticello = function(m){
     m.deco.push({t:'ponte', x:p.x, y:p.y, w:p.w, h:p.h});
   for(const o of sfrattati){
     const q = W.vicinoLibero(m, p.x-2, p.y+1);   // sul viale, di qua dal ruscello
+    if(!q) continue;
+    const i = W.idx(m,q.x,q.y);
+    if(!m.obj[i]) m.obj[i] = o;
+  }
+};
+
+/* Segnalato: al laghetto due assi di legno galleggiano sull'acqua,
+   staccate da tutto. Sono il DECO del molo — le sue due traverse e il
+   palo — rimasto senza il pavimento sotto.
+
+   È il terzo caso della stessa famiglia, dopo il burrone e il
+   ponticello, e la meccanica è sempre quella: il terreno viaggia nel
+   salvataggio, i deco no. `buildPodere` riscrive il molo a ogni
+   apertura, ma le tre caselle di assi sotto arrivano dal salvataggio, e
+   in una partita cominciata prima che il laghetto avesse il molo lì
+   sono acqua. Il gioco disegna la ringhiera sul niente.
+
+   Si ristampano solo le tre caselle del pontile: quello che c'è intorno
+   al laghetto è affar suo, questo no. E il deco si rifà solo se manca,
+   se no a ogni caricamento se ne impila un altro. */
+W.ristampaMolo = function(m){
+  if(!m || m.id!=='podere') return;
+  const sfrattati = [];
+  for(let k=0;k<MOLO.h;k++){
+    const x=MOLO.x, y=MOLO.y+k;
+    if(!W.dentro(m,x,y)) continue;
+    const i = W.idx(m,x,y);
+    m.g[i] = ti('assi');
+    if(m.suolo) m.suolo[i] = null;
+    const o = m.obj[i];
+    if(o && (o.t==='macchina' || o.t==='mobile')) sfrattati.push(o);
+    m.obj[i] = null;
+  }
+  if(!m.deco.some(d=>d.t==='molo'))
+    m.deco.push({t:'molo', x:MOLO.x, y:MOLO.y, w:1});
+  /* Se il giocatore aveva posato qualcosa lì sopra — una cassa in punta
+     al molo è un posto che uno sceglie — si trasloca a riva invece di
+     sparire: sull'acqua non si può lasciare. */
+  for(const o of sfrattati){
+    const q = W.vicinoLibero(m, MOLO.x-2, MOLO.y);
     if(!q) continue;
     const i = W.idx(m,q.x,q.y);
     if(!m.obj[i]) m.obj[i] = o;

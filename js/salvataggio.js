@@ -324,6 +324,10 @@ function applicaSalvataggio(raw){
      ruscello: due caselle d'acqua restavano fra il viale e le assi, e il
      viale si interrompeva senza che si capisse perché. */
   WORLD.ristampaPonticello(G.maps.podere);
+  /* E il molo del laghetto, per la stessa ragione: senza le tre caselle
+     di assi sotto, le due traverse del pontile restano a galleggiare
+     sull'acqua staccate da tutto. */
+  WORLD.ristampaMolo(G.maps.podere);
   /* Stessa ragione, e stesso rimedio, per il porto e la costa: la
      Piazza del Porto ha preso l'insenatura con la banchina e le barche,
      la spiaggia le dune e le pozze di marea, e senza questo chi ha una
