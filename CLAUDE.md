@@ -353,8 +353,31 @@ stesse piastrelle e migliorano da soli. Il personaggio è l'1%.
 
 Rifatte finora: le undici piastrelle di terreno, le due maschere dei
 raccordi, e di rimbalzo `bordo`, `ombraBordo`, `arato` e `schiuma`; poi
-alberi, ceppi e cespugli col loro `foliageBlob`. Restano edifici, sassi
-e personaggio.
+alberi, ceppi e cespugli col loro `foliageBlob`; poi le nove facciate.
+Restano sassi e personaggio.
+
+**Gli edifici avevano un difetto diverso, e più grosso della
+risoluzione.** `disegnaEdificio` scala lo sprite per farlo stare
+nell'impronta, e i fattori erano 1,09-1,23: non interi. Con
+l'ingrandimento a pixel netti questo vuol dire che alcune colonne
+escono larghe due e altre tre — misurato sulla casa, 128 pixel d'arte a
+due e 64 a tre; sulla locanda quasi metà e metà. Ridisegnare più fine
+sopra a un ricampionamento così avrebbe peggiorato le cose: un tratto da
+un pixel a volte diventa due e a volte sparisce.
+
+Quindi la prima cosa è stata **far coincidere lo sprite con l'impronta**
+— casa 448×392 su sette caselle, locanda 512×434 su otto — e adesso la
+scala è 1 su tutte e nove. Due, pollaio e serra, erano già esatte: la
+misura del disegno era la metà dell'impronta e nessuno le aveva toccate.
+
+L'impaginato non è stato riscritto a mano: ogni facciata ha un
+`s(n) = Math.round(n*u)` che porta i numeri del vecchio impaginato alla
+misura nuova, e si scalano i **bordi** e non le larghezze — `s(x+w)-s(x)`
+invece di `s(w)` — se no due rettangoli che si toccavano si aprono di un
+pixel. Il dettaglio a 64 sta nei quattro guscio-helper (`baseWalls`,
+`shingleRoof`, `window4`, `door`), che ricevono `u` e tengono le RIGHE
+larghe un pixel vero: il giunto fra due corsi di pietra, la fuga fra due
+assi della porta, la crociera della finestra.
 
 **Le piastrelle erano parametri, gli alberi sono gusto**, e la
 differenza si sente lavorandoci. Su una texture procedurale «più

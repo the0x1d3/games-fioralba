@@ -2408,7 +2408,10 @@ verifica('gli sprite nascono su una tela a densità doppia', () => {
 const RIFATTI_A_64 = [
   'grassTile', 'dirtTile', 'tilledTile', 'pathTile', 'sandTile', 'woodTile',
   'stoneFloorTile', 'terracottaTile', 'snowTile', 'caveTile', 'waterFrames',
-  'maskLato', 'maskAngolo'
+  'maskLato', 'maskAngolo',
+  // seconda infornata: la vegetazione e le nove facciate
+  'bCasa', 'bBottega', 'bFucina', 'bLocanda', 'bCottage',
+  'bSantuario', 'bPollaio', 'bSerra', 'bCapanna'
 ];
 verifica('gli sprite già ridisegnati a 64 restano a 64', () => {
   const problemi = [];
