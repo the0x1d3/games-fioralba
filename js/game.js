@@ -127,7 +127,11 @@ function init(){
   if(window.IMG){
     IMG.precarica(DATA.ARREDI);
     IMG.precarica({ omino: DATA.OMINO });   // il foglio della camminata
-    IMG.precarica(DATA.ICONE);              // gli attrezzi nelle finestre
+    /* Col prefisso: `cartello` e `spaventapasseri` stanno in tutti e due
+       gli elenchi, e le immagini si tengono per id — senza, la seconda
+       richiesta si perderebbe e nello zaino resterebbe il disegno in
+       codice mentre il file si scarica lo stesso. */
+    IMG.precarica(DATA.ICONE, 'icona:');    // le icone nelle finestre
   }
   window.addEventListener('resize', ()=>{ REND.resize(); REND.initMeteo(); });
   collegaInput();

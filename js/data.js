@@ -1834,7 +1834,17 @@ D.ICONE = {
   piccone:      { file:'piccone.png',      w:128, h:128 },
   falce:        { file:'falce.png',        w:128, h:128 },
   canna:        { file:'canna.png',        w:128, h:128 },
-  arco:         { file:'arco.png',         w:128, h:128 }
+  arco:         { file:'arco.png',         w:128, h:128 },
+  /* Questi due hanno GIÀ un PNG, ma è un altro disegno: `cartello.png` e
+     `spaventapasseri.png` sono come stanno nel mondo — appoggiati per
+     terra, alti una casella e mezza sopra un'impronta di una. L'icona è
+     un'altra inquadratura: l'oggetto intero, centrato nel suo quadrato,
+     come sono gli attrezzi. Da qui i due file col suffisso, e da qui il
+     prefisso `icona:` con cui le chiede `ART.icon`: il caricatore tiene
+     le immagini per id, e senza distinguerle nello zaino sarebbe finito
+     lo sprite del mondo. */
+  cartello:        { file:'cartello-icona.png',        w:128, h:128 },
+  spaventapasseri: { file:'spaventapasseri-icona.png', w:128, h:128 }
 };
 
 /* ===================================================================

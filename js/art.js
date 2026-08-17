@@ -2540,13 +2540,20 @@ const iconCache = {};
    Quindi il PNG si chiede PRIMA della cache, e in cache ci va per conto
    suo, con annotato da quale immagine viene: così `IMG.riprova` del
    pannello di prova rifà le tele invece di restituire le vecchie. È lo
-   stesso meccanismo del foglio del personaggio, per la stessa ragione. */
+   stesso meccanismo del foglio del personaggio, per la stessa ragione.
+
+   E si chiedono col prefisso `icona:`, non col nudo id: la stessa cosa
+   può avere due disegni — `cartello` è un PNG nel mondo e un ALTRO PNG
+   nello zaino — e il caricatore le tiene per id. Senza prefisso qui si
+   ripescherebbe lo sprite del mondo, che è tutt'altra misura e
+   tutt'altra inquadratura. */
 const iconeAMano = {}, iconaDaCui = {};
+const CHIAVE_ICONA = 'icona:';
 
 A.icon = function(id){
   const decl = window.DATA && DATA.ICONE && DATA.ICONE[id];
   if(decl && window.IMG){
-    const img = IMG.prendi(id);
+    const img = IMG.prendi(CHIAVE_ICONA + id);
     if(img){
       if(iconeAMano[id] && iconaDaCui[id] === img) return iconeAMano[id];
       const c = cv(img.naturalWidth, img.naturalHeight);
@@ -2570,7 +2577,7 @@ A.icon = function(id){
    nessuno. Risponde `false` anche quando il PNG c'è ma non è ancora
    arrivato, perché in quel momento a schermo c'è il disegno in codice. */
 A.iconaAMano = function(id){
-  return !!(window.DATA && DATA.ICONE && DATA.ICONE[id] && window.IMG && IMG.prendi(id));
+  return !!(window.DATA && DATA.ICONE && DATA.ICONE[id] && window.IMG && IMG.prendi(CHIAVE_ICONA + id));
 };
 
 function toolHead(x, kind, tx, ty){

@@ -86,12 +86,20 @@ function chiedi(id, file){
 
    Si chiama da `game.js` all'avvio, cioè DENTRO a una funzione: questo
    file si carica prima di data.js e non deve toccare `DATA` mentre si
-   carica, o si aggiunge un tredicesimo vincolo d'ordine per niente. */
-IM.precarica = function(elenco){
+   carica, o si aggiunge un tredicesimo vincolo d'ordine per niente.
+
+   IL `prefisso` SERVE A NON PESTARSI GLI ID, e serve davvero. La stessa
+   cosa del gioco ha due disegni: quello che si vede nel mondo e l'icona
+   nello zaino. `cartello` sta in tutti e due gli elenchi con lo stesso
+   id, e qui le immagini si tengono PER ID — senza prefisso la seconda
+   `chiedi` trova già occupato e torna indietro in silenzio: il file si
+   scarica, non lo usa nessuno, e nello zaino resta il disegno in
+   codice. Un difetto che costa peso e non si vede. */
+IM.precarica = function(elenco, prefisso){
   if(!elenco) return;
   for(const id in elenco){
     const a = elenco[id];
-    if(a && a.file) chiedi(id, a.file);
+    if(a && a.file) chiedi((prefisso||'') + id, a.file);
   }
 };
 
