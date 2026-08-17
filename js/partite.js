@@ -150,52 +150,81 @@ U.mostraCodice = function(codice, appenaNato, poi){
                     '<b>Chi ha il codice ha la partita</b>: non darlo in giro.');
     body.appendChild(n);
 
-    if(appenaNato){
-      /* Il nome si chiede qui e non più tardi.
-
-         Fino a ieri non si chiedeva mai: `statoIniziale()` metteva
-         'Contadino' e nessuno lo cambiava. Finché la partita era una
-         sola non importava a nessuno; adesso il nome è quello che si
-         legge nel selettore per capire quale delle tre riprendere, e
-         tre carte che dicono «Contadino» non aiutano nessuno.
-
-         Non è obbligatorio: chi salta scrive «Contadino» e lo cambia
-         dalle Impostazioni quando gli va. Un campo che blocca la
-         partita di uno che vuole solo giocare è peggio di un nome
-         generico. */
-      const et = document.createElement('div'); et.className='sectitle';
-      et.style.marginTop = '16px';
-      et.textContent = T('Come ti chiami?');
-      body.appendChild(et);
-
-      const riga = document.createElement('div'); riga.className='imp-riga';
-      const inp = document.createElement('input');
-      inp.type='text'; inp.className='imp-nome-inp';
-      inp.maxLength = 24;
-      inp.placeholder = T('Contadino');
-      /* Il gioco ascolta la tastiera su window e non guarda da dove
-         arriva il tasto: senza fermarlo qui, scrivere il proprio nome
-         farebbe camminare il giocatore. */
-      for(const ev of ['keydown','keyup','keypress']) inp.addEventListener(ev, e=>e.stopPropagation());
-      riga.appendChild(inp);
-      body.appendChild(riga);
-
-      const b = document.createElement('button'); b.className='btn gold';
-      b.style.cssText='width:100%;margin-top:14px';
-      b.textContent = T('Ho segnato il codice, si comincia');
-      b.onclick = ()=>{
-        const n = inp.value.trim().replace(/\s+/g,' ');
-        U.chiudiModal();
-        if(poi) poi();
-        /* dopo `poi()`, che è quello che crea o apre la partita:
-           prima non ci sarebbe niente su cui scrivere il nome */
-        if(n && window.G){ G.nomeGiocatore = n; G.aggiornaHUD(); G.salva(); }
-      };
-      inp.addEventListener('keydown', e=>{ if(e.key==='Enter') b.click(); });
-      body.appendChild(b);
-      setTimeout(()=>{ try{ inp.focus(); }catch(e){} }, 60);
-    }
+    if(appenaNato) campoNome(body, T('Ho segnato il codice, si comincia'), n=>{
+      U.chiudiModal();
+      if(poi) poi();
+      /* dopo `poi()`, che è quello che crea o apre la partita:
+         prima non ci sarebbe niente su cui scrivere il nome */
+      if(window.G){ G.nomeGiocatore = n; G.aggiornaHUD(); G.salva(); }
+    });
   }, appenaNato ? { senzaChiusura:true } : undefined);
+};
+
+/* --- IL NOME, CHE ADESSO È OBBLIGATORIO ---------------------------
+
+   Il nome si chiede prima di cominciare, e senza di lui non si comincia:
+   il pulsante nasce spento e si accende quando c'è qualcosa di scritto.
+
+   Prima era facoltativo, con «Contadino» come segnaposto e la scusa che
+   «un campo che blocca la partita di uno che vuole solo giocare è peggio
+   di un nome generico». Non regge più, e non per gusto: da quando le
+   partite stanno sul server e se ne possono avere tre, il nome è
+   l'UNICA cosa che le distingue nel selettore. Chi salta il campo si
+   ritrova tre carte che dicono «Contadino» e nessun modo di sapere
+   quale sia la sua, che è un problema molto peggiore di dover battere
+   sei lettere all'inizio.
+
+   Via anche il segnaposto «Contadino»: in un campo obbligatorio un
+   segnaposto che sembra un valore di ripiego dice la cosa sbagliata —
+   «lascia stare e ti chiamo così» — che è esattamente quello che adesso
+   non succede.
+
+   È UNA FUNZIONE SOLA perché le porte da cui si comincia sono due:
+   quella normale, che mostra il codice della partita nuova, e quella
+   di riserva di `cominciaNuova()` per quando il modulo del server non
+   c'è. Scriverle separate voleva dire due campi che si comportano quasi
+   uguale, ed è così che nasce metà delle stranezze di questo gioco. */
+function campoNome(body, testoPulsante, avvia){
+  const et = document.createElement('div'); et.className='sectitle';
+  et.style.marginTop = '16px';
+  et.textContent = T('Come ti chiami?');
+  body.appendChild(et);
+
+  const perche = document.createElement('div'); perche.className='muted';
+  perche.style.marginBottom = '8px';
+  perche.textContent = T('Serve a riconoscere questa partita fra le altre.');
+  body.appendChild(perche);
+
+  const riga = document.createElement('div'); riga.className='imp-riga';
+  const inp = document.createElement('input');
+  inp.type='text'; inp.className='imp-nome-inp';
+  inp.maxLength = 24;
+  /* Il gioco ascolta la tastiera su window e non guarda da dove arriva
+     il tasto: senza fermarlo qui, scrivere il proprio nome farebbe
+     camminare il giocatore e aprirebbe lo zaino sulla «i». */
+  for(const ev of ['keydown','keyup','keypress']) inp.addEventListener(ev, e=>e.stopPropagation());
+  riga.appendChild(inp);
+  body.appendChild(riga);
+
+  const b = document.createElement('button'); b.className='btn gold';
+  b.style.cssText='width:100%;margin-top:14px';
+  b.textContent = testoPulsante;
+  b.disabled = true;
+
+  const pulito = ()=> inp.value.trim().replace(/\s+/g,' ');
+  inp.addEventListener('input', ()=>{ b.disabled = !pulito(); });
+  inp.addEventListener('keydown', e=>{ if(e.key==='Enter' && !b.disabled) b.click(); });
+  b.onclick = ()=>{ const n = pulito(); if(n) avvia(n); };
+  body.appendChild(b);
+  setTimeout(()=>{ try{ inp.focus(); }catch(e){} }, 60);
+}
+
+/* La porta di riserva: si comincia senza passare dal server, quindi non
+   c'è nessun codice da mostrare, ma il nome si chiede lo stesso. */
+U.chiediNome = function(avvia){
+  U.modal(T('Prima di cominciare'), body=>{
+    campoNome(body, T('Si comincia'), n=>{ U.chiudiModal(); avvia(n); });
+  }, { senzaChiusura:true });
 };
 
 /* ------------------------------------------------------------------

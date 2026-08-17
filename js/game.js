@@ -197,7 +197,15 @@ function collegaLanding(){
    l'avviso «cominciandone una nuova la perdi» — che era vero finché la
    partita stava nel browser e ce n'era una sola. */
 function cominciaNuova(){
-  if(!window.SINC){ nuovaPartita(); return; }
+  /* Anche di qui si passa dal nome: è obbligatorio, e una porta di
+     riserva che lo salta lo renderebbe obbligatorio solo per finta.
+     È lo stesso campo dell'altra porta — `UI.chiediNome` e la finestra
+     del codice chiamano tutte e due `campoNome` — perché due campi che
+     si comportano quasi uguale sono peggio di uno. */
+  if(!window.SINC){
+    UI.chiediNome(n=>{ nuovaPartita(); G.nomeGiocatore = n; G.aggiornaHUD(); });
+    return;
+  }
   UI.attesaServer('Preparo la valle…');
   SINC.nuova().then(r=>{
     if(!r.ok){ UI.erroreServer(r.errore); return; }

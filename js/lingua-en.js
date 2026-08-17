@@ -1893,6 +1893,9 @@ Object.assign(window.LINGUA_EN, {
 
 /* --- il nome --- */
 'Come ti chiami?': 'What is your name?',
+'Serve a riconoscere questa partita fra le altre.': 'It is how you will tell this save from the others.',
+'Prima di cominciare': 'Before you begin',
+'Si comincia': 'Let’s begin',
 'Rinomina': 'Rename',
 'Cambiato. Lo mando al server…': 'Changed. Sending it to the server…',
 'Fatto.': 'Done.',
