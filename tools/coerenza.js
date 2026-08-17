@@ -2511,15 +2511,22 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
     else {
       const b = fs.readFileSync(f);
       const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
-      const righe = Object.keys(O.righe).length;
       const attesoW = O.w * O.fotogrammi;
       if (w !== attesoW)
         problemi.push(`img/${O.file} è largo ${w} ma ${O.fotogrammi} celle da ${O.w} fanno ${attesoW}`);
-      if (h % O.h !== 0)
-        problemi.push(`img/${O.file} è alto ${h}, che non è un multiplo della cella (${O.h})`);
-      else if (h / O.h < righe)
-        problemi.push(`img/${O.file} ha ${h / O.h} righe ma DATA.OMINO ne mappa ${righe}: ` +
-                      'una direzione ritaglierebbe fuori dal foglio');
+      /* L'altezza si pretende ESATTA, e non «almeno tante righe». Nei due
+         sensi c'è un difetto vero: una riga di meno e una direzione
+         ritaglia fuori dal foglio, una riga di più è arte che nessuno
+         disegna e che pesa lo stesso su chi scarica la pagina. Si conta
+         dall'indice più alto e non da quante direzioni sono mappate,
+         perché due direzioni possono legittimamente puntare alla stessa
+         riga — il giorno che il profilo destro si ricava specchiando il
+         sinistro, quel conto direbbe quattro righe per un foglio di tre. */
+      const ultima = Math.max(...Object.values(O.righe));
+      const attesoH = (ultima + 1) * O.h;
+      if (h !== attesoH)
+        problemi.push(`img/${O.file} è alto ${h} ma DATA.OMINO arriva alla riga ${ultima}, ` +
+                      `cioè ${attesoH}: o manca una riga o ce n'è una che non disegna nessuno`);
       for (const d in O.righe) {
         if (!'0123'.includes(d)) problemi.push(`DATA.OMINO.righe parla della direzione «${d}», che non esiste`);
         if (O.righe[d] >= h / O.h) problemi.push(`la direzione ${d} punta alla riga ${O.righe[d]}, che nel foglio non c'è`);

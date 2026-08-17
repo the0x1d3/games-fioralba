@@ -37,7 +37,41 @@ Sono l'impronta in caselle moltiplicata per la casella. Con la casella a
 | camino.png   | 1,5×2  | 96×128  |
 | forno.png    | 1,5×1,5| 96×96   |
 | lanterna.png | 0,75×1,5 | 48×96 |
-| omino.png    | 1×1,5  | 64×96   |
+| omino.png    | 1×1,5  | 64×96 a cella, 256×384 il foglio |
 
 Se la casella cambia, si riesporta da `sprite-new/`: è per questo che i
 sorgenti grossi restano nel repo invece di essere buttati.
+
+`omino.png` è l'unico che non è un'immagine sola: è un FOGLIO di celle
+64×96, quattro fotogrammi per riga e una riga per direzione — giù,
+sinistra, destra, su. Chi lo legge è `DATA.OMINO`, e l'altezza del file
+deve corrispondere ESATTAMENTE alle righe che dichiara.
+
+Da solo pesa 149 KB dei 277 di questa cartella, e non è un errore: sono
+46.117 pixel disegnati con 29.336 colori diversi, cioè quasi uno per
+pixel. Quantizzare a 5 bit per canale lo porterebbe a 113 KB, ed è stato
+misurato e scartato: 36 KB non valgono il rischio di righe di banding
+sulla paglia del cappello, che è proprio la densità per cui questi file
+esistono invece di essere disegnati in codice.
+
+## Come si allinea una camminata
+
+I sorgenti arrivano **ritagliati stretti**, ognuno sul proprio contenuto,
+e quindi di misura diversa l'uno dall'altro (335×553 … 335×578 di
+fronte, 289-307 di lato). Ritagliare ognuno sulla propria sagoma fa
+saltellare il personaggio, perché a ogni passo la figura cambia altezza.
+
+I due punti fermi da cui si ricava la cella sono:
+
+- il **bordo basso** della sagoma, che è il piede piantato a terra, e va
+  sempre sulla stessa riga (93 su 96);
+- il **centro orizzontale della falda del cappello** — la fascia alta
+  della sagoma — che nel passo non oscilla, mentre braccia e gambe sì,
+  e va sempre nella stessa colonna (31 su 64).
+
+La scala è **una sola per tutti i fotogrammi e tutte le direzioni**: se
+ogni riga si normalizza da sé, il contadino cambia statura girandosi. Di
+lato la figura viene 85 px dove di fronte ne fa 92, il 3,4% più bassa, ed
+è come è disegnata: la riga di fronte varia già di suo del 4,7% fra un
+passo e l'altro, quindi stirare i profili aggiungerebbe un errore più
+grande di quello che toglie.

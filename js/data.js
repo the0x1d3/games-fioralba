@@ -1800,10 +1800,10 @@ D.ARREDI_IN_ATTESA = {};
    `righe` dice quale riga del foglio serve quale direzione di gioco —
    0 giù, 1 sinistra, 2 destra, 3 su — ed è la parte che conta: **le
    direzioni che non sono in elenco continuano a usare il personaggio
-   disegnato in codice.** Oggi mancano i profili, quindi il giocatore è
-   disegnato a mano quando cammina in su e in giù e in codice quando
-   cammina di lato. Il giorno che arrivano i fotogrammi di profilo si
-   aggiungono due righe al foglio e due voci qui, e non cambia altro.
+   disegnato in codice.** Adesso ci sono tutte e quattro, ma il patto
+   resta: se un giorno il foglio si riesporta con una riga in meno, si
+   toglie la voce da qui e quella direzione torna al disegno in codice
+   invece di ritagliare una cella che nel foglio non c'è.
 
    Vale solo per il GIOCATORE. Gli abitanti restano disegnati in codice
    e devono restarci: `drawChar` li colora uno per uno a partire dal loro
@@ -1811,7 +1811,7 @@ D.ARREDI_IN_ATTESA = {};
 D.OMINO = {
   file: 'omino.png',
   w: 64, h: 96, fotogrammi: 4,
-  righe: { 0: 0, 3: 1 }
+  righe: { 0: 0, 1: 1, 2: 2, 3: 3 }
 };
 
 D.CONSIGLI = [
