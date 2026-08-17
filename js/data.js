@@ -1787,10 +1787,31 @@ D.ARREDI = {
    al controllo: è la risposta, scritta dove la si legge, con dentro
    cosa manca perché il file entri in gioco. Il giorno che manca niente,
    la riga si sposta di sopra e sparisce da qui. */
-D.ARREDI_IN_ATTESA = {
-  'omino.png': 'il personaggio, ma di lui serve la camminata nelle quattro ' +
-               'direzioni: una posa sola non si può animare, e il giocatore ' +
-               'passa metà del gioco visto di spalle'
+D.ARREDI_IN_ATTESA = {};
+
+/* ===================================================================
+   IL PERSONAGGIO DISEGNATO A MANO
+
+   `img/omino.png` è un FOGLIO: celle da 64×96, quattro fotogrammi per
+   riga, una riga per direzione. Le celle si ritagliano una volta sola
+   (`ART.ominoSprite`) e da lì in poi si comportano come qualunque altro
+   sprite del gioco, contorno compreso.
+
+   `righe` dice quale riga del foglio serve quale direzione di gioco —
+   0 giù, 1 sinistra, 2 destra, 3 su — ed è la parte che conta: **le
+   direzioni che non sono in elenco continuano a usare il personaggio
+   disegnato in codice.** Oggi mancano i profili, quindi il giocatore è
+   disegnato a mano quando cammina in su e in giù e in codice quando
+   cammina di lato. Il giorno che arrivano i fotogrammi di profilo si
+   aggiungono due righe al foglio e due voci qui, e non cambia altro.
+
+   Vale solo per il GIOCATORE. Gli abitanti restano disegnati in codice
+   e devono restarci: `drawChar` li colora uno per uno a partire dal loro
+   `look`, e un foglio solo li renderebbe tutti la stessa persona. */
+D.OMINO = {
+  file: 'omino.png',
+  w: 64, h: 96, fotogrammi: 4,
+  righe: { 0: 0, 3: 1 }
 };
 
 D.CONSIGLI = [

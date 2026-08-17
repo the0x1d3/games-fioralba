@@ -1131,13 +1131,32 @@ R.disegna = function(G){
     }
   }
 
-  /* giocatore */
+  /* GIOCATORE.
+
+     È l'unico che può essere disegnato a mano: `ART.ominoSprite` torna
+     una cella del foglio se quella direzione è disegnata e l'immagine è
+     arrivata, e `null` altrimenti — nei primi fotogrammi, nelle
+     direzioni che il foglio non copre, e per sempre se `img/` non c'è.
+     Davanti a un `null` si disegna il personaggio in codice di sempre.
+
+     Gli abitanti no, e non è una dimenticanza: `drawChar` li colora uno
+     per uno dal loro `look`, e un foglio solo li farebbe tutti uguali. */
   {
     const px=Math.round(G.p.px)+ox, py=Math.round(G.p.py)+oy;
     lista.push({ y:G.p.py,
       s:()=>{ if(!G.p.dorme) FX.ombraTerra(sx, px, py-K, 8.5*K, 3.2*K, 0.26); },
       d:()=>{
         if(G.p.dorme) return;
+        const disegnato = ART.ominoSprite(G.p.dir, G.p.frame);
+        if(disegnato){
+          /* Ancorato ai PIEDI come tutto il resto: la cella è alta 96 e
+             il punto di appoggio sta in fondo, quindi si mette a
+             `py - altezza`. In larghezza si centra. */
+          const dx = (px - disegnato.width/2)|0, dy = (py - disegnato.height + 2)|0;
+          sx.drawImage(FX.contorno(disegnato), dx-K, dy-K);
+          sx.drawImage(disegnato, dx, dy);
+          return;
+        }
         sx.drawImage(FX.contorno(ART.charSprite(G.p.look, G.p.dir, G.p.frame)), (px-16*K)|0, (py-39*K)|0);
         raddoppia(sx, px|0, py|0);
         ART.drawChar(sx, 0, 0, G.p.look, G.p.dir, G.p.frame,
@@ -1296,17 +1315,22 @@ function riflessi(m, x0,y0,x1,y1, ox,oy, stag, t, G){
     }
   }
 
-  /* --- abitanti e giocatore --- */
+  /* --- abitanti e giocatore ---
+     Il giocatore porta con sé anche `io:true`: se è disegnato a mano,
+     nell'acqua deve specchiarsi LUI e non il personaggio in codice —
+     stare sulla riva e vedersi riflesso qualcun altro è il genere di
+     dettaglio che si nota subito e non si spiega. */
   const gente = [];
   for(const n of G.npcVivi()) gente.push({px:n.px, py:n.py, look:DATA.NPCS[n.id].look, dir:n.dir, frame:n.frame});
-  if(!G.p.dorme) gente.push({px:G.p.px, py:G.p.py, look:G.p.look, dir:G.p.dir, frame:G.p.frame});
+  if(!G.p.dorme) gente.push({px:G.p.px, py:G.p.py, look:G.p.look, dir:G.p.dir, frame:G.p.frame, io:true});
   for(const g of gente){
     if(!g.look || g.look.spirito) continue;
     const px = g.px+ox;
     if(px < -60*K || px > VW+60*K) continue;
     const tx=(g.px/T)|0, ty=(g.py/T)|0;
     if(!acquaSotto(m,tx,ty)) continue;
-    specchia(m, sx, ART.charSprite(g.look, g.dir, g.frame), g.px, (ty+1)*T, ox, oy, t, 0.26);
+    const suo = (g.io && ART.ominoSprite(g.dir, g.frame)) || ART.charSprite(g.look, g.dir, g.frame);
+    specchia(m, sx, suo, g.px, (ty+1)*T, ox, oy, t, 0.26);
   }
 }
 

@@ -342,6 +342,14 @@ interface FioData {
   ARREDI: Record<string, { file: string; w: number; h: number }>;
   /** File in `img/` disegnati ma non ancora collegati, col perché. */
   ARREDI_IN_ATTESA: Record<string, string>;
+  /**
+   * Il foglio del personaggio disegnato a mano: celle `w`×`h`,
+   * `fotogrammi` per riga, e `righe` mappa la direzione di gioco
+   * (0 giù, 1 sinistra, 2 destra, 3 su) sulla riga del foglio. Le
+   * direzioni assenti restano disegnate in codice.
+   */
+  OMINO: { file: string; w: number; h: number; fotogrammi: number;
+           righe: Record<string, number> };
   /** Coefficienti dei bonus per abilità: li leggono gioco e scheda. */
   BONUS: Record<string, FioBonus>;
   /** I bonus raccontati a parole, per livello: [nome, valore][]. */

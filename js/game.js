@@ -124,7 +124,10 @@ function init(){
      caricamento di immagini.js perché quel file si carica prima di
      data.js: toccare `DATA` mentre si carica sarebbe un tredicesimo
      vincolo d'ordine preso per niente. */
-  if(window.IMG) IMG.precarica(DATA.ARREDI);
+  if(window.IMG){
+    IMG.precarica(DATA.ARREDI);
+    IMG.precarica({ omino: DATA.OMINO });   // il foglio della camminata
+  }
   window.addEventListener('resize', ()=>{ REND.resize(); REND.initMeteo(); });
   collegaInput();
   collegaTitolo();

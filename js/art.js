@@ -991,6 +991,42 @@ A.charSprite = function(look, dir, frame){
   return c;
 };
 
+/* ===================================================================
+   IL PERSONAGGIO DISEGNATO A MANO, RITAGLIATO DAL FOGLIO
+
+   `img/omino.png` arriva come un foglio unico (vedi `DATA.OMINO`), ma
+   tutto il resto del gioco si aspetta uno sprite per posa: il contorno
+   scuro si costruisce da una tela e si tiene in cache PER TELA, la
+   profondità si ordina su uno sprite, il riflesso nell'acqua ne vuole
+   uno. Quindi il foglio si ritaglia una volta sola, alla prima
+   richiesta, e da lì in poi queste otto celle sono sprite come gli altri.
+
+   Torna `null` finché l'immagine non è arrivata, e per le direzioni che
+   il foglio non copre: chi disegna, davanti a un `null`, usa il
+   personaggio disegnato in codice. È lo stesso patto degli arredi.
+   =================================================================== */
+const ominoCelle = {};
+let ominoDaCui = null;                 // da quale immagine sono state ritagliate
+A.ominoSprite = function(dir, frame){
+  if(!window.IMG || !window.DATA || !DATA.OMINO) return null;
+  const O = DATA.OMINO;
+  const riga = O.righe[dir];
+  if(riga === undefined) return null;               // direzione non disegnata
+  const img = IMG.prendi('omino');
+  if(!img) return null;
+  /* Se l'immagine è cambiata sotto ai piedi — succede solo col
+     `IMG.riprova` del pannello di prova — le celle vecchie non valgono
+     più e si rifanno. */
+  if(ominoDaCui !== img){ for(const k in ominoCelle) delete ominoCelle[k]; ominoDaCui = img; }
+  const col = ((frame|0) % O.fotogrammi + O.fotogrammi) % O.fotogrammi;
+  const key = riga+'|'+col;
+  if(ominoCelle[key]) return ominoCelle[key];
+  const c = cv(O.w, O.h), x = c.getContext('2d');
+  x.drawImage(img, col*O.w, riga*O.h, O.w, O.h, 0, 0, O.w, O.h);
+  ominoCelle[key] = c;
+  return c;
+};
+
 /* ritratto per i dialoghi (96x96) */
 const faceCache={};
 A.face = function(key, look){

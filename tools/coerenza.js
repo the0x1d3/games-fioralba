@@ -2497,6 +2497,36 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
     if (a.w <= 0 || a.h <= 0) problemi.push(`«${id}» ha una misura non positiva`);
   }
 
+  /* Il foglio del personaggio è un caso a sé: non è un arredo, è una
+     griglia di celle. Si controlla che i pixel veri siano esattamente
+     `w × fotogrammi` per `h × righe` — se un domani si riesporta con una
+     riga in più e ci si dimentica di dirlo a `DATA.OMINO`, le celle si
+     ritagliano sfalsate e il giocatore cammina a pezzi di due pose. */
+  const O = DATA.OMINO;
+  if (!O) problemi.push('manca DATA.OMINO: il foglio del personaggio non lo legge nessuno');
+  else {
+    usati.add(O.file);
+    const f = path.join(dir, O.file);
+    if (!fs.existsSync(f)) problemi.push(`DATA.OMINO vuole img/${O.file}, che non c'è`);
+    else {
+      const b = fs.readFileSync(f);
+      const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+      const righe = Object.keys(O.righe).length;
+      const attesoW = O.w * O.fotogrammi;
+      if (w !== attesoW)
+        problemi.push(`img/${O.file} è largo ${w} ma ${O.fotogrammi} celle da ${O.w} fanno ${attesoW}`);
+      if (h % O.h !== 0)
+        problemi.push(`img/${O.file} è alto ${h}, che non è un multiplo della cella (${O.h})`);
+      else if (h / O.h < righe)
+        problemi.push(`img/${O.file} ha ${h / O.h} righe ma DATA.OMINO ne mappa ${righe}: ` +
+                      'una direzione ritaglierebbe fuori dal foglio');
+      for (const d in O.righe) {
+        if (!'0123'.includes(d)) problemi.push(`DATA.OMINO.righe parla della direzione «${d}», che non esiste`);
+        if (O.righe[d] >= h / O.h) problemi.push(`la direzione ${d} punta alla riga ${O.righe[d]}, che nel foglio non c'è`);
+      }
+    }
+  }
+
   /* Un file in img/ che non usa nessuno è peso morto scaricato da chi
      gioca. Non basta però dire «toglilo»: qualcuno può essere disegnato
      e in attesa di poter entrare, e allora la risposta sta in
