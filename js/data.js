@@ -1872,6 +1872,35 @@ D.OMINO = {
   righe: { 0: 0, 1: 1, 2: 2, 3: 3 }
 };
 
+/* LA CAMMINATA CON L'ATTREZZO IN MANO, un foglio per attrezzo.
+
+   Non è un ornamento: da quando il giocatore è disegnato a mano,
+   `render.js` esce dal ramo del PNG prima di arrivare a quello che
+   disegnava l'attrezzo in mano, e con una zappa scelta non si vede
+   niente in mano. Questi fogli rimettono l'attrezzo dov'era, disegnato
+   invece che appiccicato.
+
+   LA CELLA È 96×112 E NON 64×96, e la ragione è misurata: con
+   l'attrezzo la figura esce dai bordi. Servivano 6 px a sinistra, 11 a
+   destra e 5 sopra — un'ascia tenuta alta, un annaffiatoio che sporge.
+   In una cella da 64 i fotogrammi si sarebbero pestati fra loro, che è
+   un difetto che si vede come un pezzo di ascia attaccato alla schiena.
+
+   Il renderer non cambia: centra sulla larghezza e appoggia in fondo,
+   quindi basta che nel foglio la testa stia in mezzo e i piedi sul
+   fondo. Sono a 47 e a 109, che sono gli stessi posti di `omino.png`
+   riportati alla cella nuova — se no il contadino salterebbe di un
+   pixel ogni volta che prende o posa un attrezzo.
+
+   Chi non è in elenco non si vede in mano, ed è lo stesso patto delle
+   direzioni: quando arriva il foglio si aggiunge una riga qui, e non
+   cambia altro. */
+D.OMINO_ATTREZZI = {
+  annaffiatoio: { file:'omino-annaffiatoio.png', w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  ascia:        { file:'omino-ascia.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  arco:         { file:'omino-arco.png',         w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} }
+};
+
 D.CONSIGLI = [
   'Dormi prima di mezzanotte o ti sveglierai a pezzi.',
   'La pioggia annaffia il campo al posto tuo.',

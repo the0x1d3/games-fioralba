@@ -356,6 +356,13 @@ interface FioData {
    */
   OMINO: { file: string; w: number; h: number; fotogrammi: number;
            righe: Record<string, number> };
+  /**
+   * Un foglio per attrezzo, con la stessa forma di `OMINO` ma la cella
+   * più grande: con l'attrezzo in mano la figura esce dai 64×96. Chi non
+   * è in elenco cammina col foglio a mani vuote.
+   */
+  OMINO_ATTREZZI: Record<string, { file: string; w: number; h: number;
+                                   fotogrammi: number; righe: Record<string, number> }>;
   /** Coefficienti dei bonus per abilità: li leggono gioco e scheda. */
   BONUS: Record<string, FioBonus>;
   /** I bonus raccontati a parole, per livello: [nome, valore][]. */

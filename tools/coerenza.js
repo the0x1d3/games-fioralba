@@ -2564,6 +2564,41 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
     }
   }
 
+  /* I fogli con l'attrezzo in mano: stessa griglia, cella più grande.
+     Si controllano come quello a mani vuote, più due cose loro.
+
+     La chiave dev'essere un attrezzo che esiste: scritta storta, il file
+     si scarica e non lo chiede nessuno, e il giocatore continua a
+     camminare a mani vuote senza che niente si lamenti.
+
+     E la cella dev'essere ALMENO grande quanto quella a mani vuote. Il
+     renderer centra sulla larghezza e appoggia in fondo, quindi da una
+     cella più piccola il contadino uscirebbe più basso e più stretto: si
+     rimpicciolirebbe prendendo in mano un attrezzo. */
+  for (const id in (DATA.OMINO_ATTREZZI || {})) {
+    const A = DATA.OMINO_ATTREZZI[id];
+    if (!DATA.ITEMS[id])
+      problemi.push(`DATA.OMINO_ATTREZZI ha «${id}», che fra gli oggetti non c'è: ` +
+                    'il foglio si scaricherebbe senza che nessuno lo chieda');
+    if (O && (A.w < O.w || A.h < O.h))
+      problemi.push(`il foglio di «${id}» ha celle ${A.w}×${A.h}, più piccole dei ${O.w}×${O.h} a mani vuote: ` +
+                    'il contadino si rimpicciolirebbe prendendo in mano l\'attrezzo');
+    usati.add(A.file);
+    const f = path.join(dir, A.file);
+    if (!fs.existsSync(f)) { problemi.push(`DATA.OMINO_ATTREZZI vuole img/${A.file}, che non c'è`); continue; }
+    const b = fs.readFileSync(f);
+    if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) { problemi.push(`img/${A.file} non è un PNG`); continue; }
+    const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+    const ultima = Math.max(...Object.values(A.righe));
+    if (w !== A.w * A.fotogrammi)
+      problemi.push(`img/${A.file} è largo ${w} ma ${A.fotogrammi} celle da ${A.w} fanno ${A.w*A.fotogrammi}`);
+    if (h !== (ultima + 1) * A.h)
+      problemi.push(`img/${A.file} è alto ${h} ma «${id}» arriva alla riga ${ultima}, cioè ${(ultima+1)*A.h}`);
+    for (const d in A.righe)
+      if (!'0123'.includes(d))
+        problemi.push(`il foglio di «${id}» parla della direzione «${d}», che non esiste`);
+  }
+
   /* Un file in img/ che non usa nessuno è peso morto scaricato da chi
      gioca. Non basta però dire «toglilo»: qualcuno può essere disegnato
      e in attesa di poter entrare, e allora la risposta sta in

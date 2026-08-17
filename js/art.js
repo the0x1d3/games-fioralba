@@ -1006,20 +1006,34 @@ A.charSprite = function(look, dir, frame){
    personaggio disegnato in codice. È lo stesso patto degli arredi.
    =================================================================== */
 const ominoCelle = {};
-let ominoDaCui = null;                 // da quale immagine sono state ritagliate
-A.ominoSprite = function(dir, frame){
+const ominoDaCui = {};                 // per foglio: da quale immagine sono state ritagliate
+/* `attrezzo` sceglie il foglio: c'è la camminata a mani vuote e, per
+   qualche attrezzo, quella con l'attrezzo in mano. Un attrezzo senza
+   foglio ricade su quella a mani vuote — si cammina, e in mano non si
+   vede niente, che è lo stesso patto delle direzioni non disegnate. */
+A.ominoSprite = function(dir, frame, attrezzo){
   if(!window.IMG || !window.DATA || !DATA.OMINO) return null;
-  const O = DATA.OMINO;
+  const conAttrezzo = attrezzo && DATA.OMINO_ATTREZZI && DATA.OMINO_ATTREZZI[attrezzo];
+  const chiave = conAttrezzo ? 'omino:'+attrezzo : 'omino';
+  let O = conAttrezzo || DATA.OMINO;
+  let img = IMG.prendi(chiave);
+  /* Il foglio dell'attrezzo può non essere ancora arrivato mentre quello
+     a mani vuote sì. Meglio camminare senza attrezzo che sparire. */
+  let k = chiave;
+  if(!img && conAttrezzo){ O = DATA.OMINO; k = 'omino'; img = IMG.prendi(k); }
+  if(!img) return null;
   const riga = O.righe[dir];
   if(riga === undefined) return null;               // direzione non disegnata
-  const img = IMG.prendi('omino');
-  if(!img) return null;
   /* Se l'immagine è cambiata sotto ai piedi — succede solo col
      `IMG.riprova` del pannello di prova — le celle vecchie non valgono
-     più e si rifanno. */
-  if(ominoDaCui !== img){ for(const k in ominoCelle) delete ominoCelle[k]; ominoDaCui = img; }
+     più e si rifanno. Una per foglio, se no riprovarne uno le butterebbe
+     tutte. */
+  if(ominoDaCui[k] !== img){
+    for(const c in ominoCelle) if(c.indexOf(k+'|') === 0) delete ominoCelle[c];
+    ominoDaCui[k] = img;
+  }
   const col = ((frame|0) % O.fotogrammi + O.fotogrammi) % O.fotogrammi;
-  const key = riga+'|'+col;
+  const key = k+'|'+riga+'|'+col;
   if(ominoCelle[key]) return ominoCelle[key];
   const c = cv(O.w, O.h), x = c.getContext('2d');
   x.drawImage(img, col*O.w, riga*O.h, O.w, O.h, 0, 0, O.w, O.h);

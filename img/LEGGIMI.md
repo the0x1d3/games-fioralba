@@ -109,3 +109,35 @@ lato la figura viene 85 px dove di fronte ne fa 92, il 3,4% più bassa, ed
 è come è disegnata: la riga di fronte varia già di suo del 4,7% fra un
 passo e l'altro, quindi stirare i profili aggiungerebbe un errore più
 grande di quello che toglie.
+
+## La camminata con l'attrezzo in mano
+
+Un foglio per attrezzo (`omino-ascia.png` e compagni, `DATA.OMINO_ATTREZZI`),
+stessa griglia di quattro fotogrammi per quattro direzioni, **celle
+96×112 e non 64×96**: con l'attrezzo la figura esce dai bordi, e
+misurando l'ingombro servivano 6 px a sinistra, 11 a destra e 5 sopra.
+In una cella da 64 i fotogrammi si pestano, e si vede come un pezzo
+d'ascia attaccato alla schiena del fotogramma accanto.
+
+Il renderer non ha numeri scritti a mano: centra sulla larghezza e
+appoggia in fondo. Basta quindi che nel foglio la **testa stia in mezzo**
+(colonna 47 di 96) e i **piedi sul fondo** (riga 109 di 112) — che sono
+le stesse quote di `omino.png` riportate alla cella nuova. Misurato dopo
+sulla tela vera: il piede cade allo stesso pixel a mani vuote e con
+tutti e tre gli attrezzi, scarto zero.
+
+**Qui la scala è per RIGA, non una sola.** È il contrario di quanto vale
+per la camminata a mani vuote, e la ragione è nei file: la riga di
+spalle arriva esportata dal 10 al 23% più piccola delle altre, che è
+troppo per essere un modo di disegnare. Il riferimento non è il file
+stesso ma `omino.png`: si misura il corpo — dalla cima del **cappello**
+ai piedi, non della sagoma, perché un'ascia alzata o un arco tenuto
+dritto arrivano più su della testa — e si porta ogni riga all'altezza
+della riga corrispondente della camminata a mani vuote. Così il
+contadino non cambia statura né girandosi né prendendo in mano qualcosa.
+
+Dentro alla riga il saliscendi del passo si tiene: la scala si prende
+dalla **mediana** dei quattro fotogrammi. Chi si scosta più dell'8% non
+è un passo più alto, è un file esportato a un'altra scala, e si porta
+alla mediana da solo — succede, ed è già successo con un fotogramma
+esportato a un terzo della misura dei suoi compagni.

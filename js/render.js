@@ -1147,11 +1147,15 @@ R.disegna = function(G){
       s:()=>{ if(!G.p.dorme) FX.ombraTerra(sx, px, py-K, 8.5*K, 3.2*K, 0.26); },
       d:()=>{
         if(G.p.dorme) return;
-        const disegnato = ART.ominoSprite(G.p.dir, G.p.frame);
+        const disegnato = ART.ominoSprite(G.p.dir, G.p.frame, G.p.attrezzoVisibile);
         if(disegnato){
-          /* Ancorato ai PIEDI come tutto il resto: la cella è alta 96 e
-             il punto di appoggio sta in fondo, quindi si mette a
-             `py - altezza`. In larghezza si centra. */
+          /* Ancorato ai PIEDI come tutto il resto: il punto di appoggio
+             sta in fondo alla cella, quindi si mette a `py - altezza`.
+             In larghezza si centra. Vale per tutte e due le misure di
+             cella — 64×96 a mani vuote, 96×112 con l'attrezzo — perché
+             qui non c'è nessun numero scritto a mano: i fogli sono fatti
+             con la testa in mezzo e i piedi in fondo, ed è quello che
+             questa formula si aspetta. */
           const dx = (px - disegnato.width/2)|0, dy = (py - disegnato.height + 2)|0;
           sx.drawImage(FX.contorno(disegnato), dx-K, dy-K);
           sx.drawImage(disegnato, dx, dy);
@@ -1322,14 +1326,17 @@ function riflessi(m, x0,y0,x1,y1, ox,oy, stag, t, G){
      dettaglio che si nota subito e non si spiega. */
   const gente = [];
   for(const n of G.npcVivi()) gente.push({px:n.px, py:n.py, look:DATA.NPCS[n.id].look, dir:n.dir, frame:n.frame});
-  if(!G.p.dorme) gente.push({px:G.p.px, py:G.p.py, look:G.p.look, dir:G.p.dir, frame:G.p.frame, io:true});
+  if(!G.p.dorme) gente.push({px:G.p.px, py:G.p.py, look:G.p.look, dir:G.p.dir, frame:G.p.frame,
+                             io:true, attrezzo:G.p.attrezzoVisibile});
   for(const g of gente){
     if(!g.look || g.look.spirito) continue;
     const px = g.px+ox;
     if(px < -60*K || px > VW+60*K) continue;
     const tx=(g.px/T)|0, ty=(g.py/T)|0;
     if(!acquaSotto(m,tx,ty)) continue;
-    const suo = (g.io && ART.ominoSprite(g.dir, g.frame)) || ART.charSprite(g.look, g.dir, g.frame);
+    /* Col suo attrezzo anche nel riflesso: stando sulla riva con l'ascia
+       in mano, nell'acqua si specchiava uno a mani vuote. */
+    const suo = (g.io && ART.ominoSprite(g.dir, g.frame, g.attrezzo)) || ART.charSprite(g.look, g.dir, g.frame);
     specchia(m, sx, suo, g.px, (ty+1)*T, ox, oy, t, 0.26);
   }
 }
