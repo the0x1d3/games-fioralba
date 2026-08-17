@@ -2338,8 +2338,8 @@ verifica('i blocchi disegnati a mano di render.js passano tutti dal raddoppio', 
   const src = fs.readFileSync(path.join(RADICE, 'js/render.js'), 'utf8')
     .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
   const corpi = [...src.matchAll(/function (\w+)Dentro\s*\(/g)].map(m => m[1]);
-  if (corpi.length < 8)
-    problemi.push(`trovati solo ${corpi.length} corpi \`…Dentro\` invece di almeno 8: ` +
+  if (corpi.length < 6)
+    problemi.push(`trovati solo ${corpi.length} corpi \`…Dentro\` invece di almeno 6: ` +
                   'il controllo non li vede più e non protegge niente');
   for (const nome of corpi) {
     const guscio = src.match(new RegExp('function ' + nome + '\\s*\\([^)]*\\)\\s*\\{([\\s\\S]*?)\\n\\}'));
@@ -2413,6 +2413,29 @@ const RIFATTI_A_64 = [
   'bCasa', 'bBottega', 'bFucina', 'bLocanda', 'bCottage',
   'bSantuario', 'bPollaio', 'bSerra', 'bCapanna'
 ];
+/* Le funzioni di render.js promosse a 64: disegnano direttamente in
+   pixel di mondo, senza `raddoppia`. Ri-avvolgerle in un raddoppio non
+   darebbe nessun errore — verrebbero fuori grandi il doppio e nel
+   quarto in alto a sinistra della casella — quindi si nomina qui chi è
+   già stato promosso, e chi lo rimette dentro trova rosso. */
+const IN_PIXEL_DI_MONDO = ['pareteRoccia', 'stalattiti', 'dettaglioSuperficie'];
+verifica('chi disegna già in pixel di mondo non torna dentro a un raddoppio', () => {
+  const problemi = [];
+  const src = fs.readFileSync(path.join(RADICE, 'js/render.js'), 'utf8');
+  for (const nome of IN_PIXEL_DI_MONDO) {
+    const m = src.match(new RegExp('function ' + nome + '\\s*\\([^)]*\\)\\s*\\{([\\s\\S]*?)\\n\\}'));
+    if (!m) { problemi.push(`non trovo più \`${nome}\` in render.js`); continue; }
+    const corpo = m[1].replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
+    if (/(?<!\w)raddoppia\s*\(/.test(corpo))
+      problemi.push(`\`${nome}\` è ridisegnata a 64 e usa di nuovo \`raddoppia\`: ` +
+                    'uscirebbe grande il doppio e spostata sull\'angolo della casella');
+    if (/(?<!\w)U(?!\w)/.test(corpo))
+      problemi.push(`\`${nome}\` è ridisegnata a 64 ma parla ancora di \`U\`: ` +
+                    'metà dei suoi numeri sono in trentaduesimi e metà no');
+  }
+  return problemi;
+});
+
 verifica('gli sprite già ridisegnati a 64 restano a 64', () => {
   const problemi = [];
   const art = fs.readFileSync(path.join(RADICE, 'js', 'art.js'), 'utf8');
@@ -2428,7 +2451,7 @@ verifica('gli sprite già ridisegnati a 64 restano a 64', () => {
                     'metà dei suoi numeri sono in trentaduesimi e metà no');
   }
   // e le due che compongono i raccordi devono seguire le maschere
-  for (const nome of ['bordo', 'ombraBordo', 'arato', 'tree', 'bush', 'stump']) {
+  for (const nome of ['bordo', 'ombraBordo', 'arato', 'tree', 'bush', 'stump', 'rock']) {
     const m = art.match(new RegExp('A\\.' + nome + ' = function[^{]*\\{([\\s\\S]*?)\\n\\};'));
     if (!m) { problemi.push(`non trovo più \`A.${nome}\``); continue; }
     if (!/\btelaNetta\(/.test(m[1]))
@@ -2651,7 +2674,7 @@ verifica(TS ? 'niente raddoppio relativo dentro a un blocco già raddoppiato'
      rimbalzo: se A sta in un …Dentro e A chiama B, pure B ci sta dentro */
   const dentro = new Set();
   const daVedere = [...corpi.keys()].filter(n => n.endsWith('Dentro'));
-  if (daVedere.length < 8)
+  if (daVedere.length < 6)
     problemi.push(`trovati solo ${daVedere.length} corpi \`…Dentro\`: il controllo non li vede più`);
   while (daVedere.length) {
     const nome = daVedere.pop();

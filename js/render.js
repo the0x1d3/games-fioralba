@@ -569,12 +569,11 @@ const DETTAGLIO = {
   terra:   { chiazza:'#6d4d38', forza:0.13, scala:7,  detriti:['#a07a56','#5f4433'], quanti:1 }
 };
 
+/* Ridisegnato a 64, e senza `raddoppia`: sta SOPRA alle piastrelle, che
+   sono già nette, e uno strato di dettaglio a blocchi da due steso su
+   una texture fine è la cosa che si nota di più — vale per la sabbia
+   della Costa come per il pavimento della miniera. */
 function dettaglioSuperficie(x, dx, dy, gx, gy, tipo, season){
-  raddoppia(x, dx, dy);
-  dettaglioSuperficieDentro(x, 0, 0, gx, gy, tipo, season);
-  x.restore();
-}
-function dettaglioSuperficieDentro(x, dx, dy, gx, gy, tipo, season){
   // d'inverno l'erba è disegnata come neve: prende il dettaglio della neve.
   // L'erba nelle altre stagioni non ne ha bisogno: ha già i ciuffi animati.
   const D = DETTAGLIO[(tipo==='erba' && season==='inverno') ? 'neve' : tipo];
@@ -586,34 +585,40 @@ function dettaglioSuperficieDentro(x, dx, dy, gx, gy, tipo, season){
   if(Math.abs(forza) > 0.12){
     x.globalAlpha = Math.min(0.5, Math.abs(forza)*D.forza*2.2);
     x.fillStyle = D.chiazza;
-    // bordo irregolare: la chiazza non deve essere un quadrato
-    for(let k=0;k<8;k++){
+    /* Il bordo irregolare della chiazza: sedici fasce da quattro invece
+       di otto da otto, e lo scarto va da zero a dieci pixel veri. È la
+       stessa chiazza, con un contorno che non si legge più a scalini. */
+    for(let k=0;k<16;k++){
       const ry = (k*4);
-      const inizio = ((ART.hsh(gx, gy*8+k, 401)*5)|0);
-      const largo  = U - inizio - ((ART.hsh(gx*3, gy+k, 402)*5)|0);
+      const inizio = ((ART.hsh(gx, gy*8+k, 401)*10)|0);
+      const largo  = T - inizio - ((ART.hsh(gx*3, gy+k, 402)*10)|0);
       if(largo > 0) x.fillRect(dx+inizio, dy+ry, largo, 4);
     }
     x.globalAlpha = 1;
   }
 
   /* 2. detriti radi: qualche sassolino, conchiglia, crepa */
-  for(let k=0; k<D.quanti; k++){
+  for(let k=0; k<D.quanti*2; k++){
     if(ART.hsh(gx, gy*7+k, 411) < 0.86) continue;
-    const bx = dx + 3 + ((ART.hsh(gx+k, gy, 412)*(U-7))|0);
-    const by = dy + 3 + ((ART.hsh(gx, gy+k, 413)*(U-7))|0);
+    const bx = dx + 6 + ((ART.hsh(gx+k, gy, 412)*(T-14))|0);
+    const by = dy + 6 + ((ART.hsh(gx, gy+k, 413)*(T-14))|0);
     const col = D.detriti[(ART.hsh(gx+k, gy+k, 414)*D.detriti.length)|0];
     const forma = ART.hsh(gx*5+k, gy, 415);
     x.globalAlpha = 0.75;
-    if(forma > 0.66){                            // sassolino
-      x.fillStyle = col; x.fillRect(bx, by, 3, 2);
-      x.fillStyle = ART.shade(col, 0.22); x.fillRect(bx, by, 2, 1);
+    if(forma > 0.66){                            // sassolino, con la sua luce
+      x.fillStyle = col; x.fillRect(bx, by, 5, 3);
+      x.fillStyle = ART.shade(col, 0.22); x.fillRect(bx, by, 3, 1);
+      x.fillStyle = ART.shade(col, -0.20); x.fillRect(bx+3, by+2, 2, 1);
     } else if(forma > 0.33){                     // crepa / venatura
       x.fillStyle = col;
-      x.fillRect(bx, by, 5, 1);
-      x.fillRect(bx+4, by+1, 3, 1);
+      x.fillRect(bx, by, 9, 1);
+      x.fillRect(bx+8, by+1, 6, 1);
+      x.fillRect(bx+13, by+2, 4, 1);             // la crepa continua e si perde
     } else {                                     // puntinatura
       x.fillStyle = col;
-      x.fillRect(bx, by, 1, 1); x.fillRect(bx+2, by+1, 1, 1); x.fillRect(bx+1, by+3, 1, 1);
+      x.fillRect(bx, by, 1, 1);     x.fillRect(bx+3, by+2, 1, 1);
+      x.fillRect(bx+2, by+6, 1, 1); x.fillRect(bx+6, by+4, 1, 1);
+      x.fillRect(bx+5, by-1, 1, 1);
     }
     x.globalAlpha = 1;
   }
@@ -627,63 +632,76 @@ function dettaglioSuperficieDentro(x, dx, dy, gx, gy, tipo, season){
    sul vuoto ha una faccia illuminata in alto e scura alla base, con
    stalattiti e vene di minerale.
    =================================================================== */
+/* RIDISEGNATA A 64, quindi NON passa più da `raddoppia`: scrive
+   direttamente in pixel di mondo dentro al blocco di terreno.
+
+   È la seconda per area di tutta la miniera dopo il pavimento — fra il
+   28% e il 50% di una schermata, contato sulle caselle di due
+   inquadrature — e va col sasso, che è la stessa roccia vista da vicino:
+   una parete a strati da quattro pixel accanto a un masso con gli
+   spigoli da uno si nota subito. */
 function pareteRoccia(x, dx, dy, gx, gy, m){
-  raddoppia(x, dx, dy);
-  pareteRocciaDentro(x, 0, 0, gx, gy, m);
-  x.restore();
-}
-function pareteRocciaDentro(x, dx, dy, gx, gy, m){
   const R = PAL.c.roccia;
   const roccia = (ax,ay)=> WORLD.terreno(m,ax,ay)==='roccia';
   const sotto = !roccia(gx,gy+1);          // affaccia sul vuoto: si vede la parete
 
   /* --- corpo della roccia, a strati orizzontali --- */
-  x.fillStyle = R.corpo; x.fillRect(dx,dy,U,U);
-  for(let k=0;k<U;k+=4){
+  x.fillStyle = R.corpo; x.fillRect(dx,dy,T,T);
+  for(let k=0;k<T;k+=4){
     const n = ART.hsh(gx, gy*8+k, 421);
     x.fillStyle = n>0.62 ? R.corpoChiaro : (n>0.3 ? R.corpo : R.strato);
-    x.fillRect(dx, dy+k, U, 4);
+    x.fillRect(dx, dy+k, T, 4);
+    // il filo di luce in cima allo strato: un pixel, e la roccia stratifica
+    if(n>0.62){ x.fillStyle = R.corpoChiaro; x.fillRect(dx, dy+k, T, 1); }
   }
-  // fratture verticali
-  for(let k=0;k<3;k++){
+  // fratture verticali: il doppio, e con l'ombra accanto
+  for(let k=0;k<6;k++){
     if(ART.hsh(gx*3+k, gy, 422) < 0.55) continue;
-    const bx = dx + 3 + ((ART.hsh(gx+k, gy*2, 423)*(U-6))|0);
-    x.fillStyle = R.strato;
-    x.fillRect(bx, dy + ((ART.hsh(gx,gy+k,424)*10)|0), 1, 10+((ART.hsh(gx,gy-k,425)*14)|0));
+    const bx = dx + 6 + ((ART.hsh(gx+k, gy*2, 423)*(T-12))|0);
+    const by = dy + ((ART.hsh(gx,gy+k,424)*20)|0);
+    const bh = 20+((ART.hsh(gx,gy-k,425)*28)|0);
+    x.fillStyle = R.strato;      x.fillRect(bx, by, 1, bh);
+    x.fillStyle = R.corpoChiaro; x.fillRect(bx+1, by, 1, bh);
   }
   // vene di minerale, rare
   if(ART.hsh(gx, gy, 426) > 0.88){
-    const bx = dx+4+((ART.hsh(gx,gy,427)*20)|0), by = dy+5+((ART.hsh(gx,gy,428)*18)|0);
+    const bx = dx+8+((ART.hsh(gx,gy,427)*40)|0), by = dy+10+((ART.hsh(gx,gy,428)*36)|0);
     x.fillStyle = R.vena;
-    x.fillRect(bx, by, 6, 2); x.fillRect(bx+5, by+2, 5, 2); x.fillRect(bx+9, by+1, 4, 2);
+    x.fillRect(bx, by, 12, 4); x.fillRect(bx+10, by+4, 10, 4); x.fillRect(bx+18, by+2, 8, 4);
     x.fillStyle = R.venaLuce;
-    x.fillRect(bx+1, by, 3, 1); x.fillRect(bx+6, by+2, 2, 1);
+    x.fillRect(bx+2, by, 6, 1); x.fillRect(bx+12, by+4, 4, 1); x.fillRect(bx+20, by+2, 3, 1);
   }
 
   /* --- bordi laterali: spigolo illuminato dove la roccia finisce --- */
-  if(!roccia(gx-1,gy)){ x.fillStyle=R.facciaLuce; x.fillRect(dx,dy,1,U);
-                        x.fillStyle=R.faccia;     x.fillRect(dx+1,dy,1,U); }
-  if(!roccia(gx+1,gy)){ x.fillStyle=R.facciaLuce; x.fillRect(dx+U-1,dy,1,U);
-                        x.fillStyle=R.faccia;     x.fillRect(dx+U-2,dy,1,U); }
-  if(!roccia(gx,gy-1)){ x.fillStyle=R.strato; x.fillRect(dx,dy,U,2); }
+  if(!roccia(gx-1,gy)){ x.fillStyle=R.facciaLuce; x.fillRect(dx,dy,1,T);
+                        x.fillStyle=R.faccia;     x.fillRect(dx+1,dy,2,T); }
+  if(!roccia(gx+1,gy)){ x.fillStyle=R.facciaLuce; x.fillRect(dx+T-1,dy,1,T);
+                        x.fillStyle=R.faccia;     x.fillRect(dx+T-3,dy,2,T); }
+  if(!roccia(gx,gy-1)){ x.fillStyle=R.strato; x.fillRect(dx,dy,T,4); }
 
   if(!sotto) return;
 
   /* --- la faccia che guarda la caverna --- */
-  const FH = 15;                            // altezza della parete visibile
-  const fy = dy + U - FH;
-  x.fillStyle = R.cornice; x.fillRect(dx, fy-2, U, 2);      // cornicione in luce
-  x.fillStyle = R.facciaLuce; x.fillRect(dx, fy, U, 3);
-  x.fillStyle = R.faccia; x.fillRect(dx, fy+3, U, FH-6);
-  x.fillStyle = R.base;   x.fillRect(dx, dy+U-3, U, 3);     // base in ombra
+  const FH = 30;                            // altezza della parete visibile
+  const fy = dy + T - FH;
+  x.fillStyle = R.cornice; x.fillRect(dx, fy-4, T, 4);      // cornicione in luce
+  x.fillStyle = R.facciaLuce; x.fillRect(dx, fy, T, 5);
+  x.fillStyle = R.faccia; x.fillRect(dx, fy+5, T, FH-11);
+  x.fillStyle = R.base;   x.fillRect(dx, dy+T-6, T, 6);     // base in ombra
 
-  // scanalature verticali della parete
-  for(let k=0;k<U;k+=5){
-    const off = ((ART.hsh(k, gy, 431)*3)|0);
+  /* Scanalature verticali della parete: adesso il giunto è largo un
+     pixel e la luce che gli sta accanto pure. Erano due e due, cioè
+     quattro pixel a schermo per ogni scanalatura, e da lontano la parete
+     si leggeva a strisce invece che a pietra. */
+  for(let k=0;k<T;k+=10){
+    const off = ((ART.hsh(k, gy, 431)*6)|0);
     x.fillStyle = R.giunto;
-    x.fillRect(dx+k+off, fy+3, 1, FH-5);
+    x.fillRect(dx+k+off, fy+5, 1, FH-10);
     x.fillStyle = R.facciaLuce;
-    x.fillRect(dx+k+off+1, fy+3, 1, 3);
+    x.fillRect(dx+k+off+1, fy+5, 1, 6);
+    // e un blocco ogni tanto ha il suo corso orizzontale
+    if(ART.hsh(k, gy+1, 432) > 0.6)
+      x.fillRect(dx+k+off, fy+5+((ART.hsh(k,gy,433)*(FH-16))|0), Math.min(10, T-k-off), 1);
   }
 
   /* Le stalattiti NON si disegnano qui: pendono sotto il bordo, quindi
@@ -694,25 +712,27 @@ function pareteRocciaDentro(x, dx, dy, gx, gy, m){
 
 /* stalattiti che pendono dalla parete soprastante, disegnate sul
    pavimento così restano dentro la casella */
+/* Ridisegnate a 64 con la parete da cui pendono: niente `raddoppia`. */
 function stalattiti(x, dx, dy, gx, gy){
-  raddoppia(x, dx, dy);
-  stalattitiDentro(x, 0, 0, gx, gy);
-  x.restore();
-}
-function stalattitiDentro(x, dx, dy, gx, gy){
   const R = PAL.c.roccia;
   const sopra = gy-1;                       // il seme viene dalla parete
   const quante = ART.hsh(gx, sopra, 441) > 0.5 ? (ART.hsh(gx, sopra, 442)>0.72 ? 2 : 1) : 0;
   for(let k=0;k<quante;k++){
-    const bx = dx + 3 + ((ART.hsh(gx+k*7, sopra, 443)*(U-8))|0);
-    const h  = 4 + ((ART.hsh(gx, sopra+k*5, 444)*8)|0);
+    const bx = dx + 6 + ((ART.hsh(gx+k*7, sopra, 443)*(T-16))|0);
+    const h  = 8 + ((ART.hsh(gx, sopra+k*5, 444)*16)|0);
+    /* La punta adesso si assottiglia davvero: sei larghezze invece di
+       tre, e l'ultima è un pixel. Una stalattite che finisce a due pixel
+       non finisce a punta, finisce tagliata. */
     for(let i=0;i<h;i++){
-      const w = i < h*0.45 ? 3 : (i < h*0.8 ? 2 : 1);
-      x.fillStyle = i<2 ? R.stalattiteLuce : R.stalattite;
+      const t = i/h;
+      const w = Math.max(1, Math.round(6*(1-t*t)));
+      x.fillStyle = i<4 ? R.stalattiteLuce : R.stalattite;
       x.fillRect(bx, dy+i, w, 1);
+      // il lato in ombra, un pixel, che le dà volume
+      if(w>2){ x.fillStyle = R.base; x.fillRect(bx+w-1, dy+i, 1, 1); }
     }
     x.fillStyle = R.base;                   // ombrina sotto la punta
-    x.fillRect(bx, dy+h, 1, 1);
+    x.fillRect(bx, dy+h, 1, 2);
   }
 }
 

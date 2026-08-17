@@ -1503,7 +1503,9 @@ A.stump = function(v){
 A.rock = function(kind, v){
   const key='rock|'+kind+'|'+v;
   if(objCache[key]) return objCache[key];
-  const c=tela(40,40), x=c.getContext('2d');
+  // ridisegnato a 64: il sasso è il 31% di una schermata di miniera, e
+  // la roccia delle pareti è ridisegnata insieme a lui (render.js)
+  const c=telaNetta(80,80), x=c.getContext('2d');
   const P = {
     pietra:  ['#8a8580','#a8a29a','#6b6762'],
     rame:    ['#8a7568','#b08a6a','#6b5a50'],
@@ -1514,24 +1516,52 @@ A.rock = function(kind, v){
     geode:   ['#7a7268','#9a9088','#5e584f']
   }[kind] || ['#8a8580','#a8a29a','#6b6762'];
   const base=P[0], light=P[1], dark=P[2];
-  ellip(x,20,32,14,5,'rgba(0,0,0,0.22)');
+  ellip(x,40,64,28,10,'rgba(0,0,0,0.22)');
   // corpo
-  ellip(x,20,24,13,10,dark);
-  ellip(x,20,22,12,9,base);
-  ellip(x,16,19,7,5,light);
+  ellip(x,40,48,26,20,dark);
+  ellip(x,40,44,24,18,base);
+  ellip(x,32,38,14,10,light);
   // sfaccettature
   x.fillStyle=dark;
-  x.beginPath(); x.moveTo(8,24); x.lineTo(16,14); x.lineTo(20,26); x.closePath(); x.fill();
+  x.beginPath(); x.moveTo(16,48); x.lineTo(32,28); x.lineTo(40,52); x.closePath(); x.fill();
   x.fillStyle=shade(base,0.08);
-  x.beginPath(); x.moveTo(20,26); x.lineTo(24,13); x.lineTo(31,24); x.closePath(); x.fill();
+  x.beginPath(); x.moveTo(40,52); x.lineTo(48,26); x.lineTo(62,48); x.closePath(); x.fill();
+  /* Gli SPIGOLI delle sfaccettature, larghi un pixel. Sono la cosa che a
+     32 non si poteva fare: un filo di luce da un pixel di disegno erano
+     due a schermo, cioè una fascia, e un sasso con le fasce sembra un
+     sasso di gomma. Con uno solo lo spigolo taglia, e le tre facce si
+     staccano l'una dall'altra. */
+  x.strokeStyle = shade(base,0.22); x.lineWidth = 1;
+  x.beginPath(); x.moveTo(32,28); x.lineTo(40,52); x.stroke();
+  x.beginPath(); x.moveTo(48,26); x.lineTo(40,52); x.stroke();
+  x.strokeStyle = shade(dark,-0.12);
+  x.beginPath(); x.moveTo(16,48); x.lineTo(32,28); x.stroke();
+  // grana della pietra: puntinatura fine sul corpo
+  for(let i=0;i<26;i++){
+    const a = hsh(i,v,183)*6.283, r = hsh(i,v,184);
+    const bx = (40 + Math.cos(a)*r*22)|0, byy = (44 + Math.sin(a)*r*15)|0;
+    px(x,bx,byy,1,1, hsh(i,v,185)>0.5 ? shade(base,0.10) : shade(base,-0.12));
+  }
   // vene di minerale
   if(kind!=='pietra'){
     const gem = {rame:'#e08a4a',ferro:'#d8dce8',oro:'#ffd24a',ametista:'#c98ae8',quarzo:'#eaf4ff',geode:'#8ac0d8'}[kind];
+    /* Un cristallo, riga per riga: punta in cima, pancia in mezzo, e si
+       chiude in basso. Provato prima come quadrato da cinque con dentro
+       un quadrato chiaro da tre, ed erano adesivi — a 32 passava perché
+       tre pixel non fanno una forma comunque, a 64 no. Le due facce
+       stanno sulla stessa riga, non una dentro l'altra: è quello che lo
+       fa sembrare tagliato invece che stampato. */
+    const chiaro = shade(gem,0.28), scuro = shade(gem,-0.28);
+    const righe = [[2,1],[1,4],[0,6],[0,6],[1,4],[2,2]];   // [scarto, larghezza]
     for(let i=0;i<5;i++){
-      const bx=10+((hsh(i,v,181)*20)|0), byy=16+((hsh(i,v,182)*12)|0);
-      px(x,bx,byy,3,3,gem);
-      px(x,bx,byy,1,1,shade(gem,0.4));
-      x.globalAlpha=0.4; px(x,bx-1,byy-1,5,5,gem); x.globalAlpha=1;
+      const bx=20+((hsh(i,v,181)*40)|0), byy=32+((hsh(i,v,182)*24)|0);
+      x.globalAlpha=0.4; px(x,bx-1,byy-1,8,9,gem); x.globalAlpha=1;   // il bagliore
+      righe.forEach(([off,w],r)=>{
+        const mezzo = Math.max(1, w>>1);
+        px(x, bx+off,       byy+r, mezzo,   1, chiaro);   // faccia in luce
+        px(x, bx+off+mezzo, byy+r, w-mezzo, 1, scuro);    // faccia in ombra
+      });
+      px(x,bx+2,byy+1,1,1,shade(gem,0.55));              // il riflesso, un pixel
     }
   }
   objCache[key]=c; return c;
