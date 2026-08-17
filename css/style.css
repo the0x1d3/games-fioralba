@@ -2263,3 +2263,21 @@ html.col-dito .sinc-legacy-link{
   .pacco-cassa, .pacco-cassa.apre, .pacco-carta{ animation:none; }
   .pacco-carta{ opacity:1; transform:none; }
 }
+
+/* ===================================================================
+   LE ICONE DISEGNATE A MANO
+
+   Sta in fondo apposta, e non è pigrizia. Il gioco mette
+   `image-rendering:pixelated` sulle icone una regola per volta —
+   `.icell canvas`, `.slot canvas`, `.row canvas`, la carta del livello —
+   e sono tutte specifiche quanto questa. A parità vince l'ultima
+   scritta, quindi questa deve stare dopo tutte, o non si applica e la
+   cosa non si vede: il PNG resta lì, solo sgranato.
+
+   Perché il filtro va cambiato: una tela disegnata in codice è 32 px e
+   la si INGRANDISCE, e a scalini netti è come va disegnato il gioco. Un
+   PNG disegnato a mano è 128 e lo si RIMPICCIOLISCE: lì i scalini netti
+   fanno buttare al browser due pixel su tre invece di farne la media, e
+   quello che si perde sono proprio le righe da un pixel — il filo della
+   falce, la cucitura del manico. */
+canvas.ico-mano{ image-rendering:auto; }

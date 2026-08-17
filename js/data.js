@@ -1767,9 +1767,10 @@ D.BOTTIGLIE = [
    lato. È il motivo per cui una sedia alta una casella e mezza sta
    dentro a una casella sola senza sembrare schiacciata.
 
-   `omino.png` non è in elenco apposta: è il personaggio, e di lui serve
-   la camminata nelle quattro direzioni, non una posa sola. Finché non
-   c'è, il giocatore resta quello disegnato in codice. */
+   `omino.png` non è in elenco apposta: non è un arredo ma un foglio di
+   celle, e sta più sotto in `D.OMINO`. Nemmeno le icone degli attrezzi
+   ci sono: quelle non stanno nel mondo, stanno nelle finestre, e hanno
+   una tabella loro. */
 D.ARREDI = {
   letto:   { file:'letto.png',    w:2,    h:3   },
   camino:  { file:'camino.png',   w:1.5,  h:2   },
@@ -1788,6 +1789,38 @@ D.ARREDI = {
    cosa manca perché il file entri in gioco. Il giorno che manca niente,
    la riga si sposta di sopra e sparisce da qui. */
 D.ARREDI_IN_ATTESA = {};
+
+/* ===================================================================
+   LE ICONE DISEGNATE A MANO
+
+   Gli arredi stanno nel mondo e si misurano in caselle; queste stanno
+   nelle FINESTRE — zaino, negozio, ricette, carta del livello, toast —
+   e in caselle non si misurano affatto. Per questo hanno una tabella
+   loro invece di stare in `D.ARREDI` con una misura finta.
+
+   La chiave è l'id dell'oggetto, la stessa che chiede `ART.icon(id)`:
+   così non serve una traduzione in mezzo, e un id scritto storto lo
+   trova il controllo di coerenza invece del giocatore.
+
+   **Sono 128×128 e non 64.** Le icone si mostrano a misure diverse in
+   giro per il gioco — 22 px nella scheda delle abilità, 40 nello zaino,
+   42 nel toast, 46 nella carta del livello — e su uno schermo a densità
+   doppia quel 46 sono 92 pixel veri. A 64 il caso più grande sarebbe
+   arrivato stirato: la stessa storia della mappa della valle, che era
+   460 px mostrati su 764. A 128 ci sta con margine, e in tutto sono
+   76 KB per sette file.
+
+   Chi non è in elenco continua a essere disegnato in codice, ed è lo
+   stesso patto degli arredi: `ART.icon` ripiega da sé. */
+D.ICONE = {
+  zappa:        { file:'zappa.png',        w:128, h:128 },
+  annaffiatoio: { file:'annaffiatoio.png', w:128, h:128 },
+  ascia:        { file:'ascia.png',        w:128, h:128 },
+  piccone:      { file:'piccone.png',      w:128, h:128 },
+  falce:        { file:'falce.png',        w:128, h:128 },
+  canna:        { file:'canna.png',        w:128, h:128 },
+  arco:         { file:'arco.png',         w:128, h:128 }
+};
 
 /* ===================================================================
    IL PERSONAGGIO DISEGNATO A MANO

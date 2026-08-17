@@ -3,10 +3,11 @@
    Il caricatore dei pochi sprite che NON sono disegnati in codice.
 
    La regola del repo è sempre stata «niente file inventati: sprite e
-   suoni si disegnano nel codice», ed è ancora vera per 172 sprite su
-   179. I sette che stanno in `img/` sono un'eccezione voluta e
-   circoscritta: sono disegnati a mano dal proprietario, a una densità
-   che in codice non si riproduce. Il resto del gioco non cambia.
+   suoni si disegnano nel codice», ed è ancora vera per la quasi totalità
+   di quello che si vede. Quello che sta in `img/` è un'eccezione voluta e
+   circoscritta — sette arredi, il foglio della camminata, sette icone di
+   attrezzi — disegnata a mano dal proprietario a una densità che in
+   codice non si riproduce. Il resto del gioco non cambia.
 
    QUESTO FILE ESISTE PER UNA RAGIONE SOLA: il disegno è sincrono e le
    immagini no. `REND.disegna` gira sessanta volte al secondo e non può

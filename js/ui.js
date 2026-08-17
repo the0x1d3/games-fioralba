@@ -268,13 +268,27 @@ IT.dove = function(id){
   return null;
 };
 
-/* icona come elemento canvas */
+/* icona come elemento canvas
+
+   La tela prende la misura della SORGENTE, non 32 fissi: le icone
+   disegnate a mano sono 128×128, e su una tela da 32 ne sarebbe entrato
+   l'angolo in alto a sinistra — un pezzo di manico, e nient'altro.
+
+   E la classe serve al filtro. Il CSS mette `image-rendering:pixelated`
+   su tutte le icone, che è giusto per una tela da 32 ingrandita a 46:
+   scalini netti, come vuole il resto del gioco. Su un PNG da 128
+   mostrato a 46 il verso è l'opposto — è un rimpicciolimento — e a
+   scalini netti il browser butta due pixel su tre invece di farne la
+   media: il filo della falce si spezzetta. `.ico-mano` glielo lascia
+   fare liscio. */
 function ico(id, size){
+  const src = ART.icon(id);
   const c = document.createElement('canvas');
-  c.width=c.height=32;
-  const x=c.getContext('2d');
+  c.width = c.height = src.width;
+  const x = c.getContext('2d');
   x.imageSmoothingEnabled=false;
-  x.drawImage(ART.icon(id),0,0);
+  x.drawImage(src,0,0);
+  if(ART.iconaAMano(id)) c.className = 'ico-mano';
   if(size){ c.style.width=size+'px'; c.style.height=size+'px'; }
   return c;
 }

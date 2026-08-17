@@ -127,6 +127,7 @@ function init(){
   if(window.IMG){
     IMG.precarica(DATA.ARREDI);
     IMG.precarica({ omino: DATA.OMINO });   // il foglio della camminata
+    IMG.precarica(DATA.ICONE);              // gli attrezzi nelle finestre
   }
   window.addEventListener('resize', ()=>{ REND.resize(); REND.initMeteo(); });
   collegaInput();

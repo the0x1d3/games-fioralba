@@ -42,6 +42,26 @@ Sono l'impronta in caselle moltiplicata per la casella. Con la casella a
 Se la casella cambia, si riesporta da `sprite-new/`: è per questo che i
 sorgenti grossi restano nel repo invece di essere buttati.
 
+Le **icone degli attrezzi** — `zappa`, `annaffiatoio`, `ascia`,
+`piccone`, `falce`, `canna`, `arco` — fanno eccezione a tutta questa
+tabella: non stanno nel mondo, stanno nelle finestre, e in caselle non
+si misurano. Sono **128×128** e le dichiara `DATA.ICONE`.
+
+Perché 128 e non 64: la stessa icona si mostra a misure diverse in giro
+per il gioco — 22 px nella scheda delle abilità, 40 nello zaino, 42 nel
+toast, 46 nella carta del livello — e su uno schermo a densità doppia
+quel 46 sono 92 pixel veri. A 64 il caso più grande sarebbe arrivato
+stirato, che è lo stesso difetto della mappa della valle. Sette file,
+76 KB in tutto.
+
+Attenzione al filtro, che è la trappola: il CSS mette
+`image-rendering:pixelated` su tutte le icone, ed è giusto per una tela
+disegnata in codice, che è 32 px e si INGRANDISCE. Un PNG da 128 invece
+si RIMPICCIOLISCE, e a scalini netti il browser butta due pixel su tre
+invece di farne la media — il filo della falce si spezzetta. Chi mette
+l'icona in pagina lo distingue con `ART.iconaAMano(id)` e le mette la
+classe `.ico-mano`, che rimette il filtro liscio.
+
 `omino.png` è l'unico che non è un'immagine sola: è un FOGLIO di celle
 64×96, quattro fotogrammi per riga e una riga per direzione — giù,
 sinistra, destra, su. Chi lo legge è `DATA.OMINO`, e l'altezza del file

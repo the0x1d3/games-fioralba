@@ -2497,6 +2497,36 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
     if (a.w <= 0 || a.h <= 0) problemi.push(`«${id}» ha una misura non positiva`);
   }
 
+  /* Le icone degli attrezzi si misurano in PIXEL e non in caselle: non
+     stanno nel mondo, stanno nelle finestre. Due cose da tenere ferme.
+
+     La misura, per la stessa ragione degli arredi — chi le mette in
+     pagina fa una tela della misura della sorgente, e una misura
+     dichiarata che non corrisponde ai pixel veri non dà un errore da
+     nessuna parte.
+
+     E la CHIAVE, che è la parte che si rompe più facilmente: è l'id
+     dell'oggetto, quello che passa per `ART.icon(id)`. Scritto storto
+     non succede niente di visibile — il PNG si scarica, non lo chiede
+     nessuno, e l'attrezzo continua a mostrare l'icona in codice. Un
+     difetto che costa peso e non si vede è il tipo peggiore. */
+  for (const id in (DATA.ICONE || {})) {
+    const a = DATA.ICONE[id];
+    const f = path.join(dir, a.file);
+    usati.add(a.file);
+    if (!DATA.ITEMS[id])
+      problemi.push(`DATA.ICONE ha «${id}», che fra gli oggetti non c'è: ` +
+                    'il file si scaricherebbe senza che nessuno lo chieda');
+    if (!fs.existsSync(f)) { problemi.push(`«${id}» vuole img/${a.file}, che non c'è`); continue; }
+    const b = fs.readFileSync(f);
+    if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) {
+      problemi.push(`img/${a.file} non è un PNG`); continue;
+    }
+    const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+    if (w !== a.w || h !== a.h)
+      problemi.push(`img/${a.file} è ${w}×${h} ma «${id}» lo dichiara ${a.w}×${a.h}`);
+  }
+
   /* Il foglio del personaggio è un caso a sé: non è un arredo, è una
      griglia di celle. Si controlla che i pixel veri siano esattamente
      `w × fotogrammi` per `h × righe` — se un domani si riesporta con una

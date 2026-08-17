@@ -343,6 +343,12 @@ interface FioData {
   /** File in `img/` disegnati ma non ancora collegati, col perché. */
   ARREDI_IN_ATTESA: Record<string, string>;
   /**
+   * Le icone disegnate a mano, in PIXEL e non in caselle: stanno nelle
+   * finestre, non nel mondo. La chiave è l'id dell'oggetto, quello che
+   * chiede `ART.icon(id)`. Chi non è in elenco resta disegnato in codice.
+   */
+  ICONE: Record<string, { file: string; w: number; h: number }>;
+  /**
    * Il foglio del personaggio disegnato a mano: celle `w`×`h`,
    * `fotogrammi` per riga, e `righe` mappa la direzione di gioco
    * (0 giù, 1 sinistra, 2 destra, 3 su) sulla riga del foglio. Le

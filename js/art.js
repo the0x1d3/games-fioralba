@@ -2529,13 +2529,48 @@ A.gatto = function(frame){
    =================================================================== */
 const iconCache = {};
 
+/* Le icone disegnate a mano (`DATA.ICONE`) prendono il posto di quelle
+   disegnate in codice, quando il PNG è arrivato. Quel «quando» è il
+   punto: `IMG.prendi` torna `null` per i primi fotogrammi di ogni
+   partita, e le icone si chiedono subito — la prima finestra dello
+   zaino, il primo toast. Se il ripiego finisse in `iconCache`, quel
+   disegno resterebbe lì per sempre e il PNG non si vedrebbe mai, con
+   la beffa di averlo scaricato lo stesso.
+
+   Quindi il PNG si chiede PRIMA della cache, e in cache ci va per conto
+   suo, con annotato da quale immagine viene: così `IMG.riprova` del
+   pannello di prova rifà le tele invece di restituire le vecchie. È lo
+   stesso meccanismo del foglio del personaggio, per la stessa ragione. */
+const iconeAMano = {}, iconaDaCui = {};
+
 A.icon = function(id){
+  const decl = window.DATA && DATA.ICONE && DATA.ICONE[id];
+  if(decl && window.IMG){
+    const img = IMG.prendi(id);
+    if(img){
+      if(iconeAMano[id] && iconaDaCui[id] === img) return iconeAMano[id];
+      const c = cv(img.naturalWidth, img.naturalHeight);
+      c.getContext('2d').drawImage(img, 0, 0);
+      iconeAMano[id] = c; iconaDaCui[id] = img;
+      return c;
+    }
+  }
   if(iconCache[id]) return iconCache[id];
   const c = cv(32,32), x = c.getContext('2d');
   x.imageSmoothingEnabled=false;
   drawIcon(x, id);
   iconCache[id]=c;
   return c;
+};
+
+/* Serve a chi mette l'icona in una pagina: una tela disegnata in codice
+   è 32 px e va ingrandita a scalini netti (`image-rendering:pixelated`),
+   una disegnata a mano è 128 e va RIMPICCIOLITA, che a scalini netti
+   perde righe intere. Sono due filtri opposti, e senza saperlo distingue
+   nessuno. Risponde `false` anche quando il PNG c'è ma non è ancora
+   arrivato, perché in quel momento a schermo c'è il disegno in codice. */
+A.iconaAMano = function(id){
+  return !!(window.DATA && DATA.ICONE && DATA.ICONE[id] && window.IMG && IMG.prendi(id));
 };
 
 function toolHead(x, kind, tx, ty){

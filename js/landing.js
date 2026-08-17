@@ -41,14 +41,19 @@ const COSE = [
     txt:'Quattro braci da accendere, una per stagione. È la storia che tiene insieme tutto il resto.' }
 ];
 
+/* La stessa icona che disegnano tutte le altre finestre, e non una copia
+   locale: era una copia, con la tela da 32 scritta a mano, e il giorno
+   che qui fosse finito un attrezzo disegnato a mano ne sarebbe entrato
+   l'angolo in alto a sinistra. Oggi in elenco ci sono solo braci e
+   raccolti, quindi non si sarebbe visto niente — che è il modo in cui
+   questi difetti aspettano.
+
+   Il try resta: qui gli id li scrive a mano l'elenco qui sopra, e uno
+   sbagliato deve dare una riga senza figurina, non una pagina di
+   presentazione a metà. */
 function iconaGrande(id, lato){
-  const c = document.createElement('canvas');
-  c.width = 32; c.height = 32;
-  c.style.width = lato+'px'; c.style.height = lato+'px';
-  const x = c.getContext('2d');
-  x.imageSmoothingEnabled = false;
-  try{ x.drawImage(ART.icon(id), 0, 0); }catch(e){}
-  return c;
+  try{ return UI.ico(id, lato); }
+  catch(e){ return document.createElement('canvas'); }
 }
 
 function costruisciCose(){
