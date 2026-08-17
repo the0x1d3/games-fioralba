@@ -2425,7 +2425,7 @@ verifica('gli sprite già ridisegnati a 64 restano a 64', () => {
                     'metà dei suoi numeri sono in trentaduesimi e metà no');
   }
   // e le due che compongono i raccordi devono seguire le maschere
-  for (const nome of ['bordo', 'ombraBordo', 'arato']) {
+  for (const nome of ['bordo', 'ombraBordo', 'arato', 'tree', 'bush', 'stump']) {
     const m = art.match(new RegExp('A\\.' + nome + ' = function[^{]*\\{([\\s\\S]*?)\\n\\};'));
     if (!m) { problemi.push(`non trovo più \`A.${nome}\``); continue; }
     if (!/\btelaNetta\(/.test(m[1]))

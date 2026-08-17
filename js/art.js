@@ -1200,26 +1200,45 @@ A.drawFruit = function(x, cx, by, C, h, s, iconMode){
    =================================================================== */
 const objCache = {};
 
+/* Una massa di chioma, in pixel di MONDO: la chiamano l'albero e il
+   cespuglio, che sono ridisegnati a 64 tutti e due. */
 function foliageBlob(x, cx, cy, r, base, season, seme){
   seme = seme|0;
   const dark = shade(base,-0.22), light = shade(base,0.16), light2=shade(base,0.3);
   circ(x, cx, cy, r, dark);
-  circ(x, cx, cy-1, r-1, base);
+  circ(x, cx, cy-2, r-2, base);
   circ(x, cx-r*0.32, cy-r*0.34, r*0.55, light);
   circ(x, cx-r*0.4, cy-r*0.45, r*0.28, light2);
-  // bordo frastagliato — il seme lo rende diverso da chioma a chioma
-  for(let i=0;i<18;i++){
-    const a=i/18*6.283;
-    const rr=r*(0.86+hsh(i,(cx|0)+seme*37,151)*0.28);
+  /* Il bordo frastagliato. Erano diciotto bitorzoli da 3×3 unità di
+     disegno, cioè 6×6 a schermo: a quella misura il contorno di una
+     chioma si legge a bolle, e da vicino si contano una per una. Adesso
+     sono quarantaquattro ciuffi da 3×3 pixel VERI — grandi la metà e
+     due volte e mezzo più fitti — e il profilo smette di essere un
+     cerchio bitorzoluto e comincia a essere fogliame. */
+  const N = 44;
+  for(let i=0;i<N;i++){
+    const a=i/N*6.283;
+    const rr=r*(0.88+hsh(i,(cx|0)+seme*37,151)*0.24);
     const bx=cx+Math.cos(a)*rr, byy=cy+Math.sin(a)*rr;
     px(x,bx|0,byy|0,3,3, hsh(i,(cy|0)+seme*53,152)>0.5? base:dark);
   }
+  /* E qualche spiraglio DENTRO alla massa. È la cosa che a 32 non si
+     poteva fare: un buco da due pixel di disegno sarebbe stato un
+     quadrato da quattro a schermo, cioè un difetto. Da due pixel veri è
+     l'ombra fra una foglia e l'altra, ed è quello che toglie alla chioma
+     l'aria di essere una macchia di vernice. */
+  for(let i=0;i<9;i++){
+    const a = hsh(i,seme*17,153)*6.283, rr = r*(0.2+hsh(i,seme*19,154)*0.55);
+    px(x, (cx+Math.cos(a)*rr)|0, (cy+Math.sin(a)*rr)|0, 2, 2, dark);
+  }
   if(season==='inverno'){
+    // la neve si posa sopra, e adesso ha un bordo invece di un blocco
     x.globalAlpha=0.75;
-    for(let i=0;i<12;i++){
-      const a=-0.4-i/12*2.4;
-      const bx=cx+Math.cos(a)*r*0.85, byy=cy+Math.sin(a)*r*0.85;
+    for(let i=0;i<26;i++){
+      const a=-0.4-i/26*2.4;
+      const bx=cx+Math.cos(a)*r*0.86, byy=cy+Math.sin(a)*r*0.86;
       px(x,bx|0,byy|0,4,3,'#ffffff');
+      if(hsh(i,seme,155)>0.5) px(x,bx|0,(byy|0)+3,2,1,'#ffffff');
     }
     x.globalAlpha=1;
   }
@@ -1232,23 +1251,39 @@ A.tree = function(kind, season, stage, v){
   v = (((v|0) % 4) + 4) % 4;
   const key = 'tree|'+kind+'|'+season+'|'+stage+'|'+v;
   if(objCache[key]) return objCache[key];
-  const W=96, H=112;
-  const c=tela(W,H), x=c.getContext('2d');
+  /* L'ALBERO È RIDISEGNATO A 64. La tela è grande uguale — 192×224 pixel,
+     tre caselle per tre e mezza — ma adesso ci si scrive dentro uno per
+     uno invece che a coppie. Gli alberi sono i secondi per area dopo il
+     terreno: 135% dello schermo nel bosco, e al podere anche di più
+     contando le sovrapposizioni.
+
+     Attenzione, però, che è un lavoro diverso da quello delle
+     piastrelle: là era rumore procedurale e la finezza era una
+     questione di parametri, qui la forma di una chioma è una scelta di
+     chi disegna. Quello che ho fatto è SUDDIVIDERE quello che c'era —
+     più ciuffi e più piccoli, corteccia a scanalature invece che a
+     macchie, radici che si allargano invece di tre rettangoli — senza
+     toccare la silhouette, le masse e i colori. */
+  const W=192, H=224;
+  const c=telaNetta(W,H), x=c.getContext('2d');
   const S = DATA.SEASONS.find(s=>s.id===season);
-  const cxx=W/2, base=H-6;
+  const cxx=W/2, base=H-12;
   const R = i => hsh(i, v*101+7, 181);      // numeri stabili per questa variante
   const sp = v>=2 ? -1 : 1;                  // metà delle varianti crescono specchiate
 
   if(stage===0){ // germoglio
-    const h = 9 + ((R(1)*4)|0);
-    px(x,cxx-1,base-h-1,2,h+1,C().legno.ramo);
-    foliageBlob(x, cxx + sp*((R(2)*3)|0), base-h-4, 6+R(3)*3, S.tree, season, v);
+    const h = 18 + ((R(1)*8)|0);
+    px(x,cxx-2,base-h-2,3,h+2,C().legno.ramo);
+    px(x,cxx+1,base-h-2,1,h+2,shade(C().legno.ramo,-0.2));   // il lato in ombra
+    foliageBlob(x, cxx + sp*((R(2)*6)|0), base-h-8, 12+R(3)*6, S.tree, season, v);
     objCache[key]=c; return c;
   }
   if(stage===1){ // alberello
-    const h = 21 + ((R(4)*7)|0);
-    px(x,cxx-2,base-h,4,h,C().legno.ramo);
-    foliageBlob(x, cxx + sp*((R(5)*5)|0), base-h-6, 12+R(6)*5, S.tree, season, v);
+    const h = 42 + ((R(4)*14)|0);
+    px(x,cxx-4,base-h,7,h,C().legno.ramo);
+    px(x,cxx-4,base-h,2,h,shade(C().legno.ramo,0.16));
+    px(x,cxx+2,base-h,1,h,shade(C().legno.ramo,-0.2));
+    foliageBlob(x, cxx + sp*((R(5)*10)|0), base-h-12, 24+R(6)*10, S.tree, season, v);
     objCache[key]=c; return c;
   }
 
@@ -1260,56 +1295,118 @@ A.tree = function(kind, season, stage, v){
   const trunkL   = kind==='betulla' ? L.betullaLuce  : L.cortecciaLuce;
 
   // tronco — altezza e spessore variano un po' da esemplare a esemplare
-  const th = (kind==='pino'? 56 : 44) + ((R(10)*9)|0) - 4;
-  const tw = (kind==='betulla'? 9 : 12) + (R(11)>0.6 ? 1 : 0);
+  const th = (kind==='pino'? 112 : 88) + ((R(10)*18)|0) - 8;
+  const tw = (kind==='betulla'? 18 : 24) + (R(11)>0.6 ? 2 : 0);
   const t0 = cxx - (tw>>1);
   px(x, t0, base-th, tw, th, trunkCol);
-  px(x, t0, base-th, 3, th, trunkL);
-  px(x, t0+tw-3, base-th, 3, th, trunkD);
-  for(let i=0;i<7;i++){
-    const yy=base-th+6+i*6;
+  px(x, t0, base-th, 5, th, trunkL);
+  px(x, t0+tw-5, base-th, 5, th, trunkD);
+  /* La corteccia. Erano sette macchioline orizzontali; adesso sono
+     scanalature VERTICALI larghe un pixel, che è come è fatta una
+     corteccia e che a 32 non si poteva disegnare — un pixel di disegno
+     sarebbe stato una riga da due, cioè una striscia. */
+  for(let i=0;i<5;i++){
+    const gx = t0 + 3 + ((hsh(i,0,164)*(tw-7))|0);
+    const y0 = base-th + 6 + ((hsh(i,1,165)*20)|0);
+    const gh = 20 + ((hsh(i,2,166)*(th-40))|0);
+    x.globalAlpha=0.35;
+    px(x, gx, y0, 1, gh, trunkD);
+    px(x, gx+1, y0+3, 1, gh-6, trunkL);
+    x.globalAlpha=1;
+  }
+  for(let i=0;i<16;i++){
+    const yy=base-th+10+i*((th-16)/16);
     x.globalAlpha=0.5;
-    px(x, t0+1+((hsh(i,0,161)*(tw-4))|0), yy, 3, 1, trunkD);
+    px(x, t0+2+((hsh(i,0,161)*(tw-7))|0), yy, 4, 1, trunkD);
     x.globalAlpha=1;
   }
   if(kind==='betulla'){
-    for(let i=0;i<7;i++){
-      const bw = 3+((hsh(i,2,163)*3)|0);
-      px(x, t0+1+((hsh(i,1,162)*(tw-bw-1))|0), base-th+7+i*6, bw, 2, C().legno.betullaMacchia);
+    for(let i=0;i<14;i++){
+      const bw = 5+((hsh(i,2,163)*6)|0);
+      px(x, t0+2+((hsh(i,1,162)*(tw-bw-2))|0), base-th+14+i*((th-20)/14), bw, 3, C().legno.betullaMacchia);
     }
   }
-  // radici
-  px(x, cxx-10, base-4, 6, 4, trunkD);
-  px(x, cxx+4,  base-4, 6, 4, trunkD);
-  px(x, cxx-7,  base-6, 14, 6, trunkCol);
+  /* Radici. Erano tre rettangoli sovrapposti; adesso il tronco si
+     allarga verso terra a gradini da un pixel, e da lì partono quattro
+     radici che si assottigliano. È la differenza fra un palo piantato e
+     un albero cresciuto. */
+  /* Il piede dell'albero: lo svaso, e le radici che ne ESCONO.
+
+     Due tentativi buttati prima di questo, e valgono tutti e due la
+     pena di essere scritti. Il primo erano righe da un pixel a raggiera:
+     sull'erba si leggevano come una manciata di graffi rossi — `trunkD`
+     è un bruno scuro ma contro il verde tira al rosso. Il secondo erano
+     tre gobbe per parte, e il difetto era un altro: partivano DOPO lo
+     svaso, con un pixel di stacco, e a schermo sembravano tre paletti
+     piantati accanto al tronco.
+
+     Adesso il profilo è continuo: dalla larghezza del piede scende con
+     una curva, e ogni tanto una radice si allunga di qualche pixel. Da
+     lontano è una base che si allarga, da vicino sono radici. */
+  const svaso = 7;
+  for(let i=0;i<svaso;i++) px(x, t0-i, base-14+i*2, tw+i*2, 2, trunkCol);
+  const piede = (tw>>1) + svaso;
+  for(const verso of [-1, 1]){
+    const lung = 12 + ((hsh(verso+1, v, 168)*5)|0);
+    // il monticello: scende liscio, senza salti
+    for(let i=0;i<lung;i++){
+      const h = Math.max(1, Math.round(9 * Math.pow(1 - i/lung, 1.6)));
+      px(x, cxx + verso*(piede + i), base-h, 1, h+2, i%5===0 ? trunkD : trunkCol);
+    }
+    /* e due radici che proseguono a filo di terra. L'irregolarità sta
+       QUI, nella lunghezza, e non nell'altezza: provata sull'altezza —
+       qualche colonna più alta a caso — e il piede dell'albero diventava
+       un pettine di stecchi verticali. Una radice corre per terra, non
+       sta in piedi. */
+    for(const [d, extra] of [[lung-3, 5 + ((hsh(verso,v,169)*4)|0)],
+                             [lung-7, 3 + ((hsh(verso,v+1,170)*3)|0)]]){
+      for(let i=0;i<extra;i++)
+        px(x, cxx + verso*(piede + d + i), base-2, 1, 3, trunkD);
+    }
+  }
 
   // chioma
   if(kind==='pino'){
     const col = season==='inverno' ? C().pino.invernale : C().pino.estivo;
     const piani = 4 + (R(12)>0.55 ? 1 : 0);       // pini più o meno folti
-    const passo = 13 + ((R(13)*3)|0);
+    /* I piani si distribuiscono fra la cima e un fondo FISSO, invece di
+       scendere di un passo fisso. Col passo fisso il quinto piano — che
+       prima non capitava mai, perché `R(12)>0.55` non scattava con
+       l'hash rotto — finiva sotto il livello del terreno e si mangiava
+       tutto il tronco: il pino diventava un blocco verde. */
+    const cima = base-th-8, fondo = base-30;
+    const passo = (fondo - cima) / (piani - 1);
+    /* I rami del pino sono fatti a colonne. Erano larghe due unità di
+       disegno, cioè quattro pixel a schermo, e a quella misura un ago di
+       pino è una tavoletta. Adesso sono larghe due pixel veri e ce ne
+       sono il doppio, e la punta di ogni colonna è mossa di un pixel:
+       il profilo del ramo diventa seghettato invece che smussato. */
     for(let i=0;i<piani;i++){
-      const yy = base-th-4 + i*passo;
-      const w  = 15+i*10 + ((R(14+i)*4)|0);
+      const yy = cima + i*passo;
+      const w  = 30+i*20 + ((R(14+i)*8)|0);
       const dark=shade(col,-0.2), light=shade(col,0.16);
       x.fillStyle=dark;
       for(let k=0;k<=w;k+=2){
-        const hh = 16-Math.abs(k-w/2)/(w/2)*10;
-        x.fillRect(cxx-w/2+k, yy-hh, 2, hh+6);
+        const hh = 32-Math.abs(k-w/2)/(w/2)*20 + (hsh(k,i,191)>0.5?2:0);
+        x.fillRect(cxx-w/2+k, yy-hh, 2, hh+12);
       }
       x.fillStyle=col;
-      for(let k=2;k<w-2;k+=2){
-        const hh = 13-Math.abs(k-w/2)/(w/2)*9;
-        x.fillRect(cxx-w/2+k, yy-hh+2, 2, hh+3);
+      for(let k=4;k<w-4;k+=2){
+        const hh = 26-Math.abs(k-w/2)/(w/2)*18 + (hsh(k,i,192)>0.5?2:0);
+        x.fillRect(cxx-w/2+k, yy-hh+4, 2, hh+6);
       }
       x.fillStyle=light;
-      for(let k=4;k<w/2;k+=3){
-        const hh = 9-Math.abs(k-w/2)/(w/2)*6;
-        x.fillRect(cxx-w/2+k, yy-hh+3, 2, hh);
+      for(let k=8;k<w/2;k+=3){
+        const hh = 18-Math.abs(k-w/2)/(w/2)*12;
+        x.fillRect(cxx-w/2+k, yy-hh+6, 2, hh);
       }
       if(season==='inverno'){
         x.globalAlpha=0.8; x.fillStyle='#ffffff';
-        for(let k=0;k<w;k+=4) x.fillRect(cxx-w/2+k, yy-8+Math.abs(k-w/2)/(w/2)*6, 3, 2);
+        for(let k=0;k<w;k+=4){
+          const dy = Math.abs(k-w/2)/(w/2)*12;
+          x.fillRect(cxx-w/2+k, yy-16+dy, 3, 2);
+          if(hsh(k,i,193)>0.6) x.fillRect(cxx-w/2+k, yy-14+dy, 2, 1);
+        }
         x.globalAlpha=1;
       }
     }
@@ -1317,30 +1414,37 @@ A.tree = function(kind, season, stage, v){
     const col = S.tree;
     // rametti bassi: raccordano il tronco alla chioma, così non resta
     // un "collo" nudo che di lontano sembra un palo
-    x.strokeStyle = trunkD; x.lineWidth = 3;
+    x.strokeStyle = trunkD; x.lineWidth = 6;
     x.beginPath();
-    x.moveTo(cxx-1, base-th+16); x.lineTo(cxx-13*sp, base-th+6);
-    x.moveTo(cxx+1, base-th+18); x.lineTo(cxx+12*sp, base-th+8);
-    x.moveTo(cxx,   base-th+10); x.lineTo(cxx-6*sp,  base-th-2);
+    x.moveTo(cxx-2, base-th+32); x.lineTo(cxx-26*sp, base-th+12);
+    x.moveTo(cxx+2, base-th+36); x.lineTo(cxx+24*sp, base-th+16);
+    x.moveTo(cxx,   base-th+20); x.lineTo(cxx-12*sp, base-th-4);
+    x.stroke();
+    // e i rametti sottili che si staccano dai rami grossi: un pixel
+    x.lineWidth = 2;
+    x.beginPath();
+    x.moveTo(cxx-18*sp, base-th+18); x.lineTo(cxx-30*sp, base-th+4);
+    x.moveTo(cxx+16*sp, base-th+22); x.lineTo(cxx+28*sp, base-th+28);
     x.stroke();
     x.lineWidth = 1;
 
     /* Chioma: sei masse. Posizione e raggio si spostano di qualche pixel a
        seconda della variante, e metà delle varianti sono specchiate: da
        lontano è quanto basta perché il bosco smetta di sembrare stampato. */
-    const M = [[-16, 7, 20], [16, 9, 19], [0, 12, 15], [0, -10, 24], [-9, -1, 18], [10, -5, 17]];
+    const M = [[-32, 14, 40], [32, 18, 38], [0, 24, 30], [0, -20, 48], [-18, -2, 36], [20, -10, 34]];
     M.forEach(([dx, dy, r], i)=>{
-      const jx = ((R(20+i)*7)|0) - 3;
-      const jy = ((R(30+i)*5)|0) - 2;
+      const jx = ((R(20+i)*14)|0) - 6;
+      const jy = ((R(30+i)*10)|0) - 4;
       const jr = 1 + (R(40+i)-0.5)*0.16;
       foliageBlob(x, cxx + (dx+jx)*sp, base-th + dy+jy, r*jr, col, season, v*6+i);
     });
-    // frutti autunnali
+    // frutti autunnali: adesso hanno un lato in ombra e un luccichio
     if(season==='autunno'){
-      for(let i=0;i<7;i++){
-        const bx=cxx-24+((hsh(i,v*13,171)*48)|0), byy=base-th-18+((hsh(i,v*13+1,172)*34)|0);
-        px(x,bx,byy,3,3,C().frutto.base);
-        px(x,bx,byy,1,1,C().frutto.luce);
+      for(let i=0;i<12;i++){
+        const bx=cxx-48+((hsh(i,v*13,171)*96)|0), byy=base-th-36+((hsh(i,v*13+1,172)*68)|0);
+        px(x,bx,byy,4,4,C().frutto.base);
+        px(x,bx+2,byy+2,2,2,shade(C().frutto.base,-0.22));
+        px(x,bx,byy,2,1,C().frutto.luce);
       }
     }
   }
@@ -1356,32 +1460,42 @@ A.stump = function(v){
   v = (((v|0) % 4) + 4) % 4;
   const key='stump|'+v;
   if(objCache[key]) return objCache[key];
-  const c=tela(40,32), x=c.getContext('2d');
+  /* Il ceppo è un albero tagliato, quindi va con lui: lasciato a 32
+     accanto a un tronco scanalato si legge come un tappo di sughero.
+     Gli anelli sono la cosa che ci guadagna di più — a 32 ne stavano
+     tre, e un ceppo senza anelli non è un ceppo. */
+  const c=telaNetta(80,64), x=c.getContext('2d');
   const P = C().ceppo;
   const R = i => hsh(i, v*67+3, 191);
   // permutazioni invece di numeri a caso: garantiscono quattro sagome
   // diverse, mentre due tiri di dado possono benissimo coincidere
-  const rx = 11 + [0,3,1,2][v];            // larghezza del taglio
-  const h  = 5  + [2,0,3,1][v];            // quanto sporge da terra
-  const cy = 22;
+  const rx = 22 + [0,6,2,4][v];            // larghezza del taglio
+  const h  = 10 + [4,0,6,2][v];            // quanto sporge da terra
+  const cy = 44;
 
-  ellip(x, 20, cy+h-1, rx+1, 4.5, P.terra);            // ombra al piede
+  ellip(x, 40, cy+h-2, rx+2, 9, P.terra);              // ombra al piede
   x.fillStyle = P.fianco;                               // parete di corteccia
-  x.fillRect(20-rx, cy-2, rx*2, h);
-  ellip(x, 20, cy+h-2, rx, 4, P.fianco);
-  for(let i=0;i<5;i++){                                 // scanalature verticali
-    const bx = 20-rx+2 + ((R(3+i)*(rx*2-4))|0);
+  x.fillRect(40-rx, cy-4, rx*2, h);
+  ellip(x, 40, cy+h-4, rx, 8, P.fianco);
+  for(let i=0;i<11;i++){                                // scanalature verticali
+    const bx = 40-rx+3 + ((R(3+i)*(rx*2-6))|0);
     x.globalAlpha = 0.45;
     px(x, bx, cy, 1, h-1, P.terra);
     x.globalAlpha = 1;
   }
-  ellip(x, 20, cy-2, rx, 5, P.taglio);                  // faccia tagliata
-  ellip(x, 20, cy-2, rx-3, 3.4, P.anelli);              // anelli
-  ellip(x, 20, cy-2, rx-6, 2.1, P.taglio);
-  ellip(x, 20, cy-2, 2.4, 1.2, P.cuore);
+  ellip(x, 40, cy-4, rx, 10, P.taglio);                 // faccia tagliata
+  /* Gli anelli di crescita: cinque cerchi alternati invece di due, e
+     spessi un pixel vero. È quello che a 32 non ci stava — un anello da
+     un pixel di disegno era spesso due a schermo, e cinque non ci
+     entravano nella faccia del taglio. */
+  for(let k=5;k>=1;k--){
+    const f = k/5;
+    ellip(x, 40, cy-4, rx*f, 10*f, k%2 ? P.anelli : P.taglio);
+  }
+  ellip(x, 40, cy-4, 4, 2, P.cuore);
   if(R(9) > 0.5){                                       // qualche scheggia
-    px(x, 20-rx+1, cy-4, 3, 2, P.taglio);
-    px(x, 20+rx-4, cy-3, 3, 2, P.fianco);
+    px(x, 40-rx+2, cy-8, 6, 4, P.taglio);
+    px(x, 40+rx-8, cy-6, 6, 4, P.fianco);
   }
   objCache[key]=c; return c;
 };
@@ -1426,12 +1540,15 @@ A.rock = function(kind, v){
 A.bush = function(season, v, bacche){
   const key='bush|'+season+'|'+v+'|'+!!bacche;
   if(objCache[key]) return objCache[key];
-  const c=tela(40,36), x=c.getContext('2d');
+  // ridisegnato a 64 con l'albero: usa lo stesso `foliageBlob`, e
+  // lasciarlo indietro voleva dire un cespuglio a bolle sotto una
+  // chioma a foglie, che è proprio il confronto che si nota
+  const c=telaNetta(80,72), x=c.getContext('2d');
   const S=DATA.SEASONS.find(s=>s.id===season);
-  ellip(x,20,32,12,4,'rgba(0,0,0,0.2)');
-  foliageBlob(x,14,22,10,S.tree,season);
-  foliageBlob(x,26,23,10,S.tree,season);
-  foliageBlob(x,20,17,11,S.tree,season);
+  ellip(x,40,64,24,8,'rgba(0,0,0,0.2)');
+  foliageBlob(x,28,44,20,S.tree,season);
+  foliageBlob(x,52,46,20,S.tree,season);
+  foliageBlob(x,40,34,22,S.tree,season);
   if(bacche) fruttoCespuglio(x, v, DATA.CESPUGLIO[season]);
   objCache[key]=c; return c;
 };
@@ -1449,26 +1566,31 @@ function fruttoCespuglio(x, v, item){
        pixel: lasciandole scegliere tutte all'hash finivano appiccicate
        da una parte sola e si leggevano come una macchia viola, non come
        cinque viole. */
-    const posti = [[7,34],[13,31],[19,35],[27,32],[32,34]];
+    const posti = [[14,68],[26,62],[38,70],[54,64],[64,68]];
     for(let i=0;i<posti.length;i++){
-      const bx  = posti[i][0] + ((hsh(i,v,193)*3)|0) - 1;
-      const byy = posti[i][1] + ((hsh(i,v,194)*2)|0) - 1;
-      px(x,bx,byy-4,1,4,'#4f8a32');                       // gambo
-      px(x,bx-1,byy-2,3,1,'#5f9c3c');                     // foglioline
-      for(let k=0;k<4;k++){ const a=k/4*6.28+0.78;
-        px(x,(bx+Math.cos(a)*2)|0,(byy-6+Math.sin(a)*2)|0,2,2,'#8a5fc0'); }
-      px(x,bx,byy-6,1,1,'#ffe270');                       // cuore giallo
+      const bx  = posti[i][0] + ((hsh(i,v,193)*6)|0) - 2;
+      const byy = posti[i][1] + ((hsh(i,v,194)*4)|0) - 2;
+      px(x,bx,byy-8,1,8,'#4f8a32');                       // gambo, sottile davvero
+      px(x,bx-3,byy-5,4,1,'#5f9c3c'); px(x,bx+1,byy-3,4,1,'#5f9c3c');  // foglioline
+      for(let k=0;k<5;k++){ const a=k/5*6.28+0.78;
+        px(x,(bx+Math.cos(a)*4)|0,(byy-12+Math.sin(a)*4)|0,3,3,'#8a5fc0'); }
+      px(x,bx-1,byy-13,2,2,'#ffe270');                    // cuore giallo
     }
     return;
   }
-  for(let i=0;i<6;i++){
-    const bx=10+((hsh(i,v,191)*20)|0), byy=12+((hsh(i,v,192)*16)|0);
+  for(let i=0;i<9;i++){
+    const bx=20+((hsh(i,v,191)*40)|0), byy=24+((hsh(i,v,192)*32)|0);
     if(item === 'mora'){
-      px(x,bx,byy,3,3,'#3a2440'); px(x,bx,byy,1,1,'#6a4a70');
+      // una mora è fatta a granelli: adesso ce ne stanno quattro
+      px(x,bx,byy,5,5,'#3a2440');
+      px(x,bx+1,byy+1,2,2,'#6a4a70'); px(x,bx+3,byy+3,2,2,'#6a4a70');
+      px(x,bx+1,byy,1,1,'#8a6a90');
     } else if(item === 'nocciola'){
-      px(x,bx,byy,3,3,'#a8763c'); px(x,bx,byy,3,1,'#c99a5e'); px(x,bx,byy+2,3,1,'#7a5228');
+      px(x,bx,byy,5,5,'#a8763c'); px(x,bx,byy,5,2,'#c99a5e');
+      px(x,bx,byy+4,5,1,'#7a5228'); px(x,bx+1,byy+1,1,1,'#e0c090');
     } else {
-      px(x,bx,byy,3,3,'#c8324a'); px(x,bx,byy,1,1,'#f07a88');
+      px(x,bx,byy,5,5,'#c8324a'); px(x,bx+3,byy+3,2,2,'#8a1f30');
+      px(x,bx+1,byy+1,2,2,'#f07a88');
     }
   }
 }

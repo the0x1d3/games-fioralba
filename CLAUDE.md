@@ -352,8 +352,27 @@ OGNI scena. I raccordi fra terreni, altri 94-107%, sono ritagliati dalle
 stesse piastrelle e migliorano da soli. Il personaggio è l'1%.
 
 Rifatte finora: le undici piastrelle di terreno, le due maschere dei
-raccordi, e di rimbalzo `bordo`, `ombraBordo`, `arato` e `schiuma`.
-Restano alberi (secondi per area), edifici, personaggio.
+raccordi, e di rimbalzo `bordo`, `ombraBordo`, `arato` e `schiuma`; poi
+alberi, ceppi e cespugli col loro `foliageBlob`. Restano edifici, sassi
+e personaggio.
+
+**Le piastrelle erano parametri, gli alberi sono gusto**, e la
+differenza si sente lavorandoci. Su una texture procedurale «più
+elementi, più piccoli» è una regola che si applica e si misura; su un
+albero la forma della chioma è una scelta di chi disegna, e l'unica
+strada onesta è **suddividere quello che c'è senza toccare la
+silhouette**: più ciuffi e più piccoli sul bordo della chioma,
+scanalature verticali al posto delle macchie sulla corteccia, cinque
+anelli invece di due sul ceppo. Le masse, i colori e le proporzioni
+restano dov'erano.
+
+Il piede dell'albero è costato tre tentativi, e i due buttati dicono
+qualcosa che vale per tutta la coda: righe da un pixel a raggiera si
+leggevano come graffi rossi sull'erba (`trunkD` è bruno, ma contro il
+verde tira al rosso); tre gobbe staccate dallo svaso sembravano paletti
+piantati accanto al tronco. Quello che funziona è un profilo continuo
+che scende liscio, con l'irregolarità nella LUNGHEZZA delle radici e non
+nella loro altezza — mettendola sull'altezza viene fuori un pettine.
 
 **Come si misura se un ridisegno è avvenuto davvero.** In un'immagine
 cotta a 32 e ingrandita, ogni stacco di colore cade su un confine PARI
