@@ -2765,6 +2765,55 @@ verifica(TS ? 'niente raddoppio relativo dentro a un blocco già raddoppiato'
   return problemi;
 });
 
+/* NIENTE FLOAT NELLE FINESTRE, e il perché va letto tutto perché il
+   difetto non somiglia alla sua causa.
+
+   Nella finestra della botte il bottone «Sposta» stava a destra con un
+   `float:right`, e la PRIMA riga sotto veniva 82 pixel più stretta
+   delle altre — misurata: 693 contro 775, che sono esattamente il
+   bottone (72) più il suo margine (10). Le righe di quelle finestre
+   sono `display:flex`, cioè aprono un contesto di formattazione nuovo,
+   e un contesto nuovo non scorre sotto a un float: si stringe per
+   evitarlo. Dalla seconda riga in giù, sotto al bordo basso del
+   bottone, la larghezza tornava piena.
+
+   Il risultato è due righe identiche larghe diverso, e guardandole
+   sembra un problema di quello che ci sta dentro — un nome più lungo,
+   un'icona più grande — mentre è il bottone sopra. Ci si perde tempo.
+   Un bottone che va a destra si spinge con `margin-left:auto` dentro a
+   una riga flex.
+
+   Il controllo pretende anche di aver LETTO qualcosa: un giorno che i
+   file si spostano e la cartella non c'è più, «nessun float trovato»
+   sarebbe un verde che non vuol dire niente.
+
+   E i commenti si tolgono prima di cercare, se no il primo a essere
+   segnalato è il commento che spiega perché il float non c'è più —
+   scritto qui sopra e in ui.js. È già successo, ed è successo due
+   volte: lo stesso inciampo l'aveva fatto il controllo sul raddoppio,
+   che si segnalava la propria dichiarazione. */
+verifica('niente float nelle finestre: stringe la prima riga flex', () => {
+  const problemi = [];
+  const dir = path.join(RADICE, 'js');
+  const file = fs.readdirSync(dir).filter(f => f.endsWith('.js'));
+  if (file.length < 10)
+    return [`in js/ ho trovato ${file.length} file: questo controllo non sta guardando quello che dovrebbe`];
+  for (const f of file) {
+    /* i commenti si sostituiscono con spazi, non si cancellano: così i
+       numeri di riga restano quelli veri e l'errore si va a leggere */
+    const src = fs.readFileSync(path.join(dir, f), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, c => c.replace(/[^\n]/g, ' '))
+      .replace(/(^|\s)\/\/.*$/gm, (c, p) => p + ' '.repeat(c.length - p.length));
+    for (const m of src.matchAll(/float\s*:\s*(right|left)/g)) {
+      const riga = src.slice(0, m.index).split('\n').length;
+      problemi.push(`js/${f}:${riga} usa «${m[0]}»: se sotto c'è una riga flex, quella si stringe ` +
+                    'della larghezza del float e sembra un problema del suo contenuto. ' +
+                    'Per mandare un elemento a destra: `margin-left:auto` dentro a una riga flex');
+    }
+  }
+  return problemi;
+});
+
 const larghezza = 62;
 console.log('\n  Fioralba — coerenza dei dati\n  ' + '─'.repeat(larghezza));
 for (const nome of fatti) console.log('  [32m✓[0m ' + nome);

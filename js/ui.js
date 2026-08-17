@@ -1006,15 +1006,32 @@ U.cassa = function(G, obj, ox, oy){
 U.macchina = function(G, obj, ox, oy){
   const nomi = { barattoliera:'Barattoliera', botte:'Botte', fornace:'Fornace', forno:'Forno a legna', arnia:'Arnia' };
   U.modal(nomi[obj.kind]||'Macchina', body=>{
+    /* LA TESTATA, e perché non è più un `float:right`.
+       Il bottone «Sposta» stava a destra con un float, e la prima riga
+       sotto veniva 82 pixel più stretta delle altre — misurata: 693
+       contro 775, che sono esattamente il bottone (72) più il suo
+       margine (10). Non era il contenuto: una `.row` è `display:flex`,
+       cioè apre un contesto di formattazione nuovo, e un contesto nuovo
+       NON scorre sotto a un float, si stringe per evitarlo. Le righe
+       dopo, che cadono sotto al bordo basso del bottone, restavano
+       larghe. Due righe identiche di larghezza diversa, e la colpa
+       sembrava dell'oggetto che c'era dentro.
+
+       Adesso è una riga flex: quello che c'è da dire a sinistra, il
+       bottone spinto a destra dal suo `margin-left:auto` — che tiene
+       anche quando a sinistra non c'è niente, come quando la macchina è
+       pronta o sta già lavorando. */
+    const testa = document.createElement('div'); testa.className='mac-testa';
+    body.appendChild(testa);
     /* Anche le macchine si spostano, e senza perdere la lavorazione in
        corso: raccoglierle e riposarle avrebbe buttato via i tre giorni
        di botte che avevi già aspettato. */
     if(typeof ox === 'number'){
       const b=document.createElement('button'); b.className='btn';
-      b.style.cssText='float:right;margin-left:10px';
+      b.style.marginLeft='auto';
       b.textContent='Sposta';
       b.onclick=()=>{ U.chiudiModal(); G.iniziaSpostamento(obj, ox, oy); };
-      body.appendChild(b);
+      testa.appendChild(b);
     }
     if(obj.pronto){
       const r=document.createElement('div'); r.className='row';
@@ -1032,18 +1049,18 @@ U.macchina = function(G, obj, ox, oy){
     if(obj.dentro){
       const n=document.createElement('div'); n.className='muted';
       n.innerHTML=`Sta lavorando: <b>${IT.nome(obj.dentro)}</b>.<br>Pronto tra <b>${obj.giorni}</b> giorno/i.`;
-      body.appendChild(n);
+      testa.insertBefore(n, testa.firstChild);   // a sinistra di «Sposta»
       return;
     }
 
-    const n=document.createElement('div'); n.className='muted'; n.style.marginBottom='10px';
+    const n=document.createElement('div'); n.className='muted';
     n.textContent = {
       barattoliera:'Metti dentro un raccolto: diventerà una conserva che vale il doppio più cinquanta.',
       botte:'Frutta → vino, verdura → succo. Ci mette qualche giorno ma ne vale la pena.',
       fornace:'Minerale grezzo + carbone → lingotto.',
       arnia:'Non si tocca. Il miele arriva da solo.'
     }[obj.kind]||'';
-    body.appendChild(n);
+    testa.insertBefore(n, testa.firstChild);
 
     let validi;
     if(obj.kind==='fornace') validi = ['rame','ferro','oro'];

@@ -2281,3 +2281,22 @@ html.col-dito .sinc-legacy-link{
    quello che si perde sono proprio le righe da un pixel — il filo della
    falce, la cucitura del manico. */
 canvas.ico-mano{ image-rendering:auto; }
+
+/* La testata delle finestre delle macchine: a sinistra cosa fa la
+   macchina, a destra «Sposta».
+
+   Era un `float:right` sul bottone, e la prima riga sotto veniva 82
+   pixel più stretta delle altre — 693 contro 775, misurati. Una `.row`
+   è `display:flex`, cioè apre un contesto di formattazione nuovo, e un
+   contesto nuovo non scorre sotto a un float: si stringe per evitarlo.
+   Dalla seconda riga in giù, sotto al bordo basso del bottone, la
+   larghezza tornava piena. Due righe uguali larghe diverso.
+
+   `align-items:flex-start` e non `center`: il testo della botte va a
+   capo su due righe e il bottone deve restare in alto, non scendere a
+   metà del paragrafo. */
+.mac-testa{
+  display:flex; align-items:flex-start; gap:10px; margin-bottom:10px;
+}
+.mac-testa .muted{ flex:1; min-width:0; }
+.mac-testa:empty{ display:none; margin:0; }
