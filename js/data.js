@@ -1778,7 +1778,22 @@ D.ARREDI = {
   cucina:  { file:'forno.png',    w:1.5,  h:1.5 },
   sedia:   { file:'sedia.png',    w:1,    h:1.5 },
   baule:   { file:'baule.png',    w:1.5,  h:1   },
-  lume:    { file:'lanterna.png', w:0.75, h:1.5 }
+  lume:    { file:'lanterna.png', w:0.75, h:1.5 },
+  /* Questi tre stanno FUORI, e la chiave non è sempre un `t`: il
+     cartello e lo spaventapasseri sono `t:'mobile'` e si riconoscono dal
+     `kind`, che è come il gioco tiene tutto quello che il giocatore
+     posa. Se ne occupa `idArredo` in render.js.
+
+     Tutti e tre 1,5×1,5 caselle di disegno sopra un'impronta di UNA, e
+     il disegno sborda in su: un cartello alto quanto la sua casella
+     sarebbe un cartello per terra. Il PNG però è quadrato e il disegno
+     dentro non lo è — il palo del cartello lo fa 923×1019, lo
+     spaventapasseri 669×1062, la scrivania 960×703 — quindi il vuoto
+     intorno è trasparente e NON va ritagliato: è quello che tiene i tre
+     alla stessa scala l'uno con l'altro. */
+  cartello:        { file:'cartello.png',        w:1.5, h:1.5 },
+  spaventapasseri: { file:'spaventapasseri.png', w:1.5, h:1.5 },
+  scrivania:       { file:'scrivania.png',       w:1.5, h:1.5 }
 };
 
 /* Disegnati, committati, e non ancora collegati a niente — col perché.

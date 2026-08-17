@@ -37,7 +37,21 @@ Sono l'impronta in caselle moltiplicata per la casella. Con la casella a
 | camino.png   | 1,5×2  | 96×128  |
 | forno.png    | 1,5×1,5| 96×96   |
 | lanterna.png | 0,75×1,5 | 48×96 |
+| cartello.png | 1,5×1,5 | 96×96 |
+| spaventapasseri.png | 1,5×1,5 | 96×96 |
+| scrivania.png | 1,5×1,5 | 96×96 |
 | omino.png    | 1×1,5  | 64×96 a cella, 256×384 il foglio |
+
+Gli ultimi tre stanno FUORI dalle stanze e appoggiano su un'impronta di
+**una** casella: il disegno sborda in su, come la sedia. Un cartello
+alto quanto la sua casella sarebbe un cartello per terra.
+
+Il loro PNG è quadrato ma il disegno dentro non lo è — 923×1019 il
+cartello col suo palo, 669×1062 lo spaventapasseri, 960×703 la
+scrivania — e il vuoto intorno **non va ritagliato**: è quello che li
+tiene alla stessa scala l'uno con l'altro. Ritagliando ognuno sul
+proprio contenuto, la scrivania sarebbe venuta alta quanto lo
+spaventapasseri.
 
 Se la casella cambia, si riesporta da `sprite-new/`: è per questo che i
 sorgenti grossi restano nel repo invece di essere buttati.

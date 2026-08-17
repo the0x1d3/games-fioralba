@@ -1411,7 +1411,12 @@ function ombraOggettoDentro(o, px, py, gx, gy, t, stag, sole){
       const opt = {attivo:!!o.dentro, pronto:!!o.pronto};
       // l'ombra deve venire dal pezzo giusto, non da quello isolato
       if(o.kind==='recinto' || o.kind==='cancelletto') opt.lati = latiRecinto(G.mappa(), gx, gy);
-      const img = ART.placeable(o.kind, opt);
+      /* E dallo stesso disegno che si vede: lo spaventapasseri disegnato
+         a mano è più stretto e più alto di quello in codice, e l'ombra
+         presa dal vecchio sarebbe stata l'ombra di un altro. `mez` porta
+         qualunque sprite dai pixel di mondo a quelli del blocco
+         raddoppiato, quindi la misura torna con tutti e due. */
+      const img = immagineArredo(o) || ART.placeable(o.kind, opt);
       FX.ombraSprite(sx, img, px+16, py+U, sole, mez(img.width), mez(img.height), 0);
       break;
     }
@@ -1491,18 +1496,51 @@ function latiRecinto(m, x, y){
    Le coordinate sono in pixel di MONDO, non di disegno: qui non si entra
    nel blocco raddoppiato. Un PNG è già alla densità del mondo — è nato
    per la casella da 64 — e raddoppiarlo lo farebbe grande il doppio. */
-function arredoDaImmagine(o, wx, wy){
-  if(!window.IMG || !window.DATA || !DATA.ARREDI) return false;
-  const a = DATA.ARREDI[o.t];
-  if(!a) return false;
-  const img = IMG.prendi(o.t);
+/* Con che nome un oggetto cerca la sua immagine. Per quasi tutti è il
+   tipo, ma quello che il giocatore POSA è tutto `t:'mobile'` — una
+   staccionata, una lanterna, uno spaventapasseri e un cartello hanno lo
+   stesso `t` e si distinguono per `kind`. Cercare per tipo avrebbe
+   voluto dire un solo PNG per tutti i posabili del gioco.
+
+   Solo `mobile`, e non anche `macchina`: i `kind` delle macchine sono
+   `cassa`, `botte`, `forno`, `barattoliera`, e `forno` è a un passo dal
+   diventare una chiave di ARREDI per sbaglio — lì `cucina` disegna già
+   `forno.png`, e un giorno che qualcuno aggiunge la riga si ritroverebbe
+   il fornello di casa sopra alle botti del cortile. */
+function idArredo(o){
+  return (o.t === 'mobile' && o.kind) ? o.kind : o.t;
+}
+
+function immagineArredo(o){
+  if(!window.IMG || !window.DATA || !DATA.ARREDI) return null;
+  const id = idArredo(o);
+  return DATA.ARREDI[id] ? IMG.prendi(id) : null;
+}
+
+/* `piega` è l'inclinazione al vento dello spaventapasseri, e sta qui
+   invece che nel punto di chiamata perché il PNG non entra nel blocco
+   raddoppiato: l'inclinazione va applicata in pixel di mondo, o esce
+   grande il doppio come tutto il resto. Zero per tutti gli altri. */
+function arredoDaImmagine(o, wx, wy, piega){
+  const img = immagineArredo(o);
   if(!img) return false;
+  const a = DATA.ARREDI[idArredo(o)];
 
   const f = WORLD.impronta(o);
   const iw = a.w*T, ih = a.h*T;                 // il PNG, in pixel di mondo
   const dx = wx + (f.w*T - iw)/2;               // centrato sull'impronta
   const dy = wy + f.h*T - ih;                   // appoggiato al suo bordo basso
-  sx.drawImage(img, Math.round(dx), Math.round(dy), iw, ih);
+  if(piega){
+    /* si inclina attorno al PIEDE, non attorno al centro: uno
+       spaventapasseri che ondeggia sollevando la base sembra saltellare */
+    sx.save();
+    sx.translate(wx + f.w*T/2, wy + f.h*T);
+    sx.transform(1, 0, piega, 1, 0, 0);
+    sx.drawImage(img, Math.round(dx - (wx + f.w*T/2)), Math.round(dy - (wy + f.h*T)), iw, ih);
+    sx.restore();
+  } else {
+    sx.drawImage(img, Math.round(dx), Math.round(dy), iw, ih);
+  }
   return true;
 }
 
@@ -1512,7 +1550,25 @@ function arredoDaImmagine(o, wx, wy){
    l'ingrandimento — quindi vogliono il punto vero e non quello relativo. */
 function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
   // il PNG, se c'è, sostituisce tutto il blocco disegnato a mano
-  if(arredoDaImmagine(o, px, py)) return;
+  const piega = o.kind === 'spaventapasseri' ? FX.vento(gx*T, gy*T)*0.05 : 0;
+  if(arredoDaImmagine(o, px, py, piega)){
+    /* Il PNG sostituisce il DISEGNO, non quello che ci va sopra. La
+       targhetta del cartello è una scritta: si stampa dopo
+       l'ingrandimento, alla risoluzione vera dello schermo, e non è mai
+       stata parte dello sprite. Uscendo di qui senza, un cartello
+       piantato dal giocatore resterebbe una tavoletta vuota — e sarebbe
+       proprio quello che ci si è scritti sopra a sparire.
+
+       Sta 46 px sopra alla casella e non 24 come col disegno in codice,
+       ed è il cartello che si è alzato, non la targhetta che si è
+       spostata: il PNG è alto 96 su un'impronta di 64, appoggia sul
+       bordo basso, quindi il bordo alto delle tavole sta a −32 invece
+       che a −11. Col vecchio numero la scritta cadeva IN MEZZO alle due
+       tavole, che è il posto dove il disegno ha già le sue righe chiare:
+       si leggeva una targa sopra a un'altra targa. */
+    if(o.kind === 'cartello' && o.testo) targhetta(o.testo, px+T/2, py-46);
+    return;
+  }
   raddoppia(sx, px, py);
   disegnaOggettoDentro(o, 0, 0, gx, gy, t, stag, G, px, py);
   sx.restore();
@@ -2267,7 +2323,14 @@ function disegnaDecoPiattaDentro(d, px, py, t, stag){
 }
 
 function disegnaDecoAlta(d, ox, oy, t, stag){
-  raddoppia(sx, (d.x*T+ox)|0, (d.y*T+oy)|0);
+  const wx = (d.x*T+ox)|0, wy = (d.y*T+oy)|0;
+  /* I ventisei cartelli del mondo — «↑ Miniera», «Molo», la frase sulla
+     porta di Bruno — sono decorazioni e non oggetti, quindi non passano
+     da `disegnaOggetto` e il PNG va agganciato anche qui. Il testo no:
+     quello dei cartelli scritti si legge stando accanto e premendo E, e
+     non è mai stato sopra la tavoletta. */
+  if(arredoDaImmagine(d, wx, wy)) return;
+  raddoppia(sx, wx, wy);
   disegnaDecoAltaDentro(d, 0, 0, t, stag);
   sx.restore();
 }
