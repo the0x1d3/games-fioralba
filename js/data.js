@@ -2155,6 +2155,40 @@ D.EDIFICI = {
   santuario_4: { file:'santuario_4.png', w:384, h:443 }
 };
 
+/* LE BESTIE DISEGNATE A MANO, e le loro quattro pose.
+
+   Qui il foglio non ha quattro fotogrammi di camminata: ha quattro
+   POSE, e sono direzioni — di fronte, di spalle, di lato, di lato col
+   passo. Il gioco prima le disegnava sempre di profilo e specchiava per
+   andare a sinistra, quindi il coniglio che ti veniva incontro lo
+   vedevi comunque di fianco. Adesso ti guarda.
+
+   L'ordine delle celle è quello del foglio, e non è quello delle
+   direzioni del gioco: cella 0 di fronte (= giù), cella 1 di spalle
+   (= su), celle 2 e 3 di lato. Le tiene `D.POSE_BESTIA` una volta sola,
+   invece che ripeterle in ogni voce: sono uguali per tutte.
+
+   Il lato è disegnato verso DESTRA e per andare a sinistra si specchia,
+   che è quello che il renderer faceva già. Di fronte e di spalle non si
+   specchiano: sono simmetriche, e specchiarle non cambierebbe niente.
+
+   La misura della cella non è scelta: viene dal disegno, scalato perché
+   il PROFILO resti alto quanto la bestia disegnata in codice — 40 pixel
+   il coniglio, 74 il cervo. Il profilo e non la media, perché è la posa
+   che si vede quasi sempre; fronte e schiena sono più strette e più
+   alte, e la cella cresce per contenerle senza che la bestia cambi
+   statura girandosi. */
+D.POSE_BESTIA = { giu:0, su:1, lato:[2,3] };
+
+D.ANIMALI = {
+  coniglio:   { file:'animale-coniglio.png',   w:44, h:48 },
+  cervo:      { file:'animale-cervo.png',      w:84, h:88 },
+  scoiattolo: { file:'animale-scoiattolo.png', w:52, h:48 },
+  riccio:     { file:'animale-riccio.png',     w:60, h:48 },
+  rana:       { file:'animale-rana.png',       w:36, h:36 },
+  lumaca:     { file:'animale-lumaca.png',     w:44, h:36 }
+};
+
 /* GLI ABITANTI DISEGNATI A MANO, uno per foglio.
 
    Il giocatore ha `D.OMINO`, loro hanno questo: stessa forma, stessa

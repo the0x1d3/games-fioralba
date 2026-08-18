@@ -2138,6 +2138,37 @@ A.verificaDirezioni = function(){
   return scarti;
 };
 
+/* LA BESTIA DISEGNATA A MANO, ritagliata dalla sua posa.
+
+   `dir` è la direzione del gioco — 0 giù, 1 sinistra, 2 destra, 3 su — e
+   qui diventa una cella del foglio passando da `D.POSE_BESTIA`. I due
+   lati pescano la stessa cella: chi va a sinistra lo specchia
+   `MOBS.disegnaUno`, come faceva già.
+
+   Torna null se il foglio non c'è, e allora si disegna la bestia in
+   codice: è il patto di sempre, e qui serve davvero perché delle undici
+   specie ne hanno il foglio sei. */
+const CHIAVE_BESTIA = 'an:';
+const bestiaCache = {}, bestiaDaCui = {};
+A.bestia = function(id, dir, frame){
+  if(!window.IMG || !window.DATA || !DATA.ANIMALI || !DATA.ANIMALI[id]) return null;
+  const img = IMG.prendi(CHIAVE_BESTIA + id);
+  if(!img) return null;
+  if(bestiaDaCui[id] !== img){
+    for(const k in bestiaCache) if(k.indexOf(id+'|')===0) delete bestiaCache[k];
+    bestiaDaCui[id] = img;
+  }
+  const P = DATA.POSE_BESTIA;
+  const cella = dir===3 ? P.su : dir===0 ? P.giu : P.lato[(frame|0) % P.lato.length];
+  const key = id+'|'+cella;
+  if(bestiaCache[key]) return bestiaCache[key];
+  const A2 = DATA.ANIMALI[id];
+  const c = cv(A2.w, A2.h);
+  c.getContext('2d').drawImage(img, cella*A2.w, 0, A2.w, A2.h, 0, 0, A2.w, A2.h);
+  bestiaCache[key] = c;
+  return c;
+};
+
 const CHIAVE_EDIFICIO = 'ed:';
 
 /* QUALI DISEGNI PUÒ AVERE UN EDIFICIO, dal più specifico al più

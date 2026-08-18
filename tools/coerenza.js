@@ -2885,6 +2885,47 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
       problemi.push('il santuario disegnato a mano vuole il punto della lanterna: senza, accenderla non si vede');
   }
 
+  /* Le specie che il mondo fa comparire, prese dal sorgente di mobs.js:
+     scriverle qui a mano vorrebbe dire tenerle allineate a mano. */
+  const SPECIE_VERE = (()=>{
+    const src = fs.readFileSync(path.join(RADICE, 'js', 'mobs.js'), 'utf8');
+    const i0 = src.indexOf('const SPECIE = {');
+    const blocco = i0 < 0 ? '' : src.slice(i0, src.indexOf('};', i0));
+    return [...blocco.matchAll(/^\s{2}(\w+)\s*:/gm)].map(q => q[1]);
+  })();
+
+  /* LE BESTIE: quattro pose in fila in un file solo. La larghezza è
+     quattro celle esatte, o si ritaglia a cavallo fra due pose — e a
+     schermo si vede mezzo coniglio di fronte con mezzo coniglio di
+     spalle attaccato. L'altezza è una cella sola, perché le pose stanno
+     in fila e non in griglia.
+
+     E il nome dev'essere una specie che il mondo fa comparire davvero:
+     un tipo scritto storto non darebbe nessun errore, la bestia
+     resterebbe disegnata in codice accanto alle altre disegnate a mano
+     e nessuno saprebbe perché. */
+  if (DATA.ANIMALI) {
+    const P = DATA.POSE_BESTIA || {};
+    const celle = 2 + ((P.lato || []).length);
+    if (P.giu !== 0 || P.su !== 1 || (P.lato || []).join() !== '2,3')
+      problemi.push('DATA.POSE_BESTIA non è più giù/su/lato/lato: i fogli sono tagliati in quell’ordine');
+    for (const id in DATA.ANIMALI) {
+      const A = DATA.ANIMALI[id];
+      usati.add(A.file);
+      if (!SPECIE_VERE.includes(id))
+        problemi.push(`DATA.ANIMALI ha «${id}», che non è una bestia che il mondo fa comparire`);
+      const f = path.join(dir, A.file);
+      if (!fs.existsSync(f)) { problemi.push(`DATA.ANIMALI vuole img/${A.file}, che non c'è`); continue; }
+      const b = fs.readFileSync(f);
+      if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) { problemi.push(`img/${A.file} non è un PNG`); continue; }
+      const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+      if (w !== A.w * celle)
+        problemi.push(`img/${A.file} è largo ${w} ma ${celle} pose da ${A.w} fanno ${A.w*celle}`);
+      if (h !== A.h)
+        problemi.push(`img/${A.file} è alto ${h} ma «${id}» dichiara ${A.h}: le pose stanno in fila, non in griglia`);
+    }
+  }
+
   /* DUE TABELLE NON POSSONO RIVENDICARE LO STESSO FILE.
 
      È successo davvero, e in silenzio: le icone dello zaino si chiamano

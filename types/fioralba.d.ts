@@ -402,6 +402,13 @@ interface FioData {
    * a `righe` è un segnaposto e va ricopiato uguale in traduzione.
    */
   ROVINE: Record<string, { nome: string; righe: string[] }>;
+  /**
+   * Le bestie disegnate a mano. Il foglio ha quattro POSE in fila —
+   * di fronte, di spalle, di lato, di lato col passo — e non quattro
+   * fotogrammi di camminata: l'ordine lo dice `POSE_BESTIA`.
+   */
+  ANIMALI: Record<string, { file: string; w: number; h: number }>;
+  POSE_BESTIA: { giu: number; su: number; lato: number[] };
   EDIFICI: Record<string, { file: string; w: number; h: number;
                             fumo?: number[]; finestre?: number[][]; fuoco?: number[];
                             lanterna?: number[]; nicchie?: number[][] }>;

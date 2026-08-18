@@ -565,6 +565,26 @@ M.aggiorna = function(G, dt){
 
     if(Math.abs(b.vx)>0.01*K) b.dir = b.vx<0?-1:1;
 
+    /* DA CHE PARTE GUARDA, adesso che le bestie hanno quattro pose.
+
+       `b.dir` resta quello di prima — meno uno o più uno, e serve a
+       specchiare — perché chi disegna la bestia in codice non sa
+       niente delle direzioni e continua a funzionare come sempre.
+       Accanto ci va `b.dir4`, che è la direzione com'è numerata nel
+       resto del gioco: 0 giù, 1 sinistra, 2 destra, 3 su.
+
+       Vince la componente più grande, e a parità vince l'orizzontale:
+       una bestia che va in diagonale si vede meglio di profilo che di
+       schiena, e il profilo è anche la posa in cui cammina. Sotto la
+       soglia non si cambia posa: una bestia ferma tiene quella che
+       aveva, se no all'ultimo istante di ogni passeggiata si girerebbe
+       verso di te per un fotogramma. */
+    if(Math.abs(b.vx) > 0.01*K || Math.abs(b.vy) > 0.01*K){
+      b.dir4 = Math.abs(b.vx) >= Math.abs(b.vy)
+             ? (b.vx < 0 ? 1 : 2)
+             : (b.vy < 0 ? 3 : 0);
+    }
+
     /* animazione */
     const rit = S.vola ? (b.tipo==='farfalla'?70:(b.tipo==='libellula'?45:110))
                        : (b.stato==='fugge'?110:190);
@@ -631,7 +651,11 @@ function rubaRaccolto(G, b){
    ordina per profondità, quindi non esiste un "disegna tutte in blocco". */
 M.disegnaUno = function(sx, b, ox, oy){
   const px0 = b.x+ox, py0 = b.y+oy;
-  const img = M.sprite(b.tipo, b.frame, b.volo, b.col);
+  /* Il foglio disegnato a mano, se questa bestia ce l'ha. Quando c'è
+     porta con sé le quattro pose; quando non c'è si torna al disegno in
+     codice, che di pose ne ha una sola e la specchia. */
+  const aMano = ART.bestia ? ART.bestia(b.tipo, b.dir4===undefined ? 2 : b.dir4, b.frame) : null;
+  const img = aMano || M.sprite(b.tipo, b.frame, b.volo, b.col);
   const w=img.width, h=img.height;
   const scala = Math.max(0.25, 1 - b.z/(60*K));
   /* L'OMBRA ERA TARATA SU UN PRATO CHE NON C'È PIÙ.
@@ -648,9 +672,23 @@ M.disegnaUno = function(sx, b, ox, oy){
      rimette le bestie nella stessa famiglia, non oltre. */
   FX.ombraTerra(sx, px0, py0, (w*0.33)*scala, (h*0.16)*scala, 0.42*scala);
   const dy = py0 - b.z;
-  sx.drawImage(FX.contorno(img), (px0-w/2-K)|0, (dy-h+K)|0);
   sx.save();
-  if(b.dir<0){ sx.translate(px0,0); sx.scale(-1,1); sx.translate(-px0,0); }
+  /* Si specchia solo di PROFILO: il lato è disegnato verso destra e per
+     andare a sinistra si ribalta, ma di fronte e di spalle no — sono
+     simmetriche, e ribaltarle farebbe cambiare lato all'orecchio storto
+     senza che nessuno capisca perché. Chi non ha il foglio si comporta
+     come prima, perché la sua unica posa è un profilo. */
+  const diLato = !aMano || b.dir4===1 || b.dir4===2 || b.dir4===undefined;
+  if(b.dir<0 && diLato){ sx.translate(px0,0); sx.scale(-1,1); sx.translate(-px0,0); }
+  /* IL CONTORNO VA DENTRO ALLO SPECCHIO, e prima ne stava fuori.
+
+     Era disegnato prima del `save`, quindi una bestia che andava a
+     sinistra aveva la sagoma ribaltata e il suo contorno no: restava la
+     silhouette di quella che guarda a destra, spostata di lato. Con le
+     bestie in codice, quasi simmetriche, si leggeva come un'ombra
+     storta; col cervo disegnato a mano si vede benissimo — corna da una
+     parte e ombra delle corna dall'altra. */
+  sx.drawImage(FX.contorno(img), (px0-w/2-K)|0, (dy-h+K)|0);
   sx.drawImage(img, (px0-w/2)|0, (dy-h+2*K)|0);
   sx.restore();
 };

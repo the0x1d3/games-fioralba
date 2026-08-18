@@ -133,6 +133,7 @@ function init(){
     IMG.precarica({ terreni: DATA.TERRENI });      // il foglio dei terreni
     IMG.precarica({ minerali: DATA.MINERALI });    // e quello dei minerali
     IMG.precarica(DATA.EDIFICI, 'ed:');            // le nove facciate
+    IMG.precarica(DATA.ANIMALI, 'an:');            // le bestie, con le loro pose
     /* Col prefisso: `cartello` e `spaventapasseri` stanno in tutti e due
        gli elenchi, e le immagini si tengono per id — senza, la seconda
        richiesta si perderebbe e nello zaino resterebbe il disegno in
