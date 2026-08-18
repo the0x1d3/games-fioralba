@@ -122,10 +122,14 @@ la mette il gioco, in due posti che vanno insieme:
   sono quelli del **vetro**, non della finestra: prendendo anche la cornice si
   scalda il legno e sembra una finestra incendiata.
 
-Stessa strada per la forgia della fucina (che arde anche di giorno) e per le
-**quattro nicchie e la lanterna del Santuario**, che sono stato di gioco e non
-decorazione: le nicchie nel disegno ci sono, quattro incassi scuri nel
-basamento, e sono vuote — la brace è luce.
+Stessa strada per la forgia della fucina, che arde anche di giorno.
+
+**Il Santuario è il caso a parte**, e ha cinque disegni: uno per brace accesa.
+Lì le braci e la lanterna sono DISEGNATE, quindi il gioco non dipinge la
+fiamma — mette solo l'alone, che serve a bucare il velo del buio e a tingere
+la pozza di verde, giallo, arancio e azzurro. I quattro colori restano quelli
+della facciata in codice: accendere una brace non può cambiare tinta a seconda
+di quale disegno è arrivato.
 
 **Cosa manca ancora**, e va disegnato:
 
@@ -133,9 +137,16 @@ basamento, e sono vuote — la brace è luce.
 altre, non annidate: `IMG.precarica` scorre l'oggetto per sapere cosa
 scaricare, e una voce annidata resterebbe a terra senza dire niente.
 `ART.edificio(tipo, liv)` prova `tipo_liv` e ripiega su `tipo`, così un
-livello senza disegno suo tiene quello di prima. Per adesso ce n'è una:
-`casa_1`, la casa ampliata di `casa2` — più grande, con la falda in più e
-cinque finestre invece di due.
+livello senza disegno suo tiene quello di prima. E la variante **eredita**
+dalla base quello che non ridichiara: le quattro nicchie del Santuario stanno
+dove stanno a zero braci come a quattro, e scriverle cinque volte vuol dire
+vederle divergere al primo ritocco.
+
+Ce ne sono due famiglie: `casa_1`, la casa ampliata di `casa2` — più grande,
+con la falda in più e cinque finestre invece di due — e `santuario_1..4`, una
+per brace accesa. Per il Santuario il «livello» non è `e.liv` ma `G.braci`:
+lo decide `G.livelloEdificio`, che è l'unico posto dove quella regola sta
+scritta.
 
 **Cosa manca ancora**, e va disegnato: le **varianti innevate**. Il gioco non
 le ha mai avute — nessuna delle facciate in codice guarda `opt.season` — e i

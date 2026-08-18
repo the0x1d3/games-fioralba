@@ -1400,12 +1400,12 @@ function stratoErba(m, x0,y0,x1,y1, ox,oy, stag, t, G){
 function ombraEdificio(e, ox, oy, G, stag, sole){
   if(sole.a < 0.03) return;
   const opt = { lit: G.ora>1020 || G.ora<420, season:stag, liv:e.liv||0 };
-  if(e.kind==='santuario') opt.liv = G.braci;
+  if(e.kind==='santuario') opt.liv = G.livelloEdificio(e);
   /* Dallo stesso disegno che si vede, come per gli arredi: la sagoma
      disegnata a mano non è quella in codice — casa tua ha il comignolo
      più a destra e il tetto più basso — e un'ombra presa dall'altra
      sarebbe l'ombra di un'altra casa. */
-  const img = ART.edificio(e.kind, e.liv) || ART.building(e.kind, opt);
+  const img = ART.edificio(e.kind, opt.liv) || ART.building(e.kind, opt);
   const w = e.w*T, scr = w/img.width;
   FX.ombraSprite(sx, img, (e.x*T+ox)+w/2, ((e.y+e.h)*T+oy), sole, w, img.height*scr, 0);
 }
@@ -1535,27 +1535,18 @@ function luceEdificio(E, px, py, w, h, acceso, G){
     alone(px + (f[0]+f[2]/2)*w, py + (f[1]+f[3]/2)*h, Math.max(f[2]*w, f[3]*h)*1.6,
           'rgba(255,146,60', acceso ? 1 : 0.5);
   }
-  /* Le quattro braci e la lanterna del Santuario sono STATO DI GIOCO,
-     non decorazione: dicono a che punto sta l'atto secondo. Nel disegno
-     a mano le quattro nicchie ci sono — sono i quattro incassi scuri
-     nel basamento, due per lato del pozzo — e sono vuote: la brace è
-     luce, e la luce la mette il gioco, come per le finestre. I quattro
-     colori sono gli stessi della facciata in codice, o accendere una
-     brace cambierebbe tinta a seconda di quale dei due disegni è
-     arrivato. */
+  /* Le quattro braci e la lanterna del Santuario sono STATO DI GIOCO:
+     dicono a che punto sta l'atto secondo. Il disegno le ha — c'è un
+     file per ogni brace accesa — quindi qui non si dipinge la fiamma,
+     si aggiunge solo l'ALONE, che è quello che un file non può avere:
+     serve a bucare il velo del buio e a tingere di verde, giallo,
+     arancio e azzurro la pozza di luce. I quattro colori restano quelli
+     della facciata in codice, o accendere una brace cambierebbe tinta a
+     seconda di quale dei due disegni è arrivato. */
   if(E.nicchie){
     const bc = ['rgba(143,212,106', 'rgba(247,199,68', 'rgba(224,138,60', 'rgba(159,216,238'];
-    for(let i=0; i<E.nicchie.length && i<(G.braci||0); i++){
-      const nx = px + E.nicchie[i][0]*w, ny = py + E.nicchie[i][1]*h;
-      /* La brace vera, piena: solo l'alone la faceva una macchia di
-         colore sul fondo scuro della nicchia, e da lontano non si
-         capiva se fosse accesa o se fosse un riflesso. */
-      sx.globalCompositeOperation = 'source-over';
-      sx.fillStyle = bc[i]+',0.9)';
-      sx.beginPath(); sx.ellipse(nx, ny, w*0.022, w*0.016, 0, 0, 6.3); sx.fill();
-      sx.globalCompositeOperation = 'lighter';
-      alone(nx, ny, w*0.085, bc[i], 1.5);
-    }
+    for(let i=0; i<E.nicchie.length && i<(G.braci||0); i++)
+      alone(px + E.nicchie[i][0]*w, py + E.nicchie[i][1]*h, w*0.085, bc[i], 1.2);
   }
   if(E.lanterna && (G.braci||0) > 0){
     const l = E.lanterna, pieno = G.braci >= 4;
@@ -1567,8 +1558,8 @@ function luceEdificio(E, px, py, w, h, acceso, G){
 
 function disegnaEdificio(e, ox, oy, G, stag){
   const opt = { lit: G.ora>1020 || G.ora<420, season:stag, liv:e.liv||0 };
-  if(e.kind==='santuario') opt.liv = G.braci;
-  const aMano = ART.edificio(e.kind, e.liv);
+  if(e.kind==='santuario') opt.liv = G.livelloEdificio(e);
+  const aMano = ART.edificio(e.kind, opt.liv);
   const img = aMano || ART.building(e.kind, opt);
   const w = e.w*T;
   const dw = img.width, dh = img.height;
@@ -1577,7 +1568,7 @@ function disegnaEdificio(e, ox, oy, G, stag){
   const py = ((e.y+e.h)*T + oy - dh*sc)|0;
   sx.drawImage(img, px, py, dw*sc, dh*sc);
 
-  const E = aMano ? ART.datoEdificio(e.kind, e.liv) : null;
+  const E = aMano ? ART.datoEdificio(e.kind, opt.liv) : null;
   if(E) luceEdificio(E, px, py, dw*sc, dh*sc, opt.lit, G);
 
   if((e.kind==='casa'||e.kind==='locanda'||e.kind==='fucina'||e.kind==='capanna') && opt.lit){

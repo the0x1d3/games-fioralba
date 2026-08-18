@@ -269,7 +269,7 @@ W.spargiSu = function(m, terreno, quanti, fabbrica, seed){
    nata. `W.verificaProporzioni` adesso li misura tutti e due. */
 const PROPORZIONI = {
   casa:0.900, cottage:0.944, capanna:0.929, bottega:0.888,
-  fucina:0.909, locanda:0.873, santuario:1.060,
+  fucina:0.909, locanda:0.873, santuario:1.154,
   serra:0.857, pollaio:0.900
 };
 

@@ -2042,9 +2042,22 @@ D.EDIFICI = {
                finestre:[[0.482,0.283,0.080,0.089],[0.188,0.323,0.054,0.063],
                          [0.158,0.638,0.083,0.102],[0.621,0.688,0.056,0.073],
                          [0.799,0.690,0.100,0.108]] },
-  santuario: { file:'santuario.png', w:384, h:407,
-               lanterna:[0.499,0.560],
-               nicchie:[[0.169,0.835],[0.319,0.835],[0.664,0.835],[0.824,0.835]] }
+  /* IL SANTUARIO HA CINQUE DISEGNI, uno per brace accesa, e non è una
+     variante come le altre: `e.liv` di un edificio è il suo livello, ma
+     qui il livello è `G.braci`, cioè a che punto sta l'atto secondo.
+     Le braci e la lanterna qui sono DISEGNATE, quindi il gioco non le
+     dipinge più — mette solo la luce, che è quello che il disegno non
+     può avere: il velo del buio si buca da lì.
+     I punti stanno solo sulla voce base: le varianti li ereditano
+     (`ART.datoEdificio`), o gli stessi quattro numeri starebbero
+     scritti cinque volte e divergerebbero al primo ritocco. */
+  santuario:   { file:'santuario.png',   w:384, h:443,
+                 lanterna:[0.500,0.583],
+                 nicchie:[[0.191,0.872],[0.364,0.872],[0.496,0.872],[0.648,0.872]] },
+  santuario_1: { file:'santuario_1.png', w:384, h:443 },
+  santuario_2: { file:'santuario_2.png', w:384, h:443 },
+  santuario_3: { file:'santuario_3.png', w:384, h:443 },
+  santuario_4: { file:'santuario_4.png', w:384, h:443 }
 };
 
 /* GLI ABITANTI DISEGNATI A MANO, uno per foglio.

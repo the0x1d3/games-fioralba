@@ -3124,6 +3124,14 @@ Object.assign(G, PAESE);
 /* ===================================================================
    LUCI
    =================================================================== */
+/* Che disegno vuole questo edificio. Per quasi tutti è il loro livello;
+   per il Santuario è `G.braci`, cioè a che punto sta l'atto secondo. La
+   regola stava scritta due volte in render.js e una qui, e tre copie di
+   una regola sono tre occasioni di scordarsene una. */
+G.livelloEdificio = function(e){
+  return e.kind==='santuario' ? (G.braci||0) : (e.liv||0);
+};
+
 G.luci = function(){
   const out=[];
   const m=G.mappa();
@@ -3174,7 +3182,8 @@ G.luci = function(){
        la sera. Prima decideva `Math.random()`, che qui gira a ogni
        fotogramma: sessanta monetine al secondo, cioè uno sfarfallio. */
     if(e.azione==='chiuso' && ART.hsh(e.x, e.y + (G.giorno||0), 771) > 0.5) continue;
-    const E = ART.edificio(e.kind, e.liv) ? ART.datoEdificio(e.kind, e.liv) : null;
+    const liv = G.livelloEdificio(e);
+    const E = ART.edificio(e.kind, liv) ? ART.datoEdificio(e.kind, liv) : null;
     if(E && (E.finestre || E.fuoco || E.nicchie || E.lanterna)){
       const bx = e.x*T, by = (e.y+e.h)*T - E.h;
       const luce = (f, r, i) => out.push({ x: bx + (f[0]+f[2]/2)*E.w, y: by + (f[1]+f[3]/2)*E.h,

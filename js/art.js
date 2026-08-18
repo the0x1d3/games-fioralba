@@ -2035,10 +2035,20 @@ A.edificio = function(kind, liv){
    casa base, e prenderlo dalla voce sbagliata mette una macchia calda
    sul muro. Torna null se non c'è disegno a mano, che è il segnale di
    lasciar perdere e usare la facciata in codice. */
+const datiUniti = {};
 A.datoEdificio = function(kind, liv){
   if(!window.DATA || !DATA.EDIFICI) return null;
-  if(liv && DATA.EDIFICI[kind + '_' + liv] && window.IMG &&
-     IMG.prendi(CHIAVE_EDIFICIO + kind + '_' + liv)) return DATA.EDIFICI[kind + '_' + liv];
+  const k = kind + '_' + liv;
+  if(liv && DATA.EDIFICI[k] && window.IMG && IMG.prendi(CHIAVE_EDIFICIO + k)){
+    /* La variante EREDITA dalla base quello che non ridichiara: le
+       quattro nicchie del Santuario stanno dove stanno a zero braci come
+       a quattro, e scriverle cinque volte vuol dire vederle divergere al
+       primo ritocco. Chi ha davvero un impaginato suo lo dichiara e
+       vince — `casa_1` ha cinque finestre invece di due. L'unione si fa
+       una volta sola: questa funzione la chiama il fotogramma. */
+    if(!datiUniti[k]) datiUniti[k] = Object.assign({}, DATA.EDIFICI[kind]||{}, DATA.EDIFICI[k]);
+    return datiUniti[k];
+  }
   return DATA.EDIFICI[kind] || null;
 };
 
