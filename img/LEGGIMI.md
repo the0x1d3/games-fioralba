@@ -187,11 +187,17 @@ esattamente quello che era successo col Santuario, dove due righe del foglio
 erano alte 247 e tre 248, e la terza brace faceva sobbalzare il tempio di due
 pixel. Un controllo lo pretende.
 
-**Cosa manca ancora**, e va disegnato: le **varianti innevate**. Il gioco non
-le ha mai avute — nessuna delle facciate in codice guarda `opt.season` — e i
-disegni ci sono solo per la casa ampliata (`Upgrade Casa 03` e `04`). Per
-farne una stagione servono tutti e nove, o d'inverno metà paese avrebbe la
-neve sul tetto e l'altra metà no.
+**Le due rovine** — quello che resta del pollaio e della serra finché non li
+si rimette in piedi — hanno anche la versione innevata, e sono le prime a
+usare il suffisso `_neve`. Estate e inverno sono ritagliate con **un riquadro
+solo**, l'unione delle due sagome: la neve si posa sopra e quella innevata
+viene più alta — misurato, 1141 contro 1137 sul pollaio — e ritagliandole
+ognuna sul suo contenuto l'edificio si sposterebbe il giorno che nevica.
+
+**Cosa manca ancora**: le facciate innevate degli altri nove edifici. Il
+meccanismo c'è e sceglie un edificio per volta, quindi si possono aggiungere
+alla spicciolata; ma finché non ci sono tutte, d'inverno metà paese ha la neve
+sul tetto e l'altra metà no.
 
 
 ## Come si allinea una camminata

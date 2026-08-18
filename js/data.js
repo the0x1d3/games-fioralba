@@ -2108,6 +2108,23 @@ D.EDIFICI = {
   pollaio:   { file:'pollaio.png',   w:320, h:288,
                finestre:[[0.619,0.597,0.075,0.087]] },
   serra:     { file:'serra.png',     w:384, h:329 },
+  /* LE DUE ROVINE, disegnate a mano anche loro — e con la neve.
+
+     Fino a ieri erano ricavate: si prendeva la facciata finita e le si
+     toglieva la cima. Non poteva funzionare, e l'ha detto chi guarda:
+     mezza casa nuova resta mezza casa nuova, con le assi dritte e il
+     vetro sano, quindi la rovina sembrava piu' nuova dell'edificio da
+     costruire. Adesso sono disegni loro.
+
+     Estate e inverno hanno la STESSA misura perche' sono ritagliate con
+     un riquadro solo, l'unione delle due: la neve si posa sopra e la
+     sagoma innevata e' piu' alta di quella d'estate — misurato,
+     1137 contro 1141 sul pollaio — e ritagliandole ognuna sul suo
+     contenuto l'edificio si sposterebbe il giorno che nevica. */
+  rovina_pollaio:      { file:'rovina-pollaio.png',      w:320, h:301 },
+  rovina_pollaio_neve: { file:'rovina-pollaio-neve.png', w:320, h:301 },
+  rovina_serra:        { file:'rovina-serra.png',        w:384, h:337 },
+  rovina_serra_neve:   { file:'rovina-serra-neve.png',   w:384, h:337 },
   /* LE VARIANTI DI LIVELLO stanno qui in mezzo alle altre, con la chiave
      `tipo_liv`, e non annidate dentro alla voce base: `IMG.precarica`
      scorre questo oggetto per sapere cosa scaricare, e una voce annidata

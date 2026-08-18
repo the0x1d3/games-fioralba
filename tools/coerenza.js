@@ -2791,7 +2791,11 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
      alto e c'è un muro invisibile sopra al comignolo. */
   if (DATA.EDIFICI) {
     const IMPRONTE = { casa:7, bottega:7, fucina:6, locanda:8, cottage:5,
-                       capanna:4, pollaio:5, serra:6, santuario:6 };
+                       capanna:4, pollaio:5, serra:6, santuario:6,
+                       /* Le rovine sono edifici a tutti gli effetti e
+                          stanno sulla stessa impronta di quello che
+                          verrà: è lo stesso posto, prima e dopo. */
+                       rovina_pollaio:5, rovina_serra:6 };
     const world = fs.readFileSync(path.join(RADICE, 'js', 'world.js'), 'utf8');
     const tab = world.match(/const PROPORZIONI = \{([^}]*)\}/);
     const prop = {};
@@ -2806,9 +2810,14 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
          vale identico — anzi DEVE valere, perché una variante larga
          diversamente si ricampionerebbe e basterebbe costruire
          l'ampliamento, o aspettare che nevichi, per accorgersene. */
-      const pezzi = id.split('_');
-      const base = pezzi[0];
-      const coda = pezzi.slice(1);
+      /* Il tipo si riconosce PER PREFISSO PIÙ LUNGO e non tagliando al
+         primo trattino basso: `rovina_pollaio` ha il trattino dentro al
+         nome, e tagliando si finiva a cercare un edificio che si chiama
+         «rovina». Trovato mettendo le rovine disegnate a mano. */
+      const base = Object.keys(IMPRONTE)
+        .filter(k => id === k || id.indexOf(k + '_') === 0)
+        .sort((a, b) => b.length - a.length)[0];
+      const coda = base ? id.slice(base.length).split('_').filter(Boolean) : [];
       const neve = coda[coda.length-1] === 'neve';
       const liv  = (neve ? coda.slice(0,-1) : coda)[0];
       if (liv !== undefined && !/^\d+$/.test(liv))

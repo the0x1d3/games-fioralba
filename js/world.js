@@ -273,7 +273,7 @@ const PROPORZIONI = {
   serra:0.857, pollaio:0.900,
   /* Le rovine sono il 56% del loro edificio, che è quanto ne resta in
      piedi: sotto l'impronta, quindi non fanno muro sopra al tetto. */
-  rovina_pollaio:0.414, rovina_serra:0.394
+  rovina_pollaio:0.941, rovina_serra:0.878
 };
 
 function sbordoTetto(kind, tw, th){
