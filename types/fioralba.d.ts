@@ -378,6 +378,12 @@ interface FioData {
    * Un foglio per abitante, con la stessa forma di `OMINO`. Chi non e in
    * elenco resta disegnato in codice da `drawChar`.
    */
+  /**
+   * Il foglio dei terreni: colonna = `variante*4 + stagione`, riga = il
+   * terreno. Chi non e in elenco resta disegnato in codice.
+   */
+  TERRENI: { file: string; w: number; h: number; varianti: number;
+             righe: Record<string, number> };
   NPC_FOGLI: Record<string, { file: string; w: number; h: number;
                               fotogrammi: number; righe: Record<string, number> }>;
   OMINO_ATTREZZI: Record<string, { file: string; w: number; h: number;

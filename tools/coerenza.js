@@ -2599,6 +2599,35 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
         problemi.push(`il foglio di «${id}» parla della direzione «${d}», che non esiste`);
   }
 
+  /* Il foglio dei terreni. Le colonne sono `varianti × stagioni`, e il
+     conto va preteso esatto: una colonna in meno e d'inverno, o con la
+     quarta variante, si ritaglia fuori dal foglio — e la quarta variante
+     tocca a una casella su quattro, quindi il difetto si spargerebbe su
+     tutta la mappa a macchie. Le varianti devono essere QUATTRO perche
+     tante ne pesca `world.js`, e quel numero sta nei salvataggi. */
+  if (DATA.TERRENI) {
+    const T = DATA.TERRENI;
+    usati.add(T.file);
+    if (T.varianti !== 4)
+      problemi.push(`DATA.TERRENI dichiara ${T.varianti} varianti ma il mondo ne pesca 4 ` +
+                    '(`m.v[i] = (Math.random()*4)|0`), e quel numero viaggia nei salvataggi');
+    const f = path.join(dir, T.file);
+    if (!fs.existsSync(f)) problemi.push(`DATA.TERRENI vuole img/${T.file}, che non c'è`);
+    else {
+      const b = fs.readFileSync(f);
+      if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) problemi.push(`img/${T.file} non è un PNG`);
+      else {
+        const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+        const colonne = T.varianti * DATA.SEASONS.length;
+        const ultima = Math.max(...Object.values(T.righe));
+        if (w !== T.w * colonne)
+          problemi.push(`img/${T.file} è largo ${w} ma ${colonne} colonne da ${T.w} fanno ${T.w*colonne}`);
+        if (h !== (ultima + 1) * T.h)
+          problemi.push(`img/${T.file} è alto ${h} ma i terreni arrivano alla riga ${ultima}, cioè ${(ultima+1)*T.h}`);
+      }
+    }
+  }
+
   /* I fogli degli abitanti: stessa griglia del giocatore, e due cose
      loro. Il nome dev'essere un abitante che esiste — scritto storto, il
      foglio si scarica e in piazza continua a camminare quello disegnato

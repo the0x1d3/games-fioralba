@@ -1924,6 +1924,40 @@ D.VEGETAZIONE = {
     fiocco_cristallo:14 } }
 };
 
+/* I TERRENI DISEGNATI A MANO.
+
+   Un foglio solo, celle da 64: la colonna e `variante*4 + stagione`, la
+   riga e il terreno. Quattro varianti perche il mondo ne pesca quattro
+   (`m.v[i] = (Math.random()*4)|0`), e quel numero finisce nel
+   salvataggio: cambiarlo vorrebbe dire toccare le partite avviate.
+
+   E il terreno l'unico sprite che deve RICHIUDERSI SU SE STESSO: si
+   ripete migliaia di volte appiccicato a se stesso, e se il pixel del
+   bordo destro non e uguale a quello del sinistro si vede una griglia
+   su tutto lo schermo. I file di partenza non lo erano — misurata, la
+   giunta stava sui 200 dove le caselle in codice stanno sotto i 40 —
+   quindi sono stati CUCITI: i due bordi opposti si mescolano fra loro
+   con un peso che vale mezzo sul filo, dove diventano identici, e
+   scende a zero verso l'interno. Dopo la cucitura la giunta e zero
+   esatto su tutte e 176 le celle.
+
+   Chi non e in elenco resta disegnato in codice. */
+D.TERRENI = {
+  file:'terreni.png', w:64, h:64, varianti:4,
+  righe:{
+    erba:0,
+    terra:1,
+    sentiero:2,
+    sabbia:3,
+    assi:4,
+    lastre:5,
+    cotto:6,
+    neve:7,
+    grotta:8,
+    arato:9,
+    bagnato:10 }
+};
+
 /* GLI ABITANTI DISEGNATI A MANO, uno per foglio.
 
    Il giocatore ha `D.OMINO`, loro hanno questo: stessa forma, stessa

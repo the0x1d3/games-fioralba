@@ -690,8 +690,34 @@ function waterFrames(season){
   return frames;
 }
 
+/* Il terreno disegnato a mano, ritagliato dal suo foglio. Stesso patto
+   di tutto il resto: `null` se non c'e o non e ancora arrivato, e chi
+   disegna continua col terreno in codice. */
+const terrCelle = {}; let terrDaCui = null;
+A.terreno = function(tipo, v, season){
+  if(!window.IMG || !window.DATA || !DATA.TERRENI) return null;
+  const T = DATA.TERRENI;
+  const riga = T.righe[tipo];
+  if(riga === undefined) return null;
+  const img = IMG.prendi('terreni');
+  if(!img) return null;
+  if(terrDaCui !== img){ for(const k in terrCelle) delete terrCelle[k]; terrDaCui = img; }
+  const vv = (((v|0) % T.varianti) + T.varianti) % T.varianti;
+  let st = DATA.SEASONS.findIndex(x => x.id === season);
+  if(st < 0) st = 1;
+  const col = vv*4 + st;
+  const key = riga+'|'+col;
+  if(terrCelle[key]) return terrCelle[key];
+  const c = cv(T.w, T.h);
+  c.getContext('2d').drawImage(img, col*T.w, riga*T.h, T.w, T.h, 0, 0, T.w, T.h);
+  terrCelle[key] = c;
+  return c;
+};
+
 A.ground = function(type, v, season){
   const key = type+'|'+v+'|'+(type==='erba'||type==='acqua'?season:'-');
+  const aMano = A.terreno(type, v, season);
+  if(aMano) return aMano;
   if(groundCache[key]) return groundCache[key];
   let c;
   switch(type){
