@@ -89,6 +89,52 @@ misurato e scartato: 36 KB non valgono il rischio di righe di banding
 sulla paglia del cappello, che è proprio la densità per cui questi file
 esistono invece di essere disegnati in codice.
 
+## Le nove facciate, e la luce che non sta nel file
+
+Un file per edificio, e **uno solo**: `casa.png`, `bottega.png`, `fucina.png`,
+`locanda.png`, `cottage.png`, `capanna.png`, `pollaio.png`, `serra.png`,
+`santuario.png`. Li dichiara `DATA.EDIFICI`.
+
+La larghezza è **esattamente l'impronta in caselle per 64** — casa 7 caselle
+→ 448, locanda 8 → 512 — e non è pignoleria: `disegnaEdificio` scala lo
+sprite per farlo stare nell'impronta, e con una scala diversa da 1 alcune
+colonne di pixel escono larghe due e altre tre. È lo stesso motivo per cui le
+nove facciate *in codice* erano state riportate all'impronta quando la casella
+è passata a 64. L'altezza invece se la porta il disegno.
+
+Quell'altezza però conta anche per un'altra ragione, ed è la trappola: la
+parte di tetto che sborda sopra l'impronta diventa **muro**, e quanta sia lo
+dice `PROPORZIONI` in `world.js`. Quel numero si legge quando la mappa nasce,
+cioè quando le immagini non sono ancora arrivate, quindi non può dipendere da
+quale dei due disegni si vedrà: vale il **più alto fra quello a mano e quello
+in codice**. Tre controlli in `tools/coerenza.js` tengono ferma la cosa.
+
+**La notte non è un secondo file.** La scena la tinge già di blu
+`FX.gradazione`, e quello che manca è solo la luce che esce dai vetri. Quella
+la mette il gioco, in due posti che vanno insieme:
+
+- `G.luci()` accende una luce **per finestra** — non una sola in mezzo alla
+  facciata, come faceva prima — e quella luce buca il velo del buio e prende
+  il bloom. Senza questa, qualunque cosa si dipinga sullo sprite viene spenta
+  un attimo dopo: misurato, il vetro veniva un marroncino alto come il muro.
+- `render.js` dipinge il vetro caldo e piatto, più l'alone che cade sul muro
+  intorno. I riquadri stanno in `DATA.EDIFICI` come frazioni dello sprite, e
+  sono quelli del **vetro**, non della finestra: prendendo anche la cornice si
+  scalda il legno e sembra una finestra incendiata.
+
+Stessa strada per la forgia della fucina (che arde anche di giorno) e per le
+**quattro nicchie e la lanterna del Santuario**, che sono stato di gioco e non
+decorazione: le nicchie nel disegno ci sono, quattro incassi scuri nel
+basamento, e sono vuote — la brace è luce.
+
+**Cosa manca ancora**, e va disegnato:
+
+| serve | perché |
+|-------|--------|
+| `casa` ampliata | con `casa2` il tetto diventa viola e spunta la veranda; adesso il disegno è lo stesso ai due livelli |
+| le varianti innevate | il gioco non le ha mai avute; il set di riferimento le mostra ma a un quinto dei pixel che servono |
+
+
 ## Come si allinea una camminata
 
 I sorgenti arrivano **ritagliati stretti**, ognuno sul proprio contenuto,

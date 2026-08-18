@@ -1401,7 +1401,11 @@ function ombraEdificio(e, ox, oy, G, stag, sole){
   if(sole.a < 0.03) return;
   const opt = { lit: G.ora>1020 || G.ora<420, season:stag, liv:e.liv||0 };
   if(e.kind==='santuario') opt.liv = G.braci;
-  const img = ART.building(e.kind, opt);
+  /* Dallo stesso disegno che si vede, come per gli arredi: la sagoma
+     disegnata a mano non è quella in codice — casa tua ha il comignolo
+     più a destra e il tetto più basso — e un'ombra presa dall'altra
+     sarebbe l'ombra di un'altra casa. */
+  const img = ART.edificio(e.kind) || ART.building(e.kind, opt);
   const w = e.w*T, scr = w/img.width;
   FX.ombraSprite(sx, img, (e.x*T+ox)+w/2, ((e.y+e.h)*T+oy), sole, w, img.height*scr, 0);
 }
@@ -1453,10 +1457,119 @@ function ombraOggettoDentro(o, px, py, gx, gy, t, stag, sole){
 /* ===================================================================
    SPRITE
    =================================================================== */
+/* LA LUCE CHE IL GIOCO METTE SOPRA AI DISEGNI A MANO.
+
+   Ogni edificio disegnato a mano ha UN file, di giorno. La notte non è
+   un secondo disegno: la scena la tinge già di blu `FX.gradazione`, e
+   quello che manca è solo la luce che esce dai vetri. Le facciate in
+   codice la disegnano dentro allo sprite (`window4(..., o.lit, ...)`)
+   perché possono — le ridisegnano a ogni combinazione e le tengono in
+   cache. Qui il file è uno e la luce si aggiunge sopra.
+
+   Va in `lighter`, cioè si SOMMA: così la crociera della finestra e i
+   riflessi del vetro restano visibili sotto, che è come si legge una
+   finestra accesa. Coprire con un rettangolo pieno darebbe un
+   francobollo arancione appiccicato al muro.
+
+   I riquadri sono frazioni della misura dello sprite (`DATA.EDIFICI`),
+   non pixel: restano veri se un giorno il file si riesporta più
+   grande. */
+function alone(cx, cy, raggio, colore, forza){
+  const g = sx.createRadialGradient(cx, cy, 0, cx, cy, raggio);
+  g.addColorStop(0,    colore+','+(0.45*forza)+')');
+  g.addColorStop(0.40, colore+','+(0.16*forza)+')');
+  g.addColorStop(1,    colore+',0)');
+  sx.fillStyle = g;
+  sx.fillRect(cx-raggio, cy-raggio, raggio*2, raggio*2);
+}
+
+/* IL VETRO ACCESO, dopo due tentativi buttati e una misura che li ha
+   contraddetti tutti e due.
+
+   Primo: sommare un alone caldo sopra al vetro. Il vetro restava
+   azzurro — sommare luce calda a un blu saturo dà un grigio slavato — e
+   a schermo si scaldava il muro intorno e non il vetro.
+
+   Secondo: moltiplicare il vetro per l'ambra, che il blu lo toglie
+   davvero e lascia intatto il disegno sotto. Misurato: vetro (100,84,51)
+   e muro accanto (106,86,66). Cioè la finestra veniva calda e ALTA
+   COME IL MURO, e una finestra accesa che non è più chiara della parete
+   non è una finestra accesa. La moltiplicazione scurisce, sempre, e una
+   sorgente di luce non può essere più scura di prima.
+
+   Quello che mancava non era qui: era che il velo del buio (le LUCI, in
+   render.js poco sopra) passa DOPO e spegne tutto quello che si dipinge
+   qui, a meno che in quel punto non ci sia una luce dichiarata. Adesso
+   c'è, una per finestra, e la mette `G.luci` — ed è quella a fare il
+   grosso del lavoro. Qui resta la sorgente vista da vicino: prima
+   l'alone che cade sul muro, poi il vetro, PIATTO e caldo. Piatto è
+   giusto: è esattamente quello che fa `window4` per le facciate in
+   codice, e un vetro acceso di notte non mostra più i suoi riflessi di
+   giorno. La crociera resta appena leggibile perché sotto è molto più
+   scura.
+
+   Il riquadro è quello del VETRO, non della finestra: prendendo anche
+   la cornice si scaldava il legno e sembrava una finestra incendiata.
+   Sta in `DATA.EDIFICI`, misurato sul disegno. */
+function vetroAcceso(x, y, w, h, colore, forza){
+  sx.globalCompositeOperation = 'lighter';
+  alone(x+w/2, y+h/2, Math.max(w,h)*1.35, colore, forza);
+  sx.globalCompositeOperation = 'source-over';
+  sx.fillStyle = colore+','+(0.82*forza)+')';
+  sx.fillRect(x, y, w, h);
+}
+
+function luceEdificio(E, px, py, w, h, acceso, G){
+  sx.save();
+  sx.globalCompositeOperation = 'lighter';
+  if(acceso && E.finestre) for(const f of E.finestre)
+    vetroAcceso(px + f[0]*w, py + f[1]*h, f[2]*w, f[3]*h, 'rgba(255,190,92', 1);
+  /* La forgia arde anche di giorno: il fuoco è già disegnato nel
+     file, qui si aggiunge solo il bagliore, che di notte conta di più
+     perché è l'unica luce della piazza da quella parte. */
+  if(E.fuoco){
+    const f = E.fuoco;
+    /* Solo l'alone: il fuoco è già disegnato, e coprirlo di arancione
+       piatto come si fa coi vetri spegnerebbe le fiamme invece di
+       accenderle. */
+    alone(px + (f[0]+f[2]/2)*w, py + (f[1]+f[3]/2)*h, Math.max(f[2]*w, f[3]*h)*1.6,
+          'rgba(255,146,60', acceso ? 1 : 0.5);
+  }
+  /* Le quattro braci e la lanterna del Santuario sono STATO DI GIOCO,
+     non decorazione: dicono a che punto sta l'atto secondo. Nel disegno
+     a mano le quattro nicchie ci sono — sono i quattro incassi scuri
+     nel basamento, due per lato del pozzo — e sono vuote: la brace è
+     luce, e la luce la mette il gioco, come per le finestre. I quattro
+     colori sono gli stessi della facciata in codice, o accendere una
+     brace cambierebbe tinta a seconda di quale dei due disegni è
+     arrivato. */
+  if(E.nicchie){
+    const bc = ['rgba(143,212,106', 'rgba(247,199,68', 'rgba(224,138,60', 'rgba(159,216,238'];
+    for(let i=0; i<E.nicchie.length && i<(G.braci||0); i++){
+      const nx = px + E.nicchie[i][0]*w, ny = py + E.nicchie[i][1]*h;
+      /* La brace vera, piena: solo l'alone la faceva una macchia di
+         colore sul fondo scuro della nicchia, e da lontano non si
+         capiva se fosse accesa o se fosse un riflesso. */
+      sx.globalCompositeOperation = 'source-over';
+      sx.fillStyle = bc[i]+',0.9)';
+      sx.beginPath(); sx.ellipse(nx, ny, w*0.022, w*0.016, 0, 0, 6.3); sx.fill();
+      sx.globalCompositeOperation = 'lighter';
+      alone(nx, ny, w*0.085, bc[i], 1.5);
+    }
+  }
+  if(E.lanterna && (G.braci||0) > 0){
+    const l = E.lanterna, pieno = G.braci >= 4;
+    alone(px + l[0]*w, py + l[1]*h, w*0.16,
+          pieno ? 'rgba(255,233,168' : 'rgba(232,196,122', pieno ? 1 : 0.55);
+  }
+  sx.restore();
+}
+
 function disegnaEdificio(e, ox, oy, G, stag){
   const opt = { lit: G.ora>1020 || G.ora<420, season:stag, liv:e.liv||0 };
   if(e.kind==='santuario') opt.liv = G.braci;
-  const img = ART.building(e.kind, opt);
+  const aMano = ART.edificio(e.kind);
+  const img = aMano || ART.building(e.kind, opt);
   const w = e.w*T;
   const dw = img.width, dh = img.height;
   const sc = w/dw;
@@ -1464,9 +1577,16 @@ function disegnaEdificio(e, ox, oy, G, stag){
   const py = ((e.y+e.h)*T + oy - dh*sc)|0;
   sx.drawImage(img, px, py, dw*sc, dh*sc);
 
+  const E = aMano && window.DATA && DATA.EDIFICI ? DATA.EDIFICI[e.kind] : null;
+  if(E) luceEdificio(E, px, py, dw*sc, dh*sc, opt.lit, G);
+
   if((e.kind==='casa'||e.kind==='locanda'||e.kind==='fucina'||e.kind==='capanna') && opt.lit){
-    const cxp = px + w*(e.kind==='fucina'?0.33:0.72);
-    const cyp = py + dh*sc*(e.kind==='fucina'?0.1:0.03);
+    /* Dove sta il comignolo lo sa il disegno, non questa riga: quello a
+       mano ce l'ha in un altro punto — casa tua più a destra, la fucina
+       più a sinistra — e il fumo sarebbe uscito dal mezzo del tetto. */
+    const f = E && E.fumo;
+    const cxp = px + w*(f ? f[0] : (e.kind==='fucina'?0.33:0.72));
+    const cyp = py + dh*sc*(f ? f[1] : (e.kind==='fucina'?0.1:0.03));
     const vento = FX.vento(e.x*T, e.y*T);
     sx.globalAlpha=0.28;
     for(let i=0;i<6;i++){

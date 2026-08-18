@@ -256,10 +256,21 @@ W.spargiSu = function(m, terreno, quanti, fabbrica, seed){
    controllo di coerenza, che gira in Node e un canvas non ce l'ha. Che
    la tabella dica il vero lo verifica ART stesso appena il gioco parte:
    se un tetto cambia altezza, in console arriva l'avviso. */
+/* Adesso i disegni sono DUE per edificio — quello a mano in `img/` e
+   quello in codice, che resta come ripiegatura — e non sono alti
+   uguale. Questo numero però si legge UNA volta sola, quando la mappa
+   nasce, e in quel momento le immagini non sono ancora arrivate: non
+   può dipendere da quale dei due si vedrà. Vale quindi il PIÙ ALTO dei
+   due, così il muro contiene qualunque disegno esca. Il prezzo, e va
+   detto: dove il disegno a mano è più basso resta un po' di muro
+   invisibile sopra al tetto — sul cottage sono due terzi di casella.
+   L'alternativa era peggio: prendere il più basso vuol dire camminare
+   dentro al tetto dell'altro, che è il difetto da cui questa tabella è
+   nata. `W.verificaProporzioni` adesso li misura tutti e due. */
 const PROPORZIONI = {
-  casa:0.875, cottage:0.944, capanna:0.929, bottega:0.833,
-  fucina:0.909, locanda:0.846, santuario:1.000,
-  serra:0.833, pollaio:0.850
+  casa:0.900, cottage:0.944, capanna:0.929, bottega:0.888,
+  fucina:0.909, locanda:0.873, santuario:1.060,
+  serra:0.857, pollaio:0.900
 };
 
 function sbordoTetto(kind, tw, th){
@@ -281,8 +292,14 @@ W.verificaProporzioni = function(){
         if(img && img.width) alto = Math.max(alto, img.height/img.width);
       }catch(e){ /* un tipo che il disegno non conosce si salta */ }
     }
-    if(alto && Math.abs(alto - PROPORZIONI[kind]) > 0.06)
-      scarti.push(kind+': la tabella dice '+PROPORZIONI[kind]+', il disegno '+(Math.round(alto*1000)/1000));
+    /* E anche quello a mano, se è dichiarato. Si legge da `DATA` e non
+       dall'immagine apposta: `DATA.EDIFICI` dice a che misura il file è
+       stato esportato, e quel numero c'è anche prima che il file
+       arrivi — che è l'unico momento in cui questa domanda conta. */
+    const E = (typeof DATA !== 'undefined' && DATA.EDIFICI) ? DATA.EDIFICI[kind] : null;
+    if(E && E.w) alto = Math.max(alto, E.h / E.w);
+    if(alto && (PROPORZIONI[kind] < alto - 0.005 || PROPORZIONI[kind] > alto + 0.08))
+      scarti.push(kind+': la tabella dice '+PROPORZIONI[kind]+', il disegno arriva a '+(Math.round(alto*1000)/1000));
   }
   if(scarti.length) console.warn('[mondo] le proporzioni degli edifici sono cambiate:', scarti);
   return scarti;

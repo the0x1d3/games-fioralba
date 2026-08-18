@@ -2736,6 +2736,76 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
     }
   }
 
+  /* LE NOVE FACCIATE. Tre cose, e ognuna nasce da un modo diverso di
+     sbagliarle.
+
+     UNO: `w` dev'essere ESATTAMENTE l'impronta in caselle per 64. Se non
+     lo è, `disegnaEdificio` trova una scala diversa da 1 e ricampiona —
+     e con un fattore come 1,09 alcune colonne di pixel escono larghe
+     due e altre tre. È lo stesso difetto per cui le facciate in codice
+     erano state riportate all'impronta, e sarebbe tornato dalla finestra.
+
+     DUE: `h` dev'essere quello vero del file. Da lì si ricava quanto il
+     tetto sborda sopra l'impronta, e quella parte diventa MURO.
+
+     TRE: `PROPORZIONI` in world.js deve contenere il più alto dei due
+     disegni — quello a mano e quello in codice. Non può sceglierne uno
+     al volo: si legge quando la mappa nasce, e lì le immagini non sono
+     ancora arrivate. Troppo basso e si cammina dentro al tetto; troppo
+     alto e c'è un muro invisibile sopra al comignolo. */
+  if (DATA.EDIFICI) {
+    const IMPRONTE = { casa:7, bottega:7, fucina:6, locanda:8, cottage:5,
+                       capanna:4, pollaio:5, serra:6, santuario:6 };
+    const world = fs.readFileSync(path.join(RADICE, 'js', 'world.js'), 'utf8');
+    const tab = world.match(/const PROPORZIONI = \{([^}]*)\}/);
+    const prop = {};
+    if (tab) for (const m of tab[1].matchAll(/(\w+)\s*:\s*([\d.]+)/g)) prop[m[1]] = parseFloat(m[2]);
+    else problemi.push('non si trova PROPORZIONI in world.js: il muro sopra ai tetti non si può verificare');
+
+    for (const id in DATA.EDIFICI) {
+      const E = DATA.EDIFICI[id];
+      usati.add(E.file);
+      if (!IMPRONTE[id]) { problemi.push(`DATA.EDIFICI ha «${id}», che non è un edificio del mondo`); continue; }
+      if (E.w !== IMPRONTE[id] * 64)
+        problemi.push(`img/${E.file} è dichiarato largo ${E.w} ma «${id}» occupa ${IMPRONTE[id]} caselle, ` +
+                      `cioè ${IMPRONTE[id]*64}: con una scala diversa da 1 il disegno si ricampiona`);
+      const f = path.join(dir, E.file);
+      if (!fs.existsSync(f)) { problemi.push(`DATA.EDIFICI vuole img/${E.file}, che non c'è`); continue; }
+      const b = fs.readFileSync(f);
+      if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) { problemi.push(`img/${E.file} non è un PNG`); continue; }
+      const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+      if (w !== E.w || h !== E.h)
+        problemi.push(`img/${E.file} è ${w}×${h} ma DATA.EDIFICI dice ${E.w}×${E.h}`);
+      if (prop[id] !== undefined) {
+        const mio = E.h / E.w;
+        if (prop[id] < mio - 0.005)
+          problemi.push(`PROPORZIONI.${id} è ${prop[id]} ma il disegno a mano arriva a ` +
+                        `${Math.round(mio*1000)/1000}: sopra al tetto si camminerebbe dentro`);
+        if (prop[id] > mio + 0.08)
+          problemi.push(`PROPORZIONI.${id} è ${prop[id]} contro ${Math.round(mio*1000)/1000} del disegno ` +
+                        'a mano: più di così è muro invisibile, e si nota');
+      }
+      /* I riquadri della luce stanno DENTRO allo sprite. Uno fuori non
+         darebbe nessun errore: si vedrebbe una macchia arancione
+         sull'erba accanto alla casa, di notte, e solo di notte. */
+      const riq = [].concat(E.finestre || [], E.fuoco ? [E.fuoco] : []);
+      for (const r of riq)
+        if (r[0] < 0 || r[1] < 0 || r[0]+r[2] > 1 || r[1]+r[3] > 1)
+          problemi.push(`«${id}» ha un riquadro di luce che esce dallo sprite: [${r.join(', ')}]`);
+      for (const pu of [].concat(E.nicchie || [], E.lanterna ? [E.lanterna] : []))
+        if (pu[0] < 0 || pu[0] > 1 || pu[1] < 0 || pu[1] > 1)
+          problemi.push(`«${id}» ha un punto di luce fuori dallo sprite: [${pu.join(', ')}]`);
+    }
+    /* Il Santuario è l'unico che ha stato di gioco da mostrare: quattro
+       braci e la lanterna. Se il suo disegno c'è ma i punti no, l'atto
+       secondo si gioca al buio e non si capisce a che punto si è. */
+    const S = DATA.EDIFICI.santuario;
+    if (S && (!S.nicchie || S.nicchie.length !== 4))
+      problemi.push('il santuario disegnato a mano vuole quattro nicchie: sono le braci dell’atto secondo');
+    if (S && !S.lanterna)
+      problemi.push('il santuario disegnato a mano vuole il punto della lanterna: senza, accenderla non si vede');
+  }
+
   /* Un file in img/ che non usa nessuno è peso morto scaricato da chi
      gioca. Non basta però dire «toglilo»: qualcuno può essere disegnato
      e in attesa di poter entrare, e allora la risposta sta in

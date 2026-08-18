@@ -132,6 +132,7 @@ function init(){
     IMG.precarica(DATA.NPC_FOGLI, 'npc:');          // gli abitanti disegnati a mano
     IMG.precarica({ terreni: DATA.TERRENI });      // il foglio dei terreni
     IMG.precarica({ minerali: DATA.MINERALI });    // e quello dei minerali
+    IMG.precarica(DATA.EDIFICI, 'ed:');            // le nove facciate
     /* Col prefisso: `cartello` e `spaventapasseri` stanno in tutti e due
        gli elenchi, e le immagini si tengono per id — senza, la seconda
        richiesta si perderebbe e nello zaino resterebbe il disegno in
@@ -3155,9 +3156,46 @@ G.luci = function(){
     if(d.t==='fungo_luce' && d.x>=x0-2 && d.x<=x1+2 && d.y>=y0-2 && d.y<=y1+2)
       out.push({x:d.x*T+T/2, y:d.y*T+18*K, r:52*K, i:0.55, caldo:false, f:d.v});
   }
-  // finestre degli edifici
+  /* LE FINESTRE DEGLI EDIFICI.
+
+     Qui non si dipinge niente: si dice al gioco DOVE c'è una luce, e la
+     luce buca il velo del buio (`destination-out`, poco sopra in
+     render.js) e prende il bloom. È l'unico modo perché una finestra
+     accesa si veda davvero: il primo tentativo dipingeva l'alone sopra
+     allo sprite, e il velo del buio ci passava sopra un attimo dopo e
+     lo spegneva — misurato, il vetro veniva un marroncino spento invece
+     che ambra.
+
+     Se l'edificio è disegnato a mano si accende una luce PER FINESTRA,
+     perché di quel disegno sappiamo dove sono i vetri. Chi non ce l'ha
+     tiene la luce sola in mezzo alla facciata, che è quello che c'era. */
   for(const e of m.edifici){
-    if(e.azione==='chiuso' && Math.random()>0.5) continue;
+    /* Una casa chiusa ha la luce accesa o spenta e resta così per tutta
+       la sera. Prima decideva `Math.random()`, che qui gira a ogni
+       fotogramma: sessanta monetine al secondo, cioè uno sfarfallio. */
+    if(e.azione==='chiuso' && ART.hsh(e.x, e.y + (G.giorno||0), 771) > 0.5) continue;
+    const E = (DATA.EDIFICI && ART.edificio(e.kind)) ? DATA.EDIFICI[e.kind] : null;
+    if(E && (E.finestre || E.fuoco || E.nicchie || E.lanterna)){
+      const bx = e.x*T, by = (e.y+e.h)*T - E.h;
+      const luce = (f, r, i) => out.push({ x: bx + (f[0]+f[2]/2)*E.w, y: by + (f[1]+f[3]/2)*E.h,
+                                           r: r*K, i, caldo:true, f: e.x + f[0]*10 });
+      const punto = (p2, r, i) => out.push({ x: bx + p2[0]*E.w, y: by + p2[1]*E.h,
+                                             r: r*K, i, caldo:true, f: p2[0]*10 });
+      if(E.finestre) for(const f of E.finestre) luce(f, 70, 0.85);
+      /* La forgia è accesa e basta: è disegnata così, e di sera è la sola
+         luce di quel lato della piazza. */
+      if(E.fuoco) luce(E.fuoco, 104, 0.8);
+      /* Le braci e la lanterna del Santuario. Il colore lo mette
+         `render.js`, che sa quale brace è quale; qui si dice solo che lì
+         c'è luce, e senza questa riga il velo del buio la spegnerebbe —
+         cioè la sera in cui si accende la quarta brace non si vedrebbe
+         niente, che è il momento più importante dell'atto secondo. */
+      if(E.nicchie) for(let i=0; i<E.nicchie.length && i<(G.braci||0); i++)
+        punto(E.nicchie[i], 42, 0.7);
+      if(E.lanterna && (G.braci||0) > 0)
+        punto(E.lanterna, 52 + G.braci*14, 0.5 + G.braci*0.1);
+      continue;
+    }
     out.push({x:(e.x+e.w/2)*T, y:(e.y+e.h-1)*T, r:110*K, i:0.6, caldo:true, f:e.x});
   }
   // santuario

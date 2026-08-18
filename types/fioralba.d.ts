@@ -390,6 +390,15 @@ interface FioData {
   MINERALI: { file: string; w: number; h: number; righe: Record<string, number> };
   TERRENI: { file: string; w: number; h: number; varianti: number;
              righe: Record<string, number> };
+  /**
+   * Le facciate disegnate a mano. `w` è l'impronta in caselle per 64, `h`
+   * quello che si porta il disegno. I riquadri della luce sono frazioni
+   * dello sprite: la notte non è un secondo file, la luce la mette il
+   * gioco sopra al disegno.
+   */
+  EDIFICI: Record<string, { file: string; w: number; h: number;
+                            fumo?: number[]; finestre?: number[][]; fuoco?: number[];
+                            lanterna?: number[]; nicchie?: number[][] }>;
   NPC_FOGLI: Record<string, { file: string; w: number; h: number;
                               fotogrammi: number; righe: Record<string, number> }>;
   OMINO_ATTREZZI: Record<string, { file: string; w: number; h: number;

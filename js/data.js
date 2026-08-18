@@ -1985,6 +1985,56 @@ D.TERRENI = {
     bagnato:10 }
 };
 
+/* GLI EDIFICI DISEGNATI A MANO.
+
+   `w` e `h` non sono la misura del disegno originale: sono la misura a
+   cui il file è stato esportato, e `w` è esattamente l'impronta in
+   caselle per 64. Così `disegnaEdificio` trova una scala di 1 e non
+   ricampiona niente — che è lo stesso motivo per cui le nove facciate
+   in codice erano state riportate all'impronta: con una scala di 1,09
+   alcune colonne escono larghe due pixel e altre tre.
+
+   `h` invece se lo porta il disegno, e quindi può non coincidere con
+   l'altezza della facciata in codice. Conta perché `PROPORZIONI` in
+   world.js rende SOLIDA la parte di tetto che sborda sopra l'impronta,
+   e quel numero si decide alla nascita della mappa, quando le immagini
+   non sono ancora arrivate: deve quindi valere per tutti e due i
+   disegni, e vale il più alto dei due. Un controllo lo verifica.
+
+   FINESTRE, FUOCO, LANTERNA, NICCHIE: il disegno è uno solo, di
+   giorno. La notte non è un secondo file — la scena la tinge già di
+   blu `FX.gradazione`, e quello che mancherebbe è solo la luce che
+   esce dai vetri. Quella la mette il gioco, sopra al disegno, nei
+   riquadri qui elencati: sono frazioni della misura dello sprite, non
+   pixel, così restano vere se un giorno il file si riesporta più
+   grande. Le facciate in codice fanno la stessa identica cosa con
+   `window4(..., o.lit, ...)`; qui cambia solo dove sta scritto il
+   riquadro.
+
+   Chi non è in elenco resta disegnato in codice da `ART.building`. */
+D.EDIFICI = {
+  casa:      { file:'casa.png',      w:448, h:403, fumo:[0.83, 0.03],
+               finestre:[[0.241,0.561,0.063,0.077],[0.690,0.561,0.065,0.077]] },
+  bottega:   { file:'bottega.png',   w:448, h:398,
+               finestre:[[0.205,0.603,0.246,0.183]] },
+  fucina:    { file:'fucina.png',    w:384, h:337, fumo:[0.24, 0.02],
+               fuoco:[0.185,0.625,0.215,0.225] },
+  locanda:   { file:'locanda.png',   w:512, h:447, fumo:[0.13, 0.14],
+               finestre:[[0.184,0.380,0.043,0.074],[0.375,0.383,0.047,0.072],
+                         [0.561,0.383,0.047,0.072],[0.736,0.380,0.047,0.074],
+                         [0.201,0.669,0.094,0.121],[0.705,0.669,0.094,0.121]] },
+  cottage:   { file:'cottage.png',   w:320, h:278,
+               finestre:[[0.253,0.612,0.063,0.079],[0.681,0.612,0.063,0.079]] },
+  capanna:   { file:'capanna.png',   w:256, h:225, fumo:[0.82, 0.02],
+               finestre:[[0.250,0.587,0.066,0.084]] },
+  pollaio:   { file:'pollaio.png',   w:320, h:288,
+               finestre:[[0.619,0.597,0.075,0.087]] },
+  serra:     { file:'serra.png',     w:384, h:329 },
+  santuario: { file:'santuario.png', w:384, h:407,
+               lanterna:[0.499,0.560],
+               nicchie:[[0.169,0.835],[0.319,0.835],[0.664,0.835],[0.824,0.835]] }
+};
+
 /* GLI ABITANTI DISEGNATI A MANO, uno per foglio.
 
    Il giocatore ha `D.OMINO`, loro hanno questo: stessa forma, stessa

@@ -2005,6 +2005,24 @@ function window4(x, wx, wy, lit, u){
   px(x,wx-Math.round(2*u),wy+S-b,S+Math.round(4*u),Math.max(2,Math.round(2*u)),'#6b4a2e');
 }
 
+/* L'edificio disegnato a mano, se c'è.
+
+   A differenza di terreni, minerali e abitanti qui non si ritaglia
+   niente: un file, un edificio, e si restituisce l'immagine com'è.
+   Non passa nemmeno da una cache di tele, perché non ce n'è da
+   costruire — `IMG.prendi` torna sempre lo stesso oggetto Image.
+
+   NON prende `opt`. Notte, livello e stagione non cambiano il file: la
+   luce delle finestre la disegna sopra `render.js`, e finché un
+   edificio ha un disegno solo quel disegno vale per tutti i suoi stati.
+   Se un giorno arriva `casa-ampliata.png`, la variante si sceglie qui e
+   il resto del gioco non se ne accorge. */
+const CHIAVE_EDIFICIO = 'ed:';
+A.edificio = function(kind){
+  if(!window.IMG || !window.DATA || !DATA.EDIFICI || !DATA.EDIFICI[kind]) return null;
+  return IMG.prendi(CHIAVE_EDIFICIO + kind);
+};
+
 A.building = function(kind, opt){
   opt = opt||{};
   const key='b|'+kind+'|'+(opt.lit?1:0)+'|'+(opt.season||'')+'|'+(opt.liv||0);
