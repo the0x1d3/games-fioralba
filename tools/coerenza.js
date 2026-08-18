@@ -2599,6 +2599,37 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
         problemi.push(`il foglio di «${id}» parla della direzione «${d}», che non esiste`);
   }
 
+  /* I fogli della vegetazione: stessa griglia degli altri, e due cose
+     loro. Le stagioni devono essere QUATTRO quando il foglio è
+     stagionale — una colonna in meno e d'inverno si ritaglierebbe fuori
+     dal foglio, che è un difetto che si vede una stagione su quattro e
+     quindi si scopre tardi. E le chiavi degli alberi devono nominare uno
+     stadio che esiste: `quercia|5` non lo chiederebbe mai nessuno, e il
+     foglio si scaricherebbe con una riga morta dentro. */
+  for (const id in (DATA.VEGETAZIONE || {})) {
+    const V = DATA.VEGETAZIONE[id];
+    usati.add(V.file);
+    const f = path.join(dir, V.file);
+    if (!fs.existsSync(f)) { problemi.push(`DATA.VEGETAZIONE vuole img/${V.file}, che non c'è`); continue; }
+    const b = fs.readFileSync(f);
+    if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) { problemi.push(`img/${V.file} non è un PNG`); continue; }
+    const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+    const colonne = V.stagionale ? DATA.SEASONS.length : 1;
+    const ultima = Math.max(...Object.values(V.righe));
+    if (w !== V.w * colonne)
+      problemi.push(`img/${V.file} è largo ${w} ma «${id}» vuole ${colonne} colonne da ${V.w}, cioè ${V.w*colonne}`);
+    if (h !== (ultima + 1) * V.h)
+      problemi.push(`img/${V.file} è alto ${h} ma «${id}» arriva alla riga ${ultima}, cioè ${(ultima+1)*V.h}`);
+    for (const k in V.righe) {
+      if (k === '*') continue;
+      const [tipo, stadio] = k.split('|');
+      if (!['pino','quercia','betulla'].includes(tipo))
+        problemi.push(`«${id}» ha la riga «${k}»: «${tipo}» non è un albero che il mondo pianta`);
+      if (!['0','1','2'].includes(stadio))
+        problemi.push(`«${id}» ha la riga «${k}»: lo stadio «${stadio}» non esiste`);
+    }
+  }
+
   /* Un file in img/ che non usa nessuno è peso morto scaricato da chi
      gioca. Non basta però dire «toglilo»: qualcuno può essere disegnato
      e in attesa di poter entrare, e allora la risposta sta in

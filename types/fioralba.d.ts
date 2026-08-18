@@ -361,6 +361,14 @@ interface FioData {
    * più grande: con l'attrezzo in mano la figura esce dai 64×96. Chi non
    * è in elenco cammina col foglio a mani vuote.
    */
+  /**
+   * I fogli della vegetazione disegnata a mano. `righe` mappa la chiave
+   * che il gioco chiede (per gli alberi `tipo|stadio`) sulla riga del
+   * foglio; le colonne sono le stagioni quando `stagionale`. Chi non e
+   * in elenco resta disegnato in codice.
+   */
+  VEGETAZIONE: Record<string, { file: string; w: number; h: number;
+                                stagionale: boolean; righe: Record<string, number> }>;
   OMINO_ATTREZZI: Record<string, { file: string; w: number; h: number;
                                    fotogrammi: number; righe: Record<string, number> }>;
   /** Coefficienti dei bonus per abilità: li leggono gioco e scheda. */

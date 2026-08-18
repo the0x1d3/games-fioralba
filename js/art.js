@@ -1297,8 +1297,50 @@ function foliageBlob(x, cx, cy, r, base, season, seme){
 /* `v` è la variante (0..3): due alberi vicini non devono essere lo stesso
    timbro battuto due volte. Il chiamante la ricava dalle coordinate della
    casella, così non serve salvare niente nel mondo. */
+/* ===================================================================
+   LA VEGETAZIONE DISEGNATA A MANO
+
+   Stesso patto del foglio della camminata: le celle si ritagliano una
+   volta sola e da lì in poi sono sprite come gli altri. Torna `null` se
+   il foglio non è arrivato o se quella combinazione non è disegnata, e
+   chi chiama continua col disegno in codice.
+
+   La cache tiene da quale immagine viene ogni foglio, se no `IMG.riprova`
+   del pannello di prova restituirebbe le celle vecchie.
+   =================================================================== */
+const vegCelle = {}, vegDaCui = {};
+function vegSprite(id, chiave, season){
+  if(!window.IMG || !window.DATA || !DATA.VEGETAZIONE) return null;
+  const V = DATA.VEGETAZIONE[id];
+  if(!V) return null;
+  const riga = V.righe[chiave] !== undefined ? V.righe[chiave] : V.righe['*'];
+  if(riga === undefined) return null;
+  const img = IMG.prendi('veg:'+id);
+  if(!img) return null;
+  if(vegDaCui[id] !== img){
+    for(const k in vegCelle) if(k.indexOf(id+'|') === 0) delete vegCelle[k];
+    vegDaCui[id] = img;
+  }
+  let col = 0;
+  if(V.stagionale){
+    col = DATA.SEASONS.findIndex(s => s.id === season);
+    if(col < 0) col = 0;
+  }
+  const key = id+'|'+riga+'|'+col;
+  if(vegCelle[key]) return vegCelle[key];
+  const c = cv(V.w, V.h);
+  c.getContext('2d').drawImage(img, col*V.w, riga*V.h, V.w, V.h, 0, 0, V.w, V.h);
+  vegCelle[key] = c;
+  return c;
+}
+
 A.tree = function(kind, season, stage, v){
   v = (((v|0) % 4) + 4) % 4;
+  /* Il disegno a mano, se c'e. Una sola variante per ora: il foglio
+     ne da una, quindi i quattro `v` pescano la stessa cella e il bosco
+     viene uniforme. E scritto in DATA.VEGETAZIONE. */
+  const aMano = vegSprite('alberi', kind+'|'+stage, season);
+  if(aMano) return aMano;
   const key = 'tree|'+kind+'|'+season+'|'+stage+'|'+v;
   if(objCache[key]) return objCache[key];
   /* L'ALBERO È RIDISEGNATO A 64. La tela è grande uguale — 192×224 pixel,
@@ -1508,6 +1550,8 @@ A.tree = function(kind, season, stage, v){
    una parete laterale con la corteccia. */
 A.stump = function(v){
   v = (((v|0) % 4) + 4) % 4;
+  const aMano = vegSprite('ceppo', '*', null);
+  if(aMano) return aMano;
   const key='stump|'+v;
   if(objCache[key]) return objCache[key];
   /* Il ceppo è un albero tagliato, quindi va con lui: lasciato a 32
@@ -1676,6 +1720,8 @@ function fruttoCespuglio(x, v, item){
 }
 
 A.weed = function(season,v){
+  const aMano = vegSprite('erbaccia', '*', season);
+  if(aMano) return aMano;
   const key='weed|'+season+'|'+v;
   if(objCache[key]) return objCache[key];
   const c=tela(32,32), x=c.getContext('2d');

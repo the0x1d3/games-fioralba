@@ -1847,6 +1847,37 @@ D.ICONE = {
   spaventapasseri: { file:'spaventapasseri-icona.png', w:128, h:128 }
 };
 
+/* LA VEGETAZIONE DISEGNATA A MANO — alberi, erbaccia, ceppo.
+
+   Tre fogli, non ventotto file: le celle si ritagliano una volta sola
+   come per la camminata, e sono una richiesta di rete invece di venti.
+
+   `righe` mappa quello che il gioco chiede sulla riga del foglio: per gli
+   alberi la chiave è `tipo|stadio`, perché `ART.tree` prende tutti e due
+   e non ogni combinazione è disegnata. Quelle che mancano — il pino e la
+   betulla piccoli, che nascono solo dopo aver abbattuto un albero —
+   restano disegnate in codice, ed è lo stesso patto di sempre.
+
+   Le colonne sono le stagioni, nell'ordine di `DATA.SEASONS`. Il ceppo
+   non ne ha: nel foglio le quattro stagioni ci sono ma il gioco non
+   gliele chiede, quindi se ne tiene una sola.
+
+   COSA NON C'È, ed è scritto qui perché è la ragione per cui la roba
+   non collegata è ancora in codice:
+   - le QUATTRO VARIANTI. `ART.tree(...,v)` ne vuole quattro per non
+     avere un bosco di alberi identici; il foglio ne dà una, quindi per
+     ora tutte e quattro pescano lo stesso disegno.
+   - il CESPUGLIO senza bacche, che è metà della sua vita.
+   - i SASSI con la vena di minerale: rame, ferro, oro, quarzo, ametista,
+     geode. Lì la vena non è decorazione, è come si riconosce cosa si sta
+     per scavare. */
+D.VEGETAZIONE = {
+  alberi:   { file:'veg-alberi.png',   w:192, h:224, stagionale:true,
+              righe:{ 'pino|2':0, 'quercia|2':1, 'betulla|2':2, 'quercia|0':3, 'quercia|1':4 } },
+  erbaccia: { file:'veg-erbaccia.png', w:64,  h:64,  stagionale:true,  righe:{ '*':0 } },
+  ceppo:    { file:'veg-ceppo.png',    w:80,  h:64,  stagionale:false, righe:{ '*':0 } }
+};
+
 /* ===================================================================
    IL PERSONAGGIO DISEGNATO A MANO
 
