@@ -3235,7 +3235,8 @@ G.luci = function(){
        fotogramma: sessanta monetine al secondo, cioè uno sfarfallio. */
     if(e.azione==='chiuso' && ART.hsh(e.x, e.y + (G.giorno||0), 771) > 0.5) continue;
     const liv = G.livelloEdificio(e);
-    const E = ART.edificio(e.kind, liv) ? ART.datoEdificio(e.kind, liv) : null;
+    const neve = G.stagione().id === 'inverno';
+    const E = ART.edificio(e.kind, liv, neve) ? ART.datoEdificio(e.kind, liv, neve) : null;
     if(E && (E.finestre || E.fuoco || E.nicchie || E.lanterna)){
       const bx = e.x*T, by = (e.y+e.h)*T - E.h;
       const luce = (f, r, i) => out.push({ x: bx + (f[0]+f[2]/2)*E.w, y: by + (f[1]+f[3]/2)*E.h,

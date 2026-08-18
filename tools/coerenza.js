@@ -2801,14 +2801,18 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
     for (const id in DATA.EDIFICI) {
       const E = DATA.EDIFICI[id];
       usati.add(E.file);
-      /* `casa_1` è la casa ampliata: stesso edificio, stessa impronta,
-         disegno diverso. Il livello si stacca dalla chiave e il resto
-         del controllo vale identico — anzi DEVE valere, perché una
-         variante larga diversamente si ricampionerebbe e basterebbe
-         costruire l'ampliamento per accorgersene. */
-      const [base, liv] = id.split('_');
+      /* Le chiavi sono `tipo`, `tipo_LIVELLO`, `tipo_neve` e
+         `tipo_LIVELLO_neve`. Il tipo si stacca e il resto del controllo
+         vale identico — anzi DEVE valere, perché una variante larga
+         diversamente si ricampionerebbe e basterebbe costruire
+         l'ampliamento, o aspettare che nevichi, per accorgersene. */
+      const pezzi = id.split('_');
+      const base = pezzi[0];
+      const coda = pezzi.slice(1);
+      const neve = coda[coda.length-1] === 'neve';
+      const liv  = (neve ? coda.slice(0,-1) : coda)[0];
       if (liv !== undefined && !/^\d+$/.test(liv))
-        problemi.push(`DATA.EDIFICI ha «${id}»: dopo il trattino basso ci va il livello, un numero`);
+        problemi.push(`DATA.EDIFICI ha «${id}»: dopo il tipo ci va il livello (un numero), «neve», o tutti e due`);
       if (!IMPRONTE[base]) { problemi.push(`DATA.EDIFICI ha «${id}», che non è un edificio del mondo`); continue; }
       if (E.w !== IMPRONTE[base] * 64)
         problemi.push(`img/${E.file} è dichiarato largo ${E.w} ma «${id}» occupa ${IMPRONTE[base]} caselle, ` +
@@ -2843,6 +2847,25 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
         if (pu[0] < 0 || pu[0] > 1 || pu[1] < 0 || pu[1] > 1)
           problemi.push(`«${id}» ha un punto di luce fuori dallo sprite: [${pu.join(', ')}]`);
     }
+    /* UNA VARIANTE DI STAGIONE NON È UN ALTRO EDIFICIO: è lo stesso con
+       la neve sopra. Deve quindi essere ALTA E LARGA UGUALE alla voce da
+       cui deriva, o il giorno che nevica il tetto fa un saltello — che è
+       precisamente quello che era successo col Santuario, dove due righe
+       del foglio erano alte 247 e tre 248, e la terza brace faceva
+       sobbalzare il tempio di due pixel.
+
+       Il livello invece può cambiare misura, ed è giusto: la casa
+       ampliata è un'altra casa. */
+    for (const id in DATA.EDIFICI) {
+      if (!/_neve$/.test(id)) continue;
+      const senza = id.replace(/_neve$/, '');
+      const A = DATA.EDIFICI[id], B = DATA.EDIFICI[senza];
+      if (!B) { problemi.push(`«${id}» è la versione innevata di «${senza}», che non esiste`); continue; }
+      if (A.w !== B.w || A.h !== B.h)
+        problemi.push(`«${id}» è ${A.w}×${A.h} e «${senza}» è ${B.w}×${B.h}: ` +
+                      'la neve non cambia la misura di un edificio, e il giorno che nevica farebbe un salto');
+    }
+
     /* Il Santuario è l'unico che ha stato di gioco da mostrare: quattro
        braci e la lanterna. Se il suo disegno c'è ma i punti no, l'atto
        secondo si gioca al buio e non si capisce a che punto si è. */

@@ -174,6 +174,19 @@ per brace accesa. Per il Santuario il «livello» non è `e.liv` ma `G.braci`:
 lo decide `G.livelloEdificio`, che è l'unico posto dove quella regola sta
 scritta.
 
+**E c'è la STAGIONE**, col suffisso `_neve`: `rovina_pollaio_neve`,
+`casa_neve`, e volendo `casa_1_neve`. Si prova dal più specifico al più
+generale e vince il primo che ha davvero il suo file, quindi la neve si può
+aggiungere **un edificio per volta** senza che gli altri se ne accorgano.
+
+La differenza fra le due famiglie non è solo di nome, ed è la regola da
+ricordare: un LIVELLO può cambiare misura, perché la casa ampliata è un'altra
+casa; una STAGIONE no. Una variante innevata dev'essere **alta e larga uguale**
+a quella da cui deriva, o il giorno che nevica il tetto fa un saltello — ed è
+esattamente quello che era successo col Santuario, dove due righe del foglio
+erano alte 247 e tre 248, e la terza brace faceva sobbalzare il tempio di due
+pixel. Un controllo lo pretende.
+
 **Cosa manca ancora**, e va disegnato: le **varianti innevate**. Il gioco non
 le ha mai avute — nessuna delle facciate in codice guarda `opt.season` — e i
 disegni ci sono solo per la casa ampliata (`Upgrade Casa 03` e `04`). Per

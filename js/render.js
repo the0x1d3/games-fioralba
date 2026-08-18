@@ -1405,7 +1405,7 @@ function ombraEdificio(e, ox, oy, G, stag, sole){
      disegnata a mano non è quella in codice — casa tua ha il comignolo
      più a destra e il tetto più basso — e un'ombra presa dall'altra
      sarebbe l'ombra di un'altra casa. */
-  const img = ART.edificio(e.kind, opt.liv) || ART.building(e.kind, opt);
+  const img = ART.edificio(e.kind, opt.liv, stag==='inverno') || ART.building(e.kind, opt);
   const w = e.w*T, scr = w/img.width;
   FX.ombraSprite(sx, img, (e.x*T+ox)+w/2, ((e.y+e.h)*T+oy), sole, w, img.height*scr, 0);
 }
@@ -1559,7 +1559,7 @@ function luceEdificio(E, px, py, w, h, acceso, G){
 function disegnaEdificio(e, ox, oy, G, stag){
   const opt = { lit: G.ora>1020 || G.ora<420, season:stag, liv:e.liv||0 };
   if(e.kind==='santuario') opt.liv = G.livelloEdificio(e);
-  const aMano = ART.edificio(e.kind, opt.liv);
+  const aMano = ART.edificio(e.kind, opt.liv, stag==='inverno');
   const img = aMano || ART.building(e.kind, opt);
   const w = e.w*T;
   const dw = img.width, dh = img.height;
@@ -1568,7 +1568,7 @@ function disegnaEdificio(e, ox, oy, G, stag){
   const py = ((e.y+e.h)*T + oy - dh*sc)|0;
   sx.drawImage(img, px, py, dw*sc, dh*sc);
 
-  const E = aMano ? ART.datoEdificio(e.kind, opt.liv) : null;
+  const E = aMano ? ART.datoEdificio(e.kind, opt.liv, stag==='inverno') : null;
   if(E) luceEdificio(E, px, py, dw*sc, dh*sc, opt.lit, G);
 
   if((e.kind==='casa'||e.kind==='locanda'||e.kind==='fucina'||e.kind==='capanna') && opt.lit){

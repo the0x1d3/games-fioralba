@@ -2139,14 +2139,41 @@ A.verificaDirezioni = function(){
 };
 
 const CHIAVE_EDIFICIO = 'ed:';
-A.edificio = function(kind, liv){
+
+/* QUALI DISEGNI PUÒ AVERE UN EDIFICIO, dal più specifico al più
+   generale. Le varianti sono due famiglie e si combinano:
+
+     `_1`     il LIVELLO — casa tua ampliata, il Santuario a N braci.
+              Cambia l'edificio: può essere più alto, più largo, avere
+              altre finestre.
+     `_neve`  la STAGIONE. Non cambia l'edificio, gli mette la neve
+              sopra: stessa misura, stessa posizione, o il giorno che
+              nevica il tetto fa un saltello.
+
+   Si prova in ordine e vince il primo che ha davvero il suo file: un
+   edificio senza la versione innevata d'inverno tiene la sua, che è lo
+   stesso patto di `IMG.prendi` un gradino più in là. Così la neve si può
+   aggiungere un edificio per volta senza che gli altri se ne accorgano —
+   e questa è la ragione per cui è fatta così e non con un campo `neve`
+   dentro alla voce: un campo avrebbe voluto un ramo in più in ognuno dei
+   tre posti che chiedono un edificio. */
+function chiaviEdificio(kind, liv, inverno){
+  const k = [];
+  if(inverno && liv) k.push(kind + '_' + liv + '_neve');
+  if(inverno)        k.push(kind + '_neve');
+  if(liv)            k.push(kind + '_' + liv);
+  k.push(kind);
+  return k;
+}
+
+A.edificio = function(kind, liv, inverno){
   if(!window.IMG || !window.DATA || !DATA.EDIFICI) return null;
-  if(liv){
-    const suo = A.datoEdificio(kind, liv);
-    if(suo) { const i = IMG.prendi(CHIAVE_EDIFICIO + kind + '_' + liv); if(i) return i; }
+  for(const k of chiaviEdificio(kind, liv, inverno)){
+    if(!DATA.EDIFICI[k]) continue;
+    const i = IMG.prendi(CHIAVE_EDIFICIO + k);
+    if(i) return i;
   }
-  if(!DATA.EDIFICI[kind]) return null;
-  return IMG.prendi(CHIAVE_EDIFICIO + kind);
+  return null;
 };
 
 /* Quale voce di `DATA.EDIFICI` descrive quello che si vede davvero.
@@ -2156,10 +2183,15 @@ A.edificio = function(kind, liv){
    sul muro. Torna null se non c'è disegno a mano, che è il segnale di
    lasciar perdere e usare la facciata in codice. */
 const datiUniti = {};
-A.datoEdificio = function(kind, liv){
+A.datoEdificio = function(kind, liv, inverno){
   if(!window.DATA || !DATA.EDIFICI) return null;
-  const k = kind + '_' + liv;
-  if(liv && DATA.EDIFICI[k] && window.IMG && IMG.prendi(CHIAVE_EDIFICIO + k)){
+  /* La stessa scelta di `A.edificio`, o il disegno verrebbe da una voce
+     e i riquadri della luce da un'altra: una finestra accesa in mezzo al
+     muro, e nessun errore da nessuna parte. */
+  let k = null;
+  for(const c of chiaviEdificio(kind, liv, inverno))
+    if(DATA.EDIFICI[c] && window.IMG && IMG.prendi(CHIAVE_EDIFICIO + c)){ k = c; break; }
+  if(k && k !== kind){
     /* La variante EREDITA dalla base quello che non ridichiara: le
        quattro nicchie del Santuario stanno dove stanno a zero braci come
        a quattro, e scriverle cinque volte vuol dire vederle divergere al
