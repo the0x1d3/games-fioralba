@@ -2047,17 +2047,18 @@ D.ROVINE = {
   pollaio: {
     nome:'Il pollaio di Ilde',
     righe:[
-      'Quattro pali storti, una rete arrotolata in un angolo, e paglia vecchia di chissà quante estati.',
-      'Ilde ne teneva tre. Bruno giura che le chiamava per nome e che loro venivano.',
-      'Il telaio regge ancora. Rifare le pareti e il basamento è lavoro di mezza giornata, se hai di che.'
+      'Il tetto ha perso metà delle tegole e sotto si vedono i correnti. La finestra è rotta da una parte sola, come se ci avesse dato contro un ramo.',
+      'In cima c’è ancora la banderuola, e la banderuola è un pesce. A chi glielo faceva notare, Ilde rispondeva «e allora?».',
+      'Ne teneva tre. Bruno giura che le chiamava per nome e che loro venivano.',
+      'Le assi tengono, il basamento pure. Serve chi ci rimetta le mani.'
     ]
   },
   serra: {
     nome:'La serra di Ilde',
     righe:[
-      'Il telaio verde è piegato, non spezzato. Dei vetri ne restano tre, e uno è soltanto incrinato.',
-      'Qui dentro Ilde teneva l’estate. Diceva che era l’unica stanza della valle dove le stagioni bussavano prima di entrare.',
-      'In un angolo, sotto il vetro rimasto, cresce un ciuffo di basilico che a {stagione} non dovrebbe esserci.'
+      'Il telaio verde regge ancora. I vetri no: ne mancano più di quanti ne restino, e l’edera è entrata dalle finestre rotte.',
+      'I vasi appesi sono secchi da anni. Quelli in basso no: là sotto, al riparo, qualcosa è sopravvissuto a tutti gli inverni, e adesso che è {stagione} sta pure fiorendo.',
+      'Qui dentro Ilde teneva l’estate. Diceva che era l’unica stanza della valle dove le stagioni bussavano prima di entrare.'
     ]
   }
 };
