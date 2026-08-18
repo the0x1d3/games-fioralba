@@ -1666,7 +1666,31 @@ A.stump = function(v){
   objCache[key]=c; return c;
 };
 
-A.rock = function(kind, v){
+/* Il sasso disegnato a mano. Torna `null` se il foglio non c'e o se
+   quel tipo non e disegnato, e chi chiama continua col disegno in
+   codice — lo stesso patto di tutto il resto. */
+const minCelle = {}; let minDaCui = null;
+A.minerale = function(kind, season){
+  if(!window.IMG || !window.DATA || !DATA.MINERALI) return null;
+  const M = DATA.MINERALI;
+  const riga = M.righe[kind];
+  if(riga === undefined) return null;
+  const img = IMG.prendi('minerali');
+  if(!img) return null;
+  if(minDaCui !== img){ for(const k in minCelle) delete minCelle[k]; minDaCui = img; }
+  let st = DATA.SEASONS.findIndex(x => x.id === season);
+  if(st < 0) st = 1;
+  const key = riga+'|'+st;
+  if(minCelle[key]) return minCelle[key];
+  const c = cv(M.w, M.h);
+  c.getContext('2d').drawImage(img, st*M.w, riga*M.h, M.w, M.h, 0, 0, M.w, M.h);
+  minCelle[key] = c;
+  return c;
+};
+
+A.rock = function(kind, v, season){
+  const aMano = A.minerale(kind, season);
+  if(aMano) return aMano;
   const key='rock|'+kind+'|'+v;
   if(objCache[key]) return objCache[key];
   // ridisegnato a 64: il sasso è il 31% di una schermata di miniera, e

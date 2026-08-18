@@ -2599,6 +2599,40 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
         problemi.push(`il foglio di «${id}» parla della direzione «${d}», che non esiste`);
   }
 
+  /* Il foglio dei minerali: una colonna per stagione, una riga per tipo
+     di sasso. Le chiavi si controllano contro quello che il mondo posa
+     davvero: un tipo scritto storto non darebbe nessun errore — il sasso
+     continuerebbe a essere disegnato in codice — e in miniera si
+     vedrebbero due stili accanto senza capire perché. */
+  if (DATA.MINERALI) {
+    const M = DATA.MINERALI;
+    usati.add(M.file);
+    const veri = ['pietra','carbone','rame','ferro','quarzo','oro','ametista','geode'];
+    for (const k in M.righe)
+      if (!veri.includes(k))
+        problemi.push(`DATA.MINERALI ha «${k}», che non è un sasso che il mondo posa ` +
+                      `(sono: ${veri.join(', ')})`);
+    for (const k of veri)
+      if (M.righe[k] === undefined)
+        problemi.push(`DATA.MINERALI non ha «${k}»: quel sasso resterebbe disegnato in codice ` +
+                      'accanto agli altri disegnati a mano');
+    const f = path.join(dir, M.file);
+    if (!fs.existsSync(f)) problemi.push(`DATA.MINERALI vuole img/${M.file}, che non c'è`);
+    else {
+      const b = fs.readFileSync(f);
+      if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) problemi.push(`img/${M.file} non è un PNG`);
+      else {
+        const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+        const ultima = Math.max(...Object.values(M.righe));
+        if (w !== M.w * DATA.SEASONS.length)
+          problemi.push(`img/${M.file} è largo ${w} ma ${DATA.SEASONS.length} stagioni da ${M.w} ` +
+                        `fanno ${M.w*DATA.SEASONS.length}`);
+        if (h !== (ultima + 1) * M.h)
+          problemi.push(`img/${M.file} è alto ${h} ma i minerali arrivano alla riga ${ultima}, cioè ${(ultima+1)*M.h}`);
+      }
+    }
+  }
+
   /* Il foglio dei terreni. Le colonne sono `varianti × stagioni`, e il
      conto va preteso esatto: una colonna in meno e d'inverno, o con la
      quarta variante, si ritaglia fuori dal foglio — e la quarta variante

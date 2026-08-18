@@ -1924,6 +1924,33 @@ D.VEGETAZIONE = {
     fiocco_cristallo:14 } }
 };
 
+/* I MINERALI DISEGNATI A MANO.
+
+   Otto sassi picconabili — sette tipi piu il carbone — per quattro
+   stagioni, celle da 80. La stagione e roba NUOVA: `ART.rock` non
+   l'aveva, e i sassi stavano uguali tutto l'anno anche sotto la neve.
+
+   Il carbone qui e un sasso suo. Nel disegno in codice non lo e: e un
+   sasso di pietra con la bandierina `carbone`, disegnato col corpo del
+   geode e una macchia marrone sopra. Per chi gioca pero e un minerale
+   come gli altri, e adesso ha il suo disegno.
+
+   E la macchia colorata che `render.js` mette sopra ai sassi con la
+   vena non serve piu quando c'e il PNG: la vena e disegnata dentro, e
+   sovrapporle un alone la sporcherebbe. */
+D.MINERALI = {
+  file:'minerali.png', w:80, h:80,
+  righe:{
+    pietra:0,
+    carbone:1,
+    rame:2,
+    ferro:3,
+    quarzo:4,
+    oro:5,
+    ametista:6,
+    geode:7 }
+};
+
 /* I TERRENI DISEGNATI A MANO.
 
    Un foglio solo, celle da 64: la colonna e `variante*4 + stagione`, la

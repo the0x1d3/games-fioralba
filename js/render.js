@@ -1611,10 +1611,19 @@ function disegnaOggettoDentro(o, px, py, gx, gy, t, stag, G, wx, wy){
     }
     case 'ceppo': spr(ART.stump(varianteDi(gx,gy)), px-4, py+2); break;
     case 'sasso': {
-      const img = ART.rock(o.carbone?'geode':o.kind, (gx*3+gy)%4);
+      /* Il carbone e un sasso di pietra con una bandierina, non un tipo
+         suo: in codice si disegnava col corpo del geode e una macchia
+         marrone sopra. Il foglio disegnato a mano invece ce l'ha per
+         davvero, quindi qui si chiede col suo nome. */
+      const tipo = o.carbone ? 'carbone' : o.kind;
+      const aMano = ART.minerale(tipo, stag);
+      const img = aMano || ART.rock(o.carbone?'geode':o.kind, (gx*3+gy)%4);
       const shake = o.shake? Math.sin(t*0.06)*o.shake : 0;
       spr(img, px-4+shake, py-4);
-      if(o.kind!=='pietra'||o.carbone){
+      /* L'alone colorato serviva a far riconoscere la vena su un sasso
+         che era grigio uguale per tutti. Col disegno a mano la vena c'e
+         gia dentro, e l'alone la sporcherebbe. */
+      if(!aMano && (o.kind!=='pietra'||o.carbone)){
         sx.globalAlpha=0.20+Math.sin(t*0.003+gx)*0.09;
         const col = o.carbone?'#8a6038':{rame:'#e08a4a',ferro:'#d8dce8',oro:'#ffd24a',
                      ametista:'#c98ae8',quarzo:'#eaf4ff',geode:'#8ac0d8'}[o.kind]||'#fff';

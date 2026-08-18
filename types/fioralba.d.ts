@@ -382,6 +382,12 @@ interface FioData {
    * Il foglio dei terreni: colonna = `variante*4 + stagione`, riga = il
    * terreno. Chi non e in elenco resta disegnato in codice.
    */
+  /**
+   * Il foglio dei minerali: colonna = stagione, riga = il tipo di sasso.
+   * Il `carbone` qui e un tipo suo, mentre nel mondo e un sasso di
+   * pietra con la bandierina `carbone`.
+   */
+  MINERALI: { file: string; w: number; h: number; righe: Record<string, number> };
   TERRENI: { file: string; w: number; h: number; varianti: number;
              righe: Record<string, number> };
   NPC_FOGLI: Record<string, { file: string; w: number; h: number;
