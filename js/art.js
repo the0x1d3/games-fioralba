@@ -1092,6 +1092,22 @@ A.npcSprite = function(id, dir, frame){
   return c;
 };
 
+/* Il rettangolo pieno di uno sprite. Serve al ritratto per sapere dove
+   sta la testa dentro alla cella, che e' quasi sempre piu' piccola. */
+const sagomaCache = new WeakMap();
+function sagoma(canv){
+  if(sagomaCache.has(canv)) return sagomaCache.get(canv);
+  const t = cv(canv.width, canv.height), tx = t.getContext('2d');
+  tx.drawImage(canv, 0, 0);
+  const D = tx.getImageData(0,0,t.width,t.height).data;
+  let mnx=1e9,mxx=-1,mny=1e9,mxy=-1;
+  for(let y=0;y<t.height;y++) for(let x=0;x<t.width;x++)
+    if(D[(y*t.width+x)*4+3]>16){ if(x<mnx)mnx=x; if(x>mxx)mxx=x; if(y<mny)mny=y; if(y>mxy)mxy=y; }
+  const r = mxx<0 ? null : {x:mnx, y:mny, w:mxx-mnx+1, h:mxy-mny+1};
+  sagomaCache.set(canv, r);
+  return r;
+}
+
 /* ritratto per i dialoghi (96x96) */
 const faceCache={};
 A.face = function(key, look){
@@ -1118,6 +1134,36 @@ A.face = function(key, look){
      la statura: che è anche quello che si chiede a una cornice di
      ritratti, sei facce alla stessa altezza invece di sei altezze
      diverse. La statura si continua a vedere nel gioco, dove serve. */
+  /* Se l'abitante ha il suo foglio disegnato a mano, il ritratto viene
+     da lì: nel mondo si vede quello, e una fototessera che mostra un
+     altro disegno è la fototessera di un altro. Si inquadra la TESTA —
+     la fascia alta della sagoma — e si ingrandisce fino a riempire il
+     riquadro, così la faccia cade sempre allo stesso posto qualunque
+     sia la statura, che è quello che si chiede a una cornice di
+     ritratti. */
+  const foglio = A.npcSprite(key, 0, 0);
+  if(foglio){
+    const b = sagoma(foglio);
+    if(b){
+      /* Quanta figura entra: dalla cima della testa fino a poco sotto
+         le spalle. Presa piu' corta si vedeva mezza faccia, presa piu'
+         lunga la testa diventava un puntino in mezzo al busto. */
+      const alta = Math.round(b.h * 0.46);
+      const zoom = 88 / alta;
+      x.save();
+      x.imageSmoothingEnabled = false;
+      x.translate(48, 10);
+      x.scale(zoom, zoom);
+      x.drawImage(foglio, b.x, b.y, b.w, alta,
+                  -(b.w/2), 0, b.w, alta);
+      x.restore();
+      const v0=x.createRadialGradient(48,44,20,48,48,58);
+      v0.addColorStop(0,'rgba(0,0,0,0)'); v0.addColorStop(1,'rgba(60,40,20,.35)');
+      x.fillStyle=v0; x.fillRect(0,0,96,96);
+      faceCache[key]=c;
+      return c;
+    }
+  }
   const altezzaRitratto = Math.max(-2, Math.min(3, look.altezza|0));
   x.save();
   x.translate(48, 96);

@@ -2111,17 +2111,31 @@ D.EDIFICI = {
    si pone, ma finche i disegni non ci sono tutti nella valle
    convivranno abitanti a mano e abitanti in codice.
 
-   La cella e 64x96 come quella del giocatore, ma la FIGURA dentro e
-   alta quanto la disegna il codice — 72 pixel, non 89. In piazza stanno
-   uno accanto all'altro, e uno piu alto degli altri si vede subito. */
+   LA CELLA E 96x112, non 64x96 come quella del giocatore, e le figure
+   dentro sono alte 86 dove il contadino ne fa 88.
+
+   Prima erano alte quanto le disegnava il codice — da 58 a 72 — e il
+   codice le fa cosi' apposta, perche' `DATA.NPCS` da' a ognuno una
+   statura e da lontano e' quello che li distingue. Solo che il
+   giocatore disegnato a mano e' 88, e accanto a lui un abitante da 60
+   non sembrava piu' basso: sembrava piu' lontano. Segnalato guardando
+   Tobia di fianco al contadino. Adesso stanno tutti fra 82 e 86, che e'
+   la stessa persona vista da vicino.
+
+   La cella e' cresciuta perche' a 86 pixel Fiammella non ci stava piu':
+   e' una fiamma, larga quasi quanto e' alta, e in 64 le sarebbero
+   entrate solo le spalle. Il renderer non ha numeri scritti a mano —
+   centra sulla larghezza e appoggia in fondo — quindi la cella si
+   allarga senza toccare niente, come gia' fatto per la camminata con
+   l'attrezzo in mano. */
 D.NPC_FOGLI = {
-  bruno:    { file:'npc-bruno.png',       w:64, h:96, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
-  serafina: { file:'npc-serafina.png',    w:64, h:96, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
-  tobia:    { file:'npc-tobia.png',       w:64, h:96, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
-  marisol:  { file:'npc-marisol.png',     w:64, h:96, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
-  elio:     { file:'npc-elio.png',        w:64, h:96, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
-  eremita:  { file:'npc-eremita.png',     w:64, h:96, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
-  fiammella:{ file:'npc-fiammella.png',   w:64, h:96, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} }
+  bruno:    { file:'npc-bruno.png',       w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  serafina: { file:'npc-serafina.png',    w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  tobia:    { file:'npc-tobia.png',       w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  marisol:  { file:'npc-marisol.png',     w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  elio:     { file:'npc-elio.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  eremita:  { file:'npc-eremita.png',     w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  fiammella:{ file:'npc-fiammella.png',   w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} }
 };
 
 /* ===================================================================
