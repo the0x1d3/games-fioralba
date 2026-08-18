@@ -374,6 +374,12 @@ interface FioData {
                                 /** Una riga per voce e una colonna per fase (le colture). */
                                 fasi?: number;
                                 righe: Record<string, number> }>;
+  /**
+   * Un foglio per abitante, con la stessa forma di `OMINO`. Chi non e in
+   * elenco resta disegnato in codice da `drawChar`.
+   */
+  NPC_FOGLI: Record<string, { file: string; w: number; h: number;
+                              fotogrammi: number; righe: Record<string, number> }>;
   OMINO_ATTREZZI: Record<string, { file: string; w: number; h: number;
                                    fotogrammi: number; righe: Record<string, number> }>;
   /** Coefficienti dei bonus per abilità: li leggono gioco e scheda. */

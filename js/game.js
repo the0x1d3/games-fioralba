@@ -129,6 +129,7 @@ function init(){
     IMG.precarica({ omino: DATA.OMINO });   // il foglio della camminata
     IMG.precarica(DATA.OMINO_ATTREZZI, 'omino:');   // e uno per attrezzo in mano
     IMG.precarica(DATA.VEGETAZIONE, 'veg:');        // alberi, erbaccia, ceppo
+    IMG.precarica(DATA.NPC_FOGLI, 'npc:');          // gli abitanti disegnati a mano
     /* Col prefisso: `cartello` e `spaventapasseri` stanno in tutti e due
        gli elenchi, e le immagini si tengono per id — senza, la seconda
        richiesta si perderebbe e nello zaino resterebbe il disegno in

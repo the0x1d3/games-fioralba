@@ -2599,6 +2599,31 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
         problemi.push(`il foglio di «${id}» parla della direzione «${d}», che non esiste`);
   }
 
+  /* I fogli degli abitanti: stessa griglia del giocatore, e due cose
+     loro. Il nome dev'essere un abitante che esiste — scritto storto, il
+     foglio si scarica e in piazza continua a camminare quello disegnato
+     in codice, senza che niente si lamenti. E le direzioni sono le
+     stesse quattro di sempre. */
+  for (const id in (DATA.NPC_FOGLI || {})) {
+    const A = DATA.NPC_FOGLI[id];
+    usati.add(A.file);
+    if (!DATA.NPCS[id])
+      problemi.push(`DATA.NPC_FOGLI ha «${id}», che fra gli abitanti non c'è`);
+    const f = path.join(dir, A.file);
+    if (!fs.existsSync(f)) { problemi.push(`DATA.NPC_FOGLI vuole img/${A.file}, che non c'è`); continue; }
+    const b = fs.readFileSync(f);
+    if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) { problemi.push(`img/${A.file} non è un PNG`); continue; }
+    const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+    const ultima = Math.max(...Object.values(A.righe));
+    if (w !== A.w * A.fotogrammi)
+      problemi.push(`img/${A.file} è largo ${w} ma ${A.fotogrammi} celle da ${A.w} fanno ${A.w*A.fotogrammi}`);
+    if (h !== (ultima + 1) * A.h)
+      problemi.push(`img/${A.file} è alto ${h} ma «${id}» arriva alla riga ${ultima}, cioè ${(ultima+1)*A.h}`);
+    for (const d in A.righe)
+      if (!'0123'.includes(d))
+        problemi.push(`il foglio di «${id}» parla della direzione «${d}», che non esiste`);
+  }
+
   /* I fogli della vegetazione: stessa griglia degli altri, e due cose
      loro. Le stagioni devono essere QUATTRO quando il foglio è
      stagionale — una colonna in meno e d'inverno si ritaglierebbe fuori

@@ -1924,6 +1924,25 @@ D.VEGETAZIONE = {
     fiocco_cristallo:14 } }
 };
 
+/* GLI ABITANTI DISEGNATI A MANO, uno per foglio.
+
+   Il giocatore ha `D.OMINO`, loro hanno questo: stessa forma, stessa
+   griglia di quattro fotogrammi per quattro direzioni.
+
+   Chi non e in elenco resta disegnato in codice da `drawChar`, che lo
+   colora a partire dal suo `look`. E la ragione per cui gli abitanti
+   sono nati cosi: un foglio solo li avrebbe fatti tutti la stessa
+   persona. Adesso il foglio ce l'hanno per NOME, quindi il problema non
+   si pone, ma finche i disegni non ci sono tutti nella valle
+   convivranno abitanti a mano e abitanti in codice.
+
+   La cella e 64x96 come quella del giocatore, ma la FIGURA dentro e
+   alta quanto la disegna il codice — 72 pixel, non 89. In piazza stanno
+   uno accanto all'altro, e uno piu alto degli altri si vede subito. */
+D.NPC_FOGLI = {
+  serafina: { file:'npc-serafina.png', w:64, h:96, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} }
+};
+
 /* ===================================================================
    IL PERSONAGGIO DISEGNATO A MANO
 

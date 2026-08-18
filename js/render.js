@@ -1081,15 +1081,27 @@ R.disegna = function(G){
       s:()=>{ FX.ombraTerra(sx, px, py-K, 8*K, 3*K, 0.24); },
       d:()=>{
         const look = DATA.NPCS[n.id].look;
-        if(!look.spirito) sx.drawImage(FX.contorno(ART.charSprite(look, n.dir, n.frame)), (px-16*K)|0, (py-39*K)|0);
-        /* `drawChar` disegna il personaggio DENTRO al contesto, pixel per
-           pixel, e i suoi pixel sono unità di disegno come tutto il resto
-           dell'arte: va nel blocco raddoppiato, ancorato ai piedi. Il
-           contorno qui sopra no — quello è già una tela cotta a densità
-           doppia, e si mette in pixel di mondo. */
-        raddoppia(sx, px|0, py|0);
-        ART.drawChar(sx, 0, 0, look, n.dir, n.frame, {t:t, blink:n.blink, senzaOmbra:true});
-        sx.restore();
+        /* Il foglio disegnato a mano, se questo abitante ce l'ha. Stessa
+           formula del giocatore — centrato sulla larghezza, appoggiato in
+           fondo — e nessun numero scritto a mano: il foglio e fatto con i
+           piedi sul fondo della cella, ed e quello che questa riga si
+           aspetta. */
+        const suo = ART.npcSprite(n.id, n.dir, n.frame);
+        if(suo){
+          const dx = (px - suo.width/2)|0, dy = (py - suo.height + 2)|0;
+          sx.drawImage(FX.contorno(suo), dx-K, dy-K);
+          sx.drawImage(suo, dx, dy);
+        } else {
+          if(!look.spirito) sx.drawImage(FX.contorno(ART.charSprite(look, n.dir, n.frame)), (px-16*K)|0, (py-39*K)|0);
+          /* `drawChar` disegna il personaggio DENTRO al contesto, pixel per
+             pixel, e i suoi pixel sono unità di disegno come tutto il resto
+             dell'arte: va nel blocco raddoppiato, ancorato ai piedi. Il
+             contorno qui sopra no — quello è già una tela cotta a densità
+             doppia, e si mette in pixel di mondo. */
+          raddoppia(sx, px|0, py|0);
+          ART.drawChar(sx, 0, 0, look, n.dir, n.frame, {t:t, blink:n.blink, senzaOmbra:true});
+          sx.restore();
+        }
         if(n.emote) sx.drawImage(ART.emote(n.emote), (px-16*K)|0, (py-58*K)|0);
       }});
   }
@@ -1325,7 +1337,7 @@ function riflessi(m, x0,y0,x1,y1, ox,oy, stag, t, G){
      stare sulla riva e vedersi riflesso qualcun altro è il genere di
      dettaglio che si nota subito e non si spiega. */
   const gente = [];
-  for(const n of G.npcVivi()) gente.push({px:n.px, py:n.py, look:DATA.NPCS[n.id].look, dir:n.dir, frame:n.frame});
+  for(const n of G.npcVivi()) gente.push({px:n.px, py:n.py, look:DATA.NPCS[n.id].look, dir:n.dir, frame:n.frame, chi:n.id});
   if(!G.p.dorme) gente.push({px:G.p.px, py:G.p.py, look:G.p.look, dir:G.p.dir, frame:G.p.frame,
                              io:true, attrezzo:G.p.attrezzoVisibile});
   for(const g of gente){
@@ -1336,7 +1348,9 @@ function riflessi(m, x0,y0,x1,y1, ox,oy, stag, t, G){
     if(!acquaSotto(m,tx,ty)) continue;
     /* Col suo attrezzo anche nel riflesso: stando sulla riva con l'ascia
        in mano, nell'acqua si specchiava uno a mani vuote. */
-    const suo = (g.io && ART.ominoSprite(g.dir, g.frame, g.attrezzo)) || ART.charSprite(g.look, g.dir, g.frame);
+    const suo = (g.io && ART.ominoSprite(g.dir, g.frame, g.attrezzo))
+              || (g.chi && ART.npcSprite(g.chi, g.dir, g.frame))
+              || ART.charSprite(g.look, g.dir, g.frame);
     specchia(m, sx, suo, g.px, (ty+1)*T, ox, oy, t, 0.26);
   }
 }

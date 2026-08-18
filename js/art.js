@@ -1041,6 +1041,31 @@ A.ominoSprite = function(dir, frame, attrezzo){
   return c;
 };
 
+/* L'abitante disegnato a mano, ritagliato dal suo foglio. Stesso patto
+   del giocatore: `null` se il foglio non c'e o non e ancora arrivato, e
+   chi disegna ripiega su `drawChar`. */
+const npcCelle = {}, npcDaCui = {};
+A.npcSprite = function(id, dir, frame){
+  if(!window.IMG || !window.DATA || !DATA.NPC_FOGLI) return null;
+  const N = DATA.NPC_FOGLI[id];
+  if(!N) return null;
+  const riga = N.righe[dir];
+  if(riga === undefined) return null;
+  const img = IMG.prendi('npc:'+id);
+  if(!img) return null;
+  if(npcDaCui[id] !== img){
+    for(const k in npcCelle) if(k.indexOf(id+'|') === 0) delete npcCelle[k];
+    npcDaCui[id] = img;
+  }
+  const col = ((frame|0) % N.fotogrammi + N.fotogrammi) % N.fotogrammi;
+  const key = id+'|'+riga+'|'+col;
+  if(npcCelle[key]) return npcCelle[key];
+  const c = cv(N.w, N.h);
+  c.getContext('2d').drawImage(img, col*N.w, riga*N.h, N.w, N.h, 0, 0, N.w, N.h);
+  npcCelle[key] = c;
+  return c;
+};
+
 /* ritratto per i dialoghi (96x96) */
 const faceCache={};
 A.face = function(key, look){
