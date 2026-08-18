@@ -36,6 +36,14 @@ tmp/
 .env.*
 !.env.esempio
 
+# --- I sorgenti ad alta risoluzione ---
+# I PNG originali da cui si ricava `img/` sono decine di megabyte l'uno e
+# non li serve nessuno: il gioco carica solo le versioni rimpicciolite.
+# Stanno sul disco di chi disegna, non qui. Se un giorno la casella
+# cambia e va riesportato tutto, i sorgenti si rimettono in questa
+# cartella e si rifà il giro descritto in img/LEGGIMI.md.
+sprite-new/
+
 # --- Fogli di lavoro delle anteprime ---
 # Immagini di servizio generate per guardare gli sprite mentre si lavora:
 # cataloghi, confronti prima/dopo, prove in gioco. Non sono arte del gioco

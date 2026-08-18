@@ -1,9 +1,9 @@
 # img/ — l'arte che non è disegnata in codice
 
 Qui stanno gli sprite **rimpiccioliti**, quelli che il gioco carica davvero.
-I sorgenti ad alta risoluzione stanno in `sprite-new/` e non vengono mai
-serviti: sono 3,6 MB contro i 152 KB di questa cartella, e caricarli come
-sono quadruplicherebbe il peso della pagina.
+I sorgenti ad alta risoluzione **non stanno nel repository**: sono decine
+di megabyte l'uno, non li serve nessuno, e restano sul disco di chi
+disegna. Qui c'è solo quello che il gioco carica davvero.
 
 ## Perché non sono disegnati in codice
 
@@ -53,8 +53,9 @@ tiene alla stessa scala l'uno con l'altro. Ritagliando ognuno sul
 proprio contenuto, la scrivania sarebbe venuta alta quanto lo
 spaventapasseri.
 
-Se la casella cambia, si riesporta da `sprite-new/`: è per questo che i
-sorgenti grossi restano nel repo invece di essere buttati.
+Se la casella cambia va riesportato tutto, e per farlo servono i
+sorgenti: si rimettono in una cartella `sprite-new/` (che il
+`.gitignore` tiene fuori dal repo) e si rifà il giro descritto qui.
 
 Le **icone degli attrezzi** — `zappa`, `annaffiatoio`, `ascia`,
 `piccone`, `falce`, `canna`, `arco` — fanno eccezione a tutta questa

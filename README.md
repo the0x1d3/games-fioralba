@@ -256,7 +256,6 @@ js/debug.js         il pannello di prova
 
 img/                l'arte disegnata a mano, e img/LEGGIMI.md che spiega
                     come si rimpicciolisce e a che misure
-sprite-new/         i sorgenti ad alta risoluzione, che il gioco NON serve
 
 tsconfig.json       type-checking (solo editor e riga di comando)
 types/fioralba.d.ts i tipi dei dati e dello stato

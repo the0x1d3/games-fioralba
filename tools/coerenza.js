@@ -2464,7 +2464,7 @@ verifica('gli sprite già ridisegnati a 64 restano a 64', () => {
 /* --- GLI ARREDI DISEGNATI A MANO ---
 
    `DATA.ARREDI` dichiara che `letto.png` è due caselle per tre. Se un
-   giorno lo si riesporta da `sprite-new/` a una misura diversa e ci si
+   giorno lo si riesporta dai sorgenti a una misura diversa e ci si
    dimentica di aggiornare la riga, il gioco non si rompe: `drawImage`
    con misura esplicita RISCALA in silenzio, e il letto viene fuori
    schiacciato o stirato senza un errore da nessuna parte. Un occhio
