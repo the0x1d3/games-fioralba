@@ -2078,8 +2078,42 @@ function apriPorta(ed){
     case 'eremita': UI.dialogo('eremita', ['La porta di legno è chiusa. L\'eremita sarà fuori, da qualche parte sulla neve.']); break;
     case 'pollaio': apriPollaio(); break;
     case 'serra': UI.toast('La serra è calda e umida. Qui puoi coltivare tutto l\'anno.'); break;
+    case 'rovina_pollaio': apriRovina('pollaio'); break;
+    case 'rovina_serra':   apriRovina('serra'); break;
     default: UI.toast('È chiuso.'); break;
   }
+}
+
+/* QUELLO CHE RESTA DEL POLLAIO, E DELLA SERRA.
+
+   Tre righe di storia da `DATA.ROVINE` e una quarta che la fa il gioco,
+   perché dice dei numeri: quanto manca e quanto costa. Quei numeri
+   stanno in `DATA.COSTRUZIONI` e da lì si leggono — scriverli qui
+   sarebbe il solito numero di bilanciamento in due posti, e la rovina
+   finirebbe per promettere un prezzo che alla fucina non esiste.
+
+   La quarta riga cambia da sola quando hai di che: a chi ha già tutto
+   non si elenca quello che ha in tasca, si dice che può andare. */
+function apriRovina(id){
+  const R = DATA.ROVINE && DATA.ROVINE[id];
+  const C = DATA.COSTRUZIONI.find(c => c.id === id);
+  if(!R || !C){ UI.toast('Non ne resta granché.'); return; }
+
+  const righe = R.righe.map(r => r.replace('{stagione}', G.stagione().nome));
+  if(G.costruzioni[id]){ UI.dialogo(null, righe, {nome:R.nome}); return; }
+
+  const manca = [];
+  for(const k in C.ing){
+    const ho = G.conta(k);
+    if(ho < C.ing[k]) manca.push(IT.nome(k) + ' ' + ho + '/' + C.ing[k]);
+  }
+  if(G.oro < C.costo) manca.push(G.oro + '/' + C.costo + ' monete');
+
+  righe.push(manca.length
+    ? 'Da <b>Tobia</b>, alla fucina, si rimette in piedi. Ti manca: ' + manca.join(', ') + '.'
+    : 'Hai tutto quello che serve. Da <b>Tobia</b>, alla fucina, si rimette in piedi quando vuoi.');
+
+  UI.dialogo(null, righe, {nome:R.nome});
 }
 
 function apriCasa(){

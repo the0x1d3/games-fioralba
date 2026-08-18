@@ -270,7 +270,10 @@ W.spargiSu = function(m, terreno, quanti, fabbrica, seed){
 const PROPORZIONI = {
   casa:0.900, cottage:0.944, capanna:0.929, bottega:0.888,
   fucina:0.909, locanda:0.873, santuario:1.154,
-  serra:0.857, pollaio:0.900
+  serra:0.857, pollaio:0.900,
+  /* Le rovine sono il 56% del loro edificio, che è quanto ne resta in
+     piedi: sotto l'impronta, quindi non fanno muro sopra al tetto. */
+  rovina_pollaio:0.414, rovina_serra:0.394
 };
 
 function sbordoTetto(kind, tw, th){
@@ -310,6 +313,59 @@ W.verificaProporzioni = function(){
   }
   if(scarti.length) console.warn('[mondo] le proporzioni degli edifici sono cambiate:', scarti);
   return scarti;
+};
+
+/* LE ROVINE DEL PODERE.
+
+   Il pollaio e la serra si costruiscono, e finché non li costruisci quel
+   pezzo di prato era vuoto — riservato, ma vuoto. Adesso ci sta sopra
+   quello che ne resta, con la sua porta: si apre come si apre una casa,
+   e dentro c'è la storia invece di una stanza.
+
+   Sono edifici veri e non decorazioni, e non per pigrizia: da edifici
+   hanno gratis l'impronta solida, la porta interattiva, il nome sopra la
+   testa e il disegno che si ordina con gli altri per profondità. Una
+   decorazione avrebbe voluto tutte e quattro le cose riscritte. */
+function rovina(m, id){
+  const sp = m.spazi && m.spazi[id];
+  if(!sp) return;
+  const R = (typeof DATA !== 'undefined' && DATA.ROVINE) ? DATA.ROVINE[id] : null;
+  edificio(m, 'rovina_'+id, sp.x, sp.y, sp.w, sp.h,
+           { porta:sp.porta, azione:'rovina_'+id, nome: R ? R.nome : id });
+}
+
+function togliRovina(m, id){
+  const k = 'rovina_'+id;
+  const i = m.edifici.findIndex(e => e.kind === k);
+  if(i < 0) return false;
+  const e = m.edifici[i];
+  /* Si sgombrano le sue caselle e non tutte quelle dell'impronta: la
+     rovina è più bassa dell'edificio che verrà, e cancellare a occhio
+     lascerebbe fuori qualcosa o porterebbe via un vicino. Si va per
+     proprietario. */
+  for(let yy = e.y - (e.sbordo||0); yy < e.y + e.h; yy++)
+    for(let xx = e.x; xx < e.x + e.w; xx++){
+      if(!W.dentro(m, xx, yy)) continue;
+      const o = m.obj[W.idx(m, xx, yy)];
+      if(o && o.ed === e) m.obj[W.idx(m, xx, yy)] = null;
+    }
+  m.edifici.splice(i, 1);
+  return true;
+}
+
+/* Le rovine viaggiano nel salvataggio come tutto il resto degli
+   oggetti, quindi una partita cominciata prima che esistessero se le
+   riporterebbe dietro assenti per sempre — è lo stesso difetto del
+   burrone e del molo, e si cura allo stesso modo: quello che c'è in un
+   posto lo decidiamo noi, non il salvataggio. Idempotente apposta, così
+   la si può chiamare a ogni apertura senza contare quante volte. */
+W.ristampaRovine = function(m, costruzioni){
+  if(!m || !m.spazi) return;
+  costruzioni = costruzioni || {};
+  for(const id of ['pollaio','serra']){
+    togliRovina(m, id);
+    if(!costruzioni[id]) rovina(m, id);
+  }
 };
 
 function edificio(m, kind, x, y, tw, th, opt){
@@ -542,6 +598,11 @@ function buildPodere(){
       if(TIPI[m.g[W.idx(m,x,y)]]==='acqua') m.g[W.idx(m,x,y)]=ti('erba');
     }
   }
+  /* Sgombrato lo spazio, ci si rimette quello che c'era: due rovine.
+     Dopo il ciclo qui sopra e non dentro, o le loro caselle verrebbero
+     azzerate un momento dopo averle scritte. */
+  rovina(m, 'pollaio');
+  rovina(m, 'serra');
 
   /* ------------------------------------------------------------------
      L'ANGOLO SELVATICO — a sud-ovest: legna, fibra, pietra
@@ -1951,10 +2012,12 @@ W.costruisci = function(maps, id){
   const m = maps.podere;
   const sp = m.spazi[id==='casa2'?null:id];
   if(id==='pollaio' && sp){
+    togliRovina(m, 'pollaio');     // prima sgombra: sotto c'è quello che ne restava
     edificio(m,'pollaio', sp.x, sp.y, sp.w, sp.h, {porta:sp.porta, azione:'pollaio', nome:'Pollaio'});
     return true;
   }
   if(id==='serra' && sp){
+    togliRovina(m, 'serra');
     edificio(m,'serra', sp.x, sp.y, sp.w, sp.h, {porta:sp.porta, azione:'serra', nome:'Serra'});
     return true;
   }

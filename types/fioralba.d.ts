@@ -396,6 +396,12 @@ interface FioData {
    * dello sprite: la notte non è un secondo file, la luce la mette il
    * gioco sopra al disegno.
    */
+  /**
+   * Le due rovine del podere: quello che resta del pollaio e della serra
+   * di Nonna Ilde finché non li si rimette in piedi. `{stagione}` dentro
+   * a `righe` è un segnaposto e va ricopiato uguale in traduzione.
+   */
+  ROVINE: Record<string, { nome: string; righe: string[] }>;
   EDIFICI: Record<string, { file: string; w: number; h: number;
                             fumo?: number[]; finestre?: number[][]; fuoco?: number[];
                             lanterna?: number[]; nicchie?: number[][] }>;

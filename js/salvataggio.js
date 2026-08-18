@@ -311,6 +311,11 @@ function applicaSalvataggio(raw){
      distingue più «non ce l'aveva» da «era davvero zero». */
   if(d.energiaBonus === undefined && typeof d.energiaMax === 'number')
     G.energiaBonus = Math.max(0, d.energiaMax - 180);
+  /* Le due rovine si ristampano, come il burrone e il molo: viaggiano
+     nel salvataggio come tutti gli oggetti, quindi una partita
+     cominciata prima che esistessero non le avrebbe mai. Va prima di
+     `costruisci`, che poi si porta via quelle gia' costruite. */
+  WORLD.ristampaRovine(G.maps.podere, G.costruzioni);
   for(const id in G.costruzioni) if(G.costruzioni[id]) WORLD.costruisci(G.maps, id);
   if(d.maps){
     for(const k in d.maps) if(G.maps[k]) deserializzaMappa(G.maps[k], d.maps[k]);

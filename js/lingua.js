@@ -128,6 +128,7 @@ const CAMPI = [
   ['CROPS',       ['nome']],
   ['ITEMS',       ['nome','desc']],
   ['COSTRUZIONI', ['nome','desc']],
+  ['ROVINE',      ['nome','righe']],
   ['UPGRADE',     ['nome']],
   ['SKILLS',      ['nome','desc']],
   ['NPCS',        ['nome','ruolo','battute','amico']],

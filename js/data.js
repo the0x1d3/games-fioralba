@@ -2024,6 +2024,44 @@ D.TERRENI = {
     bagnato:10 }
 };
 
+/* LE DUE ROVINE DEL PODERE.
+
+   Il pollaio e la serra si costruiscono, e finche' non li costruisci
+   quel pezzo di prato era vuoto. Non del tutto: la zappa ci rifiutava
+   il colpo dicendo «qui ci va il pollaio», che è un'informazione data
+   nel momento sbagliato — la sente solo chi prova a seminarci sopra, e
+   la sente come un divieto.
+
+   Adesso quel pezzo di prato ha sopra una ROVINA, e la rovina si apre
+   come si apre una porta. La storia non è nuova: sta già tutta nella
+   prima lettera di Nonna Ilde — «la staccionata cede a est, il pozzo fa
+   un rumore che non ti spiego», e la lanterna che ha provato a tenere
+   accesa «finché le mani me lo hanno permesso». Il pollaio e la serra
+   sono altre due cose che le mani non le hanno più permesso. Ricostruirli
+   non è costruire qualcosa di nuovo: è finire una cosa sua.
+
+   `{stagione}` è un segnaposto e va ricopiato uguale in traduzione, come
+   `{ing}` nelle vicende: dentro ci va la stagione di oggi, ed è il
+   dettaglio che spiega a cosa serve una serra senza spiegarlo. */
+D.ROVINE = {
+  pollaio: {
+    nome:'Il pollaio di Ilde',
+    righe:[
+      'Quattro pali storti, una rete arrotolata in un angolo, e paglia vecchia di chissà quante estati.',
+      'Ilde ne teneva tre. Bruno giura che le chiamava per nome e che loro venivano.',
+      'Il telaio regge ancora. Rifare le pareti e il basamento è lavoro di mezza giornata, se hai di che.'
+    ]
+  },
+  serra: {
+    nome:'La serra di Ilde',
+    righe:[
+      'Il telaio verde è piegato, non spezzato. Dei vetri ne restano tre, e uno è soltanto incrinato.',
+      'Qui dentro Ilde teneva l’estate. Diceva che era l’unica stanza della valle dove le stagioni bussavano prima di entrare.',
+      'In un angolo, sotto il vetro rimasto, cresce un ciuffo di basilico che a {stagione} non dovrebbe esserci.'
+    ]
+  }
+};
+
 /* GLI EDIFICI DISEGNATI A MANO.
 
    `w` e `h` non sono la misura del disegno originale: sono la misura a

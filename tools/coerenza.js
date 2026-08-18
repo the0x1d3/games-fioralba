@@ -962,15 +962,51 @@ verifica('il podere è giocabile: partenza, uscite, spazi da costruire', () => {
   for (const [x, y, che] of [[8, 10, 'punto di partenza'], [8, 9, 'risveglio del mattino']])
     if (WORLD.solido(m, x, y)) problemi.push(`${che} (${x},${y}) è dentro un ostacolo`);
 
-  // gli spazi delle costruzioni devono essere liberi, o il pollaio non ci sta
+  /* Gli spazi delle costruzioni devono essere liberi, o il pollaio non
+     ci sta. Con UNA eccezione: la rovina di quello stesso spazio, che ci
+     sta sopra apposta e che `W.costruisci` porta via prima di posare
+     l'edificio. Si riconosce dal proprietario, non dal tipo: un muro
+     qualunque lì in mezzo resta un difetto. */
+  const rovine = {};
+  for (const e of m.edifici) if (e.kind.indexOf('rovina_') === 0) rovine[e.kind.slice(7)] = e;
   for (const k in m.spazi) {
     const sp = m.spazi[k];
     for (let y = sp.y; y < sp.y + sp.h; y++) for (let x = sp.x; x < sp.x + sp.w; x++) {
       if (!WORLD.dentro(m, x, y)) { problemi.push(`lo spazio «${k}» esce dalla mappa`); continue; }
-      if (m.obj[WORLD.idx(m, x, y)]) problemi.push(`lo spazio «${k}» ha un ostacolo in (${x},${y})`);
+      const o = m.obj[WORLD.idx(m, x, y)];
+      if (o && !(rovine[k] && o.ed === rovine[k]))
+        problemi.push(`lo spazio «${k}» ha un ostacolo in (${x},${y})`);
       const t = WORLD.terreno(m, x, y);
       if (t === 'acqua') problemi.push(`lo spazio «${k}» è sull'acqua in (${x},${y})`);
     }
+  }
+
+  /* E la rovina se ne deve andare quando si costruisce: se restasse,
+     l'edificio nuovo nascerebbe dentro al suo rudere e la porta
+     aprirebbe la storia invece del pollaio. */
+  for (const id of ['pollaio', 'serra']) {
+    if (!rovine[id]) { problemi.push(`manca la rovina di «${id}»: quel prato tornerebbe vuoto`); continue; }
+    const m2 = WORLD.crea().podere;
+    WORLD.costruisci({ podere: m2 }, id);
+    if (m2.edifici.some(e => e.kind === 'rovina_' + id))
+      problemi.push(`costruito il ${id}, la sua rovina è rimasta lì sotto`);
+    if (!m2.edifici.some(e => e.kind === id))
+      problemi.push(`costruito il ${id}, l'edificio non c'è`);
+    const sp = m2.spazi[id];
+    if (sp.porta && !m2.obj[WORLD.idx(m2, sp.porta.x, sp.porta.y)])
+      problemi.push(`il ${id} costruito non ha la porta in (${sp.porta.x},${sp.porta.y})`);
+  }
+
+  /* Ogni rovina ha la sua storia e la sua costruzione: una rovina senza
+     testo si apre su una finestra vuota. */
+  for (const id in (DATA.ROVINE || {})) {
+    const R = DATA.ROVINE[id];
+    if (!DATA.COSTRUZIONI.some(c => c.id === id))
+      problemi.push(`la rovina «${id}» non ha una costruzione che la rimetta in piedi`);
+    if (!R.nome || !(R.righe || []).length)
+      problemi.push(`la rovina «${id}» non ha nome o non ha righe`);
+    if (!(R.righe || []).some(r => r.indexOf('{stagione}') >= 0) && id === 'serra')
+      problemi.push('la serra in rovina non nomina la stagione: era il dettaglio che spiega a cosa serve');
   }
 
   // le uscite devono essere raggiungibili a piedi

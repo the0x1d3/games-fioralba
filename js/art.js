@@ -2098,6 +2098,93 @@ A.datoEdificio = function(kind, liv){
   return DATA.EDIFICI[kind] || null;
 };
 
+/* LA ROVINA DI UN EDIFICIO.
+
+   Non è un disegno nuovo: è QUELLO VERO, rotto. Si prende la facciata —
+   quella disegnata a mano se è arrivata, se no quella in codice — le si
+   toglie tutto sopra a una linea frastagliata, e quello che resta è il
+   basamento con i monconi dei muri. Poi si smorza il colore e ci si
+   fanno crescere sopra due ciuffi.
+
+   È la strada giusta per una ragione precisa: il giocatore deve
+   riconoscere COSA diventerà. Un rudere disegnato da zero sarebbe un
+   rudere qualunque; questo è il pollaio che c'era, con le stesse
+   proporzioni e gli stessi colori, e quando lo ricostruisci vedi che è
+   lo stesso. Il taglio è frastagliato apposta: dritto si legge come uno
+   sprite tagliato male, cioè come un difetto.
+
+   Quando arriveranno due disegni veri — `rovina-pollaio.png` e
+   `rovina-serra.png` — basta metterli in `DATA.EDIFICI` con quei nomi e
+   questa funzione non viene più chiamata. */
+const rovinaCache = {}, rovinaDaCui = {};
+A.rovina = function(kind){
+  const vero = A.edificio(kind) || A.building(kind, {});
+  if(!vero) return null;
+  /* La cache si ricorda DA QUALE immagine è nata: il PNG arriva qualche
+     fotogramma dopo l'inizio, e una cache riempita prima terrebbe per
+     sempre la rovina fatta col disegno in codice. È la stessa trappola
+     delle icone. */
+  if(rovinaCache[kind] && rovinaDaCui[kind] === vero) return rovinaCache[kind];
+  const W0 = vero.width, H0 = vero.height;
+  const H = Math.round(H0 * 0.46);
+  const rotto = cv(W0, H0), rx = rotto.getContext('2d');
+  rx.drawImage(vero, 0, 0);
+  /* Il morso: tutto quello che sta sopra alla linea sparisce. La linea
+     oscilla, con passi disuguali — a passo fisso viene una merlatura,
+     che sembra un castello e non una rovina. */
+  rx.globalCompositeOperation = 'destination-out';
+  rx.beginPath();
+  rx.moveTo(-4, -4);
+  const base = H0 - H;
+  for(let x2 = 0; x2 <= W0 + 12; x2 += 6 + ((hsh(x2, 3, 517) * 10) | 0)){
+    rx.lineTo(x2, base + (hsh(x2, 7, 233) - 0.45) * H * 0.44);
+  }
+  rx.lineTo(W0 + 8, -4); rx.closePath(); rx.fill();
+  /* E i buchi: un'asse che manca, un vetro saltato. Senza, il taglio si
+     legge come uno sprite ritagliato male invece che come una cosa
+     rotta — e uno sprite ritagliato male e' un difetto, non un
+     racconto. Stanno nella meta' alta di quel che resta, perche' e' da
+     li' che una cosa comincia a cedere. */
+  for(let i = 0; i < 7; i++){
+    const bx = W0 * (0.06 + hsh(i, 11, 611) * 0.86);
+    const by = base + H * (0.05 + hsh(i, 12, 612) * 0.45);
+    const bw = W0 * (0.04 + hsh(i, 13, 613) * 0.07);
+    const bh = H  * (0.06 + hsh(i, 14, 614) * 0.12);
+    rx.beginPath(); rx.ellipse(bx, by, bw, bh, 0, 0, 6.3); rx.fill();
+  }
+  rx.globalCompositeOperation = 'source-over';
+
+  const c = cv(W0, H), x = c.getContext('2d');
+  x.drawImage(rotto, 0, -(H0 - H));
+  /* Abbandonato vuol dire scolorito, non grigio: `saturation` toglie
+     tinta e lascia stare la luce, quindi il legno resta legno. */
+  x.globalCompositeOperation = 'saturation';
+  x.globalAlpha = 0.55; x.fillStyle = '#808080'; x.fillRect(0, 0, W0, H);
+  x.globalCompositeOperation = 'multiply';
+  x.globalAlpha = 0.22; x.fillStyle = '#7f8f6a'; x.fillRect(0, 0, W0, H);   // muschio
+  /* E si rimette la maschera. Le due tinte qui sopra hanno un modo di
+     fondersi, ma si compongono lo stesso come qualunque altro disegno:
+     dove sotto non c'era niente, il riempimento resta. Senza questa
+     riga la rovina si porta dietro il suo rettangolo grigio, che a
+     schermo si vede benissimo — misurato guardandolo. */
+  x.globalCompositeOperation = 'destination-in';
+  x.globalAlpha = 1;
+  x.drawImage(rotto, 0, -(H0 - H));
+  x.globalCompositeOperation = 'source-over';
+  /* E l'erba che se l'è ripresa: davanti al basamento, dove il disegno
+     finisce, così la rovina non poggia su un bordo netto. */
+  for(let i = 0; i < 22; i++){
+    const gx = (hsh(i, 1, 401) * W0) | 0;
+    const gh = 5 + ((hsh(i, 2, 402) * 9) | 0);
+    const gy = H - 2 - ((hsh(i, 3, 403) * 5) | 0);
+    const col = hsh(i, 4, 404) > 0.5 ? '#5f8a3c' : '#4a7030';
+    px(x, gx, gy - gh, 2, gh, col);
+    px(x, gx + 2, gy - (gh >> 1), 2, gh >> 1, col);
+  }
+  rovinaCache[kind] = c; rovinaDaCui[kind] = vero;
+  return c;
+};
+
 A.building = function(kind, opt){
   opt = opt||{};
   const key='b|'+kind+'|'+(opt.lit?1:0)+'|'+(opt.season||'')+'|'+(opt.liv||0);
@@ -2113,6 +2200,12 @@ A.building = function(kind, opt){
     case 'pollaio':   c = bPollaio(opt); break;
     case 'serra':     c = bSerra(opt); break;
     case 'capanna':   c = bCapanna(opt); break;
+    /* Le rovine passano di qui e non da un ramo loro: cosi' chiunque
+       chieda un edificio per nome — il renderer, l'ombra, il controllo
+       sulle proporzioni in world.js — le trova senza sapere che sono
+       fatte in un altro modo. */
+    case 'rovina_pollaio': return A.rovina('pollaio');
+    case 'rovina_serra':   return A.rovina('serra');
     default:          c = bCasa(opt);
   }
   objCache[key]=c;
