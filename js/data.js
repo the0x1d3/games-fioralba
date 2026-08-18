@@ -1827,14 +1827,16 @@ D.ARREDI_IN_ATTESA = {};
 
    Chi non è in elenco continua a essere disegnato in codice, ed è lo
    stesso patto degli arredi: `ART.icon` ripiega da sé. */
-D.ICONE = {
-  zappa:        { file:'zappa.png',        w:128, h:128 },
-  annaffiatoio: { file:'annaffiatoio.png', w:128, h:128 },
-  ascia:        { file:'ascia.png',        w:128, h:128 },
-  piccone:      { file:'piccone.png',      w:128, h:128 },
-  falce:        { file:'falce.png',        w:128, h:128 },
-  canna:        { file:'canna.png',        w:128, h:128 },
-  arco:         { file:'arco.png',         w:128, h:128 },
+/* Le icone normali si chiamano come il loro oggetto e sono tutte
+   128×128, quindi l'elenco è di NOMI e la riga la costruisce il ciclo:
+   di icone da disegnare ce ne sono 136 in tutto, e centotrentasei righe
+   copiate una uguale all'altra sono centotrentasei occasioni di
+   sbagliare una misura senza che si veda. Aggiungerne una è aggiungere
+   un nome qui. */
+const ICONE = ['zappa','annaffiatoio','ascia','piccone','falce','canna','arco'];
+D.ICONE = {};
+for(const id of ICONE) D.ICONE[id] = { file:id+'.png', w:128, h:128 };
+Object.assign(D.ICONE, {
   /* Questi due hanno GIÀ un PNG, ma è un altro disegno: `cartello.png` e
      `spaventapasseri.png` sono come stanno nel mondo — appoggiati per
      terra, alti una casella e mezza sopra un'impronta di una. L'icona è
@@ -1845,7 +1847,7 @@ D.ICONE = {
      lo sprite del mondo. */
   cartello:        { file:'cartello-icona.png',        w:128, h:128 },
   spaventapasseri: { file:'spaventapasseri-icona.png', w:128, h:128 }
-};
+});
 
 /* LA VEGETAZIONE DISEGNATA A MANO — alberi, erbaccia, ceppo.
 
