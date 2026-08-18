@@ -1833,7 +1833,33 @@ D.ARREDI_IN_ATTESA = {};
    copiate una uguale all'altra sono centotrentasei occasioni di
    sbagliare una misura senza che si veda. Aggiungerne una è aggiungere
    un nome qui. */
-const ICONE = ['zappa','annaffiatoio','ascia','piccone','falce','canna','arco'];
+/* L'ordine è quello di `D.ITEMS`, che è anche quello del foglio da cui
+   sono state ritagliate: così le due cose si confrontano riga per riga
+   senza doverle rimettere in fila. */
+const ICONE = [
+  'zappa', 'annaffiatoio', 'ascia', 'piccone', 'falce', 'canna',
+  'arco', 'legna', 'pietra', 'fibra', 'argilla', 'carbone',
+  'linfa', 'carne', 'pelle', 'corno_cervo', 'uovo', 'uovo_oro',
+  'miele', 'latte', 'rame', 'ferro', 'oro', 'lingotto_rame',
+  'lingotto_ferro', 'lingotto_oro', 'quarzo', 'ametista', 'gemma_luna', 'geode',
+  'cipolla_selvatica', 'dente_leone', 'viola', 'mora', 'erba_dolce', 'lavanda',
+  'fungo_porcino', 'nocciola', 'melagrana', 'bacca_inverno', 'conchiglia', 'tellina',
+  'granchio', 'radice_gelata', 'fiocco_cristallo', 'trota', 'carpa', 'persico',
+  'luccio', 'anguilla', 'storione', 'temolo', 'pesce_sole', 'pesce_luna',
+  'gambero', 'branzino', 'orata', 'sgombro', 'polpo', 'cernia',
+  'pesce_lanterna', 'ricciola', 'scarpa_vecchia', 'alga', 'lattina', 'concime',
+  'concime_acqua', 'sentiero', 'assi', 'lastre', 'cotto', 'zolla',
+  'recinto', 'cancelletto', 'lume', 'cassa', 'barattoliera', 'botte',
+  'fornace', 'arnia', 'vaso_lucciole', 'zuppa_contadina', 'spezzatino', 'frittata',
+  'insalata_orto', 'torta_zucca', 'crostata', 'polenta', 'pesce_arrosto', 'pane_miele',
+  'tisana', 'brace_primavera', 'brace_estate', 'brace_autunno', 'brace_inverno', 'medaglione',
+  'gancio_lanterna', 'gallina', 'rapa', 'seme_rapa', 'patata', 'seme_patata',
+  'spinacio', 'seme_spinacio', 'fragola', 'seme_fragola', 'narciso', 'seme_narciso',
+  'pomodoro', 'seme_pomodoro', 'mais', 'seme_mais', 'girasole', 'seme_girasole',
+  'melone', 'seme_melone', 'peperone', 'seme_peperone', 'zucca', 'seme_zucca',
+  'uva', 'seme_uva', 'cavolo', 'seme_cavolo', 'melanzana', 'seme_melanzana',
+  'mirtillo', 'seme_mirtillo', 'radice_inverno', 'seme_radice_inverno', 'cristallia', 'seme_cristallia'
+];
 D.ICONE = {};
 for(const id of ICONE) D.ICONE[id] = { file:id+'.png', w:128, h:128 };
 Object.assign(D.ICONE, {
@@ -1844,9 +1870,20 @@ Object.assign(D.ICONE, {
      come sono gli attrezzi. Da qui i due file col suffisso, e da qui il
      prefisso `icona:` con cui le chiede `ART.icon`: il caricatore tiene
      le immagini per id, e senza distinguerle nello zaino sarebbe finito
-     lo sprite del mondo. */
+     lo sprite del mondo.
+
+     `forno` e `lanterna` ci sono cascati per la stessa ragione ma da
+     un'altra strada: l'oggetto si chiama così e il file dell'arredo
+     pure — `forno.png` è il forno della cucina, `lanterna.png` è il
+     lume a muro — e l'esportazione delle icone li ha sovrascritti. Se
+     n'è accorto il controllo sulle misure, che li ha trovati 128×128
+     dove la stanza ne vuole 96×96 e 48×96. Il nome dell'oggetto non
+     basta a fare il nome del file, quando lo stesso oggetto ha due
+     disegni. */
   cartello:        { file:'cartello-icona.png',        w:128, h:128 },
-  spaventapasseri: { file:'spaventapasseri-icona.png', w:128, h:128 }
+  spaventapasseri: { file:'spaventapasseri-icona.png', w:128, h:128 },
+  forno:           { file:'forno-icona.png',           w:128, h:128 },
+  lanterna:        { file:'lanterna-icona.png',        w:128, h:128 }
 });
 
 /* LA VEGETAZIONE DISEGNATA A MANO — alberi, erbaccia, ceppo.

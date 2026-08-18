@@ -57,10 +57,36 @@ Se la casella cambia va riesportato tutto, e per farlo servono i
 sorgenti: si rimettono in una cartella `sprite-new/` (che il
 `.gitignore` tiene fuori dal repo) e si rifà il giro descritto qui.
 
-Le **icone degli attrezzi** — `zappa`, `annaffiatoio`, `ascia`,
-`piccone`, `falce`, `canna`, `arco` — fanno eccezione a tutta questa
-tabella: non stanno nel mondo, stanno nelle finestre, e in caselle non
-si misurano. Sono **128×128** e le dichiara `DATA.ICONE`.
+Le **icone dello zaino** — tutte e **136**, cioè una per ogni voce di
+`DATA.ITEMS` — fanno eccezione a tutta questa tabella: non stanno nel
+mondo, stanno nelle finestre, e in caselle non si misurano. Sono
+**128×128** e le dichiara `DATA.ICONE`, che è un elenco di NOMI: il
+file si chiama come l'oggetto, e aggiungerne una è aggiungere un nome.
+
+Sono state ritagliate da un foglio solo, e tre cose vanno sapute perché
+si rifarà:
+
+- **una scala sola per tutte.** Ritagliando ognuna sul suo contenuto e
+  portandola a riempire il quadrato, una fragola verrebbe grande quanto
+  una zucca. Nel foglio le proporzioni fra un oggetto e l'altro ci sono
+  già, e la scala si prende dal disegno più grande.
+- **le scritte sotto le icone vanno tolte, e non sono rade.** Sono dieci
+  per riga e messe insieme fanno una banda densa quanto le icone:
+  cercarle come «righe con pochi pixel» non funziona. Sono però testo,
+  quindi alte uguali in tutte le righe — 15-17 pixel — e si tagliano
+  contando dal fondo.
+- **le schegge dei vicini.** Un'icona che sborda dal suo riquadro entra
+  in quello accanto. Si riconoscono perché toccano il bordo della
+  finestra e sono piccole; un pezzo vero — un chicco d'uva staccato, una
+  nocciola — o è grande o sta dentro.
+
+**Il nome dell'oggetto non basta a fare il nome del file**, e quattro lo
+dimostrano: `cartello`, `spaventapasseri`, `forno` e `lanterna` hanno
+DUE disegni — quello nel mondo e l'icona — e il file dell'icona prende
+il suffisso `-icona`. Le prime due si sapevano; le altre due le ha
+trovate il controllo, dopo che l'esportazione aveva sovrascritto il
+forno della cucina con la sua icona. Adesso c'è un controllo apposta:
+due tabelle non possono dichiarare lo stesso file.
 
 Perché 128 e non 64: la stessa icona si mostra a misure diverse in giro
 per il gioco — 22 px nella scheda delle abilità, 40 nello zaino, 42 nel

@@ -2817,6 +2817,31 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
       problemi.push('il santuario disegnato a mano vuole il punto della lanterna: senza, accenderla non si vede');
   }
 
+  /* DUE TABELLE NON POSSONO RIVENDICARE LO STESSO FILE.
+
+     È successo davvero, e in silenzio: le icone dello zaino si chiamano
+     come il loro oggetto, quindi l'icona di «forno» voleva
+     `forno.png` — che però era già il forno della cucina, in
+     `DATA.ARREDI`. L'esportazione l'ha sovrascritto e in cucina è
+     comparsa un'icona da 128 al posto di un mobile da 96.
+
+     Quella volta se n'è accorto il controllo sulle misure, ma per
+     fortuna: se i due disegni fossero stati della stessa misura,
+     sarebbe passato liscio e ci si sarebbe accorti guardando la stanza.
+     Qui la domanda si fa diretta — chi altro dichiara questo file? — e
+     non dipende dalle misure. Chi ha davvero due disegni usa un nome
+     diverso, come `cartello.png` e `cartello-icona.png`. */
+  const rivendica = {};
+  const dichiara = (chi, file) => { if (file) (rivendica[file] = rivendica[file] || []).push(chi); };
+  for (const nome of ['ARREDI', 'ICONE', 'EDIFICI', 'VEGETAZIONE', 'NPC_FOGLI', 'OMINO_ATTREZZI'])
+    for (const id in (DATA[nome] || {})) dichiara(`DATA.${nome}.${id}`, DATA[nome][id].file);
+  for (const nome of ['OMINO', 'TERRENI', 'MINERALI'])
+    if (DATA[nome]) dichiara(`DATA.${nome}`, DATA[nome].file);
+  for (const f in rivendica)
+    if (rivendica[f].length > 1)
+      problemi.push(`img/${f} è dichiarato da ${rivendica[f].length} tabelle — ` +
+                    rivendica[f].join(', ') + ' — e l’ultimo che lo esporta cancella gli altri');
+
   /* Un file in img/ che non usa nessuno è peso morto scaricato da chi
      gioca. Non basta però dire «toglilo»: qualcuno può essere disegnato
      e in attesa di poter entrare, e allora la risposta sta in
