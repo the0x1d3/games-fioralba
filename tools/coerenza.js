@@ -2765,10 +2765,18 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
     for (const id in DATA.EDIFICI) {
       const E = DATA.EDIFICI[id];
       usati.add(E.file);
-      if (!IMPRONTE[id]) { problemi.push(`DATA.EDIFICI ha «${id}», che non è un edificio del mondo`); continue; }
-      if (E.w !== IMPRONTE[id] * 64)
-        problemi.push(`img/${E.file} è dichiarato largo ${E.w} ma «${id}» occupa ${IMPRONTE[id]} caselle, ` +
-                      `cioè ${IMPRONTE[id]*64}: con una scala diversa da 1 il disegno si ricampiona`);
+      /* `casa_1` è la casa ampliata: stesso edificio, stessa impronta,
+         disegno diverso. Il livello si stacca dalla chiave e il resto
+         del controllo vale identico — anzi DEVE valere, perché una
+         variante larga diversamente si ricampionerebbe e basterebbe
+         costruire l'ampliamento per accorgersene. */
+      const [base, liv] = id.split('_');
+      if (liv !== undefined && !/^\d+$/.test(liv))
+        problemi.push(`DATA.EDIFICI ha «${id}»: dopo il trattino basso ci va il livello, un numero`);
+      if (!IMPRONTE[base]) { problemi.push(`DATA.EDIFICI ha «${id}», che non è un edificio del mondo`); continue; }
+      if (E.w !== IMPRONTE[base] * 64)
+        problemi.push(`img/${E.file} è dichiarato largo ${E.w} ma «${id}» occupa ${IMPRONTE[base]} caselle, ` +
+                      `cioè ${IMPRONTE[base]*64}: con una scala diversa da 1 il disegno si ricampiona`);
       const f = path.join(dir, E.file);
       if (!fs.existsSync(f)) { problemi.push(`DATA.EDIFICI vuole img/${E.file}, che non c'è`); continue; }
       const b = fs.readFileSync(f);
@@ -2776,13 +2784,16 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
       const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
       if (w !== E.w || h !== E.h)
         problemi.push(`img/${E.file} è ${w}×${h} ma DATA.EDIFICI dice ${E.w}×${E.h}`);
-      if (prop[id] !== undefined) {
+      if (prop[base] !== undefined) {
         const mio = E.h / E.w;
-        if (prop[id] < mio - 0.005)
-          problemi.push(`PROPORZIONI.${id} è ${prop[id]} ma il disegno a mano arriva a ` +
+        if (prop[base] < mio - 0.005)
+          problemi.push(`PROPORZIONI.${base} è ${prop[base]} ma il disegno «${id}» arriva a ` +
                         `${Math.round(mio*1000)/1000}: sopra al tetto si camminerebbe dentro`);
-        if (prop[id] > mio + 0.08)
-          problemi.push(`PROPORZIONI.${id} è ${prop[id]} contro ${Math.round(mio*1000)/1000} del disegno ` +
+        /* Il tetto invisibile si misura sulla voce BASE: una variante più
+           bassa è normale (la casa ampliata lo è), è la base che non deve
+           lasciare muro per niente. */
+        if (!liv && prop[base] > mio + 0.08)
+          problemi.push(`PROPORZIONI.${base} è ${prop[base]} contro ${Math.round(mio*1000)/1000} del disegno ` +
                         'a mano: più di così è muro invisibile, e si nota');
       }
       /* I riquadri della luce stanno DENTRO allo sprite. Uno fuori non

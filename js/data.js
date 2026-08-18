@@ -2030,6 +2030,18 @@ D.EDIFICI = {
   pollaio:   { file:'pollaio.png',   w:320, h:288,
                finestre:[[0.619,0.597,0.075,0.087]] },
   serra:     { file:'serra.png',     w:384, h:329 },
+  /* LE VARIANTI DI LIVELLO stanno qui in mezzo alle altre, con la chiave
+     `tipo_liv`, e non annidate dentro alla voce base: `IMG.precarica`
+     scorre questo oggetto per sapere cosa scaricare, e una voce annidata
+     non la vedrebbe — il file resterebbe a terra e la casa ampliata
+     tornerebbe al disegno in codice senza dire niente. Chi le cerca è
+     `ART.edificio(tipo, liv)`, che prova `tipo_liv` e ripiega su `tipo`:
+     un livello senza disegno suo tiene quello di prima invece di
+     sparire. */
+  casa_1:    { file:'casa-ampliata.png', w:448, h:381, fumo:[0.785, 0.02],
+               finestre:[[0.482,0.283,0.080,0.089],[0.188,0.323,0.054,0.063],
+                         [0.158,0.638,0.083,0.102],[0.621,0.688,0.056,0.073],
+                         [0.799,0.690,0.100,0.108]] },
   santuario: { file:'santuario.png', w:384, h:407,
                lanterna:[0.499,0.560],
                nicchie:[[0.169,0.835],[0.319,0.835],[0.664,0.835],[0.824,0.835]] }

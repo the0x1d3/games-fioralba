@@ -2012,15 +2012,34 @@ function window4(x, wx, wy, lit, u){
    Non passa nemmeno da una cache di tele, perché non ce n'è da
    costruire — `IMG.prendi` torna sempre lo stesso oggetto Image.
 
-   NON prende `opt`. Notte, livello e stagione non cambiano il file: la
-   luce delle finestre la disegna sopra `render.js`, e finché un
-   edificio ha un disegno solo quel disegno vale per tutti i suoi stati.
-   Se un giorno arriva `casa-ampliata.png`, la variante si sceglie qui e
-   il resto del gioco non se ne accorge. */
+   La notte non cambia il file — la luce delle finestre la disegna sopra
+   `render.js` — ma il LIVELLO sì: casa tua ampliata è un'altra casa, con
+   la falda in più e cinque finestre invece di due. Si cerca `tipo_liv` e
+   si ripiega su `tipo`, così un livello che il disegno non ha tiene
+   quello di prima invece di sparire — che è lo stesso patto di
+   `IMG.prendi`, un gradino più in là. */
 const CHIAVE_EDIFICIO = 'ed:';
-A.edificio = function(kind){
-  if(!window.IMG || !window.DATA || !DATA.EDIFICI || !DATA.EDIFICI[kind]) return null;
+A.edificio = function(kind, liv){
+  if(!window.IMG || !window.DATA || !DATA.EDIFICI) return null;
+  if(liv){
+    const suo = A.datoEdificio(kind, liv);
+    if(suo) { const i = IMG.prendi(CHIAVE_EDIFICIO + kind + '_' + liv); if(i) return i; }
+  }
+  if(!DATA.EDIFICI[kind]) return null;
   return IMG.prendi(CHIAVE_EDIFICIO + kind);
+};
+
+/* Quale voce di `DATA.EDIFICI` descrive quello che si vede davvero.
+   Serve a chi disegna la luce e a chi accende le luci: il riquadro di
+   una finestra della casa ampliata non c'entra niente con quello della
+   casa base, e prenderlo dalla voce sbagliata mette una macchia calda
+   sul muro. Torna null se non c'è disegno a mano, che è il segnale di
+   lasciar perdere e usare la facciata in codice. */
+A.datoEdificio = function(kind, liv){
+  if(!window.DATA || !DATA.EDIFICI) return null;
+  if(liv && DATA.EDIFICI[kind + '_' + liv] && window.IMG &&
+     IMG.prendi(CHIAVE_EDIFICIO + kind + '_' + liv)) return DATA.EDIFICI[kind + '_' + liv];
+  return DATA.EDIFICI[kind] || null;
 };
 
 A.building = function(kind, opt){

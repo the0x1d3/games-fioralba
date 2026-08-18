@@ -296,8 +296,15 @@ W.verificaProporzioni = function(){
        dall'immagine apposta: `DATA.EDIFICI` dice a che misura il file è
        stato esportato, e quel numero c'è anche prima che il file
        arrivi — che è l'unico momento in cui questa domanda conta. */
-    const E = (typeof DATA !== 'undefined' && DATA.EDIFICI) ? DATA.EDIFICI[kind] : null;
-    if(E && E.w) alto = Math.max(alto, E.h / E.w);
+    if(typeof DATA !== 'undefined' && DATA.EDIFICI)
+      for(const id in DATA.EDIFICI){
+        /* Anche le varianti di livello: `casa_1` è la casa ampliata, e se
+           un giorno una variante venisse più alta della base sarebbe lei
+           a dover stare dentro al muro. */
+        if(id !== kind && id.indexOf(kind + '_') !== 0) continue;
+        const E = DATA.EDIFICI[id];
+        if(E && E.w) alto = Math.max(alto, E.h / E.w);
+      }
     if(alto && (PROPORZIONI[kind] < alto - 0.005 || PROPORZIONI[kind] > alto + 0.08))
       scarti.push(kind+': la tabella dice '+PROPORZIONI[kind]+', il disegno arriva a '+(Math.round(alto*1000)/1000));
   }

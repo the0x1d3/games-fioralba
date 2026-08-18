@@ -3174,7 +3174,7 @@ G.luci = function(){
        la sera. Prima decideva `Math.random()`, che qui gira a ogni
        fotogramma: sessanta monetine al secondo, cioè uno sfarfallio. */
     if(e.azione==='chiuso' && ART.hsh(e.x, e.y + (G.giorno||0), 771) > 0.5) continue;
-    const E = (DATA.EDIFICI && ART.edificio(e.kind)) ? DATA.EDIFICI[e.kind] : null;
+    const E = ART.edificio(e.kind, e.liv) ? ART.datoEdificio(e.kind, e.liv) : null;
     if(E && (E.finestre || E.fuoco || E.nicchie || E.lanterna)){
       const bx = e.x*T, by = (e.y+e.h)*T - E.h;
       const luce = (f, r, i) => out.push({ x: bx + (f[0]+f[2]/2)*E.w, y: by + (f[1]+f[3]/2)*E.h,

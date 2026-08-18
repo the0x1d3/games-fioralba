@@ -129,10 +129,19 @@ basamento, e sono vuote — la brace è luce.
 
 **Cosa manca ancora**, e va disegnato:
 
-| serve | perché |
-|-------|--------|
-| `casa` ampliata | con `casa2` il tetto diventa viola e spunta la veranda; adesso il disegno è lo stesso ai due livelli |
-| le varianti innevate | il gioco non le ha mai avute; il set di riferimento le mostra ma a un quinto dei pixel che servono |
+**Le varianti di livello** hanno la chiave `tipo_liv` e stanno in mezzo alle
+altre, non annidate: `IMG.precarica` scorre l'oggetto per sapere cosa
+scaricare, e una voce annidata resterebbe a terra senza dire niente.
+`ART.edificio(tipo, liv)` prova `tipo_liv` e ripiega su `tipo`, così un
+livello senza disegno suo tiene quello di prima. Per adesso ce n'è una:
+`casa_1`, la casa ampliata di `casa2` — più grande, con la falda in più e
+cinque finestre invece di due.
+
+**Cosa manca ancora**, e va disegnato: le **varianti innevate**. Il gioco non
+le ha mai avute — nessuna delle facciate in codice guarda `opt.season` — e i
+disegni ci sono solo per la casa ampliata (`Upgrade Casa 03` e `04`). Per
+farne una stagione servono tutti e nove, o d'inverno metà paese avrebbe la
+neve sul tetto e l'altra metà no.
 
 
 ## Come si allinea una camminata
