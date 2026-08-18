@@ -1321,15 +1321,21 @@ function vegSprite(id, chiave, season){
     for(const k in vegCelle) if(k.indexOf(id+'|') === 0) delete vegCelle[k];
     vegDaCui[id] = img;
   }
-  let col = 0;
-  if(V.stagionale){
+  let col = 0, r = riga;
+  if(V.colonne){
+    /* Foglio impaginato a griglia invece che a righe: l'indice dichiarato
+       in `righe` è il numero della cella, e da lì si ricavano riga e
+       colonna. Serve ai quindici raccolti selvatici, che in una colonna
+       sola avrebbero fatto un PNG alto 960 e largo 64. */
+    col = r % V.colonne; r = (r / V.colonne) | 0;
+  } else if(V.stagionale){
     col = DATA.SEASONS.findIndex(s => s.id === season);
     if(col < 0) col = 0;
   }
-  const key = id+'|'+riga+'|'+col;
+  const key = id+'|'+r+'|'+col;
   if(vegCelle[key]) return vegCelle[key];
   const c = cv(V.w, V.h);
-  c.getContext('2d').drawImage(img, col*V.w, riga*V.h, V.w, V.h, 0, 0, V.w, V.h);
+  c.getContext('2d').drawImage(img, col*V.w, r*V.h, V.w, V.h, 0, 0, V.w, V.h);
   vegCelle[key] = c;
   return c;
 }
@@ -1740,6 +1746,10 @@ A.weed = function(season,v){
 };
 
 A.forage = function(itemId, v){
+  /* Il disegno a mano, se c'e. Come per la vegetazione: una variante
+     sola, quindi i quattro `v` pescano la stessa cella. */
+  const aMano = vegSprite('foraggio', itemId, null);
+  if(aMano) return aMano;
   const key='for|'+itemId+'|'+v;
   if(objCache[key]) return objCache[key];
   const c=tela(32,32), x=c.getContext('2d');

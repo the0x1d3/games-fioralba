@@ -1875,7 +1875,30 @@ D.VEGETAZIONE = {
   alberi:   { file:'veg-alberi.png',   w:192, h:224, stagionale:true,
               righe:{ 'pino|2':0, 'quercia|2':1, 'betulla|2':2, 'quercia|0':3, 'quercia|1':4 } },
   erbaccia: { file:'veg-erbaccia.png', w:64,  h:64,  stagionale:true,  righe:{ '*':0 } },
-  ceppo:    { file:'veg-ceppo.png',    w:80,  h:64,  stagionale:false, righe:{ '*':0 } }
+  ceppo:    { file:'veg-ceppo.png',    w:80,  h:64,  stagionale:false, righe:{ '*':0 } },
+  /* I quindici raccolti selvatici, uno per cella. Non hanno stagione
+     nel disegno — la stagione decide se ne trovi, non come sono fatti —
+     quindi qui le righe sono i raccolti e la colonna e sempre la zero.
+     Il foglio pero e impaginato 5x3, perche 15 celle in colonna sarebbero
+     un PNG alto 960 e stretto 64: si legge peggio e comprime peggio. Chi
+     lo ritaglia usa `w`, `h` e `colonne`. */
+  foraggio: { file:'foraggio.png',     w:64,  h:64,  stagionale:false, colonne:5,
+              righe:{
+    cipolla_selvatica:0,
+    dente_leone:1,
+    viola:2,
+    mora:3,
+    erba_dolce:4,
+    lavanda:5,
+    conchiglia:6,
+    tellina:7,
+    granchio:8,
+    fungo_porcino:9,
+    nocciola:10,
+    melagrana:11,
+    bacca_inverno:12,
+    radice_gelata:13,
+    fiocco_cristallo:14 } }
 };
 
 /* ===================================================================

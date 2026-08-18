@@ -368,7 +368,10 @@ interface FioData {
    * in elenco resta disegnato in codice.
    */
   VEGETAZIONE: Record<string, { file: string; w: number; h: number;
-                                stagionale: boolean; righe: Record<string, number> }>;
+                                stagionale: boolean;
+                                /** Foglio a griglia: l'indice in `righe` è il numero di cella. */
+                                colonne?: number;
+                                righe: Record<string, number> }>;
   OMINO_ATTREZZI: Record<string, { file: string; w: number; h: number;
                                    fotogrammi: number; righe: Record<string, number> }>;
   /** Coefficienti dei bonus per abilità: li leggono gioco e scheda. */

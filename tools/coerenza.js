@@ -2614,13 +2614,24 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
     const b = fs.readFileSync(f);
     if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) { problemi.push(`img/${V.file} non è un PNG`); continue; }
     const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
-    const colonne = V.stagionale ? DATA.SEASONS.length : 1;
     const ultima = Math.max(...Object.values(V.righe));
+    /* Tre impaginati possibili, e vanno distinti o il conto non torna:
+       a griglia (`colonne`), a stagioni, o una colonna sola. */
+    const colonne = V.colonne || (V.stagionale ? DATA.SEASONS.length : 1);
+    const righeAttese = V.colonne ? Math.ceil((ultima + 1) / V.colonne) : ultima + 1;
     if (w !== V.w * colonne)
       problemi.push(`img/${V.file} è largo ${w} ma «${id}» vuole ${colonne} colonne da ${V.w}, cioè ${V.w*colonne}`);
-    if (h !== (ultima + 1) * V.h)
-      problemi.push(`img/${V.file} è alto ${h} ma «${id}» arriva alla riga ${ultima}, cioè ${(ultima+1)*V.h}`);
-    for (const k in V.righe) {
+    if (h !== righeAttese * V.h)
+      problemi.push(`img/${V.file} è alto ${h} ma «${id}» ne vuole ${righeAttese} righe da ${V.h}, cioè ${righeAttese*V.h}`);
+    /* E per i fogli a griglia: ogni chiave dev'essere un oggetto vero, se
+       no si ritaglia una cella vuota e il raccolto sparisce dal bosco. */
+    if (V.colonne) for (const k in V.righe)
+      if (k !== '*' && !DATA.ITEMS[k])
+        problemi.push(`«${id}» ha la cella «${k}», che fra gli oggetti non c'è`);
+    /* Solo il foglio degli alberi ha le chiavi `tipo|stadio`: gli altri
+       le hanno di altra forma, e prima questo controllo le rifiutava
+       tutte dicendo che un raccolto selvatico non è un albero. */
+    if (id === 'alberi') for (const k in V.righe) {
       if (k === '*') continue;
       const [tipo, stadio] = k.split('|');
       if (!['pino','quercia','betulla'].includes(tipo))
