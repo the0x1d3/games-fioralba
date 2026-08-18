@@ -1089,7 +1089,10 @@ R.disegna = function(G){
         const suo = ART.npcSprite(n.id, n.dir, n.frame);
         if(suo){
           const dx = (px - suo.width/2)|0, dy = (py - suo.height + 2)|0;
-          sx.drawImage(FX.contorno(suo), dx-K, dy-K);
+          /* Il contorno scuro no per gli spiriti: Fiammella e una fiamma
+             che fa luce da se, e bordarla di nero la spegne. E la stessa
+             regola del ramo in codice, due righe piu sotto. */
+          if(!look.spirito) sx.drawImage(FX.contorno(suo), dx-K, dy-K);
           sx.drawImage(suo, dx, dy);
         } else {
           if(!look.spirito) sx.drawImage(FX.contorno(ART.charSprite(look, n.dir, n.frame)), (px-16*K)|0, (py-39*K)|0);

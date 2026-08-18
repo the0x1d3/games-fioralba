@@ -2001,7 +2001,13 @@ D.TERRENI = {
    alta quanto la disegna il codice — 72 pixel, non 89. In piazza stanno
    uno accanto all'altro, e uno piu alto degli altri si vede subito. */
 D.NPC_FOGLI = {
-  serafina: { file:'npc-serafina.png', w:64, h:96, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} }
+  bruno:    { file:'npc-bruno.png',       w:64, h:96, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  serafina: { file:'npc-serafina.png',    w:64, h:96, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  tobia:    { file:'npc-tobia.png',       w:64, h:96, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  marisol:  { file:'npc-marisol.png',     w:64, h:96, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  elio:     { file:'npc-elio.png',        w:64, h:96, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  eremita:  { file:'npc-eremita.png',     w:64, h:96, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  fiammella:{ file:'npc-fiammella.png',   w:64, h:96, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} }
 };
 
 /* ===================================================================
