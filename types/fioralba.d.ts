@@ -371,6 +371,8 @@ interface FioData {
                                 stagionale: boolean;
                                 /** Foglio a griglia: l'indice in `righe` è il numero di cella. */
                                 colonne?: number;
+                                /** Una riga per voce e una colonna per fase (le colture). */
+                                fasi?: number;
                                 righe: Record<string, number> }>;
   OMINO_ATTREZZI: Record<string, { file: string; w: number; h: number;
                                    fotogrammi: number; righe: Record<string, number> }>;

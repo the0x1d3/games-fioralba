@@ -2617,7 +2617,11 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
     const ultima = Math.max(...Object.values(V.righe));
     /* Tre impaginati possibili, e vanno distinti o il conto non torna:
        a griglia (`colonne`), a stagioni, o una colonna sola. */
-    const colonne = V.colonne || (V.stagionale ? DATA.SEASONS.length : 1);
+    /* Quattro impaginati, e vanno distinti o il conto non torna:
+       una colonna per FASE (`fasi`, una riga per voce), a GRIGLIA
+       (`colonne`, l'indice e il numero di cella), a STAGIONI, o una
+       colonna sola. */
+    const colonne = V.fasi || V.colonne || (V.stagionale ? DATA.SEASONS.length : 1);
     const righeAttese = V.colonne ? Math.ceil((ultima + 1) / V.colonne) : ultima + 1;
     if (w !== V.w * colonne)
       problemi.push(`img/${V.file} è largo ${w} ma «${id}» vuole ${colonne} colonne da ${V.w}, cioè ${V.w*colonne}`);
@@ -2625,6 +2629,9 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
       problemi.push(`img/${V.file} è alto ${h} ma «${id}» ne vuole ${righeAttese} righe da ${V.h}, cioè ${righeAttese*V.h}`);
     /* E per i fogli a griglia: ogni chiave dev'essere un oggetto vero, se
        no si ritaglia una cella vuota e il raccolto sparisce dal bosco. */
+    if (V.fasi) for (const k in V.righe)
+      if (k !== '*' && !DATA.CROPS[k])
+        problemi.push(`«${id}» ha la riga «${k}», che fra le colture non c'è`);
     if (V.colonne) for (const k in V.righe)
       if (k !== '*' && !DATA.ITEMS[k])
         problemi.push(`«${id}» ha la cella «${k}», che fra gli oggetti non c'è`);

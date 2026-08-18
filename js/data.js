@@ -1882,6 +1882,29 @@ D.VEGETAZIONE = {
      Il foglio pero e impaginato 5x3, perche 15 celle in colonna sarebbero
      un PNG alto 960 e stretto 64: si legge peggio e comprime peggio. Chi
      lo ritaglia usa `w`, `h` e `colonne`. */
+  /* Le colture: una riga per coltura, una colonna per fase. La quinta
+     colonna e la pianta matura, quella che si raccoglie. Il foglio NON
+     ha la zolla: quella la disegna gia la casella arata sotto, e
+     disegnarla due volte faceva due terre sovrapposte. */
+  colture: { file:'colture.png',       w:64,  h:64,  stagionale:false, fasi:5,
+             righe:{
+    rapa:0,
+    patata:1,
+    spinacio:2,
+    fragola:3,
+    narciso:4,
+    pomodoro:5,
+    mais:6,
+    girasole:7,
+    melone:8,
+    peperone:9,
+    zucca:10,
+    uva:11,
+    cavolo:12,
+    melanzana:13,
+    mirtillo:14,
+    radice_inverno:15,
+    cristallia:16 } },
   foraggio: { file:'foraggio.png',     w:64,  h:64,  stagionale:false, colonne:5,
               righe:{
     cipolla_selvatica:0,

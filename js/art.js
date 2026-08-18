@@ -1086,6 +1086,17 @@ A.face = function(key, look){
    3. COLTURE
    =================================================================== */
 A.drawCrop = function(x, cx, by, cropId, stage, nStages, sway){
+  /* Il disegno a mano, se c'e. Qui non si torna uno sprite ma si
+     DISEGNA dentro a un contesto gia raddoppiato: la cella e 64x64
+     pixel di mondo, cioe 32x32 unita di disegno, e la sua origine sta
+     a (cx-16, by-26) perche e li che `disegnaColtura` la chiama.
+     Metterla a misura piena la farebbe grande il doppio, che e la
+     solita trappola dei blocchi raddoppiati.
+
+     Il dondolio al vento resta al disegno in codice: un PNG non si
+     piega, e inclinarlo tutto — zolla compresa — si vedrebbe. */
+  const aMano = vegSprite('colture', cropId, null, stage);
+  if(aMano){ x.drawImage(aMano, cx-16, by-26, 32, 32); return; }
   const C = DATA.CROPS[cropId];
   if(!C) return;
   const fog = C.foglia, fogS = shade(fog,-0.24), fogL = shade(fog,0.16);
@@ -1309,7 +1320,7 @@ function foliageBlob(x, cx, cy, r, base, season, seme){
    del pannello di prova restituirebbe le celle vecchie.
    =================================================================== */
 const vegCelle = {}, vegDaCui = {};
-function vegSprite(id, chiave, season){
+function vegSprite(id, chiave, season, dentro){
   if(!window.IMG || !window.DATA || !DATA.VEGETAZIONE) return null;
   const V = DATA.VEGETAZIONE[id];
   if(!V) return null;
@@ -1322,7 +1333,11 @@ function vegSprite(id, chiave, season){
     vegDaCui[id] = img;
   }
   let col = 0, r = riga;
-  if(V.colonne){
+  if(V.fasi){
+    /* Una VOCE per riga, e `dentro` sceglie la colonna: sono le colture,
+       una riga per coltura e una colonna per fase. */
+    col = Math.max(0, Math.min(V.fasi-1, dentro|0));
+  } else if(V.colonne){
     /* Foglio impaginato a griglia invece che a righe: l'indice dichiarato
        in `righe` è il numero della cella, e da lì si ricavano riga e
        colonna. Serve ai quindici raccolti selvatici, che in una colonna
