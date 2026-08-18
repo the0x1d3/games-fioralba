@@ -3,8 +3,29 @@
 Un gioco di fattoria *cozy* in italiano, vista dall'alto 3/4 (stile Stardew Valley),
 che gira nel browser **senza installare niente**.
 
-Zero dipendenze, zero file di immagini o audio: **ogni sprite è disegnato in codice**
-e **ogni suono è sintetizzato con WebAudio**. Il gioco è tutto qui dentro.
+**Zero dipendenze e zero build**: si apre `index.html` e funziona. Tutti i suoni
+sono sintetizzati con WebAudio, e quasi tutto quello che si vede è disegnato in
+codice, pixel per pixel.
+
+L'eccezione sta in `img/`: alberi, arredi, attrezzi e la camminata del contadino
+sono **disegnati a mano**, a una densità che in codice non si riproduce. E sono
+un'eccezione con la rete sotto — se quella cartella non arriva, il gioco ridisegna
+l'arte in codice di sempre e resta giocabile.
+
+---
+
+## 📷 Com'è
+
+| | |
+|---|---|
+| ![Il podere](docs/schermate/podere.png) | ![Il bosco](docs/schermate/bosco.png) |
+| **Il podere.** Si zappa, si semina, si annaffia. Il gatto gira per i fatti suoi. | **Il bosco.** Alberi, cespugli e sassi cambiano con le quattro stagioni. |
+| ![Casa di Nonna Ilde](docs/schermate/casa.png) | ![Fioralba, il paese](docs/schermate/paese.png) |
+| **Casa.** Il letto per dormire, i fornelli per cucinare, la scrivania per le lettere. I mobili si spostano. | **Il paese.** Sei abitanti con una giornata loro: a quest'ora Bruno è in bottega. |
+
+![La costa](docs/schermate/costa.png)
+
+*La costa: si pesca, e ogni mattina la marea lascia qualcosa sulla battigia.*
 
 ---
 
@@ -188,28 +209,58 @@ dati del sito. Per ricominciare da zero basta **Nuova Partita**.
 
 ## 🛠️ Com'è fatto
 
+Vanilla JS, canvas 2D, un file per argomento. **L'ordine degli script in
+`index.html` conta**: `data.js` per primo, `game.js` per ultimo.
+
 ```
 index.html          impalcatura e livelli dell'interfaccia
 css/style.css       interfaccia in legno e carta
-js/data.js          colture, oggetti, ricette, personaggi, lore
-js/palette.js       i colori strutturali della valle, ritoccabili a caldo
-js/art.js           motore di pixel-art: ogni sprite disegnato in codice,
-                    raccordi fra terreni, erba animata, aiuole
-js/fx.js            vento globale, ombre proiettate, riflessi, bloom, colore
-js/audio.js         musica generata (una traccia per stagione) e suoni
-js/world.js         le quattro mappe, collisioni, respawn notturno
-js/mobs.js          fauna: sprite, comportamenti, comparsa
-js/tutorial.js      guida interattiva delle prime azioni
-js/guida.js         "Primi passi": gli obiettivi che restano a schermo
-js/demo.js          le scenette animate del "guarda come si fa"
-js/landing.js       la pagina di presentazione, popolata con la grafica del gioco
-js/render.js        camera, terreni a blocchi, profondità, luci, meteo
-js/ui.js            menu, negozi, dialoghi, diario
-js/game.js          stato, ciclo di gioco, input, sistemi
 
-tsconfig.json       type-checking (solo editor e riga di comando, nessuna build)
-types/fioralba.d.ts descrizione dei tipi dei dati e dello stato
-tools/coerenza.js   test di coerenza dei dati (ricette, mappe, missioni)
+js/data.js          colture, oggetti, ricette, abitanti, agende, lettere, sagre
+js/lingua*.js       i testi e la traduzione inglese
+js/palette.js       i colori strutturali della valle, ritoccabili a caldo
+js/art.js           gli sprite disegnati in codice, e la cache
+js/immagini.js      carica l'arte disegnata a mano, e ripiega se non arriva
+js/fx.js            vento, ombre proiettate, riflessi, contorni, colore
+js/audio.js         musica generata (una per stagione) e suoni
+js/world.js         le mappe, le collisioni, la rigenerazione notturna
+js/mobs.js          fauna e prede
+
+js/ui.js            il nocciolo dell'interfaccia: finestre, toast, dialoghi
+js/partite.js       le partite sul server: codice, elenco, sincronia
+js/diario.js        il Diario e la Mappa della valle
+js/botteghe.js      zaino, negozio, banco, fornelli, fucina, Santuario
+js/menu.js          impostazioni, «come si gioca», scenette animate
+js/demo.js          le dimostrazioni del tutorial
+js/landing.js       la pagina di presentazione
+js/titolo.js        la scena animata dietro la schermata iniziale
+js/changelog.js     cos'è cambiato, versione per versione
+
+js/salvataggio.js   localStorage, backup, esporta/importa
+js/sincronizza.js   il salvataggio sul server
+js/pesca.js         il minigioco: lancio, abboccata, lotta
+js/storie.js        la lezione di Oreste, la torta di Ilde, il Pesce Luna
+js/vicende.js       le storie del paese
+js/persona.js       zaino, resistenza, scarpe, cintura
+js/solstizio.js     atto secondo: le memorie, la verità, la veglia
+js/livelli.js       le cinque abilità e le carte di livello
+js/traguardi.js     traguardi, Collezione del Naturalista, statistiche
+js/abitanti.js      agende, cosa dicono oggi, passanti
+js/paese.js         mercato, eventi notturni, bacheca, sagre, mercante
+js/tutorial.js      la guida delle prime azioni
+js/guida.js         «Primi passi»: gli obiettivi a schermo
+js/tocco.js         i comandi per telefono e tablet
+js/render.js        il disegno di un fotogramma
+js/game.js          stato, ciclo di gioco, input, sistemi
+js/debug.js         il pannello di prova
+
+img/                l'arte disegnata a mano, e img/LEGGIMI.md che spiega
+                    come si rimpicciolisce e a che misure
+sprite-new/         i sorgenti ad alta risoluzione, che il gioco NON serve
+
+tsconfig.json       type-checking (solo editor e riga di comando)
+types/fioralba.d.ts i tipi dei dati e dello stato
+tools/coerenza.js   68 controlli su dati, mappe, misure e ordine di caricamento
 server.js           serve il gioco (sviluppo e produzione: stesso file)
 package.json        strumenti di sviluppo e avvio del server
 ```
@@ -262,11 +313,7 @@ costa meno di **1 ms**, quindi resta fluido anche su macchine modeste.
 
 ---
 
-## 🌐 Pubblicare su Vercel
-
-Il gioco è un **sito statico** (niente server, salvataggi in `localStorage`), quindi
-il piano **gratuito** di Vercel basta e avanza. Non serve installare Node: Vercel
-serve i file così come sono.
+## 🌐 Pubblicare
 
 **Su Railway:** collega il repository e non c'è altro da configurare — Railway
 trova il `package.json`, esegue `npm start` e serve il gioco. La porta la passa
@@ -279,8 +326,8 @@ tutto: il browser tiene i file in cache e riceve un `304` finché non cambiano
 davvero, così un aggiornamento non resta invisibile a nessuno. L'anteprima
 social, che non cambia mai, ha una cache lunga.
 
-> **Banda:** il gioco pesa pochissimo (nessun file immagine o audio), quindi rientra
-> comodo nei limiti del piano gratuito anche con molti giocatori.
+> **Banda:** i suoni sono sintetizzati e la maggior parte degli sprite è disegnata
+> in codice, quindi l'unico peso vero è `img/`, che sta sotto i due megabyte.
 
 ---
 
