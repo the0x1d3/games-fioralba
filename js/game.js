@@ -138,6 +138,24 @@ function init(){
        richiesta si perderebbe e nello zaino resterebbe il disegno in
        codice mentre il file si scarica lo stesso. */
     IMG.precarica(DATA.ICONE, 'icona:');    // le icone nelle finestre
+
+    /* I DUE CONTROLLI CHE VOGLIONO UN CANVAS E LE IMMAGINI ARRIVATE.
+
+       `tools/coerenza.js` gira in Node e un canvas non ce l'ha, quindi
+       queste due domande — quanto è alto un tetto, da che parte guarda
+       un abitante — si possono fare solo qui. Girano una volta sola,
+       quando non c'è più niente in volo, e scrivono in console.
+
+       E vanno chiamati: `W.verificaProporzioni` esisteva da un pezzo e
+       non lo invocava nessuno, cioè era un controllo che non ha mai
+       controllato niente. Un rilevatore spento è peggio che non averlo,
+       perché uno lo conta fra le sue reti. */
+    const controlli = ()=>{
+      if(IMG.stato().inVolo){ setTimeout(controlli, 400); return; }
+      if(WORLD.verificaProporzioni) WORLD.verificaProporzioni();
+      if(ART.verificaDirezioni) ART.verificaDirezioni();
+    };
+    setTimeout(controlli, 900);
   }
   window.addEventListener('resize', ()=>{ REND.resize(); REND.initMeteo(); });
   collegaInput();

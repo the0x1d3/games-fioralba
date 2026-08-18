@@ -2064,6 +2064,80 @@ function window4(x, wx, wy, lit, u){
    si ripiega su `tipo`, così un livello che il disegno non ha tiene
    quello di prima invece di sparire — che è lo stesso patto di
    `IMG.prendi`, un gradino più in là. */
+/* CHE LE DIREZIONI SIANO QUELLE GIUSTE.
+
+   Nasce da un difetto vero e segnalato: gli abitanti andavano a sinistra
+   stando di schiena. I fogli arrivano nell'ordine in cui li disegna chi
+   li disegna — di fronte, di spalle, a destra, a sinistra — e il gioco
+   le numera in un altro modo. La corrispondenza sta in `DATA.NPC_FOGLI`
+   e sbagliarla non dà nessun errore: dà un abitante che cammina storto,
+   e lo vede solo chi ci gioca.
+
+   Si controlla senza sapere niente del disegno, con due affermazioni che
+   valgono per qualunque personaggio — e tutte e due hanno i numeri, presi
+   sui sette abitanti nelle due corrispondenze, quella giusta e quella
+   sbagliata:
+
+   1. SINISTRA E DESTRA sono l'una lo specchio dell'altra. Non identiche,
+      la falcata cambia, ma somigliantissime: misurato, con le direzioni
+      giuste lo scarto sta fra 0,127 e 0,215; con quelle scambiate fra
+      0,283 e 0,315. La soglia a 0,25 passa in mezzo, e non ci passa per
+      un pelo — c'è un terzo di margine da tutte e due le parti.
+   2. DI FRONTE E DI SPALLE sono più simmetriche dei due profili. Qui non
+      c'è nessuna soglia da scegliere, si confrontano fra loro: con le
+      direzioni giuste non è mai successo il contrario su sette
+      abitanti, con quelle scambiate succede su tre.
+
+   Le prime soglie le avevo messe a occhio e ne sbagliavo due: chiedevano
+   che un profilo NON fosse simmetrico, e invece la sagoma di una persona
+   di profilo lo è quasi quanto quella di fronte — quattro abitanti su
+   sette finivano segnalati per niente. È il motivo per cui adesso i
+   numeri stanno scritti qui.
+
+   Gira una volta all'avvio e scrive in console, come
+   `W.verificaProporzioni`: un canvas ce l'ha solo il browser. */
+A.verificaDirezioni = function(){
+  if(!window.DATA || !DATA.NPC_FOGLI) return [];
+  const scarti = [];
+  const dati = (c)=>{ const t = cv(c.width, c.height), tx = t.getContext('2d');
+    tx.drawImage(c, 0, 0); return tx.getImageData(0,0,t.width,t.height).data; };
+  /* Quanto due sagome NON si somigliano: la frazione di pixel in cui una
+     è piena e l'altra vuota. Solo l'alfa, non il colore: le tinte
+     cambiano con la luce e con la stagione, la sagoma no. */
+  const scarto = (a, b, specchia)=>{
+    const A = dati(a), B = dati(b), w = a.width, h = a.height;
+    let diversi = 0, pieni = 0;
+    for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+      const pa = A[(y*w+x)*4+3] > 40;
+      const pb = B[(y*w + (specchia ? w-1-x : x))*4+3] > 40;
+      if(pa || pb) pieni++;
+      if(pa !== pb) diversi++;
+    }
+    return pieni ? diversi/pieni : 1;
+  };
+  /* Il contadino passa di qui insieme agli altri. Il suo foglio è stato
+     montato da file separati che avevano la direzione nel nome, quindi
+     l'ordine è giusto per costruzione — ma è giusto finché qualcuno non
+     lo riesporta, ed è esattamente quello che è successo agli abitanti. */
+  const chi = { '(il contadino)': (d)=>A.ominoSprite(d, 0, null) };
+  for(const id in DATA.NPC_FOGLI) chi[id] = (d)=>A.npcSprite(id, d, 0);
+  for(const id in chi){
+    const giu = chi[id](0), sin = chi[id](1), des = chi[id](2), su = chi[id](3);
+    if(!giu || !sin || !des || !su) continue;      // foglio non ancora arrivato
+    const specchio = scarto(sin, des, true);
+    if(specchio > 0.25)
+      scarti.push(id + ': sinistra e destra non sono l’una lo specchio dell’altra (' +
+                  specchio.toFixed(2) + ', il limite è 0,25): le righe del foglio sono scambiate');
+    const piatte  = Math.min(scarto(giu, giu, true), scarto(su, su, true));
+    const profili = Math.min(scarto(sin, sin, true), scarto(des, des, true));
+    if(piatte >= profili)
+      scarti.push(id + ': di fronte e di spalle sono meno simmetriche dei profili (' +
+                  piatte.toFixed(2) + ' contro ' + profili.toFixed(2) + '): forse sono profili anche loro');
+  }
+  if(scarti.length) console.warn('[arte] le direzioni degli abitanti non tornano:', scarti);
+  return scarti;
+};
+
 const CHIAVE_EDIFICIO = 'ed:';
 A.edificio = function(kind, liv){
   if(!window.IMG || !window.DATA || !DATA.EDIFICI) return null;

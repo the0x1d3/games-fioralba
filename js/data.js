@@ -2167,14 +2167,28 @@ D.EDIFICI = {
    centra sulla larghezza e appoggia in fondo — quindi la cella si
    allarga senza toccare niente, come gia' fatto per la camminata con
    l'attrezzo in mano. */
+/* LE RIGHE DEL FOGLIO NON SONO NELL'ORDINE DEL GIOCO, e questa è la
+   ragione per cui `righe` esiste invece di essere sottinteso.
+
+   I sette fogli arrivano nell'ordine in cui li disegna chi li disegna:
+   di fronte, di spalle, verso destra, verso sinistra. Il gioco numera le
+   direzioni in un altro modo — 0 giù, 1 sinistra, 2 destra, 3 su — e
+   metterle in fila una per una dà abitanti che camminano a sinistra
+   stando di schiena. Segnalato in partita, e si vedeva benissimo.
+
+   Prima non capitava perché i fogli venivano scritti già riordinati:
+   un riordino nascosto dentro all'esportazione, che nessuno poteva
+   leggere da qui. Adesso il foglio conserva l'ordine con cui è stato
+   disegnato e la corrispondenza sta scritta qui, dove si vede.
+   `ART.verificaDirezioni` la controlla a ogni avvio. */
 D.NPC_FOGLI = {
-  bruno:    { file:'npc-bruno.png',       w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
-  serafina: { file:'npc-serafina.png',    w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
-  tobia:    { file:'npc-tobia.png',       w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
-  marisol:  { file:'npc-marisol.png',     w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
-  elio:     { file:'npc-elio.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
-  eremita:  { file:'npc-eremita.png',     w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
-  fiammella:{ file:'npc-fiammella.png',   w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} }
+  bruno:    { file:'npc-bruno.png',       w:96, h:112, fotogrammi:4, righe:{0:0,1:3,2:2,3:1} },
+  serafina: { file:'npc-serafina.png',    w:96, h:112, fotogrammi:4, righe:{0:0,1:3,2:2,3:1} },
+  tobia:    { file:'npc-tobia.png',       w:96, h:112, fotogrammi:4, righe:{0:0,1:3,2:2,3:1} },
+  marisol:  { file:'npc-marisol.png',     w:96, h:112, fotogrammi:4, righe:{0:0,1:3,2:2,3:1} },
+  elio:     { file:'npc-elio.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:3,2:2,3:1} },
+  eremita:  { file:'npc-eremita.png',     w:96, h:112, fotogrammi:4, righe:{0:0,1:3,2:2,3:1} },
+  fiammella:{ file:'npc-fiammella.png',   w:96, h:112, fotogrammi:4, righe:{0:0,1:3,2:2,3:1} }
 };
 
 /* ===================================================================
