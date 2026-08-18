@@ -634,7 +634,19 @@ M.disegnaUno = function(sx, b, ox, oy){
   const img = M.sprite(b.tipo, b.frame, b.volo, b.col);
   const w=img.width, h=img.height;
   const scala = Math.max(0.25, 1 - b.z/(60*K));
-  FX.ombraTerra(sx, px0, py0, (w*0.28)*scala, (h*0.16)*scala, 0.22*scala);
+  /* L'OMBRA ERA TARATA SU UN PRATO CHE NON C'È PIÙ.
+
+     0,22 bastava sull'erba di prima, che era quasi piatta. L'erba
+     disegnata a mano ha dentro fili, fiori e mezze ombre: una macchia al
+     22% ci sparisce, e la bestia si legge come un adesivo appoggiato
+     sopra invece che come una cosa che sta per terra. Segnalato
+     guardando le rane in un prato.
+
+     0,42 misurato provandone quattro affiancate: a 0,32 il coniglio
+     galleggia ancora, a 0,52 sembra di sera. Per confronto, ceppi e
+     sassi la loro ombra ce l'hanno allo 0,8 della luce del sole: 0,42
+     rimette le bestie nella stessa famiglia, non oltre. */
+  FX.ombraTerra(sx, px0, py0, (w*0.33)*scala, (h*0.16)*scala, 0.42*scala);
   const dy = py0 - b.z;
   sx.drawImage(FX.contorno(img), (px0-w/2-K)|0, (dy-h+K)|0);
   sx.save();
