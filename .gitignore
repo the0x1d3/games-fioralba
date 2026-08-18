@@ -35,3 +35,12 @@ tmp/
 .env
 .env.*
 !.env.esempio
+
+# --- Fogli di lavoro delle anteprime ---
+# Immagini di servizio generate per guardare gli sprite mentre si lavora:
+# cataloghi, confronti prima/dopo, prove in gioco. Non sono arte del gioco
+# e nessuno le carica — quelle che il gioco serve stanno in `img/`, quelle
+# che il README mostra in `docs/`. Erano finite nel repo per sbaglio e
+# pesavano 19 MB.
+anteprime-npc/
+anteprime-oggetti/
