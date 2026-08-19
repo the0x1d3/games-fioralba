@@ -45,6 +45,21 @@ poi vai su <http://localhost:8123> nel browser.
 
 ---
 
+## 🛠️ Editor locale degli scenari
+
+Per rifinire le mappe senza pubblicare l'editor, fai doppio clic sul file
+corrispondente al tuo sistema operativo:
+
+- **macOS:** `avvia-editor.command`
+- **Windows:** `avvia-editor.bat`
+- **Linux/Unix:** `avvia-editor.sh`
+
+Il file avvia il server locale e apre automaticamente l'editor nel browser.
+Serve Node.js con `npm` disponibile; per chi preferisce il terminale resta
+disponibile `npm run editor`.
+
+---
+
 ## 🎮 Comandi
 
 | Tasto | Azione |

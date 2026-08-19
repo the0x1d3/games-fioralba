@@ -340,6 +340,10 @@ function applicaSalvataggio(raw){
      deserto di sabbia. */
   WORLD.ristampaPorto(G.maps.piazza);
   WORLD.ristampaCosta(G.maps.spiaggia);
+   /* Il salvataggio viene letto prima dello scenario: i ritocchi approvati
+      confrontano la base attesa e saltano le caselle che il giocatore ha
+      trasformato. `SINC.apri` aspetta il manifesto prima di arrivare qui. */
+   if(window.SCENARI) SCENARI.applica(G.maps, true);
   G.p.look = G.look;
   G.p.px = d.px||8*T+T/2;
   G.p.py = d.py||10*T+T/2;

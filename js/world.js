@@ -2140,4 +2140,103 @@ W.vicinoLibero = function(m, x, y){
   return {x,y};
 };
 
+/* ===================================================================
+   SCENARI APPROVATI
+
+   Uno scenario non è una seconda copia della mappa: è una lista di
+   ritocchi rispetto alla costruzione di questo file. Ogni ritocco può
+   dichiarare cosa c'era prima (`da`). Quando si apre una partita già
+   iniziata, il ritocco si applica solo se quella casella è ancora uguale
+   alla base attesa. Così una modifica editoriale non cancella un campo,
+   una macchina o una staccionata posata dal giocatore.
+   =================================================================== */
+ function stessoOggetto(a, b){
+   if(!a || !b) return !a && !b;
+   if(a.t !== b.t) return false;
+   if(a.kind !== undefined && a.kind !== b.kind) return false;
+   if(a.x !== undefined && a.x !== b.x) return false;
+   if(a.y !== undefined && a.y !== b.y) return false;
+   return true;
+ }
+
+ function oggettoGiocatore(o){
+   return !!(o && (o.t === 'mobile' || o.t === 'macchina'));
+ }
+
+ function copiaOggetto(o){
+   if(!o || typeof o !== 'object') return o;
+   return JSON.parse(JSON.stringify(o));
+ }
+
+ function applicaTerreno(m, voce, conservaGiocatore){
+   if(!W.dentro(m, voce.x, voce.y)) return false;
+   const i = W.idx(m, voce.x, voce.y);
+   if(voce.da !== undefined && W.terreno(m, voce.x, voce.y) !== voce.da) return false;
+   /* Il terreno arato e le colture sono sempre proprietà della partita. */
+   if(conservaGiocatore && m.suolo && m.suolo[i]) return false;
+   if(conservaGiocatore && oggettoGiocatore(m.obj[i])) return false;
+   const nuovo = ti(voce.tipo);
+   if(nuovo < 0) return false;
+   m.g[i] = nuovo;
+   return true;
+ }
+
+ function applicaOggetto(m, voce, conservaGiocatore){
+   if(!W.dentro(m, voce.x, voce.y)) return false;
+   const i = W.idx(m, voce.x, voce.y);
+   const attuale = m.obj[i];
+   if(voce.azione === 'rimuovi'){
+     if(voce.da && !stessoOggetto(attuale, voce.da)) return false;
+     if(conservaGiocatore && oggettoGiocatore(attuale)) return false;
+     m.obj[i] = null;
+     return true;
+   }
+   if(voce.azione === 'sposta'){
+     const da = voce.da || {};
+     if(!stessoOggetto(attuale, da) || (conservaGiocatore && oggettoGiocatore(attuale))) return false;
+     if(!W.dentro(m, voce.a.x, voce.a.y)) return false;
+     const arrivo = W.idx(m, voce.a.x, voce.a.y);
+     if(m.obj[arrivo] && m.obj[arrivo] !== attuale) return false;
+     m.obj[i] = null;
+     m.obj[arrivo] = attuale;
+     return true;
+   }
+   if(voce.azione === 'aggiungi'){
+     /* Un elemento di scenario nuovo non può comparire sopra una coltura
+        di una partita già avviata: quel suolo è del giocatore, non della
+        scenografia. */
+     if(attuale || (conservaGiocatore && m.suolo && m.suolo[i])) return false;
+     m.obj[i] = copiaOggetto(voce.oggetto);
+     return !!m.obj[i];
+   }
+   return false;
+ }
+
+ function firmaDeco(d){
+   return d && [d.t,d.x,d.y,d.w,d.h,d.testo].map(v=>v===undefined?'':String(v)).join('|');
+ }
+
+ W.applicaScenario = function(m, scenario, conservaGiocatore){
+   if(!m || !scenario || scenario.mappa !== m.id) return { applicati:0, saltati:0 };
+   if(scenario.w !== m.w || scenario.h !== m.h) return { applicati:0, saltati:1, errore:'misure diverse' };
+   const ritocchi = scenario.ritocchi || {};
+   let applicati = 0, saltati = 0;
+   for(const voce of (ritocchi.terreno || [])){
+     if(applicaTerreno(m, voce, conservaGiocatore)) applicati++; else saltati++;
+   }
+   for(const voce of (ritocchi.oggetti || [])){
+     if(applicaOggetto(m, voce, conservaGiocatore)) applicati++; else saltati++;
+   }
+   for(const voce of (ritocchi.decorazioni || [])){
+     if(voce.azione === 'rimuovi'){
+       const indice = m.deco.findIndex(d => firmaDeco(d) === firmaDeco(voce.da));
+       if(indice < 0) { saltati++; continue; }
+       m.deco.splice(indice, 1); applicati++;
+     } else if(voce.azione === 'aggiungi' && voce.decorazione){
+       m.deco.push(copiaOggetto(voce.decorazione)); applicati++;
+     } else saltati++;
+   }
+   return { applicati, saltati };
+ };
+
 })();

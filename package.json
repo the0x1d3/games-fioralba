@@ -10,6 +10,7 @@
     "test": "node tools/coerenza.js",
     "verifica": "npm run test && npm run check",
     "serve": "node server.js --sviluppo",
+    "editor": "node tools/scenario-editor.js",
     "start": "node server.js"
   },
   "devDependencies": {

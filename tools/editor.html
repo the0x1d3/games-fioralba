@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="editor-token" content="<!-- EDITOR_CSRF_TOKEN -->">
+<title>Editor scenari — Fioralba</title>
+<style>
+:root{font:15px/1.4 system-ui,sans-serif;color:#f8edda;background:#211810}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;grid-template-rows:auto 1fr}
+header{padding:14px 18px;background:#392315;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+h1{font-size:19px;margin:0 22px 0 0}select,button,input{font:inherit;border:1px solid #8d6745;border-radius:6px;padding:7px 9px;background:#2d2119;color:inherit}
+button{cursor:pointer}button:hover{background:#65422c}.accent{background:#b77937;border-color:#d6a362;color:#160f0a;font-weight:700}
+main{display:grid;grid-template-columns:minmax(0,1fr) 290px;min-height:0}
+#area{overflow:auto;padding:20px;display:flex;justify-content:center;align-items:flex-start}
+#tavola{image-rendering:pixelated;border:2px solid #9f764e;background:#354d31;cursor:crosshair;box-shadow:0 5px 22px #0008}
+aside{border-left:1px solid #63452f;padding:18px;overflow:auto;background:#2a1c14}
+h2{font-size:16px;margin:0 0 10px;color:#f2c982}h3{font-size:14px;margin:20px 0 7px}
+.riga{display:flex;gap:7px;align-items:center;margin:7px 0}.riga>*{min-width:0;flex:1}
+.riga button{flex:0 0 auto}.nota{color:#cdb79c;font-size:13px}.stato{padding:9px;border-radius:6px;background:#3a281c;min-height:42px}
+.legenda{display:grid;grid-template-columns:1fr 1fr;gap:5px;color:#d8c5ad;font-size:12px}.sw{display:inline-block;width:13px;height:13px;vertical-align:-2px;margin-right:4px}
+.errore{color:#ffae91}.ok{color:#b7e6aa}
+@media(max-width:800px){main{grid-template-columns:1fr}aside{border-left:0;border-top:1px solid #63452f}#area{min-height:52vh}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Editor scenari</h1>
+  <label>Mappa <select id="mappa"></select></label>
+  <button id="annulla">Ricarica base</button>
+  <button id="esporta" class="accent">Esporta bozza JSON</button>
+  <button id="approva">Approva scenario</button>
+</header>
+<main>
+  <section id="area"><canvas id="tavola"></canvas></section>
+  <aside>
+    <h2>Rifinisci lo scenario</h2>
+    <p class="nota">Clicca una casella per selezionarla. I ritocchi vengono
+    salvati come differenze: non riscrivono <code>js/world.js</code>.</p>
+    <div id="selezione" class="stato">Nessuna casella selezionata.</div>
+    <h3>Terreno</h3>
+    <div class="riga"><select id="terreno"></select><button id="posa-terreno">Applica</button></div>
+    <h3>Oggetto</h3>
+    <div class="riga"><select id="oggetto"></select><button id="aggiungi">Aggiungi</button></div>
+    <div class="riga"><button id="sposta">Sposta selezionato</button><button id="rimuovi">Rimuovi</button></div>
+    <p id="istruzioni" class="nota"></p>
+    <h3>Legenda</h3>
+    <div class="legenda"><span><i class="sw" style="background:#6e9d54"></i>erba</span><span><i class="sw" style="background:#98754a"></i>terra</span><span><i class="sw" style="background:#d3bd83"></i>sabbia</span><span><i class="sw" style="background:#4d91ad"></i>acqua</span><span><i class="sw" style="background:#9b8c73"></i>oggetto</span><span><i class="sw" style="background:#e8c36d"></i>selezione</span></div>
+    <h3>Stato</h3><div id="stato" class="stato">Caricamento…</div>
+  </aside>
+</main>
+<script src="editor.js"></script>
+</body>
+</html>

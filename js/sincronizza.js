@@ -185,6 +185,10 @@ S.nuova = async function(){
 S.apri = async function(grezzo){
   const codice = S.normalizza(grezzo);
   if(!codice) return { ok:false, errore:'Il codice non ha la forma giusta: dodici lettere e numeri.' };
+  /* Una partita già avviata merita lo stesso mondo di una nuova: aspetta
+     il piccolo manifesto degli scenari prima di ricostruire le mappe,
+     invece di aprire in silenzio la versione base se la rete è lenta. */
+  if(window.SCENARI && SCENARI.pronto) await SCENARI.pronto;
 
   const r = await chiama('GET', '/api/partita/' + codice);
   if(r.stato === 404) return { ok:false, errore:'Nessuna partita con questo codice.' };
@@ -437,6 +441,7 @@ S.daMigrare = function(){
 /* `pulisci` a false quando il salvataggio arriva da un file scelto a
    mano: quello nel browser, se c'è, non c'entra e non va buttato. */
 S.migra = async function(testo, pulisci){
+  if(window.SCENARI && SCENARI.pronto) await SCENARI.pronto;
   const esito = SALVA.applicaTesto(testo);
   if(!esito.ok) return { ok:false, errore: esito.err };
   const n = await S.nuova();

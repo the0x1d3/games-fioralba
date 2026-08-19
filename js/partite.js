@@ -152,10 +152,14 @@ U.mostraCodice = function(codice, appenaNato, poi){
 
     if(appenaNato) campoNome(body, T('Ho segnato il codice, si comincia'), n=>{
       U.chiudiModal();
-      if(poi) poi();
-      /* dopo `poi()`, che è quello che crea o apre la partita:
-         prima non ci sarebbe niente su cui scrivere il nome */
-      if(window.G){ G.nomeGiocatore = n; G.aggiornaHUD(); G.salva(); }
+      /* `poi` può dover aspettare il manifesto degli scenari prima di
+         creare G. Il nome e il primo salvataggio arrivano solo dopo:
+         prima si rischiava di scrivere la partita vecchia e poi far
+         sovrascrivere il nome dallo stato iniziale. */
+      const avvio = poi ? poi(n) : null;
+      Promise.resolve(avvio).then(()=>{
+        if(window.G){ G.nomeGiocatore = n; G.aggiornaHUD(); G.salva(); }
+      }).catch(e=>console.warn('Avvio della nuova partita fallito', e));
     });
   }, appenaNato ? { senzaChiusura:true } : undefined);
 };

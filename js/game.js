@@ -234,7 +234,7 @@ function cominciaNuova(){
      del codice chiamano tutte e due `campoNome` — perché due campi che
      si comportano quasi uguale sono peggio di uno. */
   if(!window.SINC){
-    UI.chiediNome(n=>{ nuovaPartita(); G.nomeGiocatore = n; G.aggiornaHUD(); });
+    UI.chiediNome(n=>nuovaPartita(n));
     return;
   }
   UI.attesaServer('Preparo la valle…');
@@ -248,7 +248,7 @@ function cominciaNuova(){
        chiudere una finestra senza leggerla. Qui invece la finestra del
        codice è l'ultima cosa che si vede prima della valle, non ha
        crocetta, e il suo unico pulsante fa cominciare. */
-    UI.mostraCodice(r.codice, true, ()=>nuovaPartita());
+    UI.mostraCodice(r.codice, true, n=>nuovaPartita(n));
   });
 }
 
@@ -271,9 +271,19 @@ function collegaTitolo(){
   $('#btn-howto').onclick    = ()=>{ SND.resume(); UI.comeSiGioca(); };
 }
 
-function nuovaPartita(){
+async function nuovaPartita(nome){
+  /* Il manifesto arriva da un JSON pubblico: si aspetta qui, prima di
+     creare la valle, così la prima partita non vede per un fotogramma la
+     mappa vecchia e poi quella approvata. */
+  if(window.SCENARI && SCENARI.pronto) await SCENARI.pronto;
   Object.assign(G, statoIniziale());
+  /* Il nome arriva dalla finestra che può chiamarci prima del manifesto.
+     Si assegna DOPO l'attesa, altrimenti `statoIniziale()` lo
+     riscriverebbe con «Contadino» proprio quando si parte con una rete
+     lenta. */
+  if(nome) G.nomeGiocatore = nome;
   G.maps = WORLD.crea();
+  if(window.SCENARI) SCENARI.applica(G.maps);
   G.p.look = G.look;
   G.p.px = 8*T+T/2; G.p.py = 10*T+T/2;
   G.animali = [{tipo:'gatto', mappa:'podere', px:10*T, py:9*T, dir:1, tx:10, ty:9, wait:0}];
