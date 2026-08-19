@@ -69,6 +69,10 @@ let pixiTipiVisibili = {}, pixiUltimaVista = null;
 let catturaNodoPixi = false;
 const pixiIdentita = new WeakMap();
 let pixiSfondo = '', pixiSfondoW = 0, pixiSfondoH = 0;
+/* Le tele ponte sono ancora Canvas, ma WebGL non deve ricaricarle se i
+   loro pixel non sono cambiati: un upload pieno per fotogramma costa più
+   di molti sprite nativi, soprattutto sulle GPU integrate. */
+let pixiFirmaSotto = '';
 let frameRenderMs = 0, frameRenderN = 0, frameRenderPicco = 0;
 let motivoFallback = '';
 
@@ -123,6 +127,7 @@ function distruggiPixi(){
   pixiShadowLayer = pixiWorldLayer = pixiGradeLayer = null;
   pixiTerrainSprites.clear();
   pixiWorldNodes.clear();
+  pixiFirmaSotto = '';
 }
 
 function aggiornaTexturePixi(){
@@ -515,6 +520,7 @@ function svuotaChunkPixi(prefisso){
 }
 
 R.invalidaTerreno = function(mapId){
+  pixiFirmaSotto = '';
   if(!mapId){
     chunkCache.clear();
     svuotaChunkPixi();
@@ -531,6 +537,7 @@ if(window.PAL) PAL.suCambio(()=>{
 });
 
 R.invalidaCasella = function(mapId, x, y){
+  pixiFirmaSotto = '';
   // il raccordo tocca anche i blocchi vicini
   for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
     const cx = ((x+dx)/CH)|0, cy = ((y+dy)/CH)|0;
@@ -1232,6 +1239,17 @@ function boundsPixi(x,y,w,h){
   };
 }
 
+/* Le ombre non guadagnano nulla da micro-variazioni sub-pixel del sole,
+   ma quelle variazioni obbligavano a ricuocere ogni silhouette visibile.
+   Le tre componenti restano abbastanza fini da non mostrare gradini. */
+function chiaveSolePixi(sole){
+  return [
+    Math.round(sole.sk*20),
+    Math.round(sole.sc*20),
+    Math.round(sole.a*100)
+  ].join(':');
+}
+
 function sincronizzaNodiPixi(lista){
   pixiWorldFrame++;
   pixiTextureAggiornate = 0;
@@ -1352,36 +1370,49 @@ R.disegna = function(G){
   const cam = { x: Math.round(G.cam.x), y: Math.round(G.cam.y) };
   const stag = G.stagione().id;
   const t = G.tempoMs;
-  const passoAnimazione = (t/50)|0;
+  /* Le animazioni pixelate restano leggibili a dieci passi al secondo:
+     dimezzare gli upload delle texture locali lascia più tempo al gioco
+     senza introdurre movimento sfocato. */
+  const passoAnimazione = (t/100)|0;
+  const passoOmbra = (t/200)|0;
   const sole = FX.soleOmbra(G.ora, m.esterno);
+  const chiaveSole = chiaveSolePixi(sole);
 
   sx.clearRect(0,0,VW,VH);
   const sotto = backend === 'pixi' ? ux : sx;
+  const x0 = Math.max(0, Math.floor(cam.x/T)-1);
+  const y0 = Math.max(0, Math.floor(cam.y/T)-1);
+  const x1 = Math.min(m.w-1, Math.ceil((cam.x+VW)/T)+1);
+  const y1 = Math.min(m.h-1, Math.ceil((cam.y+VH)/T)+2);
+  const ox = -cam.x, oy = -cam.y;
+  const wf = (t/140|0)%6;
+  /* Il sottofondo contiene solo acqua e schiuma: quando né camera né
+     fotogramma dell'acqua cambiano, tenerne l'ultima texture è identico
+     visivamente e risparmia il suo upload completo. */
+  const firmaSotto = [m.id,stag,cam.x,cam.y,VW,VH,wf].join('|');
+  const aggiornaSotto = backend !== 'pixi' || firmaSotto !== pixiFirmaSotto;
+  /* Il ponte Canvas ospita ancora riflessi, erba spinta dal giocatore e
+     dettagli mobili: anche a camera ferma può cambiare a ogni frame. La
+     sua texture va quindi caricata sempre; il caching resta confinato al
+     sottofondo acqua/schiuma, che ha una firma davvero autonoma. */
   if(backend === 'pixi'){
-    ux.clearRect(0,0,VW,VH);
+    if(aggiornaSotto) ux.clearRect(0,0,VW,VH);
     cominciaTerrenoPixi(m);
   }else{
     sx.fillStyle = m.sfondo; sx.fillRect(0,0,VW,VH);
   }
   targhettePoste.length = 0;      // le targhette del fotogramma prima non contano
 
-  const x0 = Math.max(0, Math.floor(cam.x/T)-1);
-  const y0 = Math.max(0, Math.floor(cam.y/T)-1);
-  const x1 = Math.min(m.w-1, Math.ceil((cam.x+VW)/T)+1);
-  const y1 = Math.min(m.h-1, Math.ceil((cam.y+VH)/T)+2);
-  const ox = -cam.x, oy = -cam.y;
   if(backend === 'pixi') pixiUltimaVista = {
     mappa:m.id, camera:cam, caselle:{x0,y0,x1,y1},
     edifici:m.edifici.length, decorazioni:m.deco.length
   };
-  const wf = (t/140|0)%6;
-
   /* ---------- 1. ACQUA ANIMATA (sotto al terreno pre-cotto) ---------- */
-  for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
-    if(WORLD.terreno(m,x,y)!=='acqua') continue;
-    if(eFontana(m,x,y)) continue;              // la vasca disegna la sua acqua
-    sotto.drawImage(ART.water(stag, wf), (x*T+ox)|0, (y*T+oy)|0);
-  }
+  if(aggiornaSotto) for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
+      if(WORLD.terreno(m,x,y)!=='acqua') continue;
+      if(eFontana(m,x,y)) continue;              // la vasca disegna la sua acqua
+      sotto.drawImage(ART.water(stag, wf), (x*T+ox)|0, (y*T+oy)|0);
+    }
 
   /* ---------- 2. SCHIUMA SULLE RIVE (animata), SOTTO AL TERRENO ----------
 
@@ -1404,19 +1435,19 @@ R.disegna = function(G){
      ci passa sopra. Dove l'erba sborda la copre, dove l'acqua è scoperta
      resta — quindi la spuma si vede fra i denti della frangia invece che
      addosso al prato. */
-  for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
-    if(WORLD.terreno(m,x,y)!=='acqua') continue;
-    if(eFontana(m,x,y)) continue;              // niente schiuma sul bordo della vasca
-    const px=(x*T+ox)|0, py=(y*T+oy)|0;
-    const v=m.v[WORLD.idx(m,x,y)];
-    for(const [d,dx,dy] of [['n',0,-1],['s',0,1],['w',-1,0],['e',1,0]]){
-      const nt = WORLD.terreno(m,x+dx,y+dy);
-      if(nt==='acqua'||nt==='vuoto') continue;
-      sotto.globalAlpha=0.55;
-      sotto.drawImage(ART.schiuma(d, v%3, ((t/260|0)+x+y)%4), px, py);
-      sotto.globalAlpha=1;
+  if(aggiornaSotto) for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
+      if(WORLD.terreno(m,x,y)!=='acqua') continue;
+      if(eFontana(m,x,y)) continue;              // niente schiuma sul bordo della vasca
+      const px=(x*T+ox)|0, py=(y*T+oy)|0;
+      const v=m.v[WORLD.idx(m,x,y)];
+      for(const [d,dx,dy] of [['n',0,-1],['s',0,1],['w',-1,0],['e',1,0]]){
+        const nt = WORLD.terreno(m,x+dx,y+dy);
+        if(nt==='acqua'||nt==='vuoto') continue;
+        sotto.globalAlpha=0.55;
+        sotto.drawImage(ART.schiuma(d, v%3, ((t/260|0)+x+y)%4), px, py);
+        sotto.globalAlpha=1;
+      }
     }
-  }
 
   /* ---------- 3. TERRENO A BLOCCHI ---------- */
   const c0 = Math.max(0, (x0/CH)|0), c1 = ((x1/CH)|0);
@@ -1466,16 +1497,15 @@ R.disegna = function(G){
   if(m.esterno) stratoErba(m, x0,y0,x1,y1, ox,oy, stag, t, G);
 
   /* ---------- 6. OMBRE DELLE NUVOLE ----------
-     Stavano in coordinate schermo: scivolavano sul monitor invece di
-     restare per terra, e camminando non si muovevano col mondo. Sulle
-     superfici piatte (la sabbia della Costa) si leggevano come due ovali
-     grigi incollati allo schermo. Ora vivono nel mondo, su un reticolo
-     che deriva col vento, e hanno il bordo sfumato invece che netto. */
-  if(m.esterno && (G.meteo==='sereno'||G.meteo==='nuvoloso')){
-    const forza = G.meteo==='nuvoloso' ? 0.20 : 0.10;
-    const PASSO = 460*K;                       // distanza media fra una nuvola e l'altra
+     Un cielo sereno non lascia chiazze scure sul podere: oltre a sembrare
+     un bug, quelle chiazze erano troppo grandi per leggere come nuvole.
+     Restano soltanto col coperto, più rade e leggere, così accompagnano il
+     meteo senza rubare contrasto a prato e sentieri. */
+  if(m.esterno && G.meteo==='nuvoloso'){
+    const forza = 0.07;
+    const PASSO = 560*K;                       // poche nuvole, ben separate
     const deriva = t*0.010*K;                  // il banco di nuvole scorre verso est
-    const RX = 150*K, RY = 62*K;
+    const RX = 104*K, RY = 42*K;
     /* Il margine deve coprire il raggio MASSIMO (la scala arriva a 1.4) più
        lo scarto del reticolo: se una nuvola di bordo entra con una camera e
        non con l'altra, la stessa zolla di terra risulta illuminata in due
@@ -1528,7 +1558,7 @@ R.disegna = function(G){
       ombraBounds:boundsPixi(epx-eh*1.5-48,by+oy-eh-32,ew+eh*3+96,eh+96),
       chiave:[sorgente,opt.liv,opt.lit?1:0,G.braci||0,
         (opt.lit||e.kind==='santuario')?passoAnimazione:0].join('|'),
-      chiaveOmbra:[sorgente,sole.sk,sole.sc,sole.a].join('|'),
+      chiaveOmbra:[sorgente,chiaveSole].join('|'),
       s:()=>ombraEdificio(e, ox, oy, G, stag, sole),
       d:()=>disegnaEdificio(e, ox, oy, G, stag)
     });
@@ -1563,12 +1593,17 @@ R.disegna = function(G){
           : null;
       const lati = o.kind==='recinto' || o.kind==='cancelletto'
         ? latiRecinto(m, x, y) : 0;
-      const stato = [
+      const statoBase = [
         o.t,o.kind||'',o.v||0,o.stage||0,o.bacche?1:0,o.carbone?1:0,
         o.dentro?1:0,o.pronto?1:0,o.out||'',stag,
         (G.ora>1020||G.ora<420)?1:0,arredo?identitaPixi('sorgente',arredo):'codice',
-        lati,animato?passoAnimazione:0
+        lati
       ].join('|');
+      const stato = [statoBase,animato?passoAnimazione:0].join('|');
+      /* Solo la silhouette dell'albero ondeggia davvero: per cespugli,
+         fiori e oggetti l'ombra è una pozza a terra e non va ricatturata
+         a ogni piccolo movimento della parte visibile. */
+      const ombraAnimata = o.t==='albero';
       lista.push({
         id:identitaPixi('oggetto',o,m.id+':'+x+':'+y),
         // la profondità è il bordo BASSO dell'impronta: un letto alto tre
@@ -1578,7 +1613,7 @@ R.disegna = function(G){
         bounds:boundsPixi(px-72,py-176,f.w*T+144,f.h*T+224),
         ombraBounds:boundsPixi(px-176,py-144,f.w*T+352,f.h*T+208),
         chiave:stato,
-        chiaveOmbra:[stato,sole.sk,sole.sc,sole.a].join('|'),
+        chiaveOmbra:[statoBase,ombraAnimata?passoOmbra:0,chiaveSole].join('|'),
         etichetta,
         s:()=>ombraOggetto(o, px, py, x, y, t, stag, sole),
         d:()=>disegnaOggetto(o, px, py, x, y, t, stag, G)
@@ -1890,12 +1925,12 @@ R.disegna = function(G){
     aggiornaGradazionePixi(G, m);
     if(haRaggi){
       sx = rx;
-      FX.raggi(sx, VW, VH, G.ora, G.meteo);
+      FX.raggi(sx, VW, VH, G.ora, G.meteo, t);
       sx = ex;
     }
   }else{
     FX.gradazione(sx, VW, VH, G.ora, G.meteo, m.esterno);
-    if(m.esterno) FX.raggi(sx, VW, VH, G.ora, G.meteo);
+    if(m.esterno) FX.raggi(sx, VW, VH, G.ora, G.meteo, t);
   }
   /* La vignettatura era un gradiente steso sulla tela finale, cioè alla
      risoluzione vera del monitor: sfumava attraverso i pixel del gioco
@@ -1909,7 +1944,10 @@ R.disegna = function(G){
     sx = scene.getContext('2d');
     sx.imageSmoothingEnabled = false;
     const haTesti = scriviTestiSopra();
-    pixiUnderTexture.source.update();
+    if(aggiornaSotto){
+      pixiUnderTexture.source.update();
+      pixiFirmaSotto = firmaSotto;
+    }
     pixiSceneTexture.source.update();
     if(haEffetti) pixiEffectTexture.source.update();
     if(amb.a > 0.015) pixiLightTexture.source.update();
