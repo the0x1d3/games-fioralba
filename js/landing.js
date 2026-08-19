@@ -75,6 +75,7 @@ function costruisciCose(){
    2. GLI ABITANTI — gli sprite veri, che camminano
    ------------------------------------------------------------------ */
 const RITRATTI = [];
+let aggiornaGraficaTimer = null;
 
 function costruisciGente(){
   const box = $('#landing .lp-gente');
@@ -89,7 +90,10 @@ function costruisciGente(){
     const card = document.createElement('div'); card.className='lp-tizio';
 
     const c = document.createElement('canvas');
-    c.width = 30*3; c.height = 40*3;
+    /* I fogli nuovi degli abitanti sono 96×112: la tela conserva una
+       densità doppia per la carta della landing, senza rimpicciarli al
+       vecchio omino generato in codice. */
+    c.width = 144; c.height = 168;
     c.className = 'lp-tizio-sprite';
     card.appendChild(c);
 
@@ -102,7 +106,7 @@ function costruisciGente(){
     card.appendChild(info);
     box.appendChild(card);
 
-    RITRATTI.push({ ctx:c.getContext('2d'), look:N.look, fase:Math.random()*4000 });
+    RITRATTI.push({ ctx:c.getContext('2d'), id, look:N.look, fase:Math.random()*4000 });
   }
   for(const r of RITRATTI) r.ctx.imageSmoothingEnabled = false;
 }
@@ -111,12 +115,16 @@ function costruisciGente(){
 function animaGente(t){
   for(const r of RITRATTI){
     const f = (((t + r.fase)/180)|0) % 4;
-    let sp;
-    try{ sp = ART.charSprite(r.look, 0, f); }catch(e){ continue; }
-    r.ctx.clearRect(0,0,90,120);
-    // lo sprite è cotto a densità doppia: l'ingrandimento cala della metà,
-    // e il ritratto resta grande uguale ma con dentro il doppio dei pixel
-    r.ctx.drawImage(sp, 0, 0, sp.width, sp.height, 0, 0, sp.width*3/K, sp.height*3/K);
+    let modernoSp, sp;
+    try{
+      modernoSp = ART.npcSprite(r.id, 0, f);
+      sp = modernoSp || ART.charSprite(r.look, 0, f);
+    }catch(e){ continue; }
+    const moderno = !!modernoSp;
+    const scala = moderno ? 1.5 : 2;
+    const w = Math.round(sp.width*scala), h = Math.round(sp.height*scala);
+    r.ctx.clearRect(0,0,144,168);
+    r.ctx.drawImage(sp, 0, 0, sp.width, sp.height, ((144-w)/2)|0, 168-h, w, h);
   }
 }
 
@@ -196,7 +204,10 @@ function ritaglio(m, x0, y0, stag){
   // gli edifici per primi: stanno dietro a tutto il resto
   for(const e of (m.edifici||[])){
     if(e.x+e.w < x0 || e.x > x0+LARGO || e.y+e.h < y0 || e.y > y0+ALTO) continue;
-    const img = ART.building(e.kind, { season:stag, liv:e.liv||0 });
+    /* Stessa priorità del renderer: la facciata disegnata a mano, se
+       disponibile, e la versione procedurale solo come rete di sicurezza. */
+    const img = ART.edificio(e.kind, e.liv||0, stag==='inverno') ||
+                ART.building(e.kind, { season:stag, liv:e.liv||0 });
     const w = e.w*TT, sc = w/img.width;
     x.drawImage(img, (e.x-x0)*TT, (e.y+e.h-y0)*TT - img.height*sc, w, img.height*sc);
   }
@@ -235,6 +246,22 @@ function costruisciValle(){
     card.appendChild(testo);
     host.appendChild(card);
   }
+}
+
+/* Le immagini della grafica aggiornata arrivano in modo asincrono. La
+   landing nasce subito, ma senza questo secondo passaggio manterrebbe per
+   tutta la visita gli sprite di riserva che erano disponibili nel primo
+   istante. Aspettiamo che il precaricamento si stabilizzi e ricostruiamo
+   soltanto queste due vetrine, che non toccano né salvataggi né partita. */
+function aggiornaGraficaQuandoPronta(tentativo){
+  if(!vivo || !window.IMG || !IMG.stato) return;
+  const stato = IMG.stato();
+  if(stato.inVolo && tentativo < 30){
+    aggiornaGraficaTimer = setTimeout(()=>aggiornaGraficaQuandoPronta(tentativo+1), 180);
+    return;
+  }
+  costruisciGente();
+  costruisciValle();
 }
 
 /* ------------------------------------------------------------------
@@ -412,6 +439,7 @@ L.init = function(){
   collegaComparsa();
   vivo = true;
   raf = requestAnimationFrame(ciclo);
+  aggiornaGraficaTimer = setTimeout(()=>aggiornaGraficaQuandoPronta(0), 120);
 };
 
 /* Quando parte la partita la pagina sparisce: tutto quello che animava
@@ -420,6 +448,7 @@ L.init = function(){
 L.ferma = function(){
   vivo = false;
   if(raf){ cancelAnimationFrame(raf); raf = null; }
+  if(aggiornaGraficaTimer){ clearTimeout(aggiornaGraficaTimer); aggiornaGraficaTimer = null; }
   // se la partita comincia con il changelog aperto, va chiuso: resterebbe
   // sospeso sopra al gioco, e il suo Escape mangerebbe quello del menu
   if(chiusuraChangelog) chiusuraChangelog();
