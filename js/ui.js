@@ -1117,26 +1117,60 @@ U.pacco = function(G){
   const P = DATA.PREMI_SERIE.find(x=>x.g===giorno) || DATA.PREMI_SERIE[0];
   const settimo = giorno === 7;
 
-  U.modal(settimo ? 'Il pacco del settimo giorno' : 'Un pacco sull\'aia', body=>{
+  U.modal(settimo ? 'Il dono del settimo giorno' : 'Dono quotidiano', body=>{
+    const testata=document.createElement('div'); testata.className='pacco-testata';
+    const serie=document.createElement('div'); serie.className='pacco-serie';
+    serie.textContent=T('SERIE QUOTIDIANA');
+    const tappa=document.createElement('div'); tappa.className='pacco-giorno';
+    tappa.textContent=F('GIORNO {0}', giorno);
+    const conta=document.createElement('div'); conta.className='pacco-conta';
+    conta.textContent=F('{0} / 7 giorni', giorno);
+    testata.append(serie, tappa, conta);
+    body.appendChild(testata);
+
     const punti=document.createElement('div'); punti.className='pacco-punti';
+    punti.setAttribute('aria-label', T('Serie quotidiana di sette giorni'));
     for(let k=1;k<=7;k++){
       const d=document.createElement('span');
-      d.className='pacco-punto' + (k<giorno?' fatto':'') + (k===giorno?' ora':'');
+      d.className='pacco-punto' + (k<giorno?' fatto':'') + (k===giorno?' ora':'') + (k===7?' finale':'');
+      d.setAttribute('aria-label', F('Giorno {0}', k));
+      if(k===giorno) d.setAttribute('aria-current','step');
+      const numero=document.createElement('span'); numero.className='pacco-punto-num';
+      numero.textContent=k===7?'★':String(k);
+      d.appendChild(numero);
       punti.appendChild(d);
     }
     body.appendChild(punti);
 
-    const nota=document.createElement('div'); nota.className='muted';
-    nota.style.cssText='text-align:center;margin:2px 0 14px';
+    const nota=document.createElement('div'); nota.className='pacco-nota';
     nota.textContent = T(P.nota);
     body.appendChild(nota);
 
+    /* Il pacco resta una sorpresa: non elenca la roba prima dell'apertura,
+       ma rende visibile il peso della tappa. Così una serie di sette giorni
+       non sembra sette volte lo stesso gesto, e il settimo ha già una faccia
+       sua prima ancora di mostrare cosa contiene. */
+    const valore=document.createElement('div'); valore.className='pacco-valore' + (settimo?' speciale':'');
+    const etichetta=document.createElement('div'); etichetta.className='pacco-valore-etichetta';
+    etichetta.textContent=T('PREMIO DI OGGI');
+    const grado=document.createElement('div'); grado.className='pacco-valore-grado';
+    grado.textContent = settimo ? T('PREMIO SPECIALE')
+      : giorno>=5 ? T('PACCO PREZIOSO')
+      : giorno>=3 ? T('PACCO RICCO')
+      : T('PACCO DELLA VALLE');
+    const dettaglio=document.createElement('div'); dettaglio.className='pacco-valore-dettaglio';
+    dettaglio.textContent=F('{0} ricompense nel pacco', (P.roba||[]).length + (P.oro?1:0));
+    valore.append(etichetta, grado, dettaglio);
+    body.appendChild(valore);
+
     const scena=document.createElement('div'); scena.className='pacco-scena';
-    const cassa=document.createElement('div');
-    cassa.className='pacco-cassa cliccabile' + (settimo?' grosso':'');
+    const cassa=document.createElement('button');
+    cassa.type='button';
+    cassa.className='pacco-cassa' + (settimo?' grosso':'');
+    cassa.setAttribute('aria-label', F('Apri il dono del giorno {0}', giorno));
     cassa.appendChild(ico('cassa'));
-    const invito=document.createElement('div'); invito.className='pacco-invito';
-    invito.textContent = T('Apri');
+    const invito=document.createElement('span'); invito.className='pacco-invito';
+    invito.textContent = T('Apri il dono');
     cassa.appendChild(invito);
     scena.appendChild(cassa);
     body.appendChild(scena);
@@ -1146,6 +1180,7 @@ U.pacco = function(G){
       if(aperto) return; aperto=true;
       const dato = G.apriPacco();
       if(!dato) return;
+      cassa.disabled=true;
       cassa.classList.add('apre');
       SND.play(settimo ? 'livello' : 'regalo');
       /* Il tempo d'attesa non è un vezzo: l'animazione della cassa dura
@@ -1153,6 +1188,10 @@ U.pacco = function(G){
          aprendo toglie proprio il momento per cui esiste la finestra. */
       setTimeout(()=>{
         scena.innerHTML='';
+        scena.classList.add('rivelato');
+        const esito=document.createElement('div'); esito.className='pacco-esito';
+        esito.textContent=T('Ricompensa ottenuta');
+        scena.appendChild(esito);
         const riga=document.createElement('div'); riga.className='pacco-roba';
         const carte=[];
         if(dato.oro) carte.push([null, dato.oro + ' ' + T('monete')]);
@@ -1167,9 +1206,11 @@ U.pacco = function(G){
           riga.appendChild(c);
         });
         scena.appendChild(riga);
+        const domani=document.createElement('div'); domani.className='pacco-domani';
+        domani.textContent=T('La serie continua domani.');
+        scena.appendChild(domani);
         if(dato.sospesi){
-          const s=document.createElement('div'); s.className='muted';
-          s.style.cssText='text-align:center;margin-top:10px';
+          const s=document.createElement('div'); s.className='pacco-sospesi';
           s.textContent = T('Lo zaino era pieno: quello che non ci stava ti aspetta nella scheda dei Livelli.');
           scena.appendChild(s);
         }

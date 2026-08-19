@@ -2202,34 +2202,116 @@ html.col-dito .sinc-legacy-link{
 
 /* ===================================================================
    IL PACCO DELLA VALLE
-   Due tempi: la cassa chiusa che si può solo aprire, e poi la roba che
-   entra una carta per volta. Il ritardo fra una carta e l'altra è quello
-   che fa sembrare un regalo un regalo invece di un elenco.
+   La serie non è un avviso da liquidare: ogni arrivo deve ricordare dove
+   si è arrivati e far vedere che il settimo giorno è un traguardo. La
+   cassa resta una sorpresa, perciò prima si mostra il rango del premio,
+   non il suo elenco.
    =================================================================== */
-.pacco-punti{ display:flex; gap:7px; justify-content:center; margin:2px 0 10px; }
+.pacco-testata{ text-align:center; margin:0 0 10px; }
+.pacco-serie{
+  color:#8a6038; font-size:11px; font-weight:900; letter-spacing:1.7px;
+  text-shadow:0 1px 0 rgba(255,255,255,.7);
+}
+.pacco-giorno{
+  margin-top:1px; color:#4a3020; font-size:25px; line-height:1.05;
+  font-weight:900; letter-spacing:1px; text-shadow:2px 2px 0 #ecd8af;
+}
+.pacco-conta{ margin-top:3px; color:#866a4a; font-size:12px; font-weight:800; }
+.pacco-punti{
+  display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:3px;
+  max-width:440px; margin:0 auto 12px; padding:0 4px;
+}
 .pacco-punto{
-  width:10px; height:10px; border-radius:50%;
-  background:#3a3028; border:1px solid #5b4a38;
+  position:relative; z-index:0; min-height:38px; display:flex;
+  align-items:center; justify-content:center;
 }
-.pacco-punto.fatto{ background:#8a6038; border-color:#a8763c; }
-.pacco-punto.ora{
-  background:#f2c14e; border-color:#fff0c0;
-  box-shadow:0 0 8px rgba(242,193,78,.75);
+.pacco-punto::after{
+  content:''; position:absolute; z-index:-1; left:50%; right:-3px; top:16px; height:5px;
+  background:#c9ab7f; border-top:1px solid #a5855c; border-bottom:1px solid #e8d2aa;
 }
-.pacco-scena{ min-height:150px; display:flex; align-items:center; justify-content:center; }
+.pacco-punto:last-child::after{ display:none; }
+.pacco-punto-num{
+  width:29px; height:29px; display:grid; place-items:center;
+  color:#7b6246; background:#e8d0a5; border:2px solid #a5855c;
+  box-shadow:0 2px 0 #8b6a46, inset 0 1px 0 rgba(255,255,255,.7);
+  font-size:13px; font-weight:900; line-height:1;
+}
+.pacco-punto.fatto .pacco-punto-num{
+  color:#fff1c3; background:#8d6038; border-color:#5d3d26; box-shadow:0 2px 0 #422817;
+}
+.pacco-punto.fatto::after{ background:#9c713e; border-color:#73512e; }
+.pacco-punto.ora .pacco-punto-num{
+  color:#49300c; background:#f6d36f; border-color:#8f6417;
+  box-shadow:0 3px 0 #75510f, 0 0 0 3px rgba(242,193,78,.24), 0 0 14px rgba(242,193,78,.82);
+  transform:translateY(-2px);
+}
+.pacco-punto.finale .pacco-punto-num{ border-radius:3px; }
+.pacco-nota{
+  max-width:520px; margin:0 auto 10px; color:var(--ink-soft); text-align:center;
+  font-size:13.5px; line-height:1.45;
+}
+.pacco-valore{
+  position:relative; max-width:440px; margin:0 auto 13px; padding:7px 12px 8px;
+  text-align:center; background:linear-gradient(180deg,#f7e5bd,#e6c98e);
+  border:2px solid #a77b43; box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 2px 0 rgba(101,65,32,.2);
+}
+.pacco-valore::before,.pacco-valore::after{
+  content:'✦'; position:absolute; top:50%; transform:translateY(-50%); color:#b27b24; font-size:15px;
+}
+.pacco-valore::before{ left:11px; }.pacco-valore::after{ right:11px; }
+.pacco-valore.speciale{
+  background:linear-gradient(180deg,#ffe9a5,#e9b94e); border-color:#8f6417;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 2px 0 #75510f,0 0 14px rgba(242,193,78,.36);
+}
+.pacco-valore-etichetta{ color:#886338; font-size:10px; font-weight:900; letter-spacing:1.35px; }
+.pacco-valore-grado{ margin-top:1px; color:#4a3020; font-size:15px; font-weight:900; letter-spacing:.45px; }
+.pacco-valore-dettaglio{ margin-top:1px; color:#795f43; font-size:11.5px; font-weight:700; }
+.pacco-scena{
+  position:relative; isolation:isolate; min-height:218px; overflow:hidden;
+  display:flex; align-items:center; justify-content:center; padding:22px 16px;
+  border:3px solid #5c3c24; border-radius:10px;
+  background:
+    linear-gradient(180deg,rgba(255,241,194,.56),rgba(255,241,194,0) 54%),
+    repeating-linear-gradient(90deg,rgba(112,74,36,.07) 0 8px,transparent 8px 16px),
+    linear-gradient(180deg,#d3aa68 0 64%,#805436 64% 100%);
+  box-shadow:inset 0 0 0 3px rgba(255,235,181,.5),inset 0 -11px 0 rgba(58,35,19,.22);
+}
+.pacco-scena::before{
+  content:''; position:absolute; z-index:-1; left:-12%; right:-12%; bottom:27px; height:42px;
+  background:repeating-linear-gradient(90deg,#9b6941 0 24px,#835533 24px 28px);
+  border-top:4px solid #c28b50; border-bottom:5px solid #58371f; transform:skewY(-2deg);
+}
+.pacco-scena::after{
+  content:''; position:absolute; z-index:-1; width:135px; height:135px; border-radius:50%;
+  background:radial-gradient(circle,rgba(255,239,154,.78),rgba(255,216,101,.18) 48%,transparent 70%);
+  animation:paccoLuce 2.2s ease-in-out infinite;
+}
 .pacco-cassa{
-  position:relative; padding:16px 22px 12px;
-  border-radius:12px; background:rgba(138,96,56,.16); border:2px solid #8a6038;
+  position:relative; z-index:1; appearance:none; min-width:166px; padding:13px 20px 12px;
+  cursor:pointer; color:inherit; font-family:inherit;
+  border:3px solid #4d301c; border-radius:7px;
+  background:linear-gradient(180deg,#f0d091,#b9793d);
+  box-shadow:0 6px 0 #4d301c,0 0 0 4px rgba(255,235,181,.76),inset 0 2px 0 rgba(255,255,255,.58);
   animation:paccoAttesa 2.2s ease-in-out infinite;
 }
-.pacco-cassa canvas{ width:72px; height:72px; image-rendering:pixelated; display:block; }
-.pacco-cassa.grosso canvas{ width:104px; height:104px; }
-.pacco-invito{ text-align:center; margin-top:6px; color:#f2c14e; font-weight:700; letter-spacing:.04em; }
-.pacco-cassa.apre{ animation:paccoApre .6s ease-out forwards; }
+.pacco-cassa:hover:not(:disabled){ filter:brightness(1.08); }
+.pacco-cassa:focus-visible{ outline:3px solid #fff2b8; outline-offset:4px; }
+.pacco-cassa:active:not(:disabled){ transform:translateY(4px); box-shadow:0 2px 0 #4d301c,0 0 0 4px rgba(255,235,181,.76); }
+.pacco-cassa canvas{ width:96px; height:96px; margin:0 auto; image-rendering:pixelated; display:block; filter:drop-shadow(0 4px 0 rgba(54,31,15,.24)); }
+.pacco-cassa.grosso canvas{ width:122px; height:122px; }
+.pacco-invito{
+  display:block; margin-top:4px; color:#fff3c9; font-size:13px; font-weight:900;
+  letter-spacing:.65px; text-shadow:0 2px 0 #4a2e18;
+}
+.pacco-cassa.apre{ animation:paccoApre .6s ease-out forwards; pointer-events:none; }
 @keyframes paccoAttesa{
   0%,100%{ transform:translateY(0) rotate(0deg); }
   45%    { transform:translateY(-4px) rotate(-1.5deg); }
   70%    { transform:translateY(-2px) rotate(1.5deg); }
+}
+@keyframes paccoLuce{
+  0%,100%{ opacity:.55; transform:scale(.86); }
+  50%{ opacity:1; transform:scale(1.12); }
 }
 @keyframes paccoApre{
   0%  { transform:scale(1) rotate(0deg); }
@@ -2237,7 +2319,18 @@ html.col-dito .sinc-legacy-link{
   70% { transform:scale(1.2) rotate(4deg); opacity:1; }
   100%{ transform:scale(1.5); opacity:0; }
 }
-.pacco-roba{ display:flex; flex-wrap:wrap; gap:14px; justify-content:center; }
+.pacco-scena.rivelato{
+  display:block; min-height:218px; padding-top:19px; text-align:center;
+  background:
+    linear-gradient(180deg,rgba(255,243,190,.72),rgba(255,224,135,.18)),
+    repeating-linear-gradient(90deg,rgba(112,74,36,.06) 0 8px,transparent 8px 16px),
+    #d8b06f;
+}
+.pacco-esito{
+  margin-bottom:11px; color:#68431f; font-size:16px; font-weight:900;
+  letter-spacing:.45px; text-shadow:1px 1px 0 #fff0bd;
+}
+.pacco-roba{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
 /* `backwards` e non `forwards`, e nessun `opacity:0` di base: la carta
    nasce visibile e l'animazione è solo l'entrata. Con `opacity:0` scritto
    nella regola, una carta la cui animazione non parte — «riduci il
@@ -2245,22 +2338,37 @@ html.col-dito .sinc-legacy-link{
    invisibile per sempre, e il pacco si aprirebbe sul vuoto. Il regalo
    non può dipendere dall'animazione del regalo. */
 .pacco-carta{
-  width:96px; padding:10px 6px; border-radius:10px; text-align:center;
-  background:rgba(246,230,200,.08); border:1px solid #8a6038;
+  width:100px; min-height:104px; padding:9px 6px 8px; border-radius:5px; text-align:center;
+  background:linear-gradient(180deg,#fff1c7,#e5c581); border:2px solid #8a6038;
+  box-shadow:0 3px 0 #6d4628,inset 0 1px 0 rgba(255,255,255,.85);
   animation:paccoCarta .42s ease-out backwards;
 }
-.pacco-carta canvas{ width:44px; height:44px; image-rendering:pixelated; }
-.pacco-nome{ margin-top:6px; font-size:.86rem; line-height:1.25; }
+.pacco-carta canvas{ width:48px; height:48px; image-rendering:pixelated; }
+.pacco-nome{ margin-top:5px; color:#4a3020; font-size:.84rem; font-weight:800; line-height:1.2; }
 .coin.grande{ width:40px; height:40px; margin:2px auto; }
+.pacco-domani{ margin-top:13px; color:#725438; font-size:12px; font-weight:800; }
+.pacco-sospesi{ max-width:430px; margin:10px auto 0; color:#725438; font-size:12px; line-height:1.4; }
 @keyframes paccoCarta{
   from{ opacity:0; transform:translateY(14px) scale(.86); }
   to  { opacity:1; transform:none; }
 }
 
+@media (max-width:560px){
+  .pacco-giorno{ font-size:22px; }
+  .pacco-punti{ max-width:none; gap:1px; }
+  .pacco-punto-num{ width:27px; height:27px; font-size:12px; }
+  .pacco-punto::after{ top:15px; right:-1px; }
+  .pacco-scena{ min-height:204px; padding:18px 10px; }
+  .pacco-cassa{ min-width:154px; padding:10px 16px 11px; }
+  .pacco-cassa canvas{ width:88px; height:88px; }
+  .pacco-cassa.grosso canvas{ width:110px; height:110px; }
+  .pacco-carta{ width:calc(50% - 6px); max-width:126px; min-height:94px; }
+}
+
 /* Chi ha chiesto meno movimento non deve perdersi il regalo: si tolgono
    il dondolio e l'entrata, la roba resta. */
 @media (prefers-reduced-motion: reduce){
-  .pacco-cassa, .pacco-cassa.apre, .pacco-carta{ animation:none; }
+  .pacco-cassa, .pacco-cassa.apre, .pacco-carta, .pacco-scena::after{ animation:none; }
   .pacco-carta{ opacity:1; transform:none; }
 }
 

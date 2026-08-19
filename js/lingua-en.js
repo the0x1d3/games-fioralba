@@ -20,6 +20,27 @@
 window.LINGUA_EN = {
 
 /* ===================================================================
+   IL PACCO QUOTIDIANO
+   =================================================================== */
+'Il dono del settimo giorno': 'The seventh-day gift',
+'Dono quotidiano': 'Daily gift',
+'SERIE QUOTIDIANA': 'DAILY STREAK',
+'Serie quotidiana di sette giorni': 'Seven-day daily streak',
+'GIORNO {0}': 'DAY {0}',
+'Giorno {0}': 'Day {0}',
+'{0} / 7 giorni': '{0} / 7 days',
+'PREMIO DI OGGI': 'TODAY\'S REWARD',
+'PREMIO SPECIALE': 'SPECIAL REWARD',
+'PACCO PREZIOSO': 'VALUABLE PACKAGE',
+'PACCO RICCO': 'RICH PACKAGE',
+'PACCO DELLA VALLE': 'VALLEY PACKAGE',
+'{0} ricompense nel pacco': '{0} rewards in the package',
+'Apri il dono': 'Open gift',
+'Apri il dono del giorno {0}': 'Open day {0} gift',
+'Ricompensa ottenuta': 'Reward claimed',
+'La serie continua domani.': 'The streak continues tomorrow.',
+
+/* ===================================================================
    ATTREZZI E MATERIALI
    =================================================================== */
 'Zappa': 'Hoe',
