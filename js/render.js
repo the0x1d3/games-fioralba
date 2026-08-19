@@ -32,26 +32,174 @@ const K = 2;               // quante volte il mondo è più fitto del disegno a 
 const U = T/K;             // l'unità dei disegni scritti a mano in questo file
 let cvs, ctx;
 let scene, sx;
+let underLayer, ux;
 let light, lx;
+let textLayer, tx;
 let VW=480, VH=270, SCALE=3;
 /* DPR: quanti pixel fisici vale un pixel CSS (1 di norma, 1.25/1.5/2 sugli
    schermi in scala e sui Retina). cssW/cssH servono a capire se la finestra
    è cambiata senza che sia arrivato l'evento "resize". */
 let DPR=1, cssW=0, cssH=0;
 
-R.init = function(canvas){
-  cvs = canvas;
-  /* alpha:false — il canvas di gioco è sempre coperto per intero (la
-     scena parte da un fillRect dello sfondo), quindi il browser può
-     saltare la fusione col fondo della pagina a ogni compositing. È il
-     consiglio standard per i canvas opachi; le superfici di lavoro
-     (scene, light) restano trasparenti perché la luce si ritaglia con
-     destination-out e ha bisogno dell'alfa. */
-  ctx = cvs.getContext('2d', { alpha:false });
+/* Il gioco continua a comporre la pixel art sulla tela virtuale `scene`.
+   PixiJS è il backend predefinito e porta quel livello, più il testo nitido,
+   sul canvas visibile via WebGL. Il confine conserva l'API pubblica di REND
+   e permette di portare le primitive a sprite nativi un livello alla volta. */
+let backend = 'canvas';
+let pixiRenderer = null;
+let pixiStage = null;
+let pixiFondo = null;
+let pixiUnderTexture = null, pixiUnderSprite = null;
+let pixiTerrainLayer = null;
+let pixiSceneTexture = null, pixiTextTexture = null;
+let pixiSceneSprite = null, pixiTextSprite = null;
+let pixiTerrainSprites = new Map(), pixiTerrainFrame = 0;
+let pixiSfondo = '', pixiSfondoW = 0, pixiSfondoH = 0;
+let frameRenderMs = 0, frameRenderN = 0, frameRenderPicco = 0;
+let motivoFallback = '';
+
+function canvasForzato(){
+  try{
+    return new URLSearchParams(location.search).get('renderer') === 'canvas';
+  }catch(_){ return false; }
+}
+
+function preparaCanvas2D(canvas, motivo){
+  backend = 'canvas';
+  motivoFallback = motivo || '';
+  ctx = canvas.getContext('2d', { alpha:false });
+  if(!ctx) throw new Error('Canvas 2D non disponibile');
   ctx.imageSmoothingEnabled = false;
+  console.info('[renderer] Canvas 2D' + (motivoFallback ? ' — ' + motivoFallback : ''));
+  return canvas;
+}
+
+function sostituisciCanvas(canvas){
+  /* Dopo un tentativo WebGL fallito il browser può rifiutare getContext('2d')
+     sullo stesso elemento. Il clone è ancora privo di contesto; `game.js`
+     riceve questo riferimento prima di collegare gli input. */
+  const nuovo = canvas.cloneNode(false);
+  canvas.replaceWith(nuovo);
+  cvs = nuovo;
+  return nuovo;
+}
+
+function distruggiPixi(){
+  try{ svuotaChunkPixi(); }catch(_){}
+  try{ pixiStage?.destroy?.({ children:true }); }catch(_){}
+  for(const texture of [pixiUnderTexture, pixiSceneTexture, pixiTextTexture]){
+    try{ texture?.destroy?.(true); }catch(_){}
+  }
+  try{ pixiRenderer?.destroy?.(); }catch(_){}
+  pixiRenderer = null;
+  pixiStage = null;
+  pixiFondo = null;
+  pixiUnderTexture = pixiUnderSprite = null;
+  pixiTerrainLayer = null;
+  pixiSceneTexture = pixiTextTexture = null;
+  pixiSceneSprite = pixiTextSprite = null;
+  pixiTerrainSprites.clear();
+}
+
+function aggiornaTexturePixi(){
+  if(!pixiSceneTexture || !pixiTextTexture || !pixiUnderTexture) return;
+  pixiUnderTexture.source.resize(underLayer.width, underLayer.height, 1);
+  pixiSceneTexture.source.resize(scene.width, scene.height, 1);
+  pixiTextTexture.source.resize(textLayer.width, textLayer.height, 1);
+  pixiUnderTexture.source.scaleMode = 'nearest';
+  pixiSceneTexture.source.scaleMode = 'nearest';
+  pixiTextTexture.source.scaleMode = 'nearest';
+  pixiUnderSprite.scale.set(SCALE);
+  pixiSceneSprite.scale.set(SCALE);
+  pixiFondo.scale.set(SCALE);
+  pixiTerrainLayer.scale.set(SCALE);
+}
+
+async function preparaPixi(canvas){
+  if(canvasForzato()) return preparaCanvas2D(canvas, 'fallback richiesto');
+  if(!window.PIXI || typeof PIXI.autoDetectRenderer !== 'function'){
+    return preparaCanvas2D(canvas, 'PixiJS non disponibile');
+  }
+
+  let renderer;
+  try{
+    /* L'array esclude deliberatamente WebGPU e Canvas: Pixi è qui il
+       compositore WebGL; il fallback 2D resta quello storico del gioco. */
+    renderer = await PIXI.autoDetectRenderer({
+      canvas,
+      width:Math.max(1, canvas.width || 1),
+      height:Math.max(1, canvas.height || 1),
+      resolution:1,
+      autoDensity:false,
+      antialias:false,
+      backgroundColor:0x1a2418,
+      preference:['webgl']
+    });
+    pixiRenderer = renderer;
+    pixiStage = new PIXI.Container({ label:'fioralba' });
+    pixiFondo = new PIXI.Graphics({ label:'fondo' });
+    pixiUnderTexture = PIXI.Texture.from({
+      resource:underLayer, scaleMode:'nearest', autoGenerateMipmaps:false
+    }, true);
+    pixiSceneTexture = PIXI.Texture.from({
+      resource:scene, scaleMode:'nearest', autoGenerateMipmaps:false
+    }, true);
+    pixiTextTexture = PIXI.Texture.from({
+      resource:textLayer, scaleMode:'nearest', autoGenerateMipmaps:false
+    }, true);
+    pixiUnderSprite = new PIXI.Sprite({ texture:pixiUnderTexture, label:'acqua' });
+    pixiTerrainLayer = new PIXI.Container({ label:'terreno' });
+    pixiSceneSprite = new PIXI.Sprite({ texture:pixiSceneTexture, label:'scena' });
+    pixiTextSprite = new PIXI.Sprite({ texture:pixiTextTexture, label:'testi' });
+    pixiStage.addChild(
+      pixiFondo, pixiUnderSprite, pixiTerrainLayer, pixiSceneSprite, pixiTextSprite
+    );
+    backend = 'pixi';
+
+    canvas.addEventListener('webglcontextlost', e=>{
+      e.preventDefault();
+      console.warn('[renderer] contesto WebGL perso; PixiJS tenterà il ripristino automatico');
+    });
+    canvas.addEventListener('webglcontextrestored', ()=>{
+      console.info('[renderer] contesto WebGL ripristinato');
+    });
+    console.info('[renderer] PixiJS ' + (PIXI.VERSION || '') + ' / WebGL');
+    return canvas;
+  }catch(err){
+    try{ renderer?.destroy?.(); }catch(_){}
+    console.warn('[renderer] PixiJS non avviato, uso Canvas 2D', err);
+    return preparaCanvas2D(sostituisciCanvas(canvas), 'avvio WebGL non riuscito');
+  }
+}
+
+R.init = async function(canvas){
+  cvs = canvas;
   scene = ART.cv(VW,VH); sx = scene.getContext('2d');
+  underLayer = ART.cv(VW,VH); ux = underLayer.getContext('2d');
   light = ART.cv(VW,VH); lx = light.getContext('2d');
-  R.resize();
+  textLayer = document.createElement('canvas');
+  tx = textLayer.getContext('2d', { alpha:true });
+  cvs = await preparaPixi(cvs);
+  try{
+    R.resize();
+    if(backend === 'pixi'){
+      /* Primo upload a pagina ancora coperta dal titolo: se il contesto o le
+         texture dinamiche non funzionano, si ricade sul renderer storico
+         prima di iniziare una partita. */
+      pixiUnderTexture.source.update();
+      pixiSceneTexture.source.update();
+      pixiTextTexture.source.update();
+      pixiRenderer.render({ container:pixiStage });
+    }
+  }catch(err){
+    if(backend !== 'pixi') throw err;
+    console.warn('[renderer] prima composizione PixiJS fallita, uso Canvas 2D', err);
+    distruggiPixi();
+    cvs = sostituisciCanvas(cvs);
+    preparaCanvas2D(cvs, 'prima composizione WebGL non riuscita');
+    R.resize();
+  }
+  return cvs;
 };
 
 function dprCorrente(){
@@ -129,7 +277,9 @@ R.resize = function(){
      non intero: la griglia della pixel art diventerebbe irregolare (alcuni
      pixel larghi 2, altri 1) e il disegno "sfarfallerebbe" muovendosi. */
   const devW = Math.round(cssW*DPR), devH = Math.round(cssH*DPR);
-  cvs.width = devW; cvs.height = devH;
+  if(backend === 'canvas'){
+    cvs.width = devW; cvs.height = devH;
+  }
 
   // quanto zoom vogliamo — cioè quante caselle si vedono — dipende da quanto
   // è grande la finestra per l'occhio, quindi dalla misura in pixel CSS
@@ -170,10 +320,20 @@ R.resize = function(){
 
   VW = Math.max(1, Math.ceil(devW/SCALE)); VH = Math.max(1, Math.ceil(devH/SCALE));
   scene.width=VW; scene.height=VH;
+  underLayer.width=VW; underLayer.height=VH;
   light.width=VW; light.height=VH;
   sx = scene.getContext('2d'); sx.imageSmoothingEnabled=false;
+  ux = underLayer.getContext('2d'); ux.imageSmoothingEnabled=false;
   lx = light.getContext('2d'); lx.imageSmoothingEnabled=false;
-  ctx = cvs.getContext('2d'); ctx.imageSmoothingEnabled=false;
+  textLayer.width=devW; textLayer.height=devH;
+  tx = textLayer.getContext('2d'); tx.imageSmoothingEnabled=false;
+  if(backend === 'pixi'){
+    pixiRenderer.resize(devW, devH, 1);
+    aggiornaTexturePixi();
+  }else{
+    /* Cambiare width/height azzera lo stato del contesto 2D. */
+    ctx = cvs.getContext('2d'); ctx.imageSmoothingEnabled=false;
+  }
 };
 R.info = ()=>({VW,VH,SCALE,DPR});
 
@@ -258,19 +418,46 @@ let chunkCache = new Map();
 let chunkCostruiti = 0;
 R.statoCache = ()=>({ inCache: chunkCache.size, max: CACHE_MAX, costruitiInTutto: chunkCostruiti });
 
+function eliminaChunkPixi(k){
+  const voce = pixiTerrainSprites.get(k);
+  if(!voce) return;
+  voce.sprite.removeFromParent();
+  voce.sprite.destroy();
+  voce.texture.destroy(true);
+  pixiTerrainSprites.delete(k);
+}
+
+function svuotaChunkPixi(prefisso){
+  for(const k of [...pixiTerrainSprites.keys()]){
+    if(!prefisso || k.indexOf(prefisso)===0) eliminaChunkPixi(k);
+  }
+}
+
 R.invalidaTerreno = function(mapId){
-  if(!mapId){ chunkCache.clear(); return; }
+  if(!mapId){
+    chunkCache.clear();
+    svuotaChunkPixi();
+    return;
+  }
   for(const k of [...chunkCache.keys()]) if(k.indexOf(mapId+'|')===0) chunkCache.delete(k);
+  svuotaChunkPixi(mapId+'|');
 };
 /* i blocchi di terreno sono precotti coi colori della palette:
    se la palette cambia, vanno rifatti */
-if(window.PAL) PAL.suCambio(()=>{ chunkCache.clear(); });
+if(window.PAL) PAL.suCambio(()=>{
+  chunkCache.clear();
+  svuotaChunkPixi();
+});
 
 R.invalidaCasella = function(mapId, x, y){
   // il raccordo tocca anche i blocchi vicini
   for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
     const cx = ((x+dx)/CH)|0, cy = ((y+dy)/CH)|0;
-    for(const s of DATA.SEASONS) chunkCache.delete(mapId+'|'+cx+'|'+cy+'|'+s.id);
+    for(const s of DATA.SEASONS){
+      const k = mapId+'|'+cx+'|'+cy+'|'+s.id;
+      chunkCache.delete(k);
+      eliminaChunkPixi(k);
+    }
   }
 };
 
@@ -346,12 +533,16 @@ function testoNitido(testo, x, y, opz){
 }
 
 function scriviTestiSopra(){
+  const out = backend === 'pixi' ? tx : ctx;
+  /* Il livello testo deve essere pulito anche nei frame senza scritte,
+     altrimenti l'ultima etichetta resterebbe nella texture. */
+  if(backend === 'pixi') out.clearRect(0,0,textLayer.width,textLayer.height);
   if(!testiSopra.length) return;
   for(const t of testiSopra){
-    ctx.globalAlpha = t.alfa;
-    ctx.font = 'bold ' + (t.px*SCALE) + 'px ' + t.famiglia;
-    ctx.textAlign = t.allinea;
-    ctx.textBaseline = t.base;
+    out.globalAlpha = t.alfa;
+    out.font = 'bold ' + (t.px*SCALE) + 'px ' + t.famiglia;
+    out.textAlign = t.allinea;
+    out.textBaseline = t.base;
     /* Le coordinate sono quelle della tela virtuale: qui si moltiplicano
        per SCALE, e NON si arrotondano. Arrotondando al pixel fisico il
        testo scatterebbe di un pixel intero mentre la telecamera scorre
@@ -361,15 +552,15 @@ function scriviTestiSopra(){
        pixel virtuale diventerebbe la metà dei pixel fisici di prima —
        cioè un filo di ombra sotto una scritta rimasta grande uguale. */
     if(t.ombra){
-      ctx.fillStyle = t.ombra;
-      ctx.fillText(t.testo, t.x*SCALE + SCALE*K, t.y*SCALE + SCALE*K);
+      out.fillStyle = t.ombra;
+      out.fillText(t.testo, t.x*SCALE + SCALE*K, t.y*SCALE + SCALE*K);
     }
-    ctx.fillStyle = t.colore;
-    ctx.fillText(t.testo, t.x*SCALE, t.y*SCALE);
+    out.fillStyle = t.colore;
+    out.fillText(t.testo, t.x*SCALE, t.y*SCALE);
   }
-  ctx.globalAlpha = 1;
-  ctx.textAlign = 'start';
-  ctx.textBaseline = 'alphabetic';
+  out.globalAlpha = 1;
+  out.textAlign = 'start';
+  out.textBaseline = 'alphabetic';
   testiSopra.length = 0;
 }
 
@@ -813,9 +1004,42 @@ function chunk(m, cx, cy, season){
   chunkCostruiti++;
   chunkCache.set(k, nuovo);
   if(chunkCache.size > CACHE_MAX){
-    chunkCache.delete(chunkCache.keys().next().value);   // sfratta il meno recente
+    const vecchio = chunkCache.keys().next().value;
+    chunkCache.delete(vecchio);                         // sfratta il meno recente
+    eliminaChunkPixi(vecchio);
   }
   return nuovo;
+}
+
+function cominciaTerrenoPixi(m){
+  if(backend !== 'pixi') return;
+  pixiTerrainFrame++;
+  for(const voce of pixiTerrainSprites.values()) voce.sprite.visible = false;
+  if(pixiSfondo !== m.sfondo || pixiSfondoW !== VW || pixiSfondoH !== VH){
+    pixiSfondo = m.sfondo;
+    pixiSfondoW = VW;
+    pixiSfondoH = VH;
+    pixiFondo.clear().rect(0,0,VW,VH).fill(m.sfondo);
+  }
+}
+
+function disegnaChunkPixi(m, cx, cy, season, tela, x, y){
+  const k = m.id+'|'+cx+'|'+cy+'|'+season;
+  let voce = pixiTerrainSprites.get(k);
+  if(!voce || voce.tela !== tela){
+    if(voce) eliminaChunkPixi(k);
+    const texture = PIXI.Texture.from({
+      resource:tela, scaleMode:'nearest', autoGenerateMipmaps:false
+    }, true);
+    texture.source.scaleMode = 'nearest';
+    const sprite = new PIXI.Sprite({ texture, label:'chunk '+k });
+    pixiTerrainLayer.addChild(sprite);
+    voce = { tela, texture, sprite, frame:0 };
+    pixiTerrainSprites.set(k, voce);
+  }
+  voce.frame = pixiTerrainFrame;
+  voce.sprite.visible = true;
+  voce.sprite.position.set(x, y);
 }
 
 /* ===================================================================
@@ -858,7 +1082,13 @@ R.disegna = function(G){
   const sole = FX.soleOmbra(G.ora, m.esterno);
 
   sx.clearRect(0,0,VW,VH);
-  sx.fillStyle = m.sfondo; sx.fillRect(0,0,VW,VH);
+  const sotto = backend === 'pixi' ? ux : sx;
+  if(backend === 'pixi'){
+    ux.clearRect(0,0,VW,VH);
+    cominciaTerrenoPixi(m);
+  }else{
+    sx.fillStyle = m.sfondo; sx.fillRect(0,0,VW,VH);
+  }
   targhettePoste.length = 0;      // le targhette del fotogramma prima non contano
 
   const x0 = Math.max(0, Math.floor(cam.x/T)-1);
@@ -872,7 +1102,7 @@ R.disegna = function(G){
   for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
     if(WORLD.terreno(m,x,y)!=='acqua') continue;
     if(eFontana(m,x,y)) continue;              // la vasca disegna la sua acqua
-    sx.drawImage(ART.water(stag, wf), (x*T+ox)|0, (y*T+oy)|0);
+    sotto.drawImage(ART.water(stag, wf), (x*T+ox)|0, (y*T+oy)|0);
   }
 
   /* ---------- 2. SCHIUMA SULLE RIVE (animata), SOTTO AL TERRENO ----------
@@ -904,9 +1134,9 @@ R.disegna = function(G){
     for(const [d,dx,dy] of [['n',0,-1],['s',0,1],['w',-1,0],['e',1,0]]){
       const nt = WORLD.terreno(m,x+dx,y+dy);
       if(nt==='acqua'||nt==='vuoto') continue;
-      sx.globalAlpha=0.55;
-      sx.drawImage(ART.schiuma(d, v%3, ((t/260|0)+x+y)%4), px, py);
-      sx.globalAlpha=1;
+      sotto.globalAlpha=0.55;
+      sotto.drawImage(ART.schiuma(d, v%3, ((t/260|0)+x+y)%4), px, py);
+      sotto.globalAlpha=1;
     }
   }
 
@@ -914,7 +1144,10 @@ R.disegna = function(G){
   const c0 = Math.max(0, (x0/CH)|0), c1 = ((x1/CH)|0);
   const r0 = Math.max(0, (y0/CH)|0), r1 = ((y1/CH)|0);
   for(let cy=r0; cy<=r1; cy++) for(let cx=c0; cx<=c1; cx++){
-    sx.drawImage(chunk(m,cx,cy,stag), (cx*CH*T+ox)|0, (cy*CH*T+oy)|0);
+    const terreno = chunk(m,cx,cy,stag);
+    const px = (cx*CH*T+ox)|0, py = (cy*CH*T+oy)|0;
+    if(backend === 'pixi') disegnaChunkPixi(m,cx,cy,stag,terreno,px,py);
+    else sx.drawImage(terreno, px, py);
   }
 
   /* ---------- 3b. RIFLESSI SULL'ACQUA ----------
@@ -1282,12 +1515,46 @@ R.disegna = function(G){
      Ora è retinata a misura virtuale e ingrandisce con tutto il resto. */
   sx.drawImage(ART.vignetta(VW, VH, 0.32), 0, 0);
 
-  /* ---------- BLIT ---------- */
-  ctx.clearRect(0,0,cvs.width,cvs.height);
-  ctx.drawImage(scene, 0,0, VW*SCALE, VH*SCALE);
-  /* e sopra, alla risoluzione vera dello schermo, tutto il testo del
-     mondo: vedi il cappello di `testoNitido` per il perché */
-  scriviTestiSopra();
+  /* ---------- BLIT / COMPOSIZIONE PIXI ---------- */
+  const renderInizio = performance.now();
+  if(backend === 'pixi'){
+    scriviTestiSopra();
+    pixiUnderTexture.source.update();
+    pixiSceneTexture.source.update();
+    pixiTextTexture.source.update();
+    pixiRenderer.render({ container:pixiStage });
+  }else{
+    ctx.clearRect(0,0,cvs.width,cvs.height);
+    ctx.drawImage(scene, 0,0, VW*SCALE, VH*SCALE);
+    /* e sopra, alla risoluzione vera dello schermo, tutto il testo del
+       mondo: vedi il cappello di `testoNitido` per il perché */
+    scriviTestiSopra();
+  }
+  const renderMs = performance.now() - renderInizio;
+  frameRenderMs += renderMs;
+  frameRenderN++;
+  if(renderMs > frameRenderPicco) frameRenderPicco = renderMs;
+};
+
+R.backend = ()=>backend;
+R.diagnostica = function(azzera){
+  const dati = {
+    backend,
+    pixiVersion:window.PIXI ? PIXI.VERSION : null,
+    fallback:motivoFallback || null,
+    scala:SCALE,
+    virtuale:{ larghezza:VW, altezza:VH },
+    output:{ larghezza:cvs?.width || 0, altezza:cvs?.height || 0 },
+    livelliPixi:backend === 'pixi'
+      ? ['fondo','acqua','terreno','scena','testi']
+      : [],
+    chunkGpu:pixiTerrainSprites.size,
+    frameCampionati:frameRenderN,
+    blitMedioMs:frameRenderN ? frameRenderMs/frameRenderN : 0,
+    blitPiccoMs:frameRenderPicco
+  };
+  if(azzera){ frameRenderMs=0; frameRenderN=0; frameRenderPicco=0; }
+  return dati;
 };
 
 /* ===================================================================

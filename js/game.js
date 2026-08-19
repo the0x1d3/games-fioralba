@@ -115,9 +115,13 @@ G.p = {
   look:null, correndo:false
 };
 
-function init(){
+async function init(){
   cvs = $('#game');
-  REND.init(cvs);
+  /* PixiJS deve poter ottenere il contesto WebGL prima che qualunque codice
+     chieda un contesto 2D allo stesso canvas. L'adattatore restituisce il
+     canvas effettivo (può sostituirlo se l'avvio WebGL fallisce), perciò
+     input e resize vengono collegati soltanto quando il backend è pronto. */
+  cvs = await REND.init(cvs);
   /* Gli arredi disegnati a mano partono subito, e nessuno li aspetta:
      finché non arrivano il gioco disegna l'arte in codice di sempre, e
      se non arrivano mai continua a disegnarla. Sta qui e non al
@@ -3577,7 +3581,13 @@ function schermoIntero(){
 /* ===================================================================
    AVVIO
    =================================================================== */
-window.addEventListener('load', init);
+window.addEventListener('load', ()=>{
+  init().catch(e=>{
+    /* A questo punto anche il fallback Canvas non è disponibile: teniamo
+       l'errore esplicito e distinto dagli errori recuperabili dei sistemi. */
+    console.error('[motore] avvio non riuscito', e);
+  });
+});
 
 /* rete di sicurezza: gli errori vengono loggati, non fanno crollare il gioco */
 window.addEventListener('error', e=>{ try{ console.warn('[motore] errore globale:', e.message, (e.filename||'')+':'+(e.lineno||0)); }catch(_){} });

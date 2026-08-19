@@ -106,7 +106,12 @@ function rinfresca(){
 let statoEl = null;
 function scriviStato(){
   if(!statoEl) return;
-  if(!G.inGioco){ statoEl.textContent = 'fuori partita'; return; }
+  const rd = window.REND && REND.diagnostica ? REND.diagnostica() : null;
+  const renderer = rd
+    ? 'renderer: ' + rd.backend + (rd.pixiVersion ? ' ' + rd.pixiVersion : '') +
+      (rd.frameCampionati ? ' · blit ' + rd.blitMedioMs.toFixed(2) + ' ms' : '')
+    : 'renderer: non inizializzato';
+  if(!G.inGioco){ statoEl.innerHTML = 'fuori partita<br>' + renderer; return; }
   const v = G.trame.veglia;
   const c = G.contaCollezione().tot;
   const ora = Math.floor(G.ora/60) + ':' + String(G.ora%60).padStart(2,'0');
@@ -120,7 +125,8 @@ function scriviStato(){
       : v.fatta ? 'concluso'
       : v.giorno ? 'veglia fissata (giorno ' + v.giorno + ', oggi ' + G.giornoTot + ')'
       : v.verita ? 'verità saputa, invitati ' + G.invitatiAllaVeglia() + '/' + DATA.MEMORIE.length
-      : 'memorie ' + G.memorieAvute() + '/' + DATA.MEMORIE.length)
+      : 'memorie ' + G.memorieAvute() + '/' + DATA.MEMORIE.length),
+    renderer
   ].join('<br>');
 }
 

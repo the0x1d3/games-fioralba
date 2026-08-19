@@ -588,6 +588,8 @@ declare const SOLSTIZIO: any;
 declare const LIV: any;
 /** Il pannello di prova (js/debug.js). */
 declare const DEBUG: any;
+/** Bundle browser locale di PixiJS; può mancare quando il fallback Canvas è forzato. */
+declare const PIXI: any;
 
 interface Window {
   DATA: FioData;
@@ -597,4 +599,5 @@ interface Window {
   MOBS: any; UI: any; REND: any; TUT: any;
   TITOLO: any; SALVA: any; PESCA: any; STORIE: any;
   SOLSTIZIO: any; LIV: any; DEBUG: any;
+  PIXI?: any;
 }

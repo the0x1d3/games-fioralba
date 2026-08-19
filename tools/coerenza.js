@@ -1358,6 +1358,43 @@ verifica('index.html carica tutti i js, nell\'ordine portante', () => {
   return problemi;
 });
 
+/* Il renderer vive in uno strano ma intenzionale confine: Pixi è una
+   dipendenza npm, il browser usa il suo bundle UMD, e il server non deve
+   per questo aprire node_modules. Se uno dei tre lati cambia da solo il
+   gioco ricade in Canvas senza che i test sui dati se ne accorgano. */
+verifica('PixiJS è locale, predefinito e conserva il fallback Canvas', () => {
+  const problemi = [];
+  const pkg = JSON.parse(fs.readFileSync(path.join(RADICE, 'package.json'), 'utf8'));
+  const html = fs.readFileSync(path.join(RADICE, 'index.html'), 'utf8');
+  const server = fs.readFileSync(path.join(RADICE, 'server.js'), 'utf8');
+  const render = fs.readFileSync(path.join(RADICE, 'js/render.js'), 'utf8');
+  const game = fs.readFileSync(path.join(RADICE, 'js/game.js'), 'utf8');
+  const pixi = '<script src="vendor/pixi.min.js"></script>';
+  const rend = '<script src="js/render.js"></script>';
+
+  if (!pkg.dependencies || !pkg.dependencies['pixi.js'])
+    problemi.push('pixi.js non è fra le dipendenze runtime');
+  if (!fs.existsSync(path.join(RADICE, 'node_modules', 'pixi.js', 'dist', 'pixi.min.js')))
+    problemi.push('manca il bundle browser installato di PixiJS');
+  if (html.indexOf(pixi) < 0)
+    problemi.push('index.html non carica il bundle locale di PixiJS');
+  else if (html.indexOf(pixi) > html.indexOf(rend))
+    problemi.push('PixiJS va caricato prima di render.js');
+  if (!/rel === ['"]\/vendor\/pixi\.min\.js['"]/.test(server))
+    problemi.push('server.js non espone l’alias stretto /vendor/pixi.min.js');
+  if (!/VIETATE\s*=\s*\[[^\]]*['"]node_modules['"]/.test(server))
+    problemi.push('server.js non blocca più node_modules');
+  if (!/preference:\s*\[['"]webgl['"]\]/.test(render))
+    problemi.push('Pixi non è limitato al backend WebGL previsto');
+  if (!/renderer['"]\)\s*===\s*['"]canvas['"]/.test(render))
+    problemi.push('manca il fallback esplicito ?renderer=canvas');
+  if (!/disegnaChunkPixi/.test(render) || !/R\.diagnostica/.test(render))
+    problemi.push('mancano i chunk GPU o la diagnostica del renderer');
+  if (!/await REND\.init\(cvs\)/.test(game))
+    problemi.push('game.js non aspetta l’inizializzazione asincrona del renderer');
+  return problemi;
+});
+
 /* --- e adesso: quanto pesa davvero, quell'ordine ---
 
    «L'ordine degli script è portante» stava scritto in due posti, e non

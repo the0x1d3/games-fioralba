@@ -27,6 +27,7 @@ const path = require('path');
 const zlib = require('zlib');
 
 const RADICE = __dirname;
+const PIXI_BROWSER = path.join(RADICE, 'node_modules', 'pixi.js', 'dist', 'pixi.min.js');
 const PORTA = Number(process.env.PORT) || 8123;
 const SVILUPPO = process.argv.includes('--sviluppo') || process.env.FIORALBA_SVILUPPO === '1';
 
@@ -103,8 +104,12 @@ function leggi(file, rel){
 function statico(req, res, rel){
   if(rel === '/') rel = '/index.html';
 
-  const file = path.resolve(RADICE, '.' + rel);
-  if(file !== RADICE && !file.startsWith(RADICE + path.sep)){
+  /* PixiJS resta una dipendenza npm versionata dal lockfile, ma al browser
+     consegniamo soltanto il bundle ufficiale. `node_modules/` continua a
+     essere interamente inaccessibile dalla rete. */
+  const aliasPixi = rel === '/vendor/pixi.min.js';
+  const file = aliasPixi ? PIXI_BROWSER : path.resolve(RADICE, '.' + rel);
+  if(!aliasPixi && file !== RADICE && !file.startsWith(RADICE + path.sep)){
     res.writeHead(403); return res.end('403');
   }
   const primo = rel.split('/')[1] || '';
