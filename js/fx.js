@@ -251,31 +251,63 @@ F.gradazione = function(ctx, w, h, ora, meteo, esterno){
 };
 
 /* ===================================================================
-   6. RAGGI DI SOLE (godray semplice)
+   6. SOLE E RAGGI
+
+   Il vecchio effetto inchiodava i raggi ai due angoli dello schermo:
+   l'ora cambiava colore al mondo, ma la sorgente restava sempre ferma.
+   Qui il disco segue un piccolo arco nelle finestre di alba e tramonto;
+   anche l'origine dei raggi lo segue, con un tremolio appena percettibile
+   che non rompe la griglia della pixel art.
    =================================================================== */
-F.raggi = function(ctx, w, h, ora, meteo){
+F.raggi = function(ctx, w, h, ora, meteo, tempo){
   if(meteo!=='sereno') return;
   let a=0;
   if(ora>=400 && ora<560) a = (1-Math.abs(ora-480)/80)*0.13;
   else if(ora>=1000 && ora<1140) a = (1-Math.abs(ora-1070)/70)*0.16;
   if(a<=0.004) return;
   const mattino = ora<700;
+  const p = mattino ? (ora-400)/160 : (ora-1000)/140;
+  const viaggio = Math.max(0, Math.min(1, p));
+  const respiro = Math.round(Math.sin((tempo||0)*0.0008 + (mattino?0:2.4))*K);
+  const ox = mattino
+    ? w*(0.90-0.19*viaggio)
+    : w*(0.10+0.19*viaggio);
+  const oy = -4*K + (mattino ? viaggio : 1-viaggio)*h*0.13 + respiro;
+  /* Piccolo e caldo: il sole vive sopra un mondo dall'alto, non deve
+     sembrare un quadrato bianco appoggiato sul prato. */
+  const r = 4;
   ctx.save();
   ctx.globalCompositeOperation='lighter';
-  const ox = mattino ? w*0.86 : w*0.14;
+  /* Prima l'alone, largo e molto trasparente: dà aria alla luce senza
+     disegnare un cerchio morbido estraneo al resto della scena. */
+  const alone = ctx.createRadialGradient(ox,oy,0,ox,oy,r*3.2);
+  alone.addColorStop(0, `rgba(255,236,164,${a*1.15})`);
+  alone.addColorStop(0.45, `rgba(255,190,92,${a*0.32})`);
+  alone.addColorStop(1, 'rgba(255,208,122,0)');
+  ctx.fillStyle = alone;
+  ctx.fillRect(ox-r*3.2, oy-r*3.2, r*6.4, r*6.4);
+  /* Il nucleo resta costruito a scalini, non come una pallina vettoriale
+     liscia; il renderer lo ingrandisce poi con nearest-neighbour. */
+  ctx.globalAlpha = Math.min(1, 0.52+a*1.1);
+  ctx.fillStyle = '#ffd86b';
+  ctx.fillRect(Math.round(ox-r+K), Math.round(oy-r), r*2-2*K, r*2);
+  ctx.fillRect(Math.round(ox-r), Math.round(oy-r+K), r*2, r*2-2*K);
+  ctx.fillStyle = '#fff2bd';
+  ctx.fillRect(Math.round(ox-K), Math.round(oy-K), K*2, K*2);
+  ctx.globalAlpha = 1;
   /* Le misure in frazione di schermo (w*0.55) si adattano da sole; la
      larghezza dei fasci e la loro distanza no, sono pixel, e con la
      scena raddoppiata cinque fasci da 26 sarebbero diventati cinque
      fili in mezzo al prato. */
   for(let i=0;i<5;i++){
-    const g = ctx.createLinearGradient(ox, -30*K, ox+(mattino?-1:1)*w*0.55, h);
+    const g = ctx.createLinearGradient(ox, oy, ox+(mattino?-1:1)*w*0.55, h);
     g.addColorStop(0, `rgba(255,232,170,${a*(1-i*0.13)})`);
     g.addColorStop(1, 'rgba(255,220,150,0)');
     ctx.fillStyle = g;
     ctx.beginPath();
     const sx0 = ox + (i-2)*34*K;
-    ctx.moveTo(sx0, -20*K);
-    ctx.lineTo(sx0+26*K, -20*K);
+    ctx.moveTo(sx0, oy-8*K);
+    ctx.lineTo(sx0+26*K, oy-8*K);
     ctx.lineTo(sx0+26*K+(mattino?-1:1)*w*0.5, h+20*K);
     ctx.lineTo(sx0+(mattino?-1:1)*w*0.5 - 40*K, h+20*K);
     ctx.closePath(); ctx.fill();
