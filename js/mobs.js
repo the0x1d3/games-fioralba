@@ -418,12 +418,21 @@ function puntoComparsa(G, S){
 
 function nuovo(id, pos){
   const S = SPECIE[id];
+  /* Il colore si tira UNA volta sola. Tirandolo due — una per l'indice e
+     una per la tinta — la stessa farfalla sarebbe la terza dell'elenco
+     per chi la disegna a mano e la quinta per chi la disegna in codice:
+     due bestie diverse a seconda di quale disegno è arrivato. */
+  const tavolozza = id==='farfalla' ? COLORI_FARFALLA
+                  : id==='uccellino'? COLORI_UCCELLO : null;
+  const ci = tavolozza ? (Math.random()*tavolozza.length)|0 : 0;
   return {
     tipo:id, x:pos.x, y:pos.y, z:S.vola? (14+Math.random()*22)*K : 0,
     vx:0, vy:0, dir:1, frame:0, animT:0,
     stato:'gira', t:600+Math.random()*1800,
-    col: id==='farfalla' ? COLORI_FARFALLA[(Math.random()*COLORI_FARFALLA.length)|0]
-       : id==='uccellino'? COLORI_UCCELLO[(Math.random()*COLORI_UCCELLO.length)|0] : null,
+    /* `colIdx` accanto a `col`: il disegno in codice vuole la tinta,
+       quello a mano vuole sapere QUALE delle sei farfalle è, perché i
+       colori li ha già dentro e deve solo pescare la riga giusta. */
+    colIdx: ci, col: tavolozza ? tavolozza[ci] : null,
     fase: Math.random()*6.283,
     vita: 30000+Math.random()*40000
   };
@@ -654,7 +663,9 @@ M.disegnaUno = function(sx, b, ox, oy){
   /* Il foglio disegnato a mano, se questa bestia ce l'ha. Quando c'è
      porta con sé le quattro pose; quando non c'è si torna al disegno in
      codice, che di pose ne ha una sola e la specchia. */
-  const aMano = ART.bestia ? ART.bestia(b.tipo, b.dir4===undefined ? 2 : b.dir4, b.frame) : null;
+  const aMano = ART.bestia
+    ? ART.bestia(b.tipo, b.dir4===undefined ? 2 : b.dir4, b.frame, b.volo, b.colIdx)
+    : null;
   const img = aMano || M.sprite(b.tipo, b.frame, b.volo, b.col);
   const w=img.width, h=img.height;
   const scala = Math.max(0.25, 1 - b.z/(60*K));

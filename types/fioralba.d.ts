@@ -407,7 +407,10 @@ interface FioData {
    * di fronte, di spalle, di lato, di lato col passo — e non quattro
    * fotogrammi di camminata: l'ordine lo dice `POSE_BESTIA`.
    */
-  ANIMALI: Record<string, { file: string; w: number; h: number }>;
+  ANIMALI: Record<string, { file: string; w: number; h: number;
+                            pose: 'direzioni' | 'battito'; righe: number;
+                            varia?: 'colore' | 'volo'; varianti?: number;
+                            righePerVariante?: number }>;
   POSE_BESTIA: { giu: number; su: number; lato: number[] };
   EDIFICI: Record<string, { file: string; w: number; h: number;
                             fumo?: number[]; finestre?: number[][]; fuoco?: number[];

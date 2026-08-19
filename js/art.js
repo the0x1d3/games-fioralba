@@ -2209,7 +2209,7 @@ A.verificaDirezioni = function(){
    specie ne hanno il foglio sei. */
 const CHIAVE_BESTIA = 'an:';
 const bestiaCache = {}, bestiaDaCui = {};
-A.bestia = function(id, dir, frame){
+A.bestia = function(id, dir, frame, volo, colIdx){
   if(!window.IMG || !window.DATA || !DATA.ANIMALI || !DATA.ANIMALI[id]) return null;
   const img = IMG.prendi(CHIAVE_BESTIA + id);
   if(!img) return null;
@@ -2217,13 +2217,28 @@ A.bestia = function(id, dir, frame){
     for(const k in bestiaCache) if(k.indexOf(id+'|')===0) delete bestiaCache[k];
     bestiaDaCui[id] = img;
   }
-  const P = DATA.POSE_BESTIA;
-  const cella = dir===3 ? P.su : dir===0 ? P.giu : P.lato[(frame|0) % P.lato.length];
-  const key = id+'|'+cella;
+  const A2 = DATA.ANIMALI[id], P = DATA.POSE_BESTIA;
+  const f = (frame|0) & 3;
+  /* LA COLONNA è la posa, e le due famiglie la scelgono in due modi:
+     chi ha le direzioni pesca la cella della direzione (i due lati
+     alternano fra loro, ed è li' che sta la camminata); chi ha il
+     battito scorre le quattro colonne una dopo l'altra. */
+  const col = A2.pose === 'battito'
+            ? f
+            : (dir===3 ? P.su : dir===0 ? P.giu : P.lato[f % P.lato.length]);
+  /* LA RIGA è la variante. Le righe per variante, quando sono più di
+     una, sono fotogrammi: è il caso dell'uccellino, cinque colori per
+     due passi. */
+  const perVar = A2.righePerVariante || 1;
+  let riga = 0;
+  if(A2.varia === 'colore') riga = ((colIdx|0) % (A2.varianti||1)) * perVar + (perVar>1 ? f % perVar : 0);
+  else if(A2.varia === 'volo') riga = volo ? 0 : 1;
+  riga = Math.max(0, Math.min((A2.righe||1) - 1, riga));
+
+  const key = id+'|'+col+'|'+riga;
   if(bestiaCache[key]) return bestiaCache[key];
-  const A2 = DATA.ANIMALI[id];
   const c = cv(A2.w, A2.h);
-  c.getContext('2d').drawImage(img, cella*A2.w, 0, A2.w, A2.h, 0, 0, A2.w, A2.h);
+  c.getContext('2d').drawImage(img, col*A2.w, riga*A2.h, A2.w, A2.h, 0, 0, A2.w, A2.h);
   bestiaCache[key] = c;
   return c;
 };

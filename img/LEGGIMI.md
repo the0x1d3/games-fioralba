@@ -200,6 +200,38 @@ alla spicciolata; ma finché non ci sono tutte, d'inverno metà paese ha la neve
 sul tetto e l'altra metà no.
 
 
+## Le bestie, e i loro due modi di muoversi
+
+Undici specie, un file per specie, e il file è sempre **quattro colonne per N
+righe**. Le colonne però vogliono dire due cose diverse, e lo dice `pose` in
+`DATA.ANIMALI`:
+
+- **`direzioni`** — le quattro colonne sono di fronte, di spalle, di lato e di
+  lato col passo. Ce l'hanno le sei che camminano, più corvo e uccellino, che
+  volando restano dritti e ti danno il davanti o il di dietro. Il lato è
+  disegnato verso destra e per andare a sinistra si specchia.
+- **`battito`** — le quattro colonne sono quattro istanti dello stesso battito
+  d'ali, e la direzione non c'entra. Ce l'hanno farfalla, libellula e
+  pipistrello: una farfalla non ha un profilo, ha due ali che si aprono.
+
+Le **righe** sono le varianti: il colore (sei farfalle, cinque uccellini) o lo
+stato (il corvo in volo e posato). Quando una variante occupa più righe, quelle
+righe sono fotogrammi — l'uccellino ha cinque colori per due passi, dieci
+righe in tutto.
+
+Tre cose che sono costate una prova ciascuna:
+
+- **la scala viene dal PROFILO**, non dalla media delle pose. È la posa che si
+  vede quasi sempre, e deve restare alta quanto la bestia disegnata in codice
+  — 40 pixel il coniglio, 74 il cervo — o le bestie cambiano statura passando
+  al disegno nuovo. Fronte e schiena sono più strette e più alte, e la cella
+  cresce per contenerle: così la bestia non cambia statura nemmeno girandosi.
+- **chi vola si centra anche in verticale.** Non ha piedi da appoggiare, e
+  allineandolo in basso sfarfallerebbe su e giù a ogni battito.
+- **il pipistrello sembra avere le direzioni e non ce le ha.** Le sue prime
+  quattro celle sono tutte di fronte, con le ali in quattro posizioni.
+  Guardarle prima di tagliarle ha risparmiato un'esportazione sbagliata.
+
 ## Come si allinea una camminata
 
 I sorgenti arrivano **ritagliati stretti**, ognuno sul proprio contenuto,

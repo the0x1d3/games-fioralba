@@ -2177,16 +2177,54 @@ D.EDIFICI = {
    il coniglio, 74 il cervo. Il profilo e non la media, perché è la posa
    che si vede quasi sempre; fronte e schiena sono più strette e più
    alte, e la cella cresce per contenerle senza che la bestia cambi
-   statura girandosi. */
+   statura girandosi.
+
+   CHI VOLA HA UN MODELLO SUO, e non è una complicazione gratuita: è
+   come sono disegnati, e come si vedono.
+
+   `pose:'direzioni'` — quattro colonne che sono le quattro direzioni,
+   come per chi cammina. Ce l'hanno il corvo e l'uccellino, che quando
+   volano restano dritti e ti danno il davanti o il di dietro.
+
+   `pose:'battito'` — quattro colonne che sono quattro istanti dello
+   stesso battito d'ali, senza direzione. Ce l'hanno farfalla, libellula
+   e pipistrello, che si vedono sempre dall'alto o di fronte: una
+   farfalla non ha un profilo, ha due ali che si aprono e si chiudono.
+
+   E le RIGHE sono le varianti, dichiarate in `per`: il colore per
+   farfalla e uccellino, lo stato d'ala per corvo e uccellino (l'unico
+   che ha tutti e due, e quindi dieci righe: cinque colori per due
+   stati). `volo` esisteva già nel gioco come bandierina per gli uccelli,
+   e qui diventa la riga da pescare.
+
+   Il pipistrello è a battito e non a direzioni, e vale la pena dirlo
+   perché nel foglio SEMBRA avere le direzioni come gli altri: le sue
+   prime quattro celle sono però tutte di fronte, con le ali in quattro
+   posizioni. Guardarle prima di tagliarle è costato una prova e ne ha
+   risparmiata una sbagliata. */
 D.POSE_BESTIA = { giu:0, su:1, lato:[2,3] };
 
 D.ANIMALI = {
-  coniglio:   { file:'animale-coniglio.png',   w:44, h:48 },
-  cervo:      { file:'animale-cervo.png',      w:84, h:88 },
-  scoiattolo: { file:'animale-scoiattolo.png', w:52, h:48 },
-  riccio:     { file:'animale-riccio.png',     w:60, h:48 },
-  rana:       { file:'animale-rana.png',       w:36, h:36 },
-  lumaca:     { file:'animale-lumaca.png',     w:44, h:36 }
+  coniglio:   { file:'animale-coniglio.png',   w:44, h:48, pose:'direzioni', righe:1 },
+  cervo:      { file:'animale-cervo.png',      w:84, h:88, pose:'direzioni', righe:1 },
+  scoiattolo: { file:'animale-scoiattolo.png', w:52, h:48, pose:'direzioni', righe:1 },
+  riccio:     { file:'animale-riccio.png',     w:60, h:48, pose:'direzioni', righe:1 },
+  rana:       { file:'animale-rana.png',       w:36, h:36, pose:'direzioni', righe:1 },
+  lumaca:     { file:'animale-lumaca.png',     w:44, h:36, pose:'direzioni', righe:1 },
+
+  farfalla:   { file:'animale-farfalla.png',   w:40, h:32, pose:'battito',   righe:6,
+                varia:'colore', varianti:6 },
+  libellula:  { file:'animale-libellula.png',  w:48, h:40, pose:'battito',   righe:1 },
+  pipistrello:{ file:'animale-pipistrello.png',w:48, h:32, pose:'battito',   righe:1 },
+  /* L'uccellino ha DUE righe per colore e sono due fotogrammi, non due
+     stati d'ala: guardate da vicino cambiano di un'ala e di una zampa.
+     Il corvo invece ha due righe che sono davvero in volo e posato — si
+     vede a occhio nudo — e quelle pescano dalla bandierina `volo` che
+     il gioco aveva già. */
+  uccellino:  { file:'animale-uccellino.png',  w:48, h:40, pose:'direzioni', righe:10,
+                varia:'colore', varianti:5, righePerVariante:2 },
+  corvo:      { file:'animale-corvo.png',      w:56, h:40, pose:'direzioni', righe:2,
+                varia:'volo', varianti:2 }
 };
 
 /* GLI ABITANTI DISEGNATI A MANO, uno per foglio.

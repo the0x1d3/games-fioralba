@@ -2919,10 +2919,32 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
       const b = fs.readFileSync(f);
       if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) { problemi.push(`img/${A.file} non è un PNG`); continue; }
       const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+      const righe = A.righe || 1;
       if (w !== A.w * celle)
         problemi.push(`img/${A.file} è largo ${w} ma ${celle} pose da ${A.w} fanno ${A.w*celle}`);
-      if (h !== A.h)
-        problemi.push(`img/${A.file} è alto ${h} ma «${id}» dichiara ${A.h}: le pose stanno in fila, non in griglia`);
+      if (h !== A.h * righe)
+        problemi.push(`img/${A.file} è alto ${h} ma «${id}» dichiara ${righe} righe da ${A.h}, cioè ${A.h*righe}`);
+      /* Le righe devono bastare alle varianti che si dichiarano: una
+         farfalla che pesca la sesta riga di un foglio che ne ha cinque
+         ritaglia il vuoto, e a schermo sparisce una farfalla su sei
+         senza che niente si lamenti. */
+      const perVar = A.righePerVariante || 1;
+      const servono = (A.varianti || 1) * perVar;
+      if (A.varia && servono > righe)
+        problemi.push(`«${id}» dichiara ${A.varianti} varianti da ${perVar} righe, cioè ${servono}, ` +
+                      `ma il foglio ne ha ${righe}`);
+      if (A.varia === 'colore' && (id === 'farfalla' || id === 'uccellino')) {
+        const src = fs.readFileSync(path.join(RADICE, 'js', 'mobs.js'), 'utf8');
+        const nome = id === 'farfalla' ? 'COLORI_FARFALLA' : 'COLORI_UCCELLO';
+        const i0 = src.indexOf('const ' + nome);
+        const a0 = src.indexOf('[', i0), a1 = src.indexOf(']', a0);
+        const quanti = i0 < 0 ? 0 : src.slice(a0 + 1, a1).split(',').length;
+        if (quanti && quanti !== A.varianti)
+          problemi.push(`«${id}» dichiara ${A.varianti} colori ma ${nome} ne ha ${quanti}: ` +
+                        'il foglio e la tavolozza devono contarli uguale');
+      }
+      if (A.pose !== 'direzioni' && A.pose !== 'battito')
+        problemi.push(`«${id}» ha pose «${A.pose}», che non esiste: o «direzioni» o «battito»`);
     }
   }
 
