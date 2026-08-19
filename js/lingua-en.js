@@ -937,6 +937,10 @@ Object.assign(window.LINGUA_EN, {
 /* --- i pulsanti --- */
 'Nuova Partita': 'New Game',
 'Continua': 'Continue',
+'Da dove vuoi cominciare?': 'Where would you like to begin?',
+'La valle è pronta. Scegli il tuo prossimo passo.': 'The valley is ready. Choose your next step.',
+'Parti da zero e costruisci la tua storia.': 'Start from scratch and build your story.',
+"Riprendi la tua valle da dove l'avevi lasciata.": 'Return to your valley where you left it.',
 'Importa salvataggio': 'Import a save',
 'Come si gioca': 'How to play',
 'guarda com\'è': 'see what it looks like',

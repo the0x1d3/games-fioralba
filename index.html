@@ -204,6 +204,9 @@
 
   <!-- ============ LANDING PAGE ============ -->
   <div id="landing">
+    <div class="lp-floating-actions">
+      <button class="btn lp-lingua" id="lp-lingua" aria-label="Cambia lingua"></button>
+    </div>
     <div class="lp-scroll">
 
       <header class="lp-hero">
@@ -218,9 +221,33 @@
           Coltiva, pesca, scendi in miniera, fatti voler bene dal paese —
           e, stagione dopo stagione, riaccendila.
         </p>
-        <div class="lp-cta">
-          <button class="bigbtn lp-new" data-t>Nuova Partita</button>
-          <button class="bigbtn ghost lp-continue" data-t>Continua</button>
+        <div class="lp-start">
+          <div class="lp-start-heading">
+            <span class="lp-start-kicker" data-t>Da dove vuoi cominciare?</span>
+            <span class="lp-start-note" data-t>La valle è pronta. Scegli il tuo prossimo passo.</span>
+          </div>
+          <div class="lp-start-grid">
+            <article class="lp-start-card lp-start-card-new">
+              <div class="lp-start-card-top">
+                <span class="lp-start-icon" aria-hidden="true">✦</span>
+                <span class="lp-start-label" data-t>Nuova Partita</span>
+              </div>
+              <p data-t>Parti da zero e costruisci la tua storia.</p>
+              <button class="bigbtn lp-new">
+                <span data-t>Nuova Partita</span><span class="lp-start-arrow" aria-hidden="true">→</span>
+              </button>
+            </article>
+            <article class="lp-start-card lp-start-card-continue">
+              <div class="lp-start-card-top">
+                <span class="lp-start-icon" aria-hidden="true">↗</span>
+                <span class="lp-start-label" data-t>Continua</span>
+              </div>
+              <p data-t>Riprendi la tua valle da dove l'avevi lasciata.</p>
+              <button class="bigbtn ghost lp-continue">
+                <span data-t>Continua</span><span class="lp-start-arrow" aria-hidden="true">→</span>
+              </button>
+            </article>
+          </div>
         </div>
 
         <ul class="lp-fatti">
@@ -315,18 +342,6 @@
 
     </div>
 
-    <!-- barra sempre visibile -->
-    <div class="lp-bar">
-      <span class="lp-bar-title">🏮 Fioralba</span>
-      <div class="lp-bar-btns">
-        <!-- la lingua si sceglie prima di cominciare, non solo dal menu
-             interno: chi arriva e non legge italiano deve poterlo fare
-             senza entrare in partita al buio -->
-        <button class="btn lp-lingua" id="lp-lingua"></button>
-        <button class="btn lp-continue" data-t>Continua</button>
-        <button class="btn gold lp-new" data-t>Nuova Partita</button>
-      </div>
-    </div>
   </div>
 
   <!-- ============ CHANGELOG (finestra) ============
