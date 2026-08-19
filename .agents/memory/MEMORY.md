@@ -1,1 +1,2 @@
 - [Editor locale e debug privato](editor-workflow.md) — durante la fase privata il debug resta attivo; l’editor gira localmente e solo gli scenari approvati vengono pubblicati.
+- [Validazione degli aggiornamenti scenario](scenario-migration-validation.md) — controllare solo i ritocchi e i loro arrivi, preservando la scenografia intenzionale su acqua.

@@ -7,7 +7,7 @@
   "//": "Il gioco NON ha bisogno di npm per girare: si apre index.html e funziona. Questo file esiste solo per gli strumenti di sviluppo (type-check e test di coerenza dei dati).",
   "scripts": {
     "check": "tsc --noEmit",
-    "test": "node tools/coerenza.js",
+    "test": "node tools/coerenza.js && node tools/scenari-migrazione.js",
     "verifica": "npm run test && npm run check",
     "serve": "node server.js --sviluppo",
     "editor": "node tools/scenario-editor.js",

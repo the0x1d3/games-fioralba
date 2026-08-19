@@ -2160,7 +2160,7 @@ W.vicinoLibero = function(m, x, y){
  }
 
  function oggettoGiocatore(o){
-   return !!(o && (o.t === 'mobile' || o.t === 'macchina'));
+    return !!(o && (o.t === 'mobile' || o.t === 'macchina' || o.t === 'silo'));
  }
 
  function copiaOggetto(o){
@@ -2170,6 +2170,10 @@ W.vicinoLibero = function(m, x, y){
 
  function applicaTerreno(m, voce, conservaGiocatore){
    if(!W.dentro(m, voce.x, voce.y)) return false;
+    /* Gli spazi sono promessi a edifici del giocatore. Uno scenario non può
+       renderli acqua o occuparli: al caricamento l'edificio viene ricostruito
+       dallo stato della partita, non dalla scenografia. */
+    if(W.riservata(m, voce.x, voce.y, {})) return false;
    const i = W.idx(m, voce.x, voce.y);
    if(voce.da !== undefined && W.terreno(m, voce.x, voce.y) !== voce.da) return false;
    /* Il terreno arato e le colture sono sempre proprietà della partita. */
@@ -2183,6 +2187,7 @@ W.vicinoLibero = function(m, x, y){
 
  function applicaOggetto(m, voce, conservaGiocatore){
    if(!W.dentro(m, voce.x, voce.y)) return false;
+    if(W.riservata(m, voce.x, voce.y, {})) return false;
    const i = W.idx(m, voce.x, voce.y);
    const attuale = m.obj[i];
    if(voce.azione === 'rimuovi'){
@@ -2195,6 +2200,7 @@ W.vicinoLibero = function(m, x, y){
      const da = voce.da || {};
      if(!stessoOggetto(attuale, da) || (conservaGiocatore && oggettoGiocatore(attuale))) return false;
      if(!W.dentro(m, voce.a.x, voce.a.y)) return false;
+      if(W.riservata(m, voce.a.x, voce.a.y, {})) return false;
      const arrivo = W.idx(m, voce.a.x, voce.a.y);
      if(m.obj[arrivo] && m.obj[arrivo] !== attuale) return false;
      m.obj[i] = null;
@@ -2216,6 +2222,161 @@ W.vicinoLibero = function(m, x, y){
    return d && [d.t,d.x,d.y,d.w,d.h,d.testo].map(v=>v===undefined?'':String(v)).join('|');
  }
 
+  function copiaUguale(a, b){
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+
+  function ePassaggio(m, x, y){
+    return (m.warps || []).some(w =>
+      x >= w.x && x < w.x+w.w && y >= w.y && y < w.y+w.h
+    );
+  }
+
+  /* Fontane e barche sono solide perché non ci si cammina attraverso, ma
+     stanno deliberatamente sull'acqua. Non sono una collisione corrotta:
+     vietarle all'editor renderebbe impossibile ritoccare un porto o una
+     fontana valida. */
+  function scenografiaSuAcqua(o, terreno){
+    return terreno==='acqua' && o && (o.t==='barca' || o.t==='fontana');
+  }
+
+  /* Una migrazione non deve mai lasciare una cassa sopra a un'uscita o un
+     raccolto sotto a una nuova riva. Questo controllo è volutamente piccolo:
+     non giudica la scenografia, controlla soltanto le condizioni che possono
+     intrappolare il giocatore o nascondere una sua cosa. */
+  W.verificaMappe = function(mappe, ritocchi){
+    const problemi = [];
+    for(const id in mappe){
+      const m = mappe[id];
+      const toccata = (mappa,x,y) => !!(ritocchi && ritocchi[mappa] && ritocchi[mappa].has(x+','+y));
+      for(const w of (m.warps || [])){
+        const uscitaLibera = Array.from({length:w.w*w.h}, (_,n)=>({
+          x:w.x+n%w.w, y:w.y+((n/w.w)|0)
+        })).some(p=>!W.solido(m,p.x,p.y));
+        if(!uscitaLibera) problemi.push(id+': uscita verso '+w.to+' bloccata');
+        const arrivo = mappe[w.to];
+        /* Nelle miniere i minerali ricrescono anche sopra a una scala:
+           l'ingresso viene ripulito dal passaggio vero, non da questo
+           controllo statico. Qui segnaliamo perciò soltanto un oggetto del
+           giocatore che ha bloccato l'arrivo, non la scenografia dinamica. */
+        const oArrivo = arrivo && W.dentro(arrivo,w.tx,w.ty)
+          ? arrivo.obj[W.idx(arrivo,w.tx,w.ty)] : null;
+        if(!arrivo || !W.dentro(arrivo,w.tx,w.ty) ||
+           ((oggettoGiocatore(oArrivo) || toccata(w.to,w.tx,w.ty)) &&
+             W.solido(arrivo,w.tx,w.ty)))
+          problemi.push(id+': collegamento verso '+w.to+' non utilizzabile');
+      }
+      for(let i=0;i<m.obj.length;i++){
+        const o = m.obj[i];
+        if(!o || o.t==='muro' || o.t==='porta' || o.t==='rimando') continue;
+        const x=i%m.w, y=(i/m.w)|0;
+        if((toccata(id,x,y) || oggettoGiocatore(o)) && SOLIDI[W.terreno(m,x,y)] &&
+           !scenografiaSuAcqua(o,W.terreno(m,x,y)))
+          problemi.push(id+': '+o.t+' sopra terreno solido in '+x+','+y);
+        if(ePassaggio(m,x,y) && o.solido && (toccata(id,x,y) || oggettoGiocatore(o)))
+          problemi.push(id+': '+o.t+' blocca un passaggio in '+x+','+y);
+      }
+      for(let i=0;i<m.suolo.length;i++) if(m.suolo[i]){
+        const x=i%m.w, y=(i/m.w)|0, o=m.obj[i];
+        if(!m.coltivabile || SOLIDI[W.terreno(m,x,y)] || (o && o.solido))
+          problemi.push(id+': coltura non raggiungibile in '+x+','+y);
+      }
+    }
+    return problemi;
+  };
+
+  function casellaLiberaPerGiocatore(m, x, y, o){
+    if(!W.dentro(m,x,y) || ePassaggio(m,x,y)) return false;
+    if(W.riservata(m,x,y,{})) return false;
+    if(!W.ciStaArredo(m,x,y,o)) return false;
+    return true;
+  }
+
+  function traslocaGiocatore(m, o, x, y){
+    for(let r=0;r<Math.max(m.w,m.h);r++){
+      for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){
+        if(Math.max(Math.abs(dx),Math.abs(dy))!==r) continue;
+        const ax=x+dx, ay=y+dy;
+        if(!casellaLiberaPerGiocatore(m,ax,ay,o)) continue;
+        W.arredo(m,ax,ay,o);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /* Applica la parte della mappa che appartiene al giocatore. Ogni modifica
+     porta il valore di partenza: se nel frattempo uno scenario approvato ha
+     cambiato proprio quella casella, una coltura e gli oggetti posati vengono
+     traslocati, mentre un albero tagliato non cancella un albero scenografico
+     nuovo. È il confine che mancava fra mondo scritto e partita giocata. */
+  W.applicaDeltaGiocatore = function(m, delta){
+    const esito = {applicati:0, saltati:0, traslocati:0};
+    if(!m || !delta || typeof delta!=='object') return esito;
+    const terreno = delta.terreno || {};
+    for(const k in terreno){
+      const i=k|0, voce=terreno[k];
+      if(i<0 || i>=m.g.length || !voce || !Number.isInteger(voce.da) || !Number.isInteger(voce.a)){
+        esito.saltati++; continue;
+      }
+      if(m.g[i] !== voce.da){ esito.saltati++; continue; }
+      if(voce.a<0 || voce.a>=TIPI.length){ esito.saltati++; continue; }
+      m.g[i]=voce.a; esito.applicati++;
+    }
+    const oggetti = delta.oggetti || {};
+    for(const k in oggetti){
+      const i=k|0, voce=oggetti[k];
+      if(i<0 || i>=m.obj.length || !voce || !('da' in voce) || !('a' in voce)){
+        esito.saltati++; continue;
+      }
+      const ora=m.obj[i], mio=voce.a;
+      if(copiaUguale(ora,voce.da)){
+        if(oggettoGiocatore(mio) && !casellaLiberaPerGiocatore(m,i%m.w,(i/m.w)|0,mio)){
+          if(traslocaGiocatore(m,mio,i%m.w,(i/m.w)|0)){ esito.traslocati++; continue; }
+          esito.saltati++; continue;
+        }
+        m.obj[i]=mio; esito.applicati++; continue;
+      }
+      /* Le prime partite salvate con il formato a delta registravano il
+         silo anche qui. Oggi lo ricostruiamo da `costruzioni` prima della
+         delta: quando troviamo entrambi nella sua impronta, la vecchia voce
+         è già soddisfatta e non deve creare un secondo silo traslocato. */
+      if(mio && mio.t==='silo' && ora && ora.t==='silo'){
+        esito.applicati++; continue;
+      }
+      /* Una macchina o un recinto è una costruzione del giocatore: se lo
+         scenario nuovo ha preso la sua casella, si salva in quella libera
+         più vicina. Una modifica negativa invece (un albero raccolto) non
+         deve cancellare la scenografia arrivata con l'aggiornamento. */
+      if(oggettoGiocatore(mio) && traslocaGiocatore(m,mio,i%m.w,(i/m.w)|0)){
+        esito.traslocati++; continue;
+      }
+      esito.saltati++;
+    }
+    const suolo = delta.suolo || {};
+    for(const k in suolo){
+      const i=k|0, valore=suolo[k];
+      if(i<0 || i>=m.suolo.length || !valore){ esito.saltati++; continue; }
+      const x=i%m.w, y=(i/m.w)|0;
+      if(m.coltivabile && !W.solido(m,x,y) && !ePassaggio(m,x,y) && !m.suolo[i]){
+        m.suolo[i]=valore; esito.applicati++; continue;
+      }
+      /* Il campo non sparisce se una riva o un arredo nuovo ne occupa la
+         casella: cerca terra buona libera, senza mai chiudere un'uscita. */
+      let messo=false;
+      for(let r=1;r<Math.max(m.w,m.h) && !messo;r++) for(let dy=-r;dy<=r && !messo;dy++)
+        for(let dx=-r;dx<=r;dx++){
+          if(Math.max(Math.abs(dx),Math.abs(dy))!==r) continue;
+          const ax=x+dx, ay=y+dy, j=W.idx(m,ax,ay);
+          if(!W.dentro(m,ax,ay) || ePassaggio(m,ax,ay) || m.suolo[j] ||
+             m.obj[j] || !['erba','terra'].includes(W.terreno(m,ax,ay))) continue;
+          m.suolo[j]=valore; esito.traslocati++; messo=true; break;
+        }
+      if(!messo) esito.saltati++;
+    }
+    return esito;
+  };
+
  W.applicaScenario = function(m, scenario, conservaGiocatore){
    if(!m || !scenario || scenario.mappa !== m.id) return { applicati:0, saltati:0 };
    if(scenario.w !== m.w || scenario.h !== m.h) return { applicati:0, saltati:1, errore:'misure diverse' };
@@ -2233,7 +2394,9 @@ W.vicinoLibero = function(m, x, y){
        if(indice < 0) { saltati++; continue; }
        m.deco.splice(indice, 1); applicati++;
      } else if(voce.azione === 'aggiungi' && voce.decorazione){
-       m.deco.push(copiaOggetto(voce.decorazione)); applicati++;
+        const firma = firmaDeco(voce.decorazione);
+        if(m.deco.some(d => firmaDeco(d) === firma)){ saltati++; continue; }
+        m.deco.push(copiaOggetto(voce.decorazione)); applicati++;
      } else saltati++;
    }
    return { applicati, saltati };

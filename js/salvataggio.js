@@ -26,7 +26,47 @@ const S = {};
 window.SALVA = S;
 
 
-function serializzaMappa(m){
+function oggettoSalvabile(o){
+  if(!o || o.t==='muro' || o.t==='porta' || o.t==='rimando') return null;
+  /* `ed` punta all'edificio che contiene anche la mappa: è un cerchio
+     lecito mentre si gioca, ma non è un dato da salvare. Normalmente sta
+     solo su muri e porte (già esclusi); toglierlo comunque qui evita che un
+     oggetto scenografico costruito a mano renda impossibile un autosave. */
+  const copia={};
+  for(const k in o) if(k!=='ed') copia[k]=o[k];
+  return copia;
+}
+
+function stessiOggetti(a,b){
+  return JSON.stringify(oggettoSalvabile(a)) === JSON.stringify(oggettoSalvabile(b));
+}
+
+/* Gli interni hanno già una separazione migliore: i mobili scritti dalla
+   stanza si ricreano e `arrediSpostati` conserva soltanto le differenze.
+   Fuori, invece, questa delta confronta la valle giocata con una valle fresca
+   che ha già lo scenario approvato: campo, macchine, alberi raccolti e casse
+   non possono più essere scambiati per scenografia dal salvataggio. */
+function serializzaMappa(m, base){
+  if(!base || m.interno) return serializzaMappaLegacy(m);
+  const giocatore={terreno:{}, oggetti:{}, suolo:{}};
+  for(let i=0;i<m.g.length;i++){
+    if(m.g[i]!==base.g[i]) giocatore.terreno[i]={da:base.g[i],a:m.g[i]};
+    /* Il silo viene ricreato da `costruzioni` prima della delta: salvarlo
+       anche come oggetto aggiunto lo farebbe comparire una seconda volta
+       accanto a sé quando si riapre una partita aggiornata. */
+    const siloRicostruito = m.id==='podere' && G.costruzioni && G.costruzioni.silo &&
+      m.obj[i] && m.obj[i].t==='silo';
+    if(!siloRicostruito && !stessiOggetti(m.obj[i],base.obj[i]))
+      giocatore.oggetti[i]={da:oggettoSalvabile(base.obj[i]),a:oggettoSalvabile(m.obj[i])};
+    if(m.suolo[i]) giocatore.suolo[i]=m.suolo[i];
+  }
+  return {w:m.w, h:m.h, giocatore};
+}
+
+/* Il vecchio formato resta per gli interni e viene ancora letto per tutte le
+   mappe nei salvataggi già esistenti. Tenerlo in una funzione a parte evita
+   che il nuovo formato si appoggi per errore al terreno completo. */
+function serializzaMappaLegacy(m){
   const obj={}, suolo={};
   for(let i=0;i<m.obj.length;i++){
     const o=m.obj[i];
@@ -88,6 +128,10 @@ function deserializzaMappa(m, d){
     ? (d.w === m.w && d.h === m.h)
     : (Array.isArray(d.g) && d.g.length === m.g.length);   // salvataggi vecchi: si deduce
   if(!stessaMisura) return;
+  if(!m.interno && d.giocatore){
+    WORLD.applicaDeltaGiocatore(m,d.giocatore);
+    return;
+  }
 
   /* Le stanze sono *scritte*, non costruite dal giocatore: il letto sta
      dove l'abbiamo messo noi, e non c'è motivo di rileggerlo da un
@@ -103,7 +147,7 @@ function deserializzaMappa(m, d){
      ha il salvataggio guasto guarisce da solo alla prima apertura. */
   if(m.interno){
     const miei = [];
-    for(const k in d.obj){
+    for(const k in (d.obj||{})){
       const o = d.obj[k];
       if(o && (o.t==='macchina' || o.t==='mobile')) miei.push([k|0, o]);
     }
@@ -151,12 +195,19 @@ function deserializzaMappa(m, d){
     if(o && (o.t==='muro'||o.t==='porta')) continue;
     m.obj[i]=null;
   }
-  for(const k in d.obj) m.obj[k|0]=d.obj[k];
+  for(const k in (d.obj||{})) m.obj[k|0]=d.obj[k];
   m.suolo = new Array(m.w*m.h).fill(null);
-  for(const k in d.suolo) m.suolo[k|0]=d.suolo[k];
+  for(const k in (d.suolo||{})) m.suolo[k|0]=d.suolo[k];
+}
+
+function basiScenari(){
+  const mappe = WORLD.crea();
+  if(window.SCENARI) SCENARI.applica(mappe, false);
+  return mappe;
 }
 
 function costruisciDati(){
+  const basi = basiScenari();
   return {
     /* v3: la casella è passata da 32 a 64, e con lei ogni posizione in
        pixel scritta qui dentro. Vedi `raddoppiaPosizioni`. */
@@ -179,7 +230,11 @@ function costruisciDati(){
     richieste:G.richieste, richiestaSeq:G.richiestaSeq, premiSospesi:G.premiSospesi, arrediSpostati:G.arrediSpostati, bottiglieLette:G.bottiglieLette, serie:G.serie, gatto:G.gatto,
     obiettiviRiscossi:G.obiettiviRiscossi, sagra:G.sagra, mercante:G.mercante, trame:G.trame, vicende:G.vicende, persona:G.persona, visitati:G.visitati, collezione:G.collezione,
     px:G.p.px, py:G.p.py,
-    maps:(function(){ const o={}; for(const k in G.maps) o[k]=serializzaMappa(G.maps[k]); return o; })()
+    /* Non è la versione del FORMATO dei file: è l'edizione del contenuto
+       approvato per ogni mappa, inclusi gli zeri. Serve a spiegare e
+       controllare la migrazione quando una valle già giocata riceve ritocchi. */
+    versioniScenario:window.SCENARI ? SCENARI.versioni(G.maps) : {},
+    maps:(function(){ const o={}; for(const k in G.maps) o[k]=serializzaMappa(G.maps[k],basi[k]); return o; })()
   };
 }
 
@@ -223,6 +278,12 @@ function validaSalvataggio(d){
       return 'Lo zaino nel salvataggio contiene voci non valide.';
   }
   if(!d.maps || typeof d.maps!=='object') return 'Il salvataggio non contiene le mappe della valle.';
+  if(d.versioniScenario!==undefined &&
+     (!d.versioniScenario || typeof d.versioniScenario!=='object' || Array.isArray(d.versioniScenario)))
+    return 'Le versioni degli scenari nel salvataggio non sono valide.';
+  if(d.versioniScenario) for(const k in d.versioniScenario)
+    if(!WORLD.MAPPE.includes(k) || !Number.isInteger(d.versioniScenario[k]) || d.versioniScenario[k]<0)
+      return 'Una versione dello scenario nel salvataggio non è valida.';
   const trovate = Object.keys(d.maps).filter(k=>WORLD.MAPPE.indexOf(k)>=0);
   if(!trovate.length) return 'Le mappe del salvataggio non corrispondono a quelle del gioco.';
   for(const k of trovate){
@@ -232,6 +293,8 @@ function validaSalvataggio(d){
     if(m.gr!==undefined && (!Array.isArray(m.gr) || m.gr.length%2)) return 'La mappa «'+k+'» ha un terreno compresso non valido.';
     if(m.obj!==undefined && (typeof m.obj!=='object' || Array.isArray(m.obj))) return 'La mappa «'+k+'» ha oggetti non validi.';
     if(m.suolo!==undefined && (typeof m.suolo!=='object' || Array.isArray(m.suolo))) return 'La mappa «'+k+'» ha un terreno coltivato non valido.';
+    if(m.giocatore!==undefined && (!m.giocatore || typeof m.giocatore!=='object' || Array.isArray(m.giocatore)))
+      return 'La mappa «'+k+'» non separa correttamente le modifiche del giocatore.';
   }
   for(const [k,tipo] of [['oro','number'],['giorno','number'],['stagioneIdx','number'],['anno','number']]){
     if(d[k]!==undefined && typeof d[k]!==tipo) return 'Il campo «'+k+'» nel salvataggio non è valido.';
@@ -294,6 +357,10 @@ function applicaSalvataggio(raw){
   raddoppiaPosizioni(d);
   Object.assign(G, G.statoIniziale());
   G.maps = WORLD.crea();
+  /* Prima entra la base vigente dello scenario. Da qui in poi arrivano
+     soltanto progresso e differenze del giocatore: un salvataggio non può
+     più riscrivere per intero una piazza o un sentiero appena aggiornati. */
+  if(window.SCENARI) SCENARI.applica(G.maps, false);
   for(const k of ['nomeGiocatore','mappaId','oro','energia','energiaMax','energiaBonus','giorno','stagioneIdx',
                   'anno','giornoTot','ora','meteo','meteoDomani','inv','invMax','slotSel',
                   'skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
@@ -311,39 +378,31 @@ function applicaSalvataggio(raw){
      distingue più «non ce l'aveva» da «era davvero zero». */
   if(d.energiaBonus === undefined && typeof d.energiaMax === 'number')
     G.energiaBonus = Math.max(0, d.energiaMax - 180);
-  /* Le due rovine si ristampano, come il burrone e il molo: viaggiano
-     nel salvataggio come tutti gli oggetti, quindi una partita
-     cominciata prima che esistessero non le avrebbe mai. Va prima di
-     `costruisci`, che poi si porta via quelle gia' costruite. */
+  /* Le costruzioni sono progresso, non scenografia: vengono dopo la base
+     approvata e prima della delta che il giocatore ha lasciato sul terreno. */
   WORLD.ristampaRovine(G.maps.podere, G.costruzioni);
   for(const id in G.costruzioni) if(G.costruzioni[id]) WORLD.costruisci(G.maps, id);
+  let ceraLegacy=false;
   if(d.maps){
-    for(const k in d.maps) if(G.maps[k]) deserializzaMappa(G.maps[k], d.maps[k]);
+    for(const k in d.maps) if(G.maps[k]){
+      if(!d.maps[k].giocatore) ceraLegacy=true;
+      deserializzaMappa(G.maps[k], d.maps[k]);
+    }
   }
-  /* Il terreno del bosco è appena tornato dal salvataggio, burrone
-     compreso: se il salvataggio è di prima della correzione, il burrone
-     è ancora quello corto e la radura resta aggirabile a piedi. Il
-     burrone lo decidiamo noi, non il giocatore, quindi si ristampa. */
-  WORLD.ristampaBurrone(G.maps.bosco, !!G.costruzioni.ponte);
-  /* E il ponticello del podere, che nei salvataggi vecchi non copriva il
-     ruscello: due caselle d'acqua restavano fra il viale e le assi, e il
-     viale si interrompeva senza che si capisse perché. */
-  WORLD.ristampaPonticello(G.maps.podere);
-  /* E il molo del laghetto, per la stessa ragione: senza le tre caselle
-     di assi sotto, le due traverse del pontile restano a galleggiare
-     sull'acqua staccate da tutto. */
-  WORLD.ristampaMolo(G.maps.podere);
-  /* Stessa ragione, e stesso rimedio, per il porto e la costa: la
-     Piazza del Porto ha preso l'insenatura con la banchina e le barche,
-     la spiaggia le dune e le pozze di marea, e senza questo chi ha una
-     partita avviata continuerebbe a vedere il lastricato vuoto e il
-     deserto di sabbia. */
-  WORLD.ristampaPorto(G.maps.piazza);
-  WORLD.ristampaCosta(G.maps.spiaggia);
-   /* Il salvataggio viene letto prima dello scenario: i ritocchi approvati
-      confrontano la base attesa e saltano le caselle che il giocatore ha
-      trasformato. `SINC.apri` aspetta il manifesto prima di arrivare qui. */
-   if(window.SCENARI) SCENARI.applica(G.maps, true);
+  if(ceraLegacy){
+    /* I file precedenti contengono ancora una mappa intera. Le ristampe
+       riparano solo quelle vecchie copie, poi lo scenario corrente prova ad
+       aggiornare le caselle non possedute dal giocatore. Dopo il primo save
+       il file diventa una delta e non passa più da questa compatibilità. */
+    WORLD.ristampaBurrone(G.maps.bosco, !!G.costruzioni.ponte);
+    WORLD.ristampaPonticello(G.maps.podere);
+    WORLD.ristampaMolo(G.maps.podere);
+    WORLD.ristampaPorto(G.maps.piazza);
+    WORLD.ristampaCosta(G.maps.spiaggia);
+    if(window.SCENARI) SCENARI.applica(G.maps, true);
+  }
+  const problemiMigrazione = WORLD.verificaMappe(G.maps);
+  if(problemiMigrazione.length) console.warn('Migrazione scenari:', problemiMigrazione);
   G.p.look = G.look;
   G.p.px = d.px||8*T+T/2;
   G.p.py = d.py||10*T+T/2;

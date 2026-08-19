@@ -27,14 +27,18 @@ const TIPI = ['erba','terra','sentiero','sabbia','acqua','assi','lastre','grotta
 const TOKEN_EDITOR = crypto.randomBytes(32).toString('base64url');
 const ORIGINE_LOCALE = 'http://127.0.0.1:' + PORTA;
 
-function caricaMondo(){
+function caricaMotore(){
   const sandbox = { window:{}, console, Math, Uint8Array, Array, JSON };
   vm.createContext(sandbox);
   for(const file of ['js/data.js', 'js/world.js']){
     const sorgente = fs.readFileSync(path.join(RADICE, file), 'utf8');
     vm.runInContext(sorgente, sandbox, { filename:file });
   }
-  return sandbox.window.WORLD.crea();
+  return sandbox.window.WORLD;
+}
+
+function caricaMondo(){
+  return caricaMotore().crea();
 }
 
 function copiaSicura(valore, visti){
@@ -168,6 +172,12 @@ function oggettoValido(o){
             typeof o.t === 'string' && o.t.length > 0 && o.t.length < 40);
 }
 
+function spazioRiservato(m,x,y){
+  return !!(m.spazi && Object.values(m.spazi).some(s =>
+    x>=s.x-1 && x<s.x+s.w+1 && y>=s.y-1 && y<s.y+s.h+1
+  ));
+}
+
 function scenarioValido(scenario){
   if(!scenario || typeof scenario !== 'object' || Array.isArray(scenario))
     return 'Scenario mancante.';
@@ -181,10 +191,17 @@ function scenarioValido(scenario){
     return 'Le misure della mappa non corrispondono alla base corrente.';
   const r = scenario.ritocchi;
   if(!r || typeof r !== 'object') return 'Mancano i ritocchi dello scenario.';
+  const caselleTerreno = new Set(), caselleOggetti = new Set();
+  const chiave = voce => voce.x+','+voce.y;
   for(const voce of (r.terreno || [])){
     if(!eInteroDentro(voce.x,m.w) || !eInteroDentro(voce.y,m.h) ||
        !TIPI.includes(voce.da) || !TIPI.includes(voce.tipo))
       return 'Un ritocco del terreno non è valido.';
+    if(spazioRiservato(m,voce.x,voce.y))
+      return 'Uno scenario non può occupare lo spazio riservato a una costruzione.';
+    if(caselleTerreno.has(chiave(voce)))
+      return 'Lo scenario modifica due volte lo stesso terreno.';
+    caselleTerreno.add(chiave(voce));
   }
   for(const voce of (r.oggetti || [])){
     if(!eInteroDentro(voce.x,m.w) || !eInteroDentro(voce.y,m.h) ||
@@ -197,12 +214,38 @@ function scenarioValido(scenario){
     if(voce.azione === 'sposta' &&
        (!oggettoValido(voce.da) || !voce.a || !eInteroDentro(voce.a.x,m.w) || !eInteroDentro(voce.a.y,m.h)))
       return 'Lo spostamento di un oggetto non è valido.';
+    if(spazioRiservato(m,voce.x,voce.y) ||
+       (voce.azione==='sposta' && spazioRiservato(m,voce.a.x,voce.a.y)))
+      return 'Uno scenario non può occupare lo spazio riservato a una costruzione.';
+    const toccate=[chiave(voce)];
+    if(voce.azione === 'sposta') toccate.push(voce.a.x+','+voce.a.y);
+    if(toccate.some(k=>caselleOggetti.has(k)))
+      return 'Lo scenario sovrappone due ritocchi degli oggetti.';
+    toccate.forEach(k=>caselleOggetti.add(k));
   }
   for(const voce of (r.decorazioni || [])){
     if(!['aggiungi','rimuovi'].includes(voce.azione) ||
        !oggettoValido(voce.azione === 'aggiungi' ? voce.decorazione : voce.da))
       return 'Un ritocco delle decorazioni non è valido.';
   }
+  /* La stessa prova che fa il gioco dopo una migrazione viene fatta prima
+     dell'approvazione: una scenografia non può murare un'uscita né mettere
+     qualcosa di solido nel punto in cui una mappa vicina ci fa arrivare. */
+  const motore = caricaMotore();
+  const prova = motore.crea();
+  motore.applicaScenario(prova[scenario.mappa], scenario, false);
+  /* Non si giudica la mappa intera: alberi ai margini, fontane e rocce sono
+     scenografia già valida della base. Si giudicano solo le caselle che lo
+     scenario sta toccando, altrimenti anche una modifica innocua verrebbe
+     rifiutata per un oggetto che esisteva già prima dell'editor. */
+  const toccate={[scenario.mappa]:new Set()};
+  for(const voce of (r.terreno||[])) toccate[scenario.mappa].add(chiave(voce));
+  for(const voce of (r.oggetti||[])){
+    toccate[scenario.mappa].add(chiave(voce));
+    if(voce.azione==='sposta') toccate[scenario.mappa].add(voce.a.x+','+voce.a.y);
+  }
+  const problemi = motore.verificaMappe(prova, toccate);
+  if(problemi.length) return 'Lo scenario blocca un collegamento: '+problemi[0]+'.';
   return null;
 }
 
