@@ -200,6 +200,37 @@ alla spicciolata; ma finché non ci sono tutte, d'inverno metà paese ha la neve
 sul tetto e l'altra metà no.
 
 
+## Il terreno, e perché si vedeva a quadretti
+
+Le piastrelle arrivano già **cucite** — bordo destro identico al sinistro, sopra
+identico a sotto — e la cucitura tiene: misurata, la giunta è zero esatto su
+tutte e 176 le celle. Eppure la griglia si vedeva lo stesso, e la ragione è
+un'altra: **ogni piastrella ha un contorno scuro disegnato dentro**. Misurato,
+il pixel del filo era fino a 24 punti di luminanza sotto il centro. Ripetuta,
+ogni cella si porta dietro la sua cornice, e la cucitura non può farci niente
+— rende i bordi opposti UGUALI, non chiari, quindi la cornice diventa
+perfettamente continua e si legge ancora meglio come reticolo.
+
+La correzione è piccola apposta: si alza **il solo pixel del filo** al livello
+di quello che gli sta due pixel dentro, sulla stessa linea. Il riferimento
+accanto e non la media della cella è il punto — l'arato ha i solchi e le
+lastre le fughe, e per quei terreni un profilo che non è piatto È il disegno.
+Provato a spianare: i solchi dell'arato finivano quindici punti sopra la media,
+cioè cancellati.
+
+Due dettagli che sono costati un giro ciascuno:
+
+- **fra i due riferimenti vince il minimo, non la media.** Sopra e sotto il
+  riferimento può cadere su due punti diversi del disegno; con la media un
+  filo già chiaro veniva schiarito ancora.
+- **i due bordi opposti devono ricevere lo stesso fattore**, o la cucitura si
+  riapre. `ART.verificaGiunte` adesso lo pretende a ogni avvio, con tolleranza
+  zero: l'ho quasi rotta due volte ritoccando le piastrelle.
+
+Cosa resta, e non è un difetto: **assi e lastre** hanno ancora una riga scura
+al bordo, perché quella è la fuga fra due assi e il giunto fra due lastre.
+Toglierla vorrebbe dire togliere il disegno.
+
 ## Le bestie, e i loro due modi di muoversi
 
 Undici specie, un file per specie, e il file è sempre **quattro colonne per N

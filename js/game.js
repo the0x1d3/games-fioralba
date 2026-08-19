@@ -155,6 +155,7 @@ function init(){
       if(IMG.stato().inVolo){ setTimeout(controlli, 400); return; }
       if(WORLD.verificaProporzioni) WORLD.verificaProporzioni();
       if(ART.verificaDirezioni) ART.verificaDirezioni();
+      if(ART.verificaGiunte) ART.verificaGiunte();
     };
     setTimeout(controlli, 900);
   }

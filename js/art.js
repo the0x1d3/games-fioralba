@@ -2207,6 +2207,42 @@ A.verificaDirezioni = function(){
    Torna null se il foglio non c'è, e allora si disegna la bestia in
    codice: è il patto di sempre, e qui serve davvero perché delle undici
    specie ne hanno il foglio sei. */
+/* CHE LE PIASTRELLE RESTINO CUCITE.
+
+   Il terreno è l'unico sprite che si ripete appiccicato a se stesso, e
+   perché non si veda la griglia il pixel del bordo destro dev'essere
+   IDENTICO a quello del bordo sinistro — e così sopra e sotto. I file
+   arrivano cuciti apposta, e la cucitura è una proprietà fragile:
+   qualunque ritocco che tratti i due bordi in modo diverso la riapre, e
+   la riapre in silenzio. Ritoccando le piastrelle per togliere il
+   contorno scuro l'ho quasi rotta due volte.
+
+   Zero tolleranza, perché la giunta o è esatta o non è. */
+A.verificaGiunte = function(){
+  if(!window.DATA || !DATA.TERRENI || !A.terreno) return [];
+  const scarti = [];
+  for(const tipo in DATA.TERRENI.righe){
+    for(const st of DATA.SEASONS){
+      for(let v=0; v<DATA.TERRENI.varianti; v++){
+        const c = A.terreno(tipo, v, st.id);
+        if(!c) continue;                       // il foglio non è arrivato
+        const t = cv(c.width, c.height), tx = t.getContext('2d');
+        tx.drawImage(c, 0, 0);
+        const D = tx.getImageData(0,0,t.width,t.height).data, W = t.width, H = t.height;
+        let dx = 0, dy = 0;
+        for(let y=0;y<H;y++){ const a=(y*W)*4, b=(y*W+W-1)*4;
+          dx += Math.abs(D[a]-D[b]) + Math.abs(D[a+1]-D[b+1]) + Math.abs(D[a+2]-D[b+2]); }
+        for(let x=0;x<W;x++){ const a=x*4, b=((H-1)*W+x)*4;
+          dy += Math.abs(D[a]-D[b]) + Math.abs(D[a+1]-D[b+1]) + Math.abs(D[a+2]-D[b+2]); }
+        if(dx || dy)
+          scarti.push(tipo+' '+st.id+' v'+v+': la giunta si è riaperta ('+dx+' di lato, '+dy+' sopra e sotto)');
+      }
+    }
+  }
+  if(scarti.length) console.warn('[arte] le piastrelle non sono più cucite:', scarti);
+  return scarti;
+};
+
 const CHIAVE_BESTIA = 'an:';
 const bestiaCache = {}, bestiaDaCui = {};
 A.bestia = function(id, dir, frame, volo, colIdx){
