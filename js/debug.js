@@ -109,6 +109,8 @@ function scriviStato(){
   const rd = window.REND && REND.diagnostica ? REND.diagnostica() : null;
   const renderer = rd
     ? 'renderer: ' + rd.backend + (rd.pixiVersion ? ' ' + rd.pixiVersion : '') +
+      (rd.nodiPixiVisibili ? ' · nativi ' + rd.nodiPixiVisibili + '/' + rd.nodiPixiCache : '') +
+      (rd.texturePixiAggiornate ? ' · texture ↑' + rd.texturePixiAggiornate : '') +
       (rd.frameCampionati ? ' · blit ' + rd.blitMedioMs.toFixed(2) + ' ms' : '')
     : 'renderer: non inizializzato';
   if(!G.inGioco){ statoEl.innerHTML = 'fuori partita<br>' + renderer; return; }

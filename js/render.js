@@ -34,6 +34,10 @@ let cvs, ctx;
 let scene, sx;
 let underLayer, ux;
 let light, lx;
+let effectLayer, ex;
+let bloomLayer, bx;
+let raysLayer, rx;
+let vignetteLayer, vx;
 let textLayer, tx;
 let VW=480, VH=270, SCALE=3;
 /* DPR: quanti pixel fisici vale un pixel CSS (1 di norma, 1.25/1.5/2 sugli
@@ -51,9 +55,19 @@ let pixiStage = null;
 let pixiFondo = null;
 let pixiUnderTexture = null, pixiUnderSprite = null;
 let pixiTerrainLayer = null;
-let pixiSceneTexture = null, pixiTextTexture = null;
-let pixiSceneSprite = null, pixiTextSprite = null;
+let pixiSceneTexture = null, pixiEffectTexture = null, pixiLightTexture = null;
+let pixiBloomTexture = null, pixiRaysTexture = null, pixiVignetteTexture = null;
+let pixiTextTexture = null;
+let pixiSceneSprite = null, pixiEffectSprite = null, pixiLightSprite = null;
+let pixiBloomSprite = null, pixiRaysSprite = null, pixiVignetteSprite = null;
+let pixiTextSprite = null;
+let pixiShadowLayer = null, pixiWorldLayer = null, pixiGradeLayer = null;
 let pixiTerrainSprites = new Map(), pixiTerrainFrame = 0;
+let pixiWorldNodes = new Map(), pixiWorldFrame = 0, pixiWorldSeq = 0;
+let pixiTextureAggiornate = 0, pixiNodiVisibili = 0;
+let pixiTipiVisibili = {}, pixiUltimaVista = null;
+let catturaNodoPixi = false;
+const pixiIdentita = new WeakMap();
 let pixiSfondo = '', pixiSfondoW = 0, pixiSfondoH = 0;
 let frameRenderMs = 0, frameRenderN = 0, frameRenderPicco = 0;
 let motivoFallback = '';
@@ -86,8 +100,12 @@ function sostituisciCanvas(canvas){
 
 function distruggiPixi(){
   try{ svuotaChunkPixi(); }catch(_){}
+  try{ svuotaNodiPixi(); }catch(_){}
   try{ pixiStage?.destroy?.({ children:true }); }catch(_){}
-  for(const texture of [pixiUnderTexture, pixiSceneTexture, pixiTextTexture]){
+  for(const texture of [
+    pixiUnderTexture, pixiSceneTexture, pixiEffectTexture, pixiLightTexture,
+    pixiBloomTexture, pixiRaysTexture, pixiVignetteTexture, pixiTextTexture
+  ]){
     try{ texture?.destroy?.(true); }catch(_){}
   }
   try{ pixiRenderer?.destroy?.(); }catch(_){}
@@ -96,23 +114,41 @@ function distruggiPixi(){
   pixiFondo = null;
   pixiUnderTexture = pixiUnderSprite = null;
   pixiTerrainLayer = null;
-  pixiSceneTexture = pixiTextTexture = null;
-  pixiSceneSprite = pixiTextSprite = null;
+  pixiSceneTexture = pixiEffectTexture = pixiLightTexture = null;
+  pixiBloomTexture = pixiRaysTexture = pixiVignetteTexture = null;
+  pixiTextTexture = null;
+  pixiSceneSprite = pixiEffectSprite = pixiLightSprite = null;
+  pixiBloomSprite = pixiRaysSprite = pixiVignetteSprite = null;
+  pixiTextSprite = null;
+  pixiShadowLayer = pixiWorldLayer = pixiGradeLayer = null;
   pixiTerrainSprites.clear();
+  pixiWorldNodes.clear();
 }
 
 function aggiornaTexturePixi(){
   if(!pixiSceneTexture || !pixiTextTexture || !pixiUnderTexture) return;
   pixiUnderTexture.source.resize(underLayer.width, underLayer.height, 1);
   pixiSceneTexture.source.resize(scene.width, scene.height, 1);
+  pixiEffectTexture.source.resize(effectLayer.width, effectLayer.height, 1);
+  pixiLightTexture.source.resize(light.width, light.height, 1);
+  pixiBloomTexture.source.resize(bloomLayer.width, bloomLayer.height, 1);
+  pixiRaysTexture.source.resize(raysLayer.width, raysLayer.height, 1);
+  pixiVignetteTexture.source.resize(vignetteLayer.width, vignetteLayer.height, 1);
   pixiTextTexture.source.resize(textLayer.width, textLayer.height, 1);
-  pixiUnderTexture.source.scaleMode = 'nearest';
-  pixiSceneTexture.source.scaleMode = 'nearest';
+  for(const texture of [
+    pixiUnderTexture, pixiSceneTexture, pixiEffectTexture, pixiLightTexture,
+    pixiBloomTexture, pixiRaysTexture, pixiVignetteTexture, pixiTextTexture
+  ]) texture.source.scaleMode = 'nearest';
   pixiTextTexture.source.scaleMode = 'nearest';
-  pixiUnderSprite.scale.set(SCALE);
-  pixiSceneSprite.scale.set(SCALE);
-  pixiFondo.scale.set(SCALE);
-  pixiTerrainLayer.scale.set(SCALE);
+  for(const nodo of [
+    pixiFondo, pixiUnderSprite, pixiTerrainLayer, pixiSceneSprite,
+    pixiShadowLayer, pixiWorldLayer, pixiEffectSprite, pixiLightSprite,
+    pixiBloomSprite, pixiGradeLayer, pixiRaysSprite, pixiVignetteSprite
+  ]) nodo.scale.set(SCALE);
+
+  vx.clearRect(0,0,VW,VH);
+  vx.drawImage(ART.vignetta(VW, VH, 0.32), 0, 0);
+  pixiVignetteTexture.source.update();
 }
 
 async function preparaPixi(canvas){
@@ -144,15 +180,43 @@ async function preparaPixi(canvas){
     pixiSceneTexture = PIXI.Texture.from({
       resource:scene, scaleMode:'nearest', autoGenerateMipmaps:false
     }, true);
+    pixiEffectTexture = PIXI.Texture.from({
+      resource:effectLayer, scaleMode:'nearest', autoGenerateMipmaps:false
+    }, true);
+    pixiLightTexture = PIXI.Texture.from({
+      resource:light, scaleMode:'nearest', autoGenerateMipmaps:false
+    }, true);
+    pixiBloomTexture = PIXI.Texture.from({
+      resource:bloomLayer, scaleMode:'nearest', autoGenerateMipmaps:false
+    }, true);
+    pixiRaysTexture = PIXI.Texture.from({
+      resource:raysLayer, scaleMode:'nearest', autoGenerateMipmaps:false
+    }, true);
+    pixiVignetteTexture = PIXI.Texture.from({
+      resource:vignetteLayer, scaleMode:'nearest', autoGenerateMipmaps:false
+    }, true);
     pixiTextTexture = PIXI.Texture.from({
       resource:textLayer, scaleMode:'nearest', autoGenerateMipmaps:false
     }, true);
     pixiUnderSprite = new PIXI.Sprite({ texture:pixiUnderTexture, label:'acqua' });
     pixiTerrainLayer = new PIXI.Container({ label:'terreno' });
-    pixiSceneSprite = new PIXI.Sprite({ texture:pixiSceneTexture, label:'scena' });
+    pixiSceneSprite = new PIXI.Sprite({ texture:pixiSceneTexture, label:'ponte-canvas' });
+    pixiShadowLayer = new PIXI.Container({ label:'ombre-native', sortableChildren:true });
+    pixiWorldLayer = new PIXI.Container({ label:'mondo-native', sortableChildren:true });
+    pixiEffectSprite = new PIXI.Sprite({ texture:pixiEffectTexture, label:'effetti' });
+    pixiLightSprite = new PIXI.Sprite({ texture:pixiLightTexture, label:'luci' });
+    pixiBloomSprite = new PIXI.Sprite({ texture:pixiBloomTexture, label:'bloom' });
+    pixiBloomSprite.blendMode = 'add';
+    pixiGradeLayer = new PIXI.Graphics({ label:'gradazione' });
+    pixiRaysSprite = new PIXI.Sprite({ texture:pixiRaysTexture, label:'raggi' });
+    pixiRaysSprite.blendMode = 'add';
+    pixiVignetteSprite = new PIXI.Sprite({ texture:pixiVignetteTexture, label:'vignetta' });
     pixiTextSprite = new PIXI.Sprite({ texture:pixiTextTexture, label:'testi' });
     pixiStage.addChild(
-      pixiFondo, pixiUnderSprite, pixiTerrainLayer, pixiSceneSprite, pixiTextSprite
+      pixiFondo, pixiUnderSprite, pixiTerrainLayer, pixiSceneSprite,
+      pixiShadowLayer, pixiWorldLayer, pixiEffectSprite, pixiLightSprite,
+      pixiBloomSprite, pixiGradeLayer, pixiRaysSprite, pixiVignetteSprite,
+      pixiTextSprite
     );
     backend = 'pixi';
 
@@ -177,6 +241,10 @@ R.init = async function(canvas){
   scene = ART.cv(VW,VH); sx = scene.getContext('2d');
   underLayer = ART.cv(VW,VH); ux = underLayer.getContext('2d');
   light = ART.cv(VW,VH); lx = light.getContext('2d');
+  effectLayer = ART.cv(VW,VH); ex = effectLayer.getContext('2d');
+  bloomLayer = ART.cv(VW,VH); bx = bloomLayer.getContext('2d');
+  raysLayer = ART.cv(VW,VH); rx = raysLayer.getContext('2d');
+  vignetteLayer = ART.cv(VW,VH); vx = vignetteLayer.getContext('2d');
   textLayer = document.createElement('canvas');
   tx = textLayer.getContext('2d', { alpha:true });
   cvs = await preparaPixi(cvs);
@@ -188,6 +256,11 @@ R.init = async function(canvas){
          prima di iniziare una partita. */
       pixiUnderTexture.source.update();
       pixiSceneTexture.source.update();
+      pixiEffectTexture.source.update();
+      pixiLightTexture.source.update();
+      pixiBloomTexture.source.update();
+      pixiRaysTexture.source.update();
+      pixiVignetteTexture.source.update();
       pixiTextTexture.source.update();
       pixiRenderer.render({ container:pixiStage });
     }
@@ -322,9 +395,17 @@ R.resize = function(){
   scene.width=VW; scene.height=VH;
   underLayer.width=VW; underLayer.height=VH;
   light.width=VW; light.height=VH;
+  effectLayer.width=VW; effectLayer.height=VH;
+  bloomLayer.width=VW; bloomLayer.height=VH;
+  raysLayer.width=VW; raysLayer.height=VH;
+  vignetteLayer.width=VW; vignetteLayer.height=VH;
   sx = scene.getContext('2d'); sx.imageSmoothingEnabled=false;
   ux = underLayer.getContext('2d'); ux.imageSmoothingEnabled=false;
   lx = light.getContext('2d'); lx.imageSmoothingEnabled=false;
+  ex = effectLayer.getContext('2d'); ex.imageSmoothingEnabled=false;
+  bx = bloomLayer.getContext('2d'); bx.imageSmoothingEnabled=false;
+  rx = raysLayer.getContext('2d'); rx.imageSmoothingEnabled=false;
+  vx = vignetteLayer.getContext('2d'); vx.imageSmoothingEnabled=false;
   textLayer.width=devW; textLayer.height=devH;
   tx = textLayer.getContext('2d'); tx.imageSmoothingEnabled=false;
   if(backend === 'pixi'){
@@ -537,7 +618,7 @@ function scriviTestiSopra(){
   /* Il livello testo deve essere pulito anche nei frame senza scritte,
      altrimenti l'ultima etichetta resterebbe nella texture. */
   if(backend === 'pixi') out.clearRect(0,0,textLayer.width,textLayer.height);
-  if(!testiSopra.length) return;
+  if(!testiSopra.length) return false;
   for(const t of testiSopra){
     out.globalAlpha = t.alfa;
     out.font = 'bold ' + (t.px*SCALE) + 'px ' + t.famiglia;
@@ -562,6 +643,7 @@ function scriviTestiSopra(){
   out.textAlign = 'start';
   out.textBaseline = 'alphabetic';
   testiSopra.length = 0;
+  return true;
 }
 
 /* La misura del testo serve PRIMA, per sapere quanto larga fare la
@@ -587,7 +669,7 @@ let targhettePoste = [];
 const ALTA_T = 13, SALTO_T = 15;
 
 const CAR_T = 'system-ui, sans-serif';
-function targhetta(testo, cxMondo, cyMondo){
+function preparaTarghetta(testo, cxMondo, cyMondo){
   const cx = cxMondo/K, cy = cyMondo/K;
   const s = String(testo).slice(0, 18);
   const w = Math.ceil(larghezzaTesto(s, 9, CAR_T)) + 8;
@@ -605,19 +687,32 @@ function targhetta(testo, cxMondo, cyMondo){
     y0 -= SALTO_T;
   }
   targhettePoste.push({ x:x0, y:y0, w });
+  return { s, w, x0, y0 };
+}
 
+function disegnaCorniceTarghetta(t){
   const I = PAL.c.interno;
   raddoppiaDaCapo(sx);
-  ART.px(sx, x0, y0, w, ALTA_T, I.legnoOmbra);
-  ART.px(sx, x0+1, y0+1, w-2, ALTA_T-2, I.legno);
-  ART.px(sx, x0+1, y0+1, w-2, 1, I.legnoLuce);
+  ART.px(sx, t.x0, t.y0, t.w, ALTA_T, I.legnoOmbra);
+  ART.px(sx, t.x0+1, t.y0+1, t.w-2, ALTA_T-2, I.legno);
+  ART.px(sx, t.x0+1, t.y0+1, t.w-2, 1, I.legnoLuce);
   sx.restore();
+}
+
+function accodaTestoTarghetta(t){
   /* La scritta no: quella si stampa dopo l'ingrandimento, alla
      risoluzione vera dello schermo (vedi il cappello di `testoNitido`),
      quindi vuole il punto in pixel di mondo e un corpo raddoppiato —
      che moltiplicato per SCALE, sceso della metà, fa gli stessi pixel
      fisici di prima. */
-  testoNitido(s, (x0 + w/2)*K, (y0 + 7)*K, { px:9*K, famiglia:CAR_T, colore:'#2a1d12' });
+  testoNitido(t.s, (t.x0 + t.w/2)*K, (t.y0 + 7)*K,
+    { px:9*K, famiglia:CAR_T, colore:'#2a1d12' });
+}
+
+function targhetta(testo, cxMondo, cyMondo){
+  const t = preparaTarghetta(testo, cxMondo, cyMondo);
+  disegnaCorniceTarghetta(t);
+  accodaTestoTarghetta(t);
 }
 
 /* ===================================================================
@@ -1043,6 +1138,184 @@ function disegnaChunkPixi(m, cx, cy, season, tela, x, y){
 }
 
 /* ===================================================================
+   PIANO DI PROFONDITÀ NATIVO PIXI
+
+   Il fallback continua a disegnare l'intera scena su Canvas. In WebGL
+   ogni elemento ordinato in profondità possiede invece una piccola tela
+   locale e uno Sprite persistente: la tela cambia solo insieme alla sua
+   chiave visiva; posizione, culling e profondità restano proprietà Pixi.
+   =================================================================== */
+function identitaPixi(prefisso, oggetto, stabile){
+  if(stabile !== undefined && stabile !== null) return prefisso + ':' + stabile;
+  if(!oggetto || (typeof oggetto !== 'object' && typeof oggetto !== 'function'))
+    return prefisso + ':' + String(oggetto);
+  let id = pixiIdentita.get(oggetto);
+  if(!id){ id = ++pixiWorldSeq; pixiIdentita.set(oggetto, id); }
+  return prefisso + ':' + id;
+}
+
+function distruggiParteNodoPixi(parte){
+  if(!parte) return;
+  try{ parte.sprite?.removeFromParent?.(); }catch(_){}
+  try{ parte.sprite?.destroy?.(); }catch(_){}
+  try{ parte.texture?.destroy?.(true); }catch(_){}
+}
+
+function distruggiNodoPixi(nodo){
+  if(!nodo) return;
+  distruggiParteNodoPixi(nodo.ombra);
+  distruggiParteNodoPixi(nodo.corpo);
+}
+
+function svuotaNodiPixi(){
+  for(const nodo of pixiWorldNodes.values()) distruggiNodoPixi(nodo);
+  pixiWorldNodes.clear();
+}
+
+function creaParteNodoPixi(id, nome, layer, bounds){
+  const tela = ART.cv(bounds.w, bounds.h);
+  const contesto = tela.getContext('2d');
+  contesto.imageSmoothingEnabled = false;
+  const texture = PIXI.Texture.from({
+    resource:tela, scaleMode:'nearest', autoGenerateMipmaps:false
+  }, true);
+  const sprite = new PIXI.Sprite({ texture, label:id+'-'+nome });
+  layer.addChild(sprite);
+  return { tela, contesto, texture, sprite, w:bounds.w, h:bounds.h, chiave:null };
+}
+
+function assicuraParteNodoPixi(nodo, nome, layer, bounds){
+  let parte = nodo[nome];
+  if(!parte){
+    parte = creaParteNodoPixi(nodo.id, nome, layer, bounds);
+    nodo[nome] = parte;
+  }else if(parte.w !== bounds.w || parte.h !== bounds.h){
+    parte.w = bounds.w; parte.h = bounds.h;
+    parte.tela.width = bounds.w; parte.tela.height = bounds.h;
+    parte.contesto = parte.tela.getContext('2d');
+    parte.contesto.imageSmoothingEnabled = false;
+    parte.texture.source.resize(bounds.w, bounds.h, 1);
+    parte.chiave = null;
+  }
+  parte.sprite.position.set(bounds.x, bounds.y);
+  parte.sprite.visible = true;
+  return parte;
+}
+
+function catturaParteNodoPixi(parte, bounds, chiave, disegna){
+  if(parte.chiave === chiave) return;
+  const x = parte.contesto;
+  x.setTransform(1,0,0,1,0,0);
+  x.clearRect(0,0,parte.w,parte.h);
+  x.save();
+  x.translate(-bounds.x, -bounds.y);
+  const prima = sx;
+  const primaCattura = catturaNodoPixi;
+  sx = x;
+  catturaNodoPixi = true;
+  try{
+    disegna();
+  }finally{
+    catturaNodoPixi = primaCattura;
+    sx = prima;
+    x.restore();
+  }
+  parte.texture.source.update();
+  parte.chiave = chiave;
+  pixiTextureAggiornate++;
+}
+
+function boundsPixi(x,y,w,h){
+  return {
+    x:Math.floor(x), y:Math.floor(y),
+    w:Math.max(1,Math.ceil(w)), h:Math.max(1,Math.ceil(h))
+  };
+}
+
+function sincronizzaNodiPixi(lista){
+  pixiWorldFrame++;
+  pixiTextureAggiornate = 0;
+  pixiNodiVisibili = 0;
+  pixiTipiVisibili = {};
+
+  const ordineOmbre = new Map(lista.map((it, indice)=>[it.id, indice]));
+  const ordinata = lista.slice().sort((a,b)=>a.y-b.y);
+  for(let ordine=0; ordine<ordinata.length; ordine++){
+    const it = ordinata[ordine];
+    const tipo = String(it.id).split(':',1)[0];
+    pixiTipiVisibili[tipo] = (pixiTipiVisibili[tipo]||0)+1;
+    let nodo = pixiWorldNodes.get(it.id);
+    if(!nodo){
+      nodo = { id:it.id, corpo:null, ombra:null, visto:pixiWorldFrame };
+      pixiWorldNodes.set(it.id, nodo);
+    }
+    nodo.visto = pixiWorldFrame;
+
+    const etichetta = it.etichetta
+      ? preparaTarghetta(it.etichetta.testo, it.etichetta.x, it.etichetta.y)
+      : null;
+    const chiaveCorpo = etichetta
+      ? [it.chiave,'targhetta',etichetta.s,etichetta.w,
+         Math.round(etichetta.x0*K-it.bounds.x),
+         Math.round(etichetta.y0*K-it.bounds.y)].join('|')
+      : it.chiave;
+    const disegnaCorpo = etichetta
+      ? ()=>{ it.d(); disegnaCorniceTarghetta(etichetta); }
+      : it.d;
+    const corpo = assicuraParteNodoPixi(nodo, 'corpo', pixiWorldLayer, it.bounds);
+    corpo.sprite.zIndex = ordine;
+    catturaParteNodoPixi(corpo, it.bounds, chiaveCorpo, disegnaCorpo);
+    if(etichetta) accodaTestoTarghetta(etichetta);
+    pixiNodiVisibili++;
+
+    if(it.s){
+      const limitiOmbra = it.ombraBounds || it.bounds;
+      const ombra = assicuraParteNodoPixi(nodo, 'ombra', pixiShadowLayer, limitiOmbra);
+      ombra.sprite.zIndex = ordineOmbre.get(it.id) || 0;
+      catturaParteNodoPixi(ombra, limitiOmbra, it.chiaveOmbra || it.chiave, it.s);
+    }else if(nodo.ombra){
+      nodo.ombra.sprite.visible = false;
+    }
+  }
+  pixiWorldLayer.sortChildren();
+  pixiShadowLayer.sortChildren();
+
+  /* Una breve coda evita di distruggere e ricreare tutto se la camera
+     oscilla sul bordo del culling. */
+  for(const [id,nodo] of pixiWorldNodes){
+    if(nodo.visto === pixiWorldFrame) continue;
+    if(nodo.corpo) nodo.corpo.sprite.visible = false;
+    if(nodo.ombra) nodo.ombra.sprite.visible = false;
+    if(pixiWorldFrame - nodo.visto > 12){
+      distruggiNodoPixi(nodo);
+      pixiWorldNodes.delete(id);
+    }
+  }
+}
+
+function aggiornaGradazionePixi(G, m){
+  pixiGradeLayer.clear();
+  let colore = 0xffffff, alfa = 0, modo = 'normal';
+  if(!m.esterno){
+    colore = 0x463c6e; alfa = 0.16; modo = 'overlay';
+  }else if(G.ora>=1150 || G.ora<350){
+    colore = 0x7a8ecd; alfa = 0.55; modo = 'multiply';
+  }else if(G.meteo==='pioggia'||G.meteo==='temporale'){
+    colore = 0x5a8cb4; alfa = 0.18; modo = 'overlay';
+  }else if(G.meteo==='neve'){
+    colore = 0xb4d2f0; alfa = 0.14; modo = 'overlay';
+  }else if(G.ora>=1010 && G.ora<1150){
+    colore = 0xff8a34; alfa = 0.24*(1-Math.abs(G.ora-1080)/70); modo = 'overlay';
+  }else if(G.ora>=350 && G.ora<470){
+    colore = 0xffa878; alfa = 0.18*(1-Math.abs(G.ora-410)/60); modo = 'overlay';
+  }else{
+    colore = 0xfff0be; alfa = 0.07; modo = 'overlay';
+  }
+  pixiGradeLayer.blendMode = modo;
+  if(alfa > 0.001) pixiGradeLayer.rect(0,0,VW,VH).fill({ color:colore, alpha:alfa });
+}
+
+/* ===================================================================
    CICLO GIORNO/NOTTE
    =================================================================== */
 function luceAmbiente(ora, meteo, esterno){
@@ -1079,6 +1352,7 @@ R.disegna = function(G){
   const cam = { x: Math.round(G.cam.x), y: Math.round(G.cam.y) };
   const stag = G.stagione().id;
   const t = G.tempoMs;
+  const passoAnimazione = (t/50)|0;
   const sole = FX.soleOmbra(G.ora, m.esterno);
 
   sx.clearRect(0,0,VW,VH);
@@ -1096,6 +1370,10 @@ R.disegna = function(G){
   const x1 = Math.min(m.w-1, Math.ceil((cam.x+VW)/T)+1);
   const y1 = Math.min(m.h-1, Math.ceil((cam.y+VH)/T)+2);
   const ox = -cam.x, oy = -cam.y;
+  if(backend === 'pixi') pixiUltimaVista = {
+    mappa:m.id, camera:cam, caselle:{x0,y0,x1,y1},
+    edifici:m.edifici.length, decorazioni:m.deco.length
+  };
   const wf = (t/140|0)%6;
 
   /* ---------- 1. ACQUA ANIMATA (sotto al terreno pre-cotto) ---------- */
@@ -1237,8 +1515,20 @@ R.disegna = function(G){
     const by = (e.y+e.h)*T;
     if((e.x+e.w)*T < cam.x-200*K || e.x*T > cam.x+VW+200*K) continue;
     if(by < cam.y-300*K || e.y*T > cam.y+VH+140*K) continue;
+    const opt = { lit:G.ora>1020 || G.ora<420, season:stag, liv:e.liv||0 };
+    if(e.kind==='santuario') opt.liv = G.livelloEdificio(e);
+    const immagine = ART.edificio(e.kind, opt.liv, stag==='inverno') || ART.building(e.kind, opt);
+    const ew = e.w*T, eh = immagine.height*(ew/immagine.width);
+    const epx = e.x*T+ox, epy = by+oy-eh;
+    const sorgente = identitaPixi('sorgente', immagine);
     lista.push({
+      id:identitaPixi('edificio',e,m.id+':'+e.x+':'+e.y+':'+e.kind),
       y:by,
+      bounds:boundsPixi(epx-100,epy-100,ew+200,eh+180),
+      ombraBounds:boundsPixi(epx-eh*1.5-48,by+oy-eh-32,ew+eh*3+96,eh+96),
+      chiave:[sorgente,opt.liv,opt.lit?1:0,G.braci||0,
+        (opt.lit||e.kind==='santuario')?passoAnimazione:0].join('|'),
+      chiaveOmbra:[sorgente,sole.sk,sole.sc,sole.a].join('|'),
       s:()=>ombraEdificio(e, ox, oy, G, stag, sole),
       d:()=>disegnaEdificio(e, ox, oy, G, stag)
     });
@@ -1260,11 +1550,36 @@ R.disegna = function(G){
     if(o && o.t!=='muro' && o.t!=='porta' && o.t!=='rimando'){
       const px=(x*T+ox)|0, py=(y*T+oy)|0;
       const f = WORLD.impronta(o);
+      const animato = o.t==='albero'||o.t==='erbaccia'||o.t==='cespuglio'||
+        o.t==='fiori'||o.t==='foraggio'||o.t==='lampione'||o.t==='bottiglia'||
+        o.t==='barca'||o.t==='fioriera'||o.t==='bancarella'||o.t==='camino'||
+        o.t==='lume'||o.t==='pietra_rituale'||(o.t==='sasso'&&o.shake)||
+        (o.t==='macchina'&&o.pronto)||(o.t==='mobile'&&o.kind==='spaventapasseri');
+      const arredo = immagineArredo(o);
+      const etichetta = o.kind==='cartello' && o.testo
+        ? { testo:o.testo, x:px+T/2, y:py+(arredo?-46:-24) }
+        : o.t==='macchina' && o.kind==='cassa' && o.nome
+          ? { testo:o.nome, x:px+T/2, y:py-6 }
+          : null;
+      const lati = o.kind==='recinto' || o.kind==='cancelletto'
+        ? latiRecinto(m, x, y) : 0;
+      const stato = [
+        o.t,o.kind||'',o.v||0,o.stage||0,o.bacche?1:0,o.carbone?1:0,
+        o.dentro?1:0,o.pronto?1:0,o.out||'',stag,
+        (G.ora>1020||G.ora<420)?1:0,arredo?identitaPixi('sorgente',arredo):'codice',
+        lati,animato?passoAnimazione:0
+      ].join('|');
       lista.push({
+        id:identitaPixi('oggetto',o,m.id+':'+x+':'+y),
         // la profondità è il bordo BASSO dell'impronta: un letto alto tre
         // caselle passa dietro a chi gli cammina davanti, non a chi gli
         // sta accanto alla testata
         y:(y+f.h)*T,
+        bounds:boundsPixi(px-72,py-176,f.w*T+144,f.h*T+224),
+        ombraBounds:boundsPixi(px-176,py-144,f.w*T+352,f.h*T+208),
+        chiave:stato,
+        chiaveOmbra:[stato,sole.sk,sole.sc,sole.a].join('|'),
+        etichetta,
         s:()=>ombraOggetto(o, px, py, x, y, t, stag, sole),
         d:()=>disegnaOggetto(o, px, py, x, y, t, stag, G)
       });
@@ -1274,7 +1589,11 @@ R.disegna = function(G){
       if(s && s.crop){
         const px=(x*T+ox)|0, py=(y*T+oy)|0;
         lista.push({
+          id:identitaPixi('coltura',s,m.id+':'+x+':'+y),
           y:(y+1)*T-2,
+          bounds:boundsPixi(px-32,py-64,T+64,T+96),
+          chiave:[s.crop.id,s.crop.stage,s.appassita?1:0,passoAnimazione].join('|'),
+          chiaveOmbra:'terra-coltura',
           s:()=>{ FX.ombraTerra(sx, px+T/2, py+27*K, 7*K, 2.6*K, 0.18); },
           d:()=>disegnaColtura(s, px, py, x, y, t)
         });
@@ -1285,7 +1604,16 @@ R.disegna = function(G){
   for(const d of m.deco){
     if(d.x<x0-2||d.x>x1+2||d.y<y0-3||d.y>y1+3) continue;
     if(d.t==='cartello'||d.t==='erbe'||d.t==='ortaggio'||d.t==='fungo_luce'){
-      lista.push({ y:(d.y+1)*T, d:()=>disegnaDecoAlta(d, ox, oy, t, stag) });
+      const dx=d.x*T+ox, dy=d.y*T+oy;
+      const arredo = immagineArredo(d);
+      lista.push({
+        id:identitaPixi('deco-alta',d,m.id+':'+d.x+':'+d.y+':'+d.t),
+        y:(d.y+1)*T,
+        bounds:boundsPixi(dx-64,dy-96,(d.w||1)*T+128,(d.h||1)*T+144),
+        chiave:[d.t,d.v||0,stag,arredo?identitaPixi('sorgente',arredo):'codice',
+          (d.t==='erbe'||d.t==='fungo_luce')?passoAnimazione:0].join('|'),
+        d:()=>disegnaDecoAlta(d, ox, oy, t, stag)
+      });
     }
   }
 
@@ -1310,7 +1638,15 @@ R.disegna = function(G){
   for(const n of G.npcVivi()){
     const px = Math.round(n.px)+ox, py = Math.round(n.py)+oy;
     if(px<-60*K||px>VW+60*K||py<-90*K||py>VH+60*K) continue;
-    lista.push({ y:n.py,
+    const suo = ART.npcSprite(n.id, n.dir, n.frame);
+    lista.push({
+      id:identitaPixi('npc',n,n.id),
+      y:n.py,
+      bounds:boundsPixi(px-96,py-144,192,184),
+      chiave:[n.dir,n.frame,n.emote||'',n.blink||0,
+        suo?identitaPixi('sorgente',suo):'codice',
+        DATA.NPCS[n.id].look.spirito?passoAnimazione:0].join('|'),
+      chiaveOmbra:'ombra-npc',
       s:()=>{ FX.ombraTerra(sx, px, py-K, 8*K, 3*K, 0.24); },
       d:()=>{
         const look = DATA.NPCS[n.id].look;
@@ -1347,7 +1683,12 @@ R.disegna = function(G){
     if(p.mappa!==m.id) continue;
     const px = Math.round(p.px)+ox, py = Math.round(p.py)+oy;
     if(px<-60*K||px>VW+60*K||py<-90*K||py>VH+60*K) continue;
-    lista.push({ y:p.py,
+    lista.push({
+      id:identitaPixi('passante',p),
+      y:p.py,
+      bounds:boundsPixi(px-96,py-144,192,184),
+      chiave:[p.dir,p.frame||0,p.blink||0].join('|'),
+      chiaveOmbra:'ombra-passante',
       s:()=>{ FX.ombraTerra(sx, px, py-K, 8*K, 3*K, 0.24); },
       d:()=>{
         sx.drawImage(FX.contorno(ART.charSprite(p.look, p.dir, p.frame||0)), (px-16*K)|0, (py-39*K)|0);
@@ -1361,7 +1702,13 @@ R.disegna = function(G){
     if(a.mappa!==m.id) continue;
     const px=Math.round(a.px)+ox, py=Math.round(a.py)+oy;
     if(px<-60*K||px>VW+60*K||py<-70*K||py>VH+60*K) continue;
-    lista.push({ y:a.py,
+    const aframe = a.tipo==='gatto' ? (t/300|0)%2 : (t/260|0)%2;
+    lista.push({
+      id:identitaPixi('animale',a),
+      y:a.py,
+      bounds:boundsPixi(px-80,py-96,160,128),
+      chiave:[a.tipo,a.dir,aframe].join('|'),
+      chiaveOmbra:'ombra-animale',
       s:()=>{ FX.ombraTerra(sx, px, py-K, 7*K, 2.6*K, 0.22); },
       d:()=>{
         const img = a.tipo==='gatto' ? ART.gatto((t/300|0)%2) : ART.gallina((t/260|0)%2, a.dir);
@@ -1375,7 +1722,13 @@ R.disegna = function(G){
     for(const b of MOBS.lista()){
       const px=Math.round(b.x)+ox, py=Math.round(b.y)+oy;
       if(px<-80*K||px>VW+80*K||py<-90*K||py>VH+80*K) continue;
-      lista.push({ y:b.y, d:()=>MOBS.disegnaUno(sx, b, ox, oy) });
+      lista.push({
+        id:identitaPixi('fauna',b),
+        y:b.y,
+        bounds:boundsPixi(px-128,py-144,256,192),
+        chiave:[b.tipo,b.dir,b.dir4,b.frame,b.volo?1:0,b.colIdx,b.col,b.z].join('|'),
+        d:()=>MOBS.disegnaUno(sx, b, ox, oy)
+      });
     }
   }
 
@@ -1391,7 +1744,15 @@ R.disegna = function(G){
      per uno dal loro `look`, e un foglio solo li farebbe tutti uguali. */
   {
     const px=Math.round(G.p.px)+ox, py=Math.round(G.p.py)+oy;
-    lista.push({ y:G.p.py,
+    const disegnato = ART.ominoSprite(G.p.dir, G.p.frame, G.p.attrezzoVisibile);
+    lista.push({
+      id:'giocatore',
+      y:G.p.py,
+      bounds:boundsPixi(px-112,py-160,224,208),
+      chiave:[G.p.dir,G.p.frame,G.p.attrezzoVisibile||'',G.p.usoT>0?1:0,
+        G.p.blink||0,G.p.dorme?1:0,disegnato?identitaPixi('sorgente',disegnato):'codice',
+        (G.p.usoT>0||G.p.blink)?passoAnimazione:0].join('|'),
+      chiaveOmbra:G.p.dorme?'nessuna':'ombra-giocatore',
       s:()=>{ if(!G.p.dorme) FX.ombraTerra(sx, px, py-K, 8.5*K, 3.2*K, 0.26); },
       d:()=>{
         if(G.p.dorme) return;
@@ -1418,18 +1779,30 @@ R.disegna = function(G){
   }
 
   /* ---------- 8. OMBRE PROIETTATE, POI SPRITE ---------- */
-  for(const it of lista) if(it.s) it.s();
-  lista.sort((a,b)=>a.y-b.y);
-  for(const it of lista) it.d();
+  if(backend === 'pixi'){
+    sincronizzaNodiPixi(lista);
+    ex.clearRect(0,0,VW,VH);
+    bx.clearRect(0,0,VW,VH);
+    rx.clearRect(0,0,VW,VH);
+    /* Da qui alla vignetta il Canvas è soltanto un ponte trasparente per
+       gli effetti sopra al mondo. Gli sprite ordinati non ci tornano più. */
+    sx = ex;
+  }else{
+    for(const it of lista) if(it.s) it.s();
+    lista.sort((a,b)=>a.y-b.y);
+    for(const it of lista) it.d();
+  }
 
   /* ---------- 8b. FUMETTI ----------
      Dopo tutti gli sprite e fuori dall'ordinamento in profondità: una
      nuvoletta che finisce dietro a un albero non si legge, e chi parla
      dietro un albero è proprio quello che vale la pena sentire. */
+  let haFumetti = false;
   if(G.chiacchiere) for(const c of G.chiacchiere){
     if(c.mappa !== m.id) continue;
     const px = Math.round(c.x)+ox, py = Math.round(c.y)+oy;
     if(px<-80*K||px>VW+80*K||py<-90*K||py>VH+60*K) continue;
+    haFumetti = true;
     fumetto(c.testo, px, py-42*K, c.opacita);
   }
 
@@ -1452,12 +1825,16 @@ R.disegna = function(G){
 
   /* ---------- 11. METEO ---------- */
   if(m.esterno) disegnaMeteo(G, t);
+  const haMeteo = m.esterno &&
+    (G.meteo==='pioggia'||G.meteo==='temporale'||G.meteo==='neve'||G.meteo==='vento');
+  const haEffetti = haFumetti || G.particelle.length>0 ||
+    !!(G.bersaglio && !G.p.dorme) || haMeteo;
 
   /* ---------- 12. LUCI ---------- */
   const amb = luceAmbiente(G.ora, G.meteo, m.esterno);
   const luci = G.luci();
+  lx.clearRect(0,0,VW,VH);
   if(amb.a > 0.015){
-    lx.clearRect(0,0,VW,VH);
     lx.fillStyle = `rgba(${amb.c[0]},${amb.c[1]},${amb.c[2]},${amb.a})`;
     lx.fillRect(0,0,VW,VH);
     lx.globalCompositeOperation='destination-out';
@@ -1475,53 +1852,75 @@ R.disegna = function(G){
       lx.globalAlpha = 1;
     }
     lx.globalCompositeOperation='source-over';
-    sx.drawImage(light,0,0);
+    if(backend !== 'pixi') sx.drawImage(light,0,0);
   }
 
   /* ---------- 13. BLOOM ---------- */
   if(amb.a > 0.04){
-    const bx = FX.iniziaBloom(VW, VH);
+    const mappaBloom = FX.iniziaBloom(VW, VH);
     for(const L of luci){
       if(!L.caldo) continue;
       const px=Math.round(L.x)+ox, py=Math.round(L.y)+oy;
       if(px<-200*K||px>VW+200*K||py<-200*K||py>VH+200*K) continue;
       const r = L.r*0.55;              // alone stretto: il bloom deve
-      const g = bx.createRadialGradient(px,py,0,px,py,r);   // accennare, non annebbiare
+      const g = mappaBloom.createRadialGradient(px,py,0,px,py,r);   // accennare, non annebbiare
       const inten = Math.min(1, amb.a*1.5)*L.i;
       g.addColorStop(0, `rgba(255,206,132,${0.34*inten})`);
       g.addColorStop(0.4, `rgba(255,178,96,${0.13*inten})`);
       g.addColorStop(1, 'rgba(255,160,80,0)');
-      bx.fillStyle=g;
-      bx.beginPath(); bx.arc(px,py,r,0,6.3); bx.fill();
+      mappaBloom.fillStyle=g;
+      mappaBloom.beginPath(); mappaBloom.arc(px,py,r,0,6.3); mappaBloom.fill();
     }
     // le lucciole brillano
     for(const p of G.particelle){
       if(p.t!=='lucciola') continue;
       const px=Math.round(p.x)+ox, py=Math.round(p.y)+oy;
-      const g = bx.createRadialGradient(px,py,0,px,py,7*K);
+      const g = mappaBloom.createRadialGradient(px,py,0,px,py,7*K);
       g.addColorStop(0,'rgba(230,250,150,0.42)');
       g.addColorStop(1,'rgba(200,240,120,0)');
-      bx.fillStyle=g; bx.beginPath(); bx.arc(px,py,7*K,0,6.3); bx.fill();
+      mappaBloom.fillStyle=g; mappaBloom.beginPath(); mappaBloom.arc(px,py,7*K,0,6.3); mappaBloom.fill();
     }
-    FX.applicaBloom(sx, VW, VH, 0.42);
+    FX.applicaBloom(backend === 'pixi' ? bx : sx, VW, VH, 0.42);
   }
 
   /* ---------- 14. GRADAZIONE, RAGGI E VIGNETTATURA ---------- */
-  FX.gradazione(sx, VW, VH, G.ora, G.meteo, m.esterno);
-  if(m.esterno) FX.raggi(sx, VW, VH, G.ora, G.meteo);
+  const haRaggi = m.esterno && G.meteo==='sereno' &&
+    ((G.ora>=400 && G.ora<560) || (G.ora>=1000 && G.ora<1140));
+  if(backend === 'pixi'){
+    aggiornaGradazionePixi(G, m);
+    if(haRaggi){
+      sx = rx;
+      FX.raggi(sx, VW, VH, G.ora, G.meteo);
+      sx = ex;
+    }
+  }else{
+    FX.gradazione(sx, VW, VH, G.ora, G.meteo, m.esterno);
+    if(m.esterno) FX.raggi(sx, VW, VH, G.ora, G.meteo);
+  }
   /* La vignettatura era un gradiente steso sulla tela finale, cioè alla
      risoluzione vera del monitor: sfumava attraverso i pixel del gioco
      invece che insieme a loro, ed era la cosa più morbida sullo schermo.
      Ora è retinata a misura virtuale e ingrandisce con tutto il resto. */
-  sx.drawImage(ART.vignetta(VW, VH, 0.32), 0, 0);
+  if(backend !== 'pixi') sx.drawImage(ART.vignetta(VW, VH, 0.32), 0, 0);
 
   /* ---------- BLIT / COMPOSIZIONE PIXI ---------- */
   const renderInizio = performance.now();
   if(backend === 'pixi'){
-    scriviTestiSopra();
+    sx = scene.getContext('2d');
+    sx.imageSmoothingEnabled = false;
+    const haTesti = scriviTestiSopra();
     pixiUnderTexture.source.update();
     pixiSceneTexture.source.update();
-    pixiTextTexture.source.update();
+    if(haEffetti) pixiEffectTexture.source.update();
+    if(amb.a > 0.015) pixiLightTexture.source.update();
+    if(amb.a > 0.04) pixiBloomTexture.source.update();
+    if(haRaggi) pixiRaysTexture.source.update();
+    if(haTesti) pixiTextTexture.source.update();
+    pixiEffectSprite.visible = haEffetti;
+    pixiLightSprite.visible = amb.a > 0.015;
+    pixiBloomSprite.visible = amb.a > 0.04;
+    pixiRaysSprite.visible = haRaggi;
+    pixiTextSprite.visible = haTesti;
     pixiRenderer.render({ container:pixiStage });
   }else{
     ctx.clearRect(0,0,cvs.width,cvs.height);
@@ -1538,6 +1937,14 @@ R.disegna = function(G){
 
 R.backend = ()=>backend;
 R.diagnostica = function(azzera){
+  let ombreVisibili = 0, textureLocali = 0;
+  if(backend === 'pixi') for(const nodo of pixiWorldNodes.values()){
+    if(nodo.corpo) textureLocali++;
+    if(nodo.ombra){
+      textureLocali++;
+      if(nodo.ombra.sprite.visible) ombreVisibili++;
+    }
+  }
   const dati = {
     backend,
     pixiVersion:window.PIXI ? PIXI.VERSION : null,
@@ -1546,9 +1953,17 @@ R.diagnostica = function(azzera){
     virtuale:{ larghezza:VW, altezza:VH },
     output:{ larghezza:cvs?.width || 0, altezza:cvs?.height || 0 },
     livelliPixi:backend === 'pixi'
-      ? ['fondo','acqua','terreno','scena','testi']
+      ? ['fondo','acqua','terreno','ponte-canvas','ombre-native','mondo-native',
+         'effetti','luci','bloom','gradazione','raggi','vignetta','testi']
       : [],
     chunkGpu:pixiTerrainSprites.size,
+    nodiPixiVisibili:backend === 'pixi' ? pixiNodiVisibili : 0,
+    nodiPixiCache:backend === 'pixi' ? pixiWorldNodes.size : 0,
+    tipiNodiPixi:backend === 'pixi' ? pixiTipiVisibili : {},
+    vistaPixi:backend === 'pixi' ? pixiUltimaVista : null,
+    ombrePixiVisibili:backend === 'pixi' ? ombreVisibili : 0,
+    texturePixiLocali:backend === 'pixi' ? textureLocali : 0,
+    texturePixiAggiornate:backend === 'pixi' ? pixiTextureAggiornate : 0,
     frameCampionati:frameRenderN,
     blitMedioMs:frameRenderN ? frameRenderMs/frameRenderN : 0,
     blitPiccoMs:frameRenderPicco
@@ -1968,7 +2383,7 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
        che a −11. Col vecchio numero la scritta cadeva IN MEZZO alle due
        tavole, che è il posto dove il disegno ha già le sue righe chiare:
        si leggeva una targa sopra a un'altra targa. */
-    if(o.kind === 'cartello' && o.testo) targhetta(o.testo, px+T/2, py-46);
+    if(!catturaNodoPixi && o.kind === 'cartello' && o.testo) targhetta(o.testo, px+T/2, py-46);
     return;
   }
   raddoppia(sx, px, py);
@@ -2384,7 +2799,7 @@ function disegnaOggettoDentro(o, px, py, gx, gy, t, stag, G, wx, wy){
       /* La targhetta di una cassa con un nome. Serve a non aprirne
          dieci per trovare i semi: il nome si legge da fuori, come su un
          cassetto vero. */
-      if(o.kind==='cassa' && o.nome) targhetta(o.nome, wx+T/2, wy-6);
+      if(!catturaNodoPixi && o.kind==='cassa' && o.nome) targhetta(o.nome, wx+T/2, wy-6);
       break;
     }
     case 'mobile': {
@@ -2412,7 +2827,7 @@ function disegnaOggettoDentro(o, px, py, gx, gy, t, stag, G, wx, wy){
          della tavoletta, e disegnata prima ci finirebbe sotto. Un
          cartello appena piantato non ha ancora testo, e una targhetta
          vuota sarebbe una toppa di legno sospesa a mezz'aria. */
-      if(o.kind==='cartello' && o.testo) targhetta(o.testo, wx+T/2, wy-24);
+      if(!catturaNodoPixi && o.kind==='cartello' && o.testo) targhetta(o.testo, wx+T/2, wy-24);
       break;
     }
   }

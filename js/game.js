@@ -1062,8 +1062,15 @@ function aggiornaCamera(subito){
   if(m.h*T < VH) ty = (m.h*T - VH)/2;
   if(subito){ G.cam.x=tx; G.cam.y=ty; }
   else {
-    G.cam.x += (tx-G.cam.x)*0.14;
-    G.cam.y += (ty-G.cam.y)*0.14;
+    const minX = m.w*T < VW ? tx : 0, maxCamX = m.w*T < VW ? tx : maxX;
+    const minY = m.h*T < VH ? ty : 0, maxCamY = m.h*T < VH ? ty : maxY;
+    /* Un cambio di viewport non deve far inseguire al gioco per parecchi
+       secondi una camera ormai impossibile. Dentro i limiti resta la stessa
+       interpolazione di sempre; fuori, si torna subito al bersaglio valido. */
+    G.cam.x = !isFinite(G.cam.x) || G.cam.x<minX || G.cam.x>maxCamX
+      ? tx : G.cam.x+(tx-G.cam.x)*0.14;
+    G.cam.y = !isFinite(G.cam.y) || G.cam.y<minY || G.cam.y>maxCamY
+      ? ty : G.cam.y+(ty-G.cam.y)*0.14;
   }
 }
 
