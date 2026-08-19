@@ -1048,8 +1048,19 @@ A.ominoSprite = function(dir, frame, attrezzo){
   let k = chiave;
   if(!img && conAttrezzo){ O = DATA.OMINO; k = 'omino'; img = IMG.prendi(k); }
   if(!img) return null;
-  const riga = O.righe[dir];
-  if(riga === undefined) return null;               // direzione non disegnata
+  let riga = O.righe[dir];
+  /* IL FOGLIO DELL'ATTREZZO PUÒ NON AVERE TUTTE LE DIREZIONI. Piccone e
+     falce ne hanno tre: di fronte, a sinistra, a destra, e la schiena
+     no. Prima si tornava `null`, e chi disegna, davanti a un null,
+     ripiega sul personaggio IN CODICE — cioè camminando all'insù col
+     piccone in mano si cambiava disegno, non solo attrezzo.
+     Meglio ripiegare sul foglio a mani vuote: si perde l'attrezzo per
+     una direzione, non la persona. */
+  if(riga === undefined && conAttrezzo){
+    O = DATA.OMINO; k = 'omino'; img = IMG.prendi(k);
+    riga = img ? O.righe[dir] : undefined;
+  }
+  if(!img || riga === undefined) return null;       // direzione non disegnata da nessuno
   /* Se l'immagine è cambiata sotto ai piedi — succede solo col
      `IMG.riprova` del pannello di prova — le celle vecchie non valgono
      più e si rifanno. Una per foglio, se no riprovarne uno le butterebbe
@@ -2174,21 +2185,60 @@ A.verificaDirezioni = function(){
     const NOMI = ['giù','sinistra','destra','su'];
     for(const att in ATT){
       for(let d=0; d<4; d++){
+        /* Solo le direzioni che il foglio dell'attrezzo dichiara: piccone
+           e falce ne hanno tre, e la quarta ripiega a mani vuote — che
+           combacia con se stessa, quindi confrontarla non direbbe
+           niente. */
+        if(ATT[att].righe[d] === undefined) continue;
         const base = A.ominoSprite(d, 0, null), conAtt = A.ominoSprite(d, 0, att);
         if(!base || !conAtt || base === conAtt) continue;   // foglio non arrivato
         const suo = scoperto(base, conAtt);
-        if(suo <= 0.12) continue;
-        /* Se non copre la sua, si cerca quale copre: dirlo è metà della
-           correzione, perché la riga giusta è già nel foglio. */
+        /* CONTA IL MARGINE, NON IL VALORE ASSOLUTO. La prima versione
+           gridava appena la posa non copriva la sua per il 12%, e ha
+           gridato quattro volte a torto su piccone e falce: quelle pose
+           sono di TRE QUARTI, non di profilo, quindi non si sovrappongono
+           bene a nessuna riga del foglio a mani vuote — nemmeno alla
+           propria. Il valore assoluto li dice tutti sospetti.
+
+           Quello che distingue davvero è di quanto un'altra direzione
+           vince. Misurato: con l'arco scambiato la direzione giusta
+           vinceva di 0,099 e 0,145; con piccone e falce, che sono a
+           posto, la seconda arriva a 0,015-0,020. La soglia a 0,05 passa
+           in mezzo, e ci passa larga da tutte e due le parti. */
         let colpevole = null, meglio = suo;
         for(let e=0; e<4; e++){
           if(e === d) continue;
-          const v2 = scoperto(A.ominoSprite(e, 0, null), conAtt);
+          const alt = A.ominoSprite(e, 0, null);
+          if(!alt) continue;
+          const v2 = scoperto(alt, conAtt);
           if(v2 < meglio){ meglio = v2; colpevole = e; }
         }
+        /* CONTA IL MARGINE, NON IL VALORE ASSOLUTO. La prima versione
+           gridava appena la posa non copriva la sua per il 12%, e ha
+           gridato quattro volte a torto su piccone e falce: quelle pose
+           sono di TRE QUARTI, non di profilo, quindi non si sovrappongono
+           bene a nessuna riga del foglio a mani vuote — nemmeno alla
+           propria, e il valore assoluto le dice tutte sospette.
+
+           Quello che distingue è di quanto un'altra direzione vince.
+           Misurato: con l'arco scambiato la direzione giusta vinceva di
+           0,099 e 0,145; con piccone e falce, che sono a posto, la
+           seconda arriva a 0,015-0,020. La soglia a 0,05 passa in mezzo.
+
+           E VA DETTO CHE SU PICCONE E FALCE QUESTA RETE NON PRENDE: se
+           si scambiassero le loro due righe, il margine resterebbe sotto
+           soglia e il controllo tacerebbe. Ho provato due misure per
+           coprirle — dov'è la pelle del viso, e di quanto la sagoma del
+           viso sporge dal cappello — e nessuna delle due regge: la pelle
+           visibile sono DUE-QUATTORDICI pixel, cioè rumore, e la sagoma
+           su un tre quarti sporge cinque volte meno che su un profilo.
+           Quelle due righe le ho verificate guardandole ingrandite, e
+           quella verifica sta scritta in `DATA.OMINO_ATTREZZI`. Una rete
+           che tace dove non sa è meglio di una che grida a caso: qui
+           griderebbe su tre fogli su cinque. */
+        if(colpevole === null || suo - meglio < 0.05) continue;
         scarti.push('omino con ' + att + ': la riga di ' + NOMI[d] + ' non è quella (' +
-                    suo.toFixed(2) + ')' +
-                    (colpevole !== null ? ' — sembra ' + NOMI[colpevole] + ' (' + meglio.toFixed(2) + ')' : ''));
+                    suo.toFixed(2) + ') — sembra ' + NOMI[colpevole] + ' (' + meglio.toFixed(2) + ')');
       }
     }
   }

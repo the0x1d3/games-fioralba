@@ -2341,7 +2341,33 @@ D.OMINO_ATTREZZI = {
      dichiarata sinistra copriva il corpo di destra per il 91%, quella
      dichiarata destra copriva sinistra per il 98%. Annaffiatoio e
      ascia, misurati allo stesso modo, sono giusti. */
-  arco:         { file:'omino-arco.png',         w:96, h:112, fotogrammi:4, righe:{0:0,1:2,2:1,3:3} }
+  arco:         { file:'omino-arco.png',         w:96, h:112, fotogrammi:4, righe:{0:0,1:2,2:1,3:3} },
+  /* PICCONE, FALCE, ZAPPA E CANNA HANNO TRE DIREZIONI, non quattro:
+     di fronte, a sinistra, a destra. La schiena non è disegnata, e `righe` lo dice
+     semplicemente non nominandola.
+
+     Non è un buco: chi cammina all'insù col piccone in mano si vede a
+     mani vuote, perché `ART.ominoSprite` davanti a una direzione che il
+     foglio non ha ripiega sul foglio della camminata normale. Meglio il
+     contadino senza attrezzo per una direzione che il contadino
+     disegnato in codice, che sarebbe un altro personaggio.
+
+     CHE SINISTRA E DESTRA NON SIANO SCAMBIATE, qui, l'ho verificato
+     GUARDANDO le teste ingrandite, non misurando — e va detto perché
+     è l'unico caso in tutto il repo in cui una prova automatica non
+     regge. `ART.verificaDirezioni` non ce la fa: queste quattro pose
+     sono di TRE QUARTI e non di profilo, quindi non si sovrappongono
+     bene a nessuna riga del foglio a mani vuote, nemmeno alla propria,
+     e la direzione giusta vince per due centesimi. Provate altre due
+     misure e buttate tutte e due: la pelle del viso visibile sono da
+     DUE a QUATTORDICI pixel, cioè rumore, e la sagoma del viso su un
+     tre quarti sporge dal cappello cinque volte meno che su un profilo.
+     Ingrandite, invece, si vede subito: il viso sta dalla stessa parte
+     del riferimento a mani vuote in tutte e quattro. */
+  piccone:      { file:'omino-piccone.png',      w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2} },
+  falce:        { file:'omino-falce.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2} },
+  zappa:        { file:'omino-zappa.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2} },
+  canna:        { file:'omino-canna.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2} }
 };
 
 D.CONSIGLI = [
