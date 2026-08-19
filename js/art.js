@@ -2134,7 +2134,66 @@ A.verificaDirezioni = function(){
       scarti.push(id + ': di fronte e di spalle sono meno simmetriche dei profili (' +
                   piatte.toFixed(2) + ' contro ' + profili.toFixed(2) + '): forse sono profili anche loro');
   }
-  if(scarti.length) console.warn('[arte] le direzioni degli abitanti non tornano:', scarti);
+  /* E I FOGLI CON L'ATTREZZO IN MANO, che vogliono una prova tutta loro.
+
+     Lo specchio sinistra/destra qui non basta, e l'ha dimostrato un
+     difetto vero: nell'arco le due righe di profilo erano SCAMBIATE, e
+     una coppia scambiata resta una coppia specchiata — la prima regola
+     la vede giusta. Segnalato in partita, «con l'arco in mano il tizio
+     cammina all'incontrario», e la prima regola l'aveva lasciato
+     passare.
+
+     Qui però c'è un riferimento che gli abitanti non hanno: il foglio a
+     mani vuote, che è la stessa persona nelle stesse pose. La cella a
+     mani vuote è 64×96 con la testa in colonna 31 e i piedi alla riga
+     93; quella con l'attrezzo è 96×112 con la testa in 47 e i piedi in
+     109 — quindi la prima entra nella seconda spostata di (16,16),
+     esattamente. Si sovrappongono e si guarda quanta parte del corpo a
+     mani vuote resta scoperta: l'attrezzo AGGIUNGE pixel e non ne
+     toglie, quindi la posa giusta lo copre quasi tutto e quella
+     sbagliata no.
+
+     Misurato su tutti e tre i fogli: la posa giusta lascia scoperto fra
+     l'1,3% e l'8,8%, quella sbagliata fra il 16% e il 25%. La soglia a
+     0,12 passa in mezzo. */
+  const O = DATA.OMINO, ATT = DATA.OMINO_ATTREZZI || {};
+  if(O && A.ominoSprite){
+    const alfa = (canv)=>{ const t = cv(canv.width, canv.height), tx = t.getContext('2d');
+      tx.drawImage(canv, 0, 0); return tx.getImageData(0,0,t.width,t.height).data; };
+    const scoperto = (base, attr)=>{
+      const B = alfa(base), Aa = alfa(attr), bw = base.width, aw = attr.width;
+      const dx = ((attr.width - base.width)/2)|0, dy = attr.height - base.height;
+      let fuori = 0, tot = 0;
+      for(let y=0;y<base.height;y++) for(let x=0;x<bw;x++){
+        if(B[(y*bw+x)*4+3] <= 40) continue;
+        tot++;
+        if(Aa[((y+dy)*aw + (x+dx))*4+3] <= 40) fuori++;
+      }
+      return tot ? fuori/tot : 1;
+    };
+    const NOMI = ['giù','sinistra','destra','su'];
+    for(const att in ATT){
+      for(let d=0; d<4; d++){
+        const base = A.ominoSprite(d, 0, null), conAtt = A.ominoSprite(d, 0, att);
+        if(!base || !conAtt || base === conAtt) continue;   // foglio non arrivato
+        const suo = scoperto(base, conAtt);
+        if(suo <= 0.12) continue;
+        /* Se non copre la sua, si cerca quale copre: dirlo è metà della
+           correzione, perché la riga giusta è già nel foglio. */
+        let colpevole = null, meglio = suo;
+        for(let e=0; e<4; e++){
+          if(e === d) continue;
+          const v2 = scoperto(A.ominoSprite(e, 0, null), conAtt);
+          if(v2 < meglio){ meglio = v2; colpevole = e; }
+        }
+        scarti.push('omino con ' + att + ': la riga di ' + NOMI[d] + ' non è quella (' +
+                    suo.toFixed(2) + ')' +
+                    (colpevole !== null ? ' — sembra ' + NOMI[colpevole] + ' (' + meglio.toFixed(2) + ')' : ''));
+      }
+    }
+  }
+
+  if(scarti.length) console.warn('[arte] le direzioni non tornano:', scarti);
   return scarti;
 };
 
