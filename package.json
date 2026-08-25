@@ -9,6 +9,8 @@
     "check": "tsc --noEmit",
     "test": "node tools/coerenza.js && node tools/verifica-omino.js && node tools/scenari-migrazione.js && npm run test:renderer",
     "test:renderer": "node tools/confronto-renderer.js",
+    "test:browser": "node tools/test-gatto-browser.js",
+    "test:browser:install": "playwright install chromium",
     "verifica": "npm run test && npm run check",
     "serve": "node server.js --sviluppo",
     "genera-omino": "node tools/genera-omino.js",
