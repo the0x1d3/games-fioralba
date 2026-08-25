@@ -135,8 +135,6 @@
   </main>
   <script>
     const source = new Image();
-    source.src = "../attached_assets/Omino01_1787149250978.png";
-
     function drawTransparent(ctx, image, dx, dy, dw, dh) {
       const scratch = document.createElement("canvas");
       scratch.width = image.naturalWidth;
@@ -156,13 +154,17 @@
       ctx.drawImage(scratch, dx, dy, dw, dh);
     }
 
-    source.addEventListener("load", () => {
+    function renderSource() {
       const reference = document.querySelector("#reference").getContext("2d");
       drawTransparent(reference, source, 0, 0, 335, 553);
 
       const gameSprite = document.querySelector("#game-sprite").getContext("2d");
       drawTransparent(gameSprite, source, 14, 0, 68, 112);
-    });
+    }
+
+    source.addEventListener("load", renderSource, { once: true });
+    source.src = "/attached_assets/Omino01_1787149250978.png";
+    if (source.complete && source.naturalWidth) renderSource();
   </script>
 </body>
 </html>
