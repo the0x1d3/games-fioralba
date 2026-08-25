@@ -14,4 +14,7 @@ perché troppo lontana dal riferimento.
 
 **How to apply:** usare questa identità per ogni nuova direzione, fase di
 movimento, attrezzo e ritratto. Non proporre di nuovo un omino geometrico o
-procedurale semplificato senza una richiesta esplicita.
+procedurale semplificato senza una richiesta esplicita. Prima di approvare un
+rig, mostrare insieme tutte le direzioni e le fasi su un fondale colorato:
+profili e retro devono avere anatomie proprie, e ogni manico deve attraversare
+visibilmente una mano chiusa invece di fluttuare accanto al personaggio.

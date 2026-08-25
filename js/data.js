@@ -2328,17 +2328,7 @@ D.OMINO = {
 D.OMINO_ATTREZZI = {
   annaffiatoio: { file:'omino-annaffiatoio.png', w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
   ascia:        { file:'omino-ascia.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
-  /* L'ARCO HA LE DUE RIGHE DI PROFILO SCAMBIATE, e non è un errore da
-     correggere nel file: è l'ordine con cui è stato esportato, e
-     `righe` esiste apposta per dirlo.
-
-     Segnalato in partita — «con l'arco in mano il tizio cammina
-     all'incontrario» — e misurato sovrapponendolo al foglio a mani
-     vuote, che sta nella stessa griglia spostata di (16,16): la riga
-     dichiarata sinistra copriva il corpo di destra per il 91%, quella
-     dichiarata destra copriva sinistra per il 98%. Annaffiatoio e
-     ascia, misurati allo stesso modo, sono giusti. */
-  arco:         { file:'omino-arco.png',         w:96, h:112, fotogrammi:4, righe:{0:0,1:2,2:1,3:3} },
+  arco:         { file:'omino-arco.png',         w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
   piccone:      { file:'omino-piccone.png',      w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
   falce:        { file:'omino-falce.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
   zappa:        { file:'omino-zappa.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },

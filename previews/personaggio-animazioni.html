@@ -83,17 +83,28 @@
     .tool-card strong { display: block; font-size: 14px; }
     .tool-card small { color: #795538; font: 12px Arial, sans-serif; }
     .status { margin-top: 20px; padding: 12px 14px; border-left: 5px solid var(--gold); background: #f5e8cf; font-size: 14px; line-height: 1.4; }
+    .rig-inspector { margin-top: 24px; padding: 22px; border: 3px solid var(--line); border-radius: 12px; background: rgba(255,248,233,.92); }
+    .rig-inspector h2 { margin: 0; font-size: 24px; }
+    .rig-inspector > p { margin: 7px 0 18px; color: #70482b; line-height: 1.45; }
+    .rig-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; gap: 12px; margin-top: 10px; }
+    .rig-row strong { font: 700 12px Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+    .rig-frames { display: grid; grid-template-columns: repeat(4, minmax(72px, 1fr)); gap: 8px; }
+    .rig-cell { display: grid; place-items: center; min-width: 0; border: 1px solid #527343; background-color: var(--green-a); background-image: linear-gradient(45deg, rgba(43,83,36,.18) 25%, transparent 25%), linear-gradient(-45deg, rgba(43,83,36,.18) 25%, transparent 25%); background-size: 14px 14px; }
+    .rig-cell canvas { width: min(100%, 120px); height: auto; }
     @media (max-width: 850px) {
       header { display: block; }
       .legend { max-width: none; margin-top: 16px; }
       .studio { grid-template-columns: 1fr; }
       .hero { min-height: 480px; border-right: 0; border-bottom: 3px solid var(--line); }
+      .rig-row { grid-template-columns: 1fr; }
     }
     @media (max-width: 520px) {
       main { width: min(100% - 16px, 470px); padding-top: 22px; }
       .hero, .controls { padding: 16px; }
       .hero { min-height: 390px; }
       .all-tools { grid-template-columns: 1fr; }
+      .rig-inspector { padding: 14px; }
+      .rig-frames { grid-template-columns: repeat(2, minmax(72px, 1fr)); }
     }
   </style>
 </head>
@@ -139,13 +150,18 @@
         <div class="status" id="status">Camminata frontale a mani libere · 4 fotogrammi · 130 ms per fase.</div>
       </div>
     </section>
+    <section class="rig-inspector" aria-labelledby="rig-title">
+      <h2 id="rig-title">Tutte le pose del rig</h2>
+      <p>Le sedici celle mostrano insieme appoggio, passaggio e falcate nelle quattro direzioni. Seleziona un attrezzo sopra per controllare la presa in ogni posa.</p>
+      <div id="rig-grid"></div>
+    </section>
   </main>
   <script>
     const assets = [
       { id: "none", label: "Mani libere", file: "omino.png" },
       { id: "annaffiatoio", label: "Annaffiatoio", file: "omino-annaffiatoio.png" },
       { id: "ascia", label: "Ascia", file: "omino-ascia.png" },
-      { id: "arco", label: "Arco", file: "omino-arco.png", rows: [0, 2, 1, 3] },
+      { id: "arco", label: "Arco", file: "omino-arco.png" },
       { id: "piccone", label: "Piccone", file: "omino-piccone.png" },
       { id: "falce", label: "Falce", file: "omino-falce.png" },
       { id: "zappa", label: "Zappa", file: "omino-zappa.png" },
@@ -165,7 +181,7 @@
     function draw(canvas, asset, direction, frame) {
       const image = images.get(asset.id);
       if (!image || !image.complete || !image.naturalWidth) return;
-      const row = asset.rows ? asset.rows[direction] : direction;
+      const row = direction;
       const context = canvas.getContext("2d");
       context.imageSmoothingEnabled = false;
       context.clearRect(0, 0, 96, 112);
@@ -190,6 +206,7 @@
 
     const toolButtons = document.querySelector("#tool-buttons");
     const allTools = document.querySelector("#all-tools");
+    const rigGrid = document.querySelector("#rig-grid");
     for (const asset of assets) {
       load(asset);
       const button = document.createElement("button");
@@ -209,6 +226,29 @@
       card.append(canvas, copy);
       allTools.append(card);
     }
+
+    ["Fronte", "Sinistra", "Destra", "Retro"].forEach((label, direction) => {
+      const row = document.createElement("div");
+      row.className = "rig-row";
+      const heading = document.createElement("strong");
+      heading.textContent = label;
+      const frames = document.createElement("div");
+      frames.className = "rig-frames";
+      for (let frame = 0; frame < 4; frame++) {
+        const cell = document.createElement("div");
+        cell.className = "rig-cell";
+        const canvas = document.createElement("canvas");
+        canvas.width = 96;
+        canvas.height = 112;
+        canvas.dataset.rigDirection = direction;
+        canvas.dataset.rigFrame = frame;
+        canvas.setAttribute("aria-label", `${label}, fase ${frame + 1}`);
+        cell.append(canvas);
+        frames.append(cell);
+      }
+      row.append(heading, frames);
+      rigGrid.append(row);
+    });
 
     document.querySelectorAll("[data-control]").forEach(group => {
       group.addEventListener("click", event => {
@@ -233,6 +273,9 @@
       document.querySelectorAll(".tool-card canvas").forEach(canvas => {
         const asset = assets.find(item => item.id === canvas.dataset.asset);
         draw(canvas, asset, state.direction, state.speed === "idle" ? 0 : state.frame);
+      });
+      document.querySelectorAll("[data-rig-direction]").forEach(canvas => {
+        draw(canvas, selected, Number(canvas.dataset.rigDirection), Number(canvas.dataset.rigFrame));
       });
       requestAnimationFrame(animate);
     }
