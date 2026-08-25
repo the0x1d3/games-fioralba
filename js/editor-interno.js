@@ -77,7 +77,7 @@ function fSelezione(s,anteprima){
 function baseMappa(m){ return basi&&basi[m.id]; }
 function baseOggetto(m,x,y){
   const b=baseMappa(m), t=b&&WORLD.oggetto&&WORLD.oggetto(b,x,y);
-  return t?{x:t.x,y:t.y,obj:t.obj}:null;
+  return t?t.obj:null;
 }
 function modificaOggettoQui(m,x,y){
   for(const v of modifiche.values())
@@ -174,7 +174,7 @@ function blocchiDeco(m,d){
     const mod=modificaOggettoQui(m,t.x,t.y);
     const origine=mod?{x:mod.x,y:mod.y}:{x:t.x,y:t.y};
     const base=mod?mod.da:baseOggetto(m,origine.x,origine.y);
-    if(base) r.push({x:t.x,y:t.y,obj:t.obj,origine,da:mod?mod.da:base.obj});
+    if(base) r.push({x:t.x,y:t.y,obj:t.obj,origine,da:mod?mod.da:base});
   }
   return r;
 }
