@@ -39,6 +39,7 @@ let bloomLayer, bx;
 let raysLayer, rx;
 let vignetteLayer, vx;
 let textLayer, tx;
+let pixiComposite, pix;
 let VW=480, VH=270, SCALE=3;
 /* DPR: quanti pixel fisici vale un pixel CSS (1 di norma, 1.25/1.5/2 sugli
    schermi in scala e sui Retina). cssW/cssH servono a capire se la finestra
@@ -133,7 +134,7 @@ function distruggiPixi(){
 function aggiornaTexturePixi(){
   if(!pixiSceneTexture || !pixiTextTexture || !pixiUnderTexture) return;
   pixiUnderTexture.source.resize(underLayer.width, underLayer.height, 1);
-  pixiSceneTexture.source.resize(scene.width, scene.height, 1);
+  pixiSceneTexture.source.resize(pixiComposite.width, pixiComposite.height, 1);
   pixiEffectTexture.source.resize(effectLayer.width, effectLayer.height, 1);
   pixiLightTexture.source.resize(light.width, light.height, 1);
   pixiBloomTexture.source.resize(bloomLayer.width, bloomLayer.height, 1);
@@ -146,10 +147,11 @@ function aggiornaTexturePixi(){
   ]) texture.source.scaleMode = 'nearest';
   pixiTextTexture.source.scaleMode = 'nearest';
   for(const nodo of [
-    pixiFondo, pixiUnderSprite, pixiTerrainLayer, pixiSceneSprite,
+    pixiFondo, pixiUnderSprite, pixiTerrainLayer,
     pixiShadowLayer, pixiWorldLayer, pixiEffectSprite, pixiLightSprite,
     pixiBloomSprite, pixiGradeLayer, pixiRaysSprite, pixiVignetteSprite
   ]) nodo.scale.set(SCALE);
+  pixiSceneSprite.scale.set(1);
 
   vx.clearRect(0,0,VW,VH);
   vx.drawImage(ART.vignetta(VW, VH, 0.32), 0, 0);
@@ -183,7 +185,7 @@ async function preparaPixi(canvas){
       resource:underLayer, scaleMode:'nearest', autoGenerateMipmaps:false
     }, true);
     pixiSceneTexture = PIXI.Texture.from({
-      resource:scene, scaleMode:'nearest', autoGenerateMipmaps:false
+      resource:pixiComposite, scaleMode:'nearest', autoGenerateMipmaps:false
     }, true);
     pixiEffectTexture = PIXI.Texture.from({
       resource:effectLayer, scaleMode:'nearest', autoGenerateMipmaps:false
@@ -203,6 +205,13 @@ async function preparaPixi(canvas){
     pixiTextTexture = PIXI.Texture.from({
       resource:textLayer, scaleMode:'nearest', autoGenerateMipmaps:false
     }, true);
+    /* Le tele cambiano misura con viewport e orientamento. Pixi deve
+       sapere fin dalla creazione degli Sprite che le loro geometrie sono
+       dinamiche, altrimenti resta il batch della misura precedente. */
+    for(const texture of [
+      pixiUnderTexture, pixiSceneTexture, pixiEffectTexture, pixiLightTexture,
+      pixiBloomTexture, pixiRaysTexture, pixiVignetteTexture, pixiTextTexture
+    ]) texture.dynamic = true;
     pixiUnderSprite = new PIXI.Sprite({ texture:pixiUnderTexture, label:'acqua' });
     pixiTerrainLayer = new PIXI.Container({ label:'terreno' });
     pixiSceneSprite = new PIXI.Sprite({ texture:pixiSceneTexture, label:'ponte-canvas' });
@@ -250,6 +259,7 @@ R.init = async function(canvas){
   bloomLayer = ART.cv(VW,VH); bx = bloomLayer.getContext('2d');
   raysLayer = ART.cv(VW,VH); rx = raysLayer.getContext('2d');
   vignetteLayer = ART.cv(VW,VH); vx = vignetteLayer.getContext('2d');
+  pixiComposite = ART.cv(VW*SCALE,VH*SCALE); pix = pixiComposite.getContext('2d');
   textLayer = document.createElement('canvas');
   tx = textLayer.getContext('2d', { alpha:true });
   cvs = await preparaPixi(cvs);
@@ -404,6 +414,7 @@ R.resize = function(){
   bloomLayer.width=VW; bloomLayer.height=VH;
   raysLayer.width=VW; raysLayer.height=VH;
   vignetteLayer.width=VW; vignetteLayer.height=VH;
+  pixiComposite.width=devW; pixiComposite.height=devH;
   sx = scene.getContext('2d'); sx.imageSmoothingEnabled=false;
   ux = underLayer.getContext('2d'); ux.imageSmoothingEnabled=false;
   lx = light.getContext('2d'); lx.imageSmoothingEnabled=false;
@@ -411,10 +422,16 @@ R.resize = function(){
   bx = bloomLayer.getContext('2d'); bx.imageSmoothingEnabled=false;
   rx = raysLayer.getContext('2d'); rx.imageSmoothingEnabled=false;
   vx = vignetteLayer.getContext('2d'); vx.imageSmoothingEnabled=false;
+  pix = pixiComposite.getContext('2d'); pix.imageSmoothingEnabled=false;
   textLayer.width=devW; textLayer.height=devH;
   tx = textLayer.getContext('2d'); tx.imageSmoothingEnabled=false;
   if(backend === 'pixi'){
     pixiRenderer.resize(devW, devH, 1);
+    /* La dimensione visiva è controllata dalla regola #game: un valore
+       inline lasciato da Pixi dopo una rotazione bloccherebbe la viewport
+       al formato precedente pur avendo il buffer WebGL corretto. */
+    cvs.style.removeProperty('width');
+    cvs.style.removeProperty('height');
     aggiornaTexturePixi();
   }else{
     /* Cambiare width/height azzera lo stato del contesto 2D. */
@@ -1358,6 +1375,16 @@ R.luceAmbiente = luceAmbiente;
    =================================================================== */
 R.disegna = function(G){
   const m = G.mappa();
+  /* Pixi presenta via WebGL un unico frame opaco. Comporre i layer nella
+     tela canonica evita variazioni di premoltiplicazione alfa e di spazio
+     colore che il browser introdurrebbe fondendoli separatamente in GPU. */
+  const backendReale = backend;
+  const ctxReale = ctx;
+  const composizioneFedelta = backend === 'pixi';
+  if(composizioneFedelta){
+    backend = 'canvas';
+    ctx = pix;
+  }
   /* La camera insegue il giocatore per interpolazione, quindi porta con
      sé una parte frazionaria. Va agganciata al pixel virtuale una volta
      per fotogramma, qui: `|0` tronca verso lo zero, e con lo scostamento
@@ -1966,6 +1993,18 @@ R.disegna = function(G){
     /* e sopra, alla risoluzione vera dello schermo, tutto il testo del
        mondo: vedi il cappello di `testoNitido` per il perché */
     scriviTestiSopra();
+  }
+  if(composizioneFedelta){
+    backend = backendReale;
+    ctx = ctxReale;
+    pixiSceneTexture.source.update();
+    for(const nodo of [
+      pixiFondo, pixiUnderSprite, pixiTerrainLayer, pixiShadowLayer,
+      pixiWorldLayer, pixiEffectSprite, pixiLightSprite, pixiBloomSprite,
+      pixiGradeLayer, pixiRaysSprite, pixiVignetteSprite, pixiTextSprite
+    ]) nodo.visible = false;
+    pixiSceneSprite.visible = true;
+    pixiRenderer.render({ container:pixiStage });
   }
   const renderMs = performance.now() - renderInizio;
   frameRenderMs += renderMs;

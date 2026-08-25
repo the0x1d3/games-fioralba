@@ -1395,6 +1395,29 @@ verifica('PixiJS è locale, predefinito e conserva il fallback Canvas', () => {
   return problemi;
 });
 
+verifica('il confronto visuale Pixi e Canvas resta una verifica eseguibile', () => {
+  const problemi = [];
+  const pkg = JSON.parse(fs.readFileSync(path.join(RADICE, 'package.json'), 'utf8'));
+  const test = (pkg.scripts || {})['test:renderer'];
+  const completo = (pkg.scripts || {}).test || '';
+  const confronto = path.join(RADICE, 'tools', 'confronto-renderer.js');
+  const guida = path.join(RADICE, 'docs', 'confronto-renderer.md');
+  if(test !== 'node tools/confronto-renderer.js')
+    problemi.push('package.json non espone npm run test:renderer per il confronto browser');
+  if(!/\btest:renderer\b/.test(completo))
+    problemi.push('npm test non esegue il confronto Pixi/Canvas');
+  if(!fs.existsSync(confronto))
+    problemi.push('manca tools/confronto-renderer.js');
+  if(!fs.existsSync(guida))
+    problemi.push('manca docs/confronto-renderer.md con la soglia documentata');
+  if(fs.existsSync(confronto)){
+    const src = fs.readFileSync(confronto, 'utf8');
+    if(!/renderer=canvas/.test(src) || !/SCENE/.test(src))
+      problemi.push('il confronto non dichiara sia ?renderer=canvas sia le scene deterministiche');
+  }
+  return problemi;
+});
+
 /* --- e adesso: quanto pesa davvero, quell'ordine ---
 
    «L'ordine degli script è portante» stava scritto in due posti, e non

@@ -1,4 +1,6 @@
-- [Editor locale e debug privato](editor-workflow.md) — durante la fase privata il debug resta attivo; l’editor gira localmente e solo gli scenari approvati vengono pubblicati.
+- [Editor locale e debug privato](editor-workflow.md) — durante la fase privata il debug resta attivo; l'editor gira localmente e solo gli scenari approvati vengono pubblicati.
 - [Validazione degli aggiornamenti scenario](scenario-migration-validation.md) — controllare solo i ritocchi e i loro arrivi, preservando la scenografia intenzionale su acqua.
 - [Validazione WebGL in anteprima](webgl-preview-validation.md) — la cattura locale può non avere GPU; validare Pixi dal dominio di sviluppo e Canvas localmente.
 - [Lockfile per Railway](railway-npm-lockfile.md) — i lockfile esportati da Replit non devono conservare URL del Package Firewall per build npm esterne.
+- [Ridimensionamento delle texture Pixi](pixi-texture-resize.md) — le texture Canvas che cambiano misura devono essere dinamiche prima di creare lo Sprite.
+- [Composizione canonica Pixi](pixi-canonical-composition.md) — per l'equivalenza pixel-perfect, Pixi presenta un frame opaco già composto anziché fondere layer trasparenti separati.
