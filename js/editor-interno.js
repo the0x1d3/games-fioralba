@@ -1,341 +1,401 @@
 /* ===================================================================
    FIORALBA — editor-interno.js
 
-   Un banco di prova nella partita, non un secondo editor completo:
-   permette di muovere soltanto scenografia sicura, tiene i cambiamenti
-   soltanto in memoria e scarica lo stesso delta JSON che comprende
-   l'editor locale. Questo file viene innestato dal server esclusivamente
-   nelle anteprime/test; non fa parte della risposta pubblica.
+   Banco di prova privato per la scenografia. Non salva mai la partita:
+   le trasformazioni vivono solo nella mappa aperta e diventano una bozza
+   JSON compatibile con l'editor locale.
    =================================================================== */
 (function(){
 'use strict';
-
-/* `server.js` inserisce questo consenso soltanto nell'anteprima/test. Nella
-   pagina pubblica il file resta inerte: non registra finestre, input o API. */
 if(!window.FIORALBA_MODIFICA_INTERNA) return;
 
-const E = {};
-window.EDITOR_INTERNO = E;
-
-const T = 64;
-const $ = s=>document.querySelector(s);
-const AMBIENTALI = new Set(['albero','cespuglio','fiori','sasso','panchina','fioriera','lampione','lume']);
-const MOBILI_AMBIENTALI = new Set(['recinto','cancelletto','cartello']);
-
+const E={}; window.EDITOR_INTERNO=E;
+const T=64, $=s=>document.querySelector(s);
+/* Il banco di prova sposta solo arredo certamente scenografico. Una
+   blacklist non basta: molte interazioni dipendono dal tipo (casse,
+   bottiglie, consegne) o da un campo non uniforme (chioschi e fucine). */
+const OGGETTI_SCENOGRAFICI=new Set(['albero','cespuglio','fiori','sasso','panchina','fioriera','lampione','lume']);
+const MOBILI_SCENOGRAFICI=new Set(['recinto','cancelletto','cartello']);
 let aperto=false, basi=null, selezione=null, mira=null, spostamento=false;
 let modifiche=new Map(), cronologia=[], originali=new Map(), toccoNascosto=true;
 
-/* La modalità resta aperta anche mentre si esplora: il giocatore può
-   attraversare la mappa e accumulare più ritocchi nella stessa bozza.
-   Solo l'istante in cui sceglie una DESTINAZIONE congela il gioco, così
-   una freccia o un tocco non spostano il contadino sotto all'oggetto. */
-function aggiornaInterazione(){
-  const esplora = aperto && !spostamento;
-  document.body.classList.toggle('modalita-modifica-attiva', aperto);
-  document.body.classList.toggle('modalita-modifica-esplora', esplora);
-  const tocco=$('#tocco');
-  if(!tocco) return;
-  if(!aperto){
-    if(!toccoNascosto) tocco.classList.remove('hidden');
-  }else if(spostamento || toccoNascosto){
-    tocco.classList.add('hidden');
-  }else{
-    tocco.classList.remove('hidden');
-  }
-}
-function impostaSpostamento(valore){
-  spostamento=!!valore;
-  aggiornaInterazione();
-}
-
-function copiaSicura(v, visti){
+function copia(v,visti){
   if(v===null || typeof v!=='object') return v;
-  visti=visti||new WeakSet();
-  if(visti.has(v)) return undefined;
-  visti.add(v);
-  if(Array.isArray(v)) return v.map(x=>copiaSicura(x,visti)).filter(x=>x!==undefined);
-  const uscita={};
-  for(const k of Object.keys(v)){
-    if(k==='ed') continue; // gli edifici rimandano alla mappa e sono circolari
-    const valore=copiaSicura(v[k],visti);
-    if(valore!==undefined && typeof valore!=='function') uscita[k]=valore;
+  visti=visti||new WeakSet(); if(visti.has(v)) return undefined; visti.add(v);
+  if(Array.isArray(v)) return v.map(x=>copia(x,visti)).filter(x=>x!==undefined);
+  const r={}; for(const k of Object.keys(v)){
+    if(k==='ed') continue;
+    const n=copia(v[k],visti); if(n!==undefined && typeof n!=='function') r[k]=n;
   }
-  return uscita;
+  return r;
 }
-function uguale(a,b){ return JSON.stringify(copiaSicura(a))===JSON.stringify(copiaSicura(b)); }
-function chiave(m,x,y){ return m+'@'+x+','+y; }
-function nomeOggetto(o){
-  if(!o) return 'oggetto';
-  const n=o.kind||o.t||'oggetto';
-  return n.charAt(0).toUpperCase()+n.slice(1);
+function uguale(a,b){ return JSON.stringify(copia(a))===JSON.stringify(copia(b)); }
+function chiave(tipo,m,x,y){ return tipo+'|'+m+'|'+x+','+y; }
+function nome(o){ const n=o&&(o.kind||o.t)||'elemento'; return n.charAt(0).toUpperCase()+n.slice(1); }
+function mappa(){ return G&&G.mappa?G.mappa():null; }
+function impronta(o){ return WORLD.impronta?WORLD.impronta(o):{w:1,h:1}; }
+function improntaDeco(d){
+  if(d&&d.t==='fontana')
+    return {w:Math.max(1,Math.round(d.iw||4)),h:Math.max(1,Math.round(d.ih||3))};
+  return {w:Math.max(1,Math.round((d&&d.w)||1)),h:Math.max(1,Math.round((d&&d.h)||1))};
 }
-function attuale(){ return G && G.mappa ? G.mappa() : null; }
-function spazioRiservato(m,x,y){
-  /* La bozza deve superare la stessa validazione dell'editor locale: gli
-     spazi promessi a costruzioni restano intoccabili anche quando la
-     costruzione è già stata realizzata nella partita aperta. */
-  if(m.spazi && Object.values(m.spazi).some(s=>
-    x>=s.x-1 && x<s.x+s.w+1 && y>=s.y-1 && y<s.y+s.h+1
-  )) return true;
-  if(WORLD.riservata && WORLD.riservata(m,x,y,G.costruzioni)) return true;
-  if((m.warps||[]).some(w=>x>=w.x && x<w.x+w.w && y>=w.y && y<w.y+w.h)) return true;
+function include(x,y,f,px,py){ return px>=x&&px<x+f.w&&py>=y&&py<y+f.h; }
+function areaRiservata(m,x,y,f){
+  for(let j=0;j<f.h;j++) for(let i=0;i<f.w;i++){
+    const ax=x+i, ay=y+j;
+    if(!WORLD.dentro(m,ax,ay) || spazioRiservato(m,ax,ay)) return true;
+  }
   return false;
 }
-function ambientale(o){
-  return !!o && (AMBIENTALI.has(o.t) || (o.t==='mobile' && MOBILI_AMBIENTALI.has(o.kind)));
+function spazioRiservato(m,x,y){
+  if(m.spazi&&Object.values(m.spazi).some(s=>x>=s.x-1&&x<s.x+s.w+1&&y>=s.y-1&&y<s.y+s.h+1)) return true;
+  if(WORLD.riservata&&WORLD.riservata(m,x,y,G.costruzioni)) return true;
+  return (m.warps||[]).some(w=>include(w.x,w.y,{w:w.w,h:w.h},x,y));
 }
-function bozzaIn(m,x,y){
-  for(const b of modifiche.values())
-    if(b.mappa===m.id && b.a.x===x && b.a.y===y) return b;
+function scenograficoOggetto(o){
+  return !!o&&(OGGETTI_SCENOGRAFICI.has(o.t)||
+    (o.t==='mobile'&&MOBILI_SCENOGRAFICI.has(o.kind)));
+}
+function scenograficaDeco(d){ return !!d&&WORLD.decorazioneScenarioSicura(d); }
+function ridimensionabile(s){
+  if(!s) return false;
+  return s.tipo==='oggetto'
+    ? Object.prototype.hasOwnProperty.call(s.obj,'iw')||Object.prototype.hasOwnProperty.call(s.obj,'ih')
+    : Object.prototype.hasOwnProperty.call(s.deco,'w')||Object.prototype.hasOwnProperty.call(s.deco,'h');
+}
+function fSelezione(s,anteprima){
+  if(!s) return {w:1,h:1};
+  if(s.tipo==='oggetto'){
+    const o=copia(s.obj);
+    if(anteprima&&s.anteprima){ o.iw=s.anteprima.w; o.ih=s.anteprima.h; }
+    return impronta(o);
+  }
+  const d=copia(s.deco);
+  if(anteprima&&s.anteprima){ d.w=s.anteprima.w; d.h=s.anteprima.h; }
+  return improntaDeco(d);
+}
+function baseMappa(m){ return basi&&basi[m.id]; }
+function baseOggetto(m,x,y){
+  const b=baseMappa(m), t=b&&WORLD.oggetto&&WORLD.oggetto(b,x,y);
+  return t?{x:t.x,y:t.y,obj:t.obj}:null;
+}
+function modificaOggettoQui(m,x,y){
+  for(const v of modifiche.values())
+    if(v.tipo==='oggetto'&&v.mappa===m.id&&v.a.x===x&&v.a.y===y) return v;
   return null;
 }
-function baseDa(m,x,y){
-  const base=basi && basi[m.id];
-  if(!base || !WORLD.oggetto) return null;
-  const trovato=WORLD.oggetto(base,x,y);
-  return trovato && trovato.x===x && trovato.y===y ? trovato : null;
+function modificaDecoQui(m,d){
+  for(const v of modifiche.values())
+    if(v.tipo==='decorazione'&&v.mappa===m.id&&uguale(v.a,d)) return v;
+  return null;
 }
-function ricorda(m, x, y){
-  const k=chiave(m.id,x,y);
-  if(!originali.has(k))
-    originali.set(k,{mappa:m.id,indice:WORLD.idx(m,x,y),oggetto:m.obj[WORLD.idx(m,x,y)]});
+function ricordaMappa(m){
+  if(originali.has(m.id)) return;
+  originali.set(m.id,{obj:m.obj.slice(),deco:m.deco.map(d=>copia(d))});
+}
+function istantanea(m){ return {obj:m.obj.slice(),deco:m.deco.map(d=>copia(d))}; }
+function ripristinaMappa(m,s){ m.obj=s.obj.slice(); m.deco=s.deco.map(d=>copia(d)); }
+function copiaModifiche(){
+  return new Map([...modifiche].map(([k,v])=>[k,copia(v)]));
+}
+function invalida(){ if(REND.invalidaTerreno) REND.invalidaTerreno(); }
+function esegui(m,azione){
+  ricordaMappa(m);
+  const prima=istantanea(m), modPrima=copiaModifiche();
+  const esito=azione();
+  if(!esito){ ripristinaMappa(m,prima); modifiche=modPrima; return false; }
+  cronologia.push({mappa:m.id,prima,modifiche:modPrima});
+  invalida(); return true;
 }
 function ripristinaOggetti(){
-  for(const voce of originali.values()){
-    const m=G.maps && G.maps[voce.mappa];
-    if(m) m.obj[voce.indice]=voce.oggetto;
+  for(const [id,s] of originali){
+    const m=G.maps&&G.maps[id]; if(m) ripristinaMappa(m,s);
   }
-  originali.clear();
-  modifiche.clear();
-  cronologia.length=0;
-  selezione=null; mira=null; impostaSpostamento(false);
-  if(REND.invalidaTerreno) REND.invalidaTerreno();
+  originali.clear(); modifiche.clear(); cronologia.length=0;
+  selezione=null; mira=null; impostaSpostamento(false); invalida();
 }
-function messaggio(testo){
-  const el=$('#editor-istruzioni');
-  if(el) el.textContent=testo;
+function registraOggetto(m,origine,da,x,y,obj){
+  const k=chiave('oggetto',m.id,origine.x,origine.y);
+  if(x===origine.x&&y===origine.y&&uguale(da,obj)) modifiche.delete(k);
+  else modifiche.set(k,{tipo:'oggetto',mappa:m.id,x:origine.x,y:origine.y,da:copia(da),
+    a:{x,y,oggetto:copia(obj)}});
 }
+function registraDeco(m,da,d){
+  const k=chiave('decorazione',m.id,da.x,da.y)+'|'+JSON.stringify(copia(da));
+  if(uguale(da,d)) modifiche.delete(k);
+  else modifiche.set(k,{tipo:'decorazione',mappa:m.id,da:copia(da),a:copia(d)});
+}
+function messaggio(t){ const e=$('#editor-istruzioni'); if(e) e.textContent=t; }
+
+function aggiornaInterazione(){
+  const esplora=aperto&&!spostamento;
+  document.body.classList.toggle('modalita-modifica-attiva',aperto);
+  document.body.classList.toggle('modalita-modifica-esplora',esplora);
+  const tocco=$('#tocco'); if(!tocco) return;
+  if(!aperto){ if(!toccoNascosto) tocco.classList.remove('hidden'); }
+  else if(spostamento||toccoNascosto) tocco.classList.add('hidden');
+  else tocco.classList.remove('hidden');
+}
+function impostaSpostamento(v){ spostamento=!!v; aggiornaInterazione(); }
+
 function aggiornaPannello(){
-  const m=attuale(), stato=$('#editor-stato');
-  const bSposta=$('#editor-sposta'), bAnnulla=$('#editor-annulla');
-  const bAzzera=$('#editor-azzera'), bEsporta=$('#editor-esporta');
+  const m=mappa(), stato=$('#editor-stato'), bSposta=$('#editor-sposta');
   if(stato){
     const scelta=selezione
-      ? 'Selezionato: '+nomeOggetto(selezione.obj)+' · ('+selezione.x+', '+selezione.y+')'
-      : (m ? m.nome+' · nessun elemento selezionato' : 'Nessuna mappa aperta');
-    const n=modifiche.size;
-    const fase=spostamento ? ' · scegli la destinazione' : ' · puoi camminare e continuare a ritoccare';
-    stato.textContent=scelta+(n ? ' · '+n+' spostamento'+(n===1?'':'i')+' in bozza' : '')+fase;
+      ? 'Selezionato: '+nome(selezione.tipo==='oggetto'?selezione.obj:selezione.deco)+' · ('+selezione.x+', '+selezione.y+')'
+      : (m?m.nome+' · nessun elemento selezionato':'Nessuna mappa aperta');
+    const fase=spostamento?' · scegli la destinazione':' · puoi camminare e ritoccare';
+    stato.textContent=scelta+(modifiche.size?' · '+modifiche.size+' ritocco'+(modifiche.size===1?'':'hi')+' in bozza':'')+fase;
   }
   if(bSposta){ bSposta.disabled=!selezione; bSposta.textContent=spostamento?'Scegli destinazione':'Sposta'; }
-  if(bAnnulla) bAnnulla.disabled=!cronologia.length;
-  if(bAzzera) bAzzera.disabled=!modifiche.size;
-  if(bEsporta) bEsporta.disabled=!modifiche.size;
-}
-function aggiornaMira(e,cvs){
-  const r=cvs.getBoundingClientRect();
-  const mondo=REND.schermoAMondo(e.clientX-r.left,e.clientY-r.top,G.cam);
-  mira={x:Math.floor(mondo.x/T),y:Math.floor(mondo.y/T)};
-  E.aggiornaOverlay();
-}
-function seleziona(x,y){
-  const m=attuale();
-  if(!m || !WORLD.dentro(m,x,y)){ messaggio('Quella casella non appartiene alla mappa.'); return; }
-  const trovato=WORLD.oggetto(m,x,y);
-  if(!trovato){ selezione=null; impostaSpostamento(false); messaggio('Qui non c’è un elemento da spostare. Puoi continuare a camminare.'); aggiornaPannello(); return; }
-  const bozza=bozzaIn(m,trovato.x,trovato.y);
-  const base=bozza ? null : baseDa(m,trovato.x,trovato.y);
-  const da=bozza ? bozza.da : (base && base.obj);
-  if(spazioRiservato(m,trovato.x,trovato.y) || !ambientale(trovato.obj) || !da || !uguale(trovato.obj,da)){
-    selezione=null; impostaSpostamento(false);
-    messaggio('Questo elemento è protetto: si spostano solo elementi scenografici della mappa base.');
-    aggiornaPannello();
-    return;
+  $('#editor-annulla').disabled=!cronologia.length;
+  $('#editor-azzera').disabled=!modifiche.size;
+  $('#editor-esporta').disabled=!modifiche.size;
+  const pannello=$('#editor-dimensioni'), disponibile=ridimensionabile(selezione);
+  pannello.classList.toggle('hidden',!disponibile);
+  if(disponibile){
+    const f=fSelezione(selezione,true), largo=$('#editor-larghezza'), alto=$('#editor-altezza');
+    largo.value=f.w; alto.value=f.h;
+    largo.disabled=!selezione; alto.disabled=!selezione; $('#editor-ridimensiona').disabled=!selezione;
   }
-  selezione={
-    mappa:m.id, x:trovato.x, y:trovato.y, obj:trovato.obj,
-    origine:bozza ? {x:bozza.x,y:bozza.y} : {x:trovato.x,y:trovato.y},
-    da:copiaSicura(da)
-  };
-  impostaSpostamento(false);
-  messaggio('Elemento selezionato. Premi “Sposta”, poi tocca una casella libera. Puoi anche camminare e selezionare altro.');
-  aggiornaPannello();
 }
-function destinazioneValida(m,x,y){
-  if(!WORLD.dentro(m,x,y)) return 'Fuori dalla mappa.';
-  if(spazioRiservato(m,x,y)) return 'Questa casella è riservata a un edificio o a un passaggio.';
-  if(m.obj[WORLD.idx(m,x,y)]) return 'La destinazione è già occupata.';
-  if(m.suolo && m.suolo[WORLD.idx(m,x,y)]) return 'Non si posa scenografia su un campo coltivato.';
-  const terreno=WORLD.terreno(m,x,y);
-  if(['acqua','roccia','vuoto'].includes(terreno)) return 'La scenografia non può stare su '+terreno+'.';
-  const px=(G.p.px/T)|0, py=(G.p.py/T)|0;
-  if(m.id===G.mappaId && px===x && py===y) return 'Sposta prima il contadino da questa casella.';
+
+function decoIn(m,x,y){
+  for(let i=m.deco.length-1;i>=0;i--){ const d=m.deco[i], f=improntaDeco(d);
+    if(include(d.x,d.y,f,x,y)) return {deco:d,indice:i};
+  }
   return null;
 }
-function sposta(x,y){
-  if(!selezione) return;
-  const m=attuale();
-  if(!m || selezione.mappa!==m.id){ messaggio('L’oggetto selezionato non è su questa mappa.'); return; }
-  if(x===selezione.x && y===selezione.y){ impostaSpostamento(false); messaggio('L’oggetto è già lì. Puoi continuare a camminare.'); aggiornaPannello(); return; }
-  const errore=destinazioneValida(m,x,y);
-  if(errore){ messaggio(errore); return; }
-  const prima={x:selezione.x,y:selezione.y};
-  ricorda(m,prima.x,prima.y); ricorda(m,x,y);
-  m.obj[WORLD.idx(m,prima.x,prima.y)]=null;
-  m.obj[WORLD.idx(m,x,y)]=selezione.obj;
-  const k=chiave(m.id,selezione.origine.x,selezione.origine.y);
-  const precedente=modifiche.get(k);
-  const bozza={
-    mappa:m.id, x:selezione.origine.x, y:selezione.origine.y,
-    a:{x,y}, da:selezione.da
-  };
-  modifiche.set(k,bozza);
-  cronologia.push({mappa:m.id, da:prima, a:{x,y}, origine:selezione.origine,
-                   obj:selezione.obj, precedente});
-  selezione={...selezione,x,y};
-  impostaSpostamento(false);
-  if(REND.invalidaTerreno) REND.invalidaTerreno();
-  messaggio(nomeOggetto(selezione.obj)+' spostato. Ora puoi camminare e fare altri ritocchi: la bozza resta aperta.');
-  aggiornaPannello();
+function blocchiDeco(m,d){
+  const f=improntaDeco(d), r=[];
+  for(let j=0;j<f.h;j++) for(let i=0;i<f.w;i++){
+    const t=WORLD.oggetto(m,d.x+i,d.y+j);
+    if(!t||t.x!==d.x+i||t.y!==d.y+j||t.obj.t!==d.t) continue;
+    const mod=modificaOggettoQui(m,t.x,t.y);
+    const origine=mod?{x:mod.x,y:mod.y}:{x:t.x,y:t.y};
+    const base=mod?mod.da:baseOggetto(m,origine.x,origine.y);
+    if(base) r.push({x:t.x,y:t.y,obj:t.obj,origine,da:mod?mod.da:base.obj});
+  }
+  return r;
+}
+function seleziona(x,y){
+  const m=mappa();
+  if(!m||!WORLD.dentro(m,x,y)){ messaggio('Quella casella non appartiene alla mappa.'); return; }
+  const deco=decoIn(m,x,y);
+  if(deco){
+    const mod=modificaDecoQui(m,deco.deco);
+    const base=mod?mod.da:(baseMappa(m).deco||[]).find(d=>uguale(d,deco.deco));
+    if(!base||!scenograficaDeco(base)){
+      selezione=null; messaggio('Questa decorazione è protetta: ponti, moli, pareti e passaggi non si modificano qui.');
+    }else{
+      selezione={tipo:'decorazione',mappa:m.id,x:deco.deco.x,y:deco.deco.y,deco:deco.deco,
+        indice:deco.indice,origine:{x:base.x,y:base.y},da:copia(base),anteprima:null};
+      messaggio('Decorazione selezionata. Puoi spostarla; se mostra le misure, prova l’ingombro prima di applicarlo.');
+    }
+    impostaSpostamento(false); aggiornaPannello(); E.aggiornaOverlay(); return;
+  }
+  const t=WORLD.oggetto(m,x,y);
+  if(!t){
+    selezione=null; impostaSpostamento(false);
+    messaggio('Qui non c’è scenografia selezionabile. Puoi continuare a camminare.'); aggiornaPannello(); return;
+  }
+  const mod=modificaOggettoQui(m,t.x,t.y);
+  const origine=mod?{x:mod.x,y:mod.y}:{x:t.x,y:t.y};
+  const base=mod?mod.da:baseOggetto(m,origine.x,origine.y);
+  if(!base||!scenograficoOggetto(base)){
+    selezione=null; impostaSpostamento(false);
+    messaggio('Questo elemento è protetto: porte, uscite, strutture e oggetti di gioco non si modificano.');
+  }else{
+    selezione={tipo:'oggetto',mappa:m.id,x:t.x,y:t.y,obj:t.obj,origine,da:copia(base),anteprima:null};
+    impostaSpostamento(false);
+    messaggio('Oggetto selezionato. L’intera impronta si sposta insieme, collisioni comprese.');
+  }
+  aggiornaPannello(); E.aggiornaOverlay();
+}
+
+function terrenoAmmesso(m,x,y,o){
+  const t=WORLD.terreno(m,x,y);
+  return !['roccia','vuoto'].includes(t)&&(t!=='acqua'||(o&&o.t==='fontana'));
+}
+function validaAreaOggetto(m,x,y,o){
+  const f=impronta(o);
+  if(areaRiservata(m,x,y,f)) return 'L’ingombro tocca un edificio, una porta o un passaggio protetto.';
+  for(let j=0;j<f.h;j++) for(let i=0;i<f.w;i++){
+    const ax=x+i,ay=y+j;
+    if(m.obj[WORLD.idx(m,ax,ay)]) return 'Una delle caselle di arrivo è già occupata.';
+    if(m.suolo&&m.suolo[WORLD.idx(m,ax,ay)]) return 'L’ingombro passerebbe sopra un campo coltivato.';
+    if(!terrenoAmmesso(m,ax,ay,o)) return 'L’oggetto non può stare su questo terreno.';
+    const px=(G.p.px/T)|0,py=(G.p.py/T)|0;
+    if(m.id===G.mappaId&&px===ax&&py===ay) return 'Sposta prima il contadino da questa casella.';
+  }
+  return null;
+}
+function validaDeco(m,x,y,d){
+  const f=improntaDeco(d);
+  if(areaRiservata(m,x,y,f)) return 'L’ingombro tocca un edificio, una porta o un passaggio protetto.';
+  for(let j=0;j<f.h;j++) for(let i=0;i<f.w;i++){
+    const ax=x+i,ay=y+j;
+    if(m.obj[WORLD.idx(m,ax,ay)]) return 'Una delle caselle di arrivo è occupata: la decorazione non può coprirla.';
+    if(m.suolo&&m.suolo[WORLD.idx(m,ax,ay)]) return 'La decorazione non può coprire un campo coltivato.';
+    if(!terrenoAmmesso(m,ax,ay,d)) return 'La decorazione non può stare su questo terreno.';
+    const px=(G.p.px/T)|0,py=(G.p.py/T)|0;
+    if(m.id===G.mappaId&&px===ax&&py===ay) return 'Sposta prima il contadino da questa casella.';
+  }
+  return null;
+}
+function posaOggetto(m,x,y,o){
+  return !validaAreaOggetto(m,x,y,o)&&WORLD.arredo(m,x,y,o);
+}
+function spostaOggetto(x,y){
+  const s=selezione,m=mappa(); if(!s||s.tipo!=='oggetto'||!m) return;
+  if(x===s.x&&y===s.y){ impostaSpostamento(false); messaggio('L’oggetto è già lì.'); aggiornaPannello(); return; }
+  if(!esegui(m,()=>{
+    const tolto=WORLD.togliArredo(m,s.x,s.y);
+    if(!tolto||!posaOggetto(m,x,y,tolto.obj)) return false;
+    registraOggetto(m,s.origine,s.da,x,y,tolto.obj);
+    selezione={...s,x,y,obj:tolto.obj,anteprima:null}; return true;
+  })){ messaggio('Destinazione non valida: controlla confini, oggetti, campi e aree protette.'); return; }
+  impostaSpostamento(false); messaggio(nome(s.obj)+' spostato con tutta la sua impronta.'); aggiornaPannello();
+}
+function spostaDeco(x,y){
+  const s=selezione,m=mappa(); if(!s||s.tipo!=='decorazione'||!m) return;
+  if(x===s.x&&y===s.y){ impostaSpostamento(false); messaggio('La decorazione è già lì.'); aggiornaPannello(); return; }
+  if(!esegui(m,()=>{
+    const blocchi=blocchiDeco(m,s.deco), indice=m.deco.indexOf(s.deco);
+    if(indice<0) return false;
+    m.deco.splice(indice,1);
+    for(const b of blocchi) WORLD.togliArredo(m,b.x,b.y);
+    const d=copia(s.deco); d.x=x; d.y=y;
+    if(validaDeco(m,x,y,d)) return false;
+    for(const b of blocchi){
+      const nx=x+(b.x-s.x),ny=y+(b.y-s.y);
+      if(!posaOggetto(m,nx,ny,b.obj)) return false;
+      registraOggetto(m,b.origine,b.da,nx,ny,b.obj);
+    }
+    m.deco.splice(indice,0,d); registraDeco(m,s.da,d);
+    selezione={...s,x,y,deco:d,indice,anteprima:null}; return true;
+  })){ messaggio('Destinazione non valida: l’ingombro deve restare libero e fuori dalle aree protette.'); return; }
+  impostaSpostamento(false); messaggio(nome(s.deco)+' spostata; le collisioni collegate l’hanno seguita.'); aggiornaPannello();
+}
+function sposta(x,y){ if(selezione&&selezione.tipo==='oggetto') spostaOggetto(x,y); else spostaDeco(x,y); }
+
+function leggiMisure(){
+  const w=parseInt($('#editor-larghezza').value,10),h=parseInt($('#editor-altezza').value,10);
+  return Number.isInteger(w)&&Number.isInteger(h)&&w>=1&&h>=1&&w<=8&&h<=8?{w,h}:null;
+}
+function anteprimaDimensioni(){
+  if(!ridimensionabile(selezione)) return;
+  const d=leggiMisure();
+  if(!d){ messaggio('Inserisci una larghezza e un’altezza tra 1 e 8 caselle.'); return; }
+  selezione.anteprima=d; E.aggiornaOverlay();
+  messaggio('Anteprima '+d.w+'×'+d.h+' caselle: verifica il contorno dorato, poi premi di nuovo il pulsante per applicare.');
+}
+function ridimensiona(){
+  const s=selezione,m=mappa(),misure=leggiMisure();
+  if(!s||!m||!ridimensionabile(s)||!misure) return;
+  const f=fSelezione(s,false); if(f.w===misure.w&&f.h===misure.h){ s.anteprima=null; E.aggiornaOverlay(); return; }
+  if(!s.anteprima||s.anteprima.w!==misure.w||s.anteprima.h!==misure.h){ anteprimaDimensioni(); return; }
+  if(!esegui(m,()=>{
+    if(s.tipo==='oggetto'){
+      const tolto=WORLD.togliArredo(m,s.x,s.y),o=copia(s.obj);
+      if(!tolto) return false; o.iw=misure.w; o.ih=misure.h;
+      if(!posaOggetto(m,s.x,s.y,o)) return false;
+      registraOggetto(m,s.origine,s.da,s.x,s.y,o); selezione={...s,obj:o,anteprima:null}; return true;
+    }
+    const indice=m.deco.indexOf(s.deco); if(indice<0) return false;
+    m.deco.splice(indice,1); const d=copia(s.deco); d.w=misure.w; d.h=misure.h;
+    if(validaDeco(m,s.x,s.y,d)) return false;
+    m.deco.splice(indice,0,d); registraDeco(m,s.da,d); selezione={...s,deco:d,indice,anteprima:null}; return true;
+  })){ messaggio('Queste dimensioni non entrano qui: riduci l’ingombro o scegli un’area libera.'); return; }
+  messaggio('Dimensioni applicate. La bozza conserva anche il nuovo ingombro.'); aggiornaPannello(); E.aggiornaOverlay();
 }
 function annulla(){
-  const ultima=cronologia.pop();
-  if(!ultima) return;
-  const m=G.maps[ultima.mappa];
-  if(!m) return;
-  m.obj[WORLD.idx(m,ultima.a.x,ultima.a.y)]=null;
-  m.obj[WORLD.idx(m,ultima.da.x,ultima.da.y)]=ultima.obj;
-  const k=chiave(ultima.mappa,ultima.origine.x,ultima.origine.y);
-  if(ultima.precedente) modifiche.set(k,ultima.precedente); else modifiche.delete(k);
-  if(selezione && selezione.mappa===ultima.mappa)
-    selezione={...selezione,x:ultima.da.x,y:ultima.da.y};
-  impostaSpostamento(false);
-  if(REND.invalidaTerreno) REND.invalidaTerreno();
-  messaggio('Ultimo spostamento annullato. Puoi continuare a camminare.');
-  aggiornaPannello();
+  const ultima=cronologia.pop(); if(!ultima) return;
+  const m=G.maps[ultima.mappa]; if(m) ripristinaMappa(m,ultima.prima);
+  modifiche=ultima.modifiche; selezione=null; mira=null; impostaSpostamento(false);
+  invalida(); messaggio('Ultima trasformazione annullata.'); aggiornaPannello(); E.aggiornaOverlay();
 }
+
 function scarica(){
   if(!modifiche.size) return;
-  const [prima]=modifiche.values();
-  const tutte=[...modifiche.values()];
-  if(tutte.some(v=>v.mappa!==prima.mappa)){
-    messaggio('Scarica una bozza per mappa: chiudi, cambia mappa e riapri la modalità.');
-    return;
+  const tutte=[...modifiche.values()], prima=tutte[0];
+  if(tutte.some(v=>v.mappa!==prima.mappa)){ messaggio('Scarica una bozza per mappa: chiudi, cambia mappa e riapri.'); return; }
+  const m=G.maps[prima.mappa], ritocchi={terreno:[],oggetti:[],decorazioni:[]};
+  for(const v of tutte){
+    if(v.tipo==='oggetto'){
+      if(uguale(v.da,v.a.oggetto)) ritocchi.oggetti.push({azione:'sposta',x:v.x,y:v.y,a:{x:v.a.x,y:v.a.y},da:v.da});
+      else{
+        ritocchi.oggetti.push({azione:'rimuovi',x:v.x,y:v.y,da:v.da});
+        ritocchi.oggetti.push({azione:'aggiungi',x:v.a.x,y:v.a.y,oggetto:v.a.oggetto});
+      }
+    }else{
+      ritocchi.decorazioni.push({azione:'rimuovi',da:v.da});
+      ritocchi.decorazioni.push({azione:'aggiungi',decorazione:v.a});
+    }
   }
-  const m=G.maps[prima.mappa];
-  const scenario={
-    formato:'fioralba-scenario', versione:1, mappa:m.id, nome:m.nome, w:m.w, h:m.h,
-    ritocchi:{terreno:[],oggetti:tutte.map(v=>({
-      azione:'sposta', x:v.x, y:v.y, a:{x:v.a.x,y:v.a.y}, da:v.da
-    })),decorazioni:[]}
-  };
-  const file=new Blob([JSON.stringify(scenario,null,2)+'\n'],{type:'application/json'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(file);
-  a.download=m.id+'-bozza-modifica.json';
-  document.body.appendChild(a); a.click(); a.remove();
+  const scenario={formato:'fioralba-scenario',versione:1,mappa:m.id,nome:m.nome,w:m.w,h:m.h,ritocchi};
+  const file=new Blob([JSON.stringify(scenario,null,2)+'\n'],{type:'application/json'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(file); a.download=m.id+'-bozza-modifica.json'; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),0);
-  messaggio('Bozza scaricata. Aprila nell’editor locale per validarla e approvarla.');
+  messaggio('Bozza scaricata: spostamenti, dimensioni e decorazioni sono pronti per l’editor locale.');
 }
 function esci(){
   if(!aperto) return;
-  ripristinaOggetti();
-  aperto=false;
-  $('#editor-interno').classList.add('hidden');
-  $('#editor-selezione').classList.add('hidden');
-  $('#editor-destinazione').classList.add('hidden');
-  aggiornaInterazione();
-  UI.prompt(null);
-  if(G.fermaInput) G.fermaInput();
+  ripristinaOggetti(); aperto=false;
+  $('#editor-interno').classList.add('hidden'); $('#editor-selezione').classList.add('hidden'); $('#editor-destinazione').classList.add('hidden');
+  aggiornaInterazione(); UI.prompt(null); if(G.fermaInput) G.fermaInput();
 }
 
-E.disponibile=()=>true;
-E.attivo=()=>aperto;
-E.bloccaGioco=()=>aperto && spostamento;
+E.disponibile=()=>true; E.attivo=()=>aperto; E.bloccaGioco=()=>aperto&&spostamento;
+/* Esposta solo nel modulo di test interno: permette alla suite dati di
+   verificare che un oggetto funzionale non possa mai entrare nella bozza. */
+E.puoSpostareOggetto=scenograficoOggetto;
+E.puoSpostareDecorazione=scenograficaDeco;
 E.apri=function(){
-  if(aperto || !G.inGioco) return;
-  basi=WORLD.crea();
-  if(window.SCENARI) SCENARI.applica(basi,false);
-  aperto=true;
-  selezione=null; mira=null; spostamento=false;
-  modifiche.clear(); cronologia.length=0; originali.clear();
-  toccoNascosto=$('#tocco').classList.contains('hidden');
-  aggiornaInterazione();
-  $('#editor-interno').classList.remove('hidden');
-  if(G.fermaInput) G.fermaInput();
-  messaggio('Cammina dove vuoi, poi tocca un elemento della scenografia per selezionarlo. Esc esce senza salvare.');
-  aggiornaPannello();
+  if(aperto||!G.inGioco) return;
+  basi=WORLD.crea(); if(window.SCENARI) SCENARI.applica(basi,false);
+  aperto=true; selezione=null; mira=null; spostamento=false; modifiche.clear(); cronologia.length=0; originali.clear();
+  toccoNascosto=$('#tocco').classList.contains('hidden'); aggiornaInterazione();
+  $('#editor-interno').classList.remove('hidden'); if(G.fermaInput) G.fermaInput();
+  messaggio('Cammina dove vuoi, poi tocca una decorazione o un oggetto scenografico. Esc esce senza salvare.'); aggiornaPannello();
 };
 E.gestisciTasto=function(e){
-  if(!aperto) return false;
-  const k=e.key.toLowerCase();
-  if(k==='escape'){
-    if(spostamento){
-      impostaSpostamento(false);
-      messaggio('Scelta della destinazione annullata. Puoi continuare a camminare.');
-      aggiornaPannello();
-    }else esci();
-    return true;
-  }
-  if((e.ctrlKey || e.metaKey) && k==='z'){ annulla(); return true; }
-  if(k==='enter'){
-    if(selezione){
-      impostaSpostamento(true);
-      messaggio('Tocca una casella libera come destinazione.');
-      aggiornaPannello();
-    }
-    return true;
-  }
+  if(!aperto) return false; const k=e.key.toLowerCase();
+  if(k==='escape'){ if(spostamento){ impostaSpostamento(false); messaggio('Scelta della destinazione annullata.'); aggiornaPannello(); }else esci(); return true; }
+  if((e.ctrlKey||e.metaKey)&&k==='z'){ annulla(); return true; }
+  if(k==='enter'){ if(selezione){ impostaSpostamento(true); messaggio('Tocca l’angolo in alto a sinistra della nuova posizione.'); aggiornaPannello(); } return true; }
   if(spostamento) return true;
-  /* Fuori dalla scelta della destinazione passano soltanto i comandi per
-     camminare. Zaino, attrezzi, dialoghi e mappe restano spenti: la bozza
-     deve poter attraversare la valle, non cambiare il progresso normale. */
   return !['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift'].includes(k);
 };
-E.muoviPuntatore=function(e,cvs){
-  if(!aperto) return false;
-  aggiornaMira(e,cvs);
-  return true;
-};
+function aggiornaMira(e,cvs){
+  const r=cvs.getBoundingClientRect(),mondo=REND.schermoAMondo(e.clientX-r.left,e.clientY-r.top,G.cam);
+  mira={x:Math.floor(mondo.x/T),y:Math.floor(mondo.y/T)}; E.aggiornaOverlay();
+}
+E.muoviPuntatore=function(e,cvs){ if(!aperto) return false; aggiornaMira(e,cvs); return true; };
 E.gestisciPuntatore=function(e,cvs){
-  if(!aperto) return false;
-  if(e.button!==undefined && e.button!==0) return true;
-  aggiornaMira(e,cvs);
-  if(!mira) return true;
-  if(spostamento) sposta(mira.x,mira.y); else seleziona(mira.x,mira.y);
-  E.aggiornaOverlay();
-  return true;
+  if(!aperto) return false; if(e.button!==undefined&&e.button!==0) return true;
+  aggiornaMira(e,cvs); if(!mira) return true; if(spostamento) sposta(mira.x,mira.y); else seleziona(mira.x,mira.y);
+  E.aggiornaOverlay(); return true;
 };
 E.aggiornaOverlay=function(){
-  if(!aperto) return;
-  const m=attuale();
-  function posiziona(el, pos, visibile){
-    if(!visibile || !m || !pos || pos.x<0 || pos.y<0 || pos.x>=m.w || pos.y>=m.h){
-      el.classList.add('hidden'); return;
-    }
-    const s=REND.mondoASchermo(pos.x*T,pos.y*T,G.cam);
-    const lato=T*s.scala;
+  if(!aperto) return; const m=mappa();
+  function posiziona(el,p,f,visibile){
+    if(!visibile||!m||!p||areaRiservata(m,p.x,p.y,f)){ el.classList.add('hidden'); return; }
+    const s=REND.mondoASchermo(p.x*T,p.y*T,G.cam),lato=T*s.scala;
     el.style.transform='translate('+Math.round(s.x)+'px,'+Math.round(s.y)+'px)';
-    el.style.width=Math.ceil(lato)+'px'; el.style.height=Math.ceil(lato)+'px';
-    el.classList.remove('hidden');
+    el.style.width=Math.ceil(lato*f.w)+'px'; el.style.height=Math.ceil(lato*f.h)+'px'; el.classList.remove('hidden');
   }
-  posiziona($('#editor-selezione'), selezione, !!selezione);
-  posiziona($('#editor-destinazione'), mira, !!mira && spostamento);
+  const f=fSelezione(selezione,true);
+  posiziona($('#editor-selezione'),selezione,f,!!selezione);
+  posiziona($('#editor-destinazione'),mira,f,!!mira&&spostamento);
 };
 
-$('#editor-sposta').addEventListener('click',()=>{
-  if(!selezione) return;
-  impostaSpostamento(true);
-  messaggio('Tocca una casella libera come destinazione.');
-  aggiornaPannello();
-});
+$('#editor-sposta').addEventListener('click',()=>{ if(selezione){ impostaSpostamento(true); messaggio('Tocca l’angolo in alto a sinistra della nuova posizione.'); aggiornaPannello(); }});
 $('#editor-annulla').addEventListener('click',annulla);
-$('#editor-azzera').addEventListener('click',()=>{
-  ripristinaOggetti();
-  messaggio('Bozza azzerata: la valle di prova è tornata allo stato iniziale.');
-  aggiornaPannello();
-});
+$('#editor-azzera').addEventListener('click',()=>{ ripristinaOggetti(); messaggio('Bozza azzerata: la valle di prova è tornata identica a prima.'); aggiornaPannello(); });
 $('#editor-esporta').addEventListener('click',scarica);
 $('#editor-esci').addEventListener('click',esci);
-
+$('#editor-ridimensiona').addEventListener('click',ridimensiona);
+$('#editor-larghezza').addEventListener('input',anteprimaDimensioni);
+$('#editor-altezza').addEventListener('input',anteprimaDimensioni);
 })();

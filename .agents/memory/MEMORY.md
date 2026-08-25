@@ -7,3 +7,4 @@
 - [Stile del protagonista approvato](protagonista-style.md) — mantenere la pixel-art densa con cappello ampio, volto grande, tunica blu e stivali; evitare versioni procedurali semplificate.
 - [Trasparenza delle pose generate](pose-generated-transparency.md) — le pose AI con reticolo richiedono una pulizia alfa controllata prima di entrare nei fogli sprite.
 - [Seguiti delle vicende](narrative-sequels.md) — più archi dello stesso abitante richiedono una dipendenza esplicita e filtri identici in dialoghi e Diario.
+- [Impronte delle decorazioni](decorative-footprints.md) — una collisione più grande dello sprite deve dichiarare esplicitamente il proprio ingombro.

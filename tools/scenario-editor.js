@@ -191,7 +191,8 @@ function scenarioValido(scenario){
     return 'Le misure della mappa non corrispondono alla base corrente.';
   const r = scenario.ritocchi;
   if(!r || typeof r !== 'object') return 'Mancano i ritocchi dello scenario.';
-  const caselleTerreno = new Set(), caselleOggetti = new Set();
+  const motore = caricaMotore();
+  const caselleTerreno = new Set(), caselleOggetti = new Map();
   const chiave = voce => voce.x+','+voce.y;
   for(const voce of (r.terreno || [])){
     if(!eInteroDentro(voce.x,m.w) || !eInteroDentro(voce.y,m.h) ||
@@ -219,30 +220,43 @@ function scenarioValido(scenario){
       return 'Uno scenario non può occupare lo spazio riservato a una costruzione.';
     const toccate=[chiave(voce)];
     if(voce.azione === 'sposta') toccate.push(voce.a.x+','+voce.a.y);
-    if(toccate.some(k=>caselleOggetti.has(k)))
-      return 'Lo scenario sovrappone due ritocchi degli oggetti.';
-    toccate.forEach(k=>caselleOggetti.add(k));
+    for(const k of toccate){
+      const precedente=caselleOggetti.get(k);
+      /* Un ridimensionamento nello stesso punto è, per il formato v1,
+         una rimozione seguita da un’aggiunta. È l’unica coppia ripetuta
+         che non sovrappone due oggetti e che il motore applica in ordine. */
+      if(precedente && !(precedente==='rimuovi' && voce.azione==='aggiungi'))
+        return 'Lo scenario sovrappone due ritocchi degli oggetti.';
+      caselleOggetti.set(k,voce.azione);
+    }
   }
   for(const voce of (r.decorazioni || [])){
     if(!['aggiungi','rimuovi'].includes(voce.azione) ||
        !oggettoValido(voce.azione === 'aggiungi' ? voce.decorazione : voce.da))
       return 'Un ritocco delle decorazioni non è valido.';
+    if(!motore.decorazioneScenarioSicura(voce.azione === 'aggiungi' ? voce.decorazione : voce.da))
+      return 'Uno scenario può ritoccare soltanto decorazioni scenografiche.';
   }
   /* La stessa prova che fa il gioco dopo una migrazione viene fatta prima
      dell'approvazione: una scenografia non può murare un'uscita né mettere
      qualcosa di solido nel punto in cui una mappa vicina ci fa arrivare. */
-  const motore = caricaMotore();
   const prova = motore.crea();
-  motore.applicaScenario(prova[scenario.mappa], scenario, false);
+  const applicazione=motore.applicaScenario(prova[scenario.mappa], scenario, false);
+  if(applicazione.saltati)
+    return 'La bozza non entra nella mappa base: controlla impronta, collisioni e coordinate di arrivo.';
   /* Non si giudica la mappa intera: alberi ai margini, fontane e rocce sono
      scenografia già valida della base. Si giudicano solo le caselle che lo
      scenario sta toccando, altrimenti anche una modifica innocua verrebbe
      rifiutata per un oggetto che esisteva già prima dell'editor. */
   const toccate={[scenario.mappa]:new Set()};
+  const aggiungiImpronta=(x,y,o)=>{
+    const f=motore.impronta(o);
+    for(let j=0;j<f.h;j++) for(let i=0;i<f.w;i++) toccate[scenario.mappa].add((x+i)+','+(y+j));
+  };
   for(const voce of (r.terreno||[])) toccate[scenario.mappa].add(chiave(voce));
   for(const voce of (r.oggetti||[])){
-    toccate[scenario.mappa].add(chiave(voce));
-    if(voce.azione==='sposta') toccate[scenario.mappa].add(voce.a.x+','+voce.a.y);
+    aggiungiImpronta(voce.x,voce.y,voce.azione==='aggiungi'?voce.oggetto:voce.da);
+    if(voce.azione==='sposta') aggiungiImpronta(voce.a.x,voce.a.y,voce.da);
   }
   const problemi = motore.verificaMappe(prova, toccate);
   if(problemi.length) return 'Lo scenario blocca un collegamento: '+problemi[0]+'.';

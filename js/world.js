@@ -8,6 +8,15 @@
 const W = {};
 window.WORLD = W;
 
+/* Gli scenari sono ritocchi di scenografia, non strumenti per spostare
+   passaggi o strutture. Questa allowlist è usata sia dal banco di prova
+   sia dall'importatore, così un JSON scritto a mano non aggira la UI. */
+const DECORAZIONI_SCENOGRAFICHE = new Set([
+  'fontana','bucato','cartello','petali_terra','ninfea','erbe',
+  'sassolini','ciuffo','ortaggio','lucciola','fungo_luce','tappeto','zerbino'
+]);
+W.decorazioneScenarioSicura = d=>!!d&&DECORAZIONI_SCENOGRAFICHE.has(d.t);
+
 /* rng deterministico per la generazione */
 function rnd(seed){
   let s = seed>>>0;
@@ -473,7 +482,7 @@ function buildPodere(){
 
   // l'abbeveratoio in pietra: il pezzo forte dell'aia
   fill(m, 12,3, 4,3, 'acqua');
-  m.deco.push({t:'fontana', x:12, y:3});
+  m.deco.push({t:'fontana', x:12, y:3, iw:4, ih:3});
   for(let y=3;y<6;y++) for(let x=12;x<16;x++) m.obj[W.idx(m,x,y)] = {t:'fontana', solido:true};
 
   setObj(m, 11,10, {t:'panchina', solido:true, dir:0});
@@ -688,7 +697,7 @@ function buildFioralba(){
   }
   // fontana
   fill(m, 20,17, 4,3, 'acqua');
-  m.deco.push({t:'fontana', x:20, y:17});
+  m.deco.push({t:'fontana', x:20, y:17, iw:4, ih:3});
   for(let y=17;y<20;y++) for(let x=20;x<24;x++) m.obj[W.idx(m,x,y)]={t:'fontana', solido:true};
 
   /* strade — strette, da paese */
@@ -1494,7 +1503,7 @@ function buildPiazza(){
 
   // fontana centrale
   fill(m, 18,14, 4,4, 'acqua');
-  m.deco.push({t:'fontana', x:18, y:14});
+  m.deco.push({t:'fontana', x:18, y:14, iw:4, ih:4});
   for(let y=14;y<18;y++) for(let x=18;x<22;x++) m.obj[W.idx(m,x,y)]={t:'fontana', solido:true};
 
   /* --- IL PORTO CHE MANCAVA ---
@@ -2274,35 +2283,53 @@ W.vicinoLibero = function(m, x, y){
    return true;
  }
 
- function applicaOggetto(m, voce, conservaGiocatore){
-   if(!W.dentro(m, voce.x, voce.y)) return false;
+  function improntaSicura(m, x, y, o){
+    const f = W.impronta(o);
+    for(let j=0;j<f.h;j++) for(let i=0;i<f.w;i++){
+      const ax=x+i, ay=y+j;
+      if(!W.dentro(m,ax,ay) || W.riservata(m,ax,ay,{})) return false;
+      const terreno=W.terreno(m,ax,ay);
+      if(['roccia','vuoto'].includes(terreno)) return false;
+      if(terreno==='acqua' && !(o && o.t==='fontana')) return false;
+      if(m.suolo && m.suolo[W.idx(m,ax,ay)]) return false;
+    }
+    return true;
+  }
+
+  function posaScenario(m, x, y, o){
+    if(!improntaSicura(m,x,y,o)) return false;
+    const f=W.impronta(o);
+    for(let j=0;j<f.h;j++) for(let i=0;i<f.w;i++)
+      if(m.obj[W.idx(m,x+i,y+j)]) return false;
+    return W.arredo(m,x,y,o);
+  }
+
+  function applicaOggetto(m, voce, conservaGiocatore){
+    if(!W.dentro(m, voce.x, voce.y)) return false;
     if(W.riservata(m, voce.x, voce.y, {})) return false;
-   const i = W.idx(m, voce.x, voce.y);
-   const attuale = m.obj[i];
+    const trovato=W.oggetto(m,voce.x,voce.y);
+    const attuale=trovato && trovato.obj;
    if(voce.azione === 'rimuovi'){
      if(voce.da && !stessoOggetto(attuale, voce.da)) return false;
      if(conservaGiocatore && oggettoGiocatore(attuale)) return false;
-     m.obj[i] = null;
-     return true;
+      return !!W.togliArredo(m,voce.x,voce.y);
    }
    if(voce.azione === 'sposta'){
      const da = voce.da || {};
      if(!stessoOggetto(attuale, da) || (conservaGiocatore && oggettoGiocatore(attuale))) return false;
      if(!W.dentro(m, voce.a.x, voce.a.y)) return false;
-      if(W.riservata(m, voce.a.x, voce.a.y, {})) return false;
-     const arrivo = W.idx(m, voce.a.x, voce.a.y);
-     if(m.obj[arrivo] && m.obj[arrivo] !== attuale) return false;
-     m.obj[i] = null;
-     m.obj[arrivo] = attuale;
-     return true;
+      const rimosso=W.togliArredo(m,voce.x,voce.y);
+      if(!rimosso) return false;
+      if(posaScenario(m,voce.a.x,voce.a.y,rimosso.obj)) return true;
+      W.arredo(m,rimosso.x,rimosso.y,rimosso.obj);
+      return false;
    }
    if(voce.azione === 'aggiungi'){
      /* Un elemento di scenario nuovo non può comparire sopra una coltura
         di una partita già avviata: quel suolo è del giocatore, non della
         scenografia. */
-     if(attuale || (conservaGiocatore && m.suolo && m.suolo[i])) return false;
-     m.obj[i] = copiaOggetto(voce.oggetto);
-     return !!m.obj[i];
+      if(attuale || (conservaGiocatore && m.suolo && m.suolo[W.idx(m,voce.x,voce.y)])) return false;
+      return posaScenario(m,voce.x,voce.y,copiaOggetto(voce.oggetto));
    }
    return false;
  }
@@ -2478,11 +2505,11 @@ W.vicinoLibero = function(m, x, y){
      if(applicaOggetto(m, voce, conservaGiocatore)) applicati++; else saltati++;
    }
    for(const voce of (ritocchi.decorazioni || [])){
-     if(voce.azione === 'rimuovi'){
+     if(voce.azione === 'rimuovi' && W.decorazioneScenarioSicura(voce.da)){
        const indice = m.deco.findIndex(d => firmaDeco(d) === firmaDeco(voce.da));
        if(indice < 0) { saltati++; continue; }
        m.deco.splice(indice, 1); applicati++;
-     } else if(voce.azione === 'aggiungi' && voce.decorazione){
+     } else if(voce.azione === 'aggiungi' && W.decorazioneScenarioSicura(voce.decorazione)){
         const firma = firmaDeco(voce.decorazione);
         if(m.deco.some(d => firmaDeco(d) === firma)){ saltati++; continue; }
         m.deco.push(copiaOggetto(voce.decorazione)); applicati++;

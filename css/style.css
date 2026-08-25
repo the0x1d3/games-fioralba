@@ -379,6 +379,16 @@ body.modalita-modifica-attiva.modalita-modifica-esplora #tocco *{ pointer-events
 }
 .editor-azioni{ display:flex; flex-wrap:wrap; gap:6px; }
 .editor-azioni .btn{ flex:1 1 105px; }
+.editor-dimensioni{
+  display:grid; grid-template-columns:1fr 1fr auto; align-items:end; gap:6px; margin-top:7px;
+  padding:7px; border:2px solid var(--wood-3); border-radius:8px; background:#fffaf0;
+}
+.editor-dimensioni label{ display:flex; flex-direction:column; gap:3px; color:var(--ink-soft); font-size:10px; font-weight:800; }
+.editor-dimensioni input{
+  width:100%; min-width:0; height:30px; padding:3px 5px; color:var(--ink); font:800 14px inherit;
+  border:2px solid var(--wood-3); border-radius:6px; background:#fff;
+}
+.editor-dimensioni .btn{ min-height:30px; padding:4px 7px; font-size:11px; }
 .editor-esporta{ width:100%; margin-top:7px; }
 .editor-nota{ margin:8px 1px 0; color:var(--ink-soft); font-size:11px; line-height:1.3; font-weight:700; }
 .editor-marcatore{
@@ -395,6 +405,8 @@ body.modalita-modifica-attiva.modalita-modifica-esplora #tocco *{ pointer-events
   .editor-interno-testa strong{ font-size:15px; }
   #editor-istruzioni{ font-size:12px; margin:6px 0; }
   .editor-stato{ min-height:31px; margin-bottom:6px; padding:6px 8px; }
+  .editor-dimensioni{ grid-template-columns:1fr 1fr; }
+  .editor-dimensioni .btn{ grid-column:1 / -1; }
   .editor-nota{ font-size:10.5px; margin-top:6px; }
 }
 

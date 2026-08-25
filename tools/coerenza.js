@@ -3298,6 +3298,107 @@ verifica('i mobili grandi ci stanno, non si pestano, e non chiudono la stanza', 
   return problemi;
 });
 
+/* Le bozze di scenografia possono traslocare o ridimensionare un arredo
+   grande. Spostarne solo l'ancora lascia rimandi solidi invisibili; questa
+   prova esercita il percorso che usa anche l'editor interno e controlla che
+   il formato JSON v1 resti importabile senza spezzare l'impronta. */
+verifica('uno scenario conserva intera l’impronta degli arredi trasformati', () => {
+  const problemi=[], maps=WORLD.crea();
+  let scelto=null, m=null;
+  for(const id of WORLD.MAPPE){
+    const candidata=maps[id];
+    for(let y=0;y<candidata.h&&!scelto;y++) for(let x=0;x<candidata.w;x++){
+      const o=candidata.obj[WORLD.idx(candidata,x,y)];
+      if(o&&o.t!=='rimando'&&(WORLD.impronta(o).w>1||WORLD.impronta(o).h>1)){
+        scelto={x,y,o}; m=candidata; break;
+      }
+    }
+    if(scelto) break;
+  }
+  if(!scelto||!m) return ['non trovo un arredo multiplo da trasformare'];
+  const tolto=WORLD.togliArredo(m,scelto.x,scelto.y);
+  let arrivo=null;
+  for(let y=0;y<m.h&&!arrivo;y++) for(let x=0;x<m.w;x++)
+    if(WORLD.ciStaArredo(m,x,y,tolto.obj)){ arrivo={x,y}; break; }
+  WORLD.arredo(m,tolto.x,tolto.y,tolto.obj);
+  if(!arrivo) return ['non trovo spazio libero per provare uno spostamento'];
+  const scenario={formato:'fioralba-scenario',versione:1,mappa:m.id,w:m.w,h:m.h,
+    ritocchi:{terreno:[],decorazioni:[],oggetti:[{azione:'sposta',x:scelto.x,y:scelto.y,a:arrivo,da:JSON.parse(JSON.stringify(scelto.o))}]}};
+  const esito=WORLD.applicaScenario(m,scenario,false);
+  if(esito.saltati) problemi.push('lo spostamento di un arredo multiplo è stato rifiutato');
+  const f=WORLD.impronta(scelto.o);
+  for(let j=0;j<f.h;j++) for(let i=0;i<f.w;i++){
+    const a=WORLD.oggetto(m,arrivo.x+i,arrivo.y+j);
+    if(!a||a.x!==arrivo.x||a.y!==arrivo.y) problemi.push(`manca l'impronta spostata in ${arrivo.x+i},${arrivo.y+j}`);
+    const residuo=WORLD.oggetto(m,scelto.x+i,scelto.y+j);
+    if(residuo&&residuo.x===scelto.x&&residuo.y===scelto.y)
+      problemi.push(`resta un rimando alla vecchia impronta in ${scelto.x+i},${scelto.y+j}`);
+  }
+  return problemi;
+});
+
+/* La fontana della piazza è 4×4 nelle collisioni, anche se il suo asset
+   disegnato è alto tre caselle. L'ingombro dichiarato impedisce che editor,
+   esportazione o validatore ne spostino soltanto la parte visibile. */
+verifica('ogni fontana dichiara e occupa tutta la sua impronta solida', () => {
+  const problemi=[], maps=WORLD.crea();
+  for(const id of WORLD.MAPPE){
+    const m=maps[id]; if(!m) continue;
+    const attese=new Set();
+    for(const d of m.deco.filter(v=>v.t==='fontana')){
+      const w=Math.round(d.iw||0),h=Math.round(d.ih||0);
+      if(w<1||h<1) { problemi.push(`in «${id}» una fontana non dichiara il proprio ingombro`); continue; }
+      for(let j=0;j<h;j++) for(let i=0;i<w;i++){
+        const x=d.x+i,y=d.y+j,k=x+','+y; attese.add(k);
+        const o=m.obj[WORLD.idx(m,x,y)];
+        if(!o||o.t!=='fontana') problemi.push(`in «${id}» la fontana in (${d.x},${d.y}) non blocca (${x},${y})`);
+      }
+    }
+    for(let y=0;y<m.h;y++) for(let x=0;x<m.w;x++){
+      const o=m.obj[WORLD.idx(m,x,y)];
+      if(o&&o.t==='fontana'&&!attese.has(x+','+y))
+        problemi.push(`in «${id}» la collisione fontana in (${x},${y}) non appartiene a un ingombro dichiarato`);
+    }
+  }
+  return problemi;
+});
+
+/* La modalità modifica esporta gli spostamenti: un oggetto funzionale
+   selezionabile diventerebbe quindi una modifica pubblicabile della
+   progressione. Si carica il modulo con un DOM minimo e si esercita il
+   predicato reale, non una copia della sua allowlist nel test. */
+verifica('la modalità modifica lascia fermi gli oggetti funzionali', () => {
+  const vm=require('vm'), modulo=fs.readFileSync(path.join(RADICE,'js/editor-interno.js'),'utf8');
+  const elemento={addEventListener(){},classList:{contains(){return true;},add(){},remove(){},toggle(){}},disabled:false};
+  const policy={decorazioneScenarioSicura:d=>['fontana','bucato','cartello'].includes(d&&d.t)};
+  const sandbox={window:{FIORALBA_MODIFICA_INTERNA:true,WORLD:policy},WORLD:policy,
+    document:{querySelector(){return elemento;}},console};
+  vm.createContext(sandbox);
+  vm.runInContext(modulo,sandbox,{filename:'editor-interno.js'});
+  const puo=sandbox.window.EDITOR_INTERNO&&sandbox.window.EDITOR_INTERNO.puoSpostareOggetto;
+  const puoDeco=sandbox.window.EDITOR_INTERNO&&sandbox.window.EDITOR_INTERNO.puoSpostareDecorazione;
+  if(typeof puo!=='function'||typeof puoDeco!=='function')
+    return ['l’editor non espone i controlli di selezionabilità per la regressione'];
+  const problemi=[];
+  for(const o of [{t:'panchina'},{t:'lampione'},{t:'mobile',kind:'cartello'}])
+    if(!puo(o)) problemi.push(`${o.kind||o.t} scenografico non è selezionabile`);
+  for(const o of [
+    {t:'consegna'},{t:'bottiglia'},{t:'baule'},{t:'barca'},
+    {t:'bancarella',kiosk:'progetti'},{t:'incudine',uso:'fucina'},
+    {t:'bancone',uso:'bottega'},{t:'mobile',kind:'silo'}
+  ]) if(puo(o)) problemi.push(`${o.kind||o.t} funzionale può finire nella bozza`);
+  for(const d of [{t:'fontana'},{t:'bucato'},{t:'cartello'}])
+    if(!puoDeco(d)) problemi.push(`${d.t} scenografico non è selezionabile`);
+  for(const d of [{t:'ponte'},{t:'ponte_grande'},{t:'molo'},{t:'parete'}])
+    if(puoDeco(d)) problemi.push(`${d.t} funzionale può finire nella bozza`);
+  const m=WORLD.crea().podere, ponte={t:'ponte_grande',x:26,y:22,w:4,h:2};
+  const esito=WORLD.applicaScenario(m,{mappa:m.id,w:m.w,h:m.h,
+    ritocchi:{terreno:[],oggetti:[],decorazioni:[{azione:'aggiungi',decorazione:ponte}]}},false);
+  if(!esito.saltati||m.deco.some(d=>d.t==='ponte_grande'))
+    problemi.push('l’importatore accetta un ponte grande scritto a mano');
+  return problemi;
+});
+
 /* Il renderer allarga la finestra di raccolta degli oggetti di
    `SBORDO_ARREDI` caselle, perché un mobile alto tre ancorato appena
    sopra il bordo dello schermo non sparisca. Se un giorno se ne scrive

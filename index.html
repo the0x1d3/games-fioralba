@@ -149,6 +149,11 @@
       <button id="editor-annulla" class="btn blue" type="button" disabled>Annulla</button>
       <button id="editor-azzera" class="btn" type="button" disabled>Azzera bozza</button>
     </div>
+    <div id="editor-dimensioni" class="editor-dimensioni hidden">
+      <label>Larghezza <input id="editor-larghezza" type="number" min="1" max="8" inputmode="numeric"></label>
+      <label>Altezza <input id="editor-altezza" type="number" min="1" max="8" inputmode="numeric"></label>
+      <button id="editor-ridimensiona" class="btn blue" type="button">Anteprima e applica</button>
+    </div>
     <button id="editor-esporta" class="btn editor-esporta" type="button" disabled>Scarica bozza JSON</button>
     <p class="editor-nota">La partita non viene salvata. Uscendo, la valle torna com'era.</p>
   </section>
