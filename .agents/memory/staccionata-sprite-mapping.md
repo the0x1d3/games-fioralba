@@ -25,6 +25,24 @@ description: Mappa definitiva di Set01 (staccionata.png) verso lati bitmask e co
 
 **Why:** identificazione visiva dalla preview HTML in `/pr2.html` (rimossa dopo), confermata pixel analysis con ImageMagick sui bordi tile.
 
+## Rendering: padding per eliminare i gap tra tile
+
+Le celle 362×543 hanno margini interni asimmetrici (misurati con `magick -trim`):
+- NS: T=56 B=2  — senza fix → 6.8 px gap tra tile verticali
+- NESW: B=88    — senza fix → 5 px gap sul lato S
+- EW: L=9 R=4   — senza fix → 2.3 px gap tra tile orizzontali
+
+**Fix in `recintoIllustrato` (art.js):** disegnare lo sprite con padding `PX=8, PY=16`:
+```javascript
+const PX=8, PY=16;
+cx.drawImage(foglio, srcX, srcY, cw, ch, -PX, -PY, T+2*PX, T+2*PY);
+// per NW (flip di NE): -(T+PX) come x-destinazione
+```
+Lo sprite viene scalato a (T+2PX)×(T+2PY) = 80×96 e centrato sul canvas T×T (64×64).
+Il canvas taglia automaticamente l'overdraw → il contenuto raggiunge esattamente i bordi, gap=0.
+
+**Why:** i margini nel foglio sprite non sono noti a priori; il padding uniforme copre il caso peggiore (B=88 richiede PY≥16) senza modificare la struttura per ogni lati separatamente.
+
 ## Come aggiungere un foglio non-arredo a coerenza.js
 Per un nuovo PNG non in `DATA.ARREDI`:
 1. Aggiungi la costante `D.NOME_FOGLIO = { file:'...png', cella:..., altezza:... }` in `data.js`

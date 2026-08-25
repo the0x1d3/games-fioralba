@@ -3337,14 +3337,24 @@ A.recintoIllustrato = function(kind, lati){
   const cw=dati.cella, ch=dati.altezza;
   const c=telaNetta(T,T), cx=c.getContext('2d');
   cx.imageSmoothingEnabled=false;
+  /* Le celle del foglio hanno margini asimmetrici (fino a 56 px in cima,
+     88 px in fondo) che, scalati in T×T, lasciano 2–7 px di vuoto ai
+     bordi. Due tile adiacenti sommano i due margini → gap visibile.
+     Soluzione: disegnare ogni sprite leggermente più grande della tile
+     (PX in orizzontale, PY in verticale) così il contenuto sfora oltre
+     il bordo e il canvas lo taglia esattamente sul limite, azzerando il gap.
+     I valori sono ricavati dai bitmask reali di ogni cella:
+       - PX = 8  copre il margine massimo orizzontale (31 px in SW)
+       - PY = 16 copre il margine massimo verticale   (88 px in NESW) */
+  const PX=8, PY=16;
   if(L===9){
     // NW = NE ribaltato orizzontalmente
     cx.save();
     cx.scale(-1,1);
-    cx.drawImage(foglio, STAC_MAPPA[3].col*cw, STAC_MAPPA[3].row*ch, cw, ch, -T, 0, T, T);
+    cx.drawImage(foglio, STAC_MAPPA[3].col*cw, STAC_MAPPA[3].row*ch, cw, ch, -(T+PX), -PY, T+2*PX, T+2*PY);
     cx.restore();
   } else {
-    cx.drawImage(foglio, pos.col*cw, pos.row*ch, cw, ch, 0, 0, T, T);
+    cx.drawImage(foglio, pos.col*cw, pos.row*ch, cw, ch, -PX, -PY, T+2*PX, T+2*PY);
   }
   recintiIllustrati[key]=c; fonteRecinti[key]=foglio;
   return c;
