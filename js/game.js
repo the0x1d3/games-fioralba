@@ -63,6 +63,7 @@ function statoIniziale(){
     slotSel:0,
     skills:{agricoltura:0, raccolta:0, estrazione:0, pesca:0},
     talenti:{},
+    riconsiderazioneTalentoUsata:false,
     attrezziLiv:{zappa:0, annaffiatoio:0, ascia:0, piccone:0},
     amicizia:{}, regalatoOggi:{}, parlatoOggi:{},
     costruzioni:{},
@@ -847,6 +848,7 @@ function normalizzaStato(){
     const id=G.talenti[k], opzioni=(DATA.TALENTI&&DATA.TALENTI[k])||[];
     if(!opzioni.some(t=>t.id===id)) delete G.talenti[k];
   }
+  G.riconsiderazioneTalentoUsata = !!G.riconsiderazioneTalentoUsata;
   if(!G.mercante || typeof G.mercante!=='object') G.mercante={presente:false,giorno:-1,stock:[]};
   if(!Array.isArray(G.mercante.stock)) G.mercante.stock=[];
   if(!G.visitati.podere) G.visitati.podere=true;

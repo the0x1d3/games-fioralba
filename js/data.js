@@ -412,6 +412,16 @@ D.TALENTI = {
   ]
 };
 
+/* La Lanterna non giudica una strada presa troppo presto: dopo aver
+   riacceso tutte le braci conserva un solo momento per cambiare idea.
+   Il limite resta narrativo e leggibile, non una tassa che svuota il
+   progresso di chi sta imparando come gli piace lavorare. */
+D.RICONSIDERAZIONE_TALENTO = {
+  braci: 4,
+  nome: 'Il momento della Lanterna',
+  descrizione: 'Quando le quattro braci sono accese, la Lanterna concede una sola riconsiderazione di specializzazione.'
+};
+
 /* Come si legge un bonus, a parole. Una riga per effetto: la scheda le
    mostra tutte, e quelle che a livello 0 non fanno niente le mostra
    spente — vedere cosa *arriverà* è metà del motivo per salire. */

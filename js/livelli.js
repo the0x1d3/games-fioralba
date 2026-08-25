@@ -73,13 +73,22 @@ L.talento = function(k){
 L.sceltaDisponibile = function(k){
   return G.livello(k)>=3 && !L.talento(k) && !!((DATA.TALENTI&&DATA.TALENTI[k])||[]).length;
 };
-L.scegliTalento = function(k){
+L.riconsiderazioneDisponibile = function(k){
+  const R=DATA.RICONSIDERAZIONE_TALENTO;
+  return G.livello(k)>=3 && !!L.talento(k) && !G.riconsiderazioneTalentoUsata &&
+    G.braci >= R.braci;
+};
+L.scegliTalento = function(k, riconsidera){
   const opzioni=(DATA.TALENTI&&DATA.TALENTI[k])||[];
-  if(!L.sceltaDisponibile(k) || !opzioni.length) return;
-  UI.modal('Scegli una specializzazione', body=>{
-    const intro=el('p','muted','Questa scelta aggiunge una piccola direzione al mestiere. Potrai leggerla sempre nel Diario.');
+  const attuale=L.talento(k);
+  if((riconsidera ? !L.riconsiderazioneDisponibile(k) : !L.sceltaDisponibile(k)) || !opzioni.length) return;
+  UI.modal(riconsidera ? 'Riconsidera la specializzazione' : 'Scegli una specializzazione', body=>{
+    const intro=el('p','muted',riconsidera
+      ? 'La Lanterna conserva questo unico momento per cambiare direzione. I livelli e l’esperienza restano dove sono.'
+      : 'Questa scelta aggiunge una piccola direzione al mestiere. Potrai leggerla sempre nel Diario.');
     body.appendChild(intro);
     for(const t of opzioni){
+      if(riconsidera && attuale && t.id===attuale.id) continue;
       const c=el('div','liv-scheda');
       const r=el('div','liv-scheda-testa');
       r.appendChild(icona(t.icona,30));
@@ -91,10 +100,12 @@ L.scegliTalento = function(k){
       b.onclick=()=>{
         if(!G.talenti || typeof G.talenti!=='object') G.talenti={};
         G.talenti[k]=t.id;
+        if(riconsidera) G.riconsiderazioneTalentoUsata=true;
         G.salva();
+        G.rinfrescaHotbar();
         G.aggiornaHUD();
         UI.chiudiModal();
-        UI.toast(DATA.SKILLS[k].nome+' — talento scelto: '+t.nome+'.','gold');
+        UI.toast(DATA.SKILLS[k].nome+(riconsidera ? ' — nuova direzione: ' : ' — talento scelto: ')+t.nome+'.','gold');
       };
       c.appendChild(b); body.appendChild(c);
     }
@@ -364,6 +375,26 @@ L.scheda = function(body){
   cap.appendChild(cd);
   body.appendChild(cap);
 
+  /* --- il momento per riconsiderare ---
+     Sta prima delle singole abilità così il Diario dice sempre se la
+     possibilità esiste, anche quando non è ancora stata scelta nessuna
+     direzione. Il gesto vero resta accanto al talento interessato. */
+  const R=DATA.RICONSIDERAZIONE_TALENTO;
+  const riconsiderabili=CHIAVI.filter(k=>L.riconsiderazioneDisponibile(k));
+  const rip=el('div','liv-prossimo chiave');
+  rip.appendChild(el('span','liv-prossimo-eti','Riconsiderare — '+R.nome));
+  const ripTesto=el('span','liv-prossimo-val');
+  if(G.riconsiderazioneTalentoUsata)
+    ripTesto.textContent='Hai già usato questo momento: livelli ed esperienza non sono mai stati toccati.';
+  else if(G.braci<R.braci)
+    ripTesto.textContent=R.descrizione+' Non perderai livelli né esperienza.';
+  else if(riconsiderabili.length)
+    ripTesto.textContent='La Lanterna è accesa: puoi cambiare una sola specializzazione dal suo riquadro qui sotto. Livelli ed esperienza restano invariati.';
+  else
+    ripTesto.textContent='La Lanterna è pronta: scegli prima una specializzazione al livello 3, poi potrai riconsiderarne una sola.';
+  rip.appendChild(ripTesto);
+  body.appendChild(rip);
+
   /* --- premi in attesa --- */
   if(L.sospesi()){
     const s = el('div','liv-sospesi');
@@ -444,6 +475,11 @@ L.scheda = function(body){
       const r=el('div','liv-prossimo chiave');
       r.appendChild(el('span','liv-prossimo-eti','Talento scelto: '));
       r.appendChild(el('span','liv-prossimo-val',talento.nome+' — '+talento.descrizione));
+      if(L.riconsiderazioneDisponibile(k)){
+        const b=el('button','btn','Riconsidera alla Lanterna');
+        b.onclick=()=>L.scegliTalento(k,true);
+        r.appendChild(b);
+      }
       c.appendChild(r);
     } else if(L.sceltaDisponibile(k)){
       const r=el('div','liv-prossimo chiave');

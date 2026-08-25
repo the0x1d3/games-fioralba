@@ -218,6 +218,7 @@ function costruisciDati(){
     ora:G.ora, meteo:G.meteo, meteoDomani:G.meteoDomani,
     inv:G.inv, invMax:G.invMax, slotSel:G.slotSel,
     skills:G.skills, attrezziLiv:G.attrezziLiv, talenti:G.talenti,
+    riconsiderazioneTalentoUsata:G.riconsiderazioneTalentoUsata,
     amicizia:G.amicizia, costruzioni:G.costruzioni,
     santuario:G.santuario, santuarioDato:G.santuarioDato, braci:G.braci,
     lettere:G.lettere, ricetteNote:G.ricetteNote,
@@ -363,7 +364,8 @@ function applicaSalvataggio(raw){
   if(window.SCENARI) SCENARI.applica(G.maps, false);
   for(const k of ['nomeGiocatore','mappaId','oro','energia','energiaMax','energiaBonus','giorno','stagioneIdx',
                   'anno','giornoTot','ora','meteo','meteoDomani','inv','invMax','slotSel',
-                   'skills','attrezziLiv','talenti','amicizia','costruzioni','santuario','santuarioDato',
+                   'skills','attrezziLiv','talenti','riconsiderazioneTalentoUsata',
+                   'amicizia','costruzioni','santuario','santuarioDato',
                   'braci','lettere','ricetteNote','cassaConsegna','stats','animali','look',
                   'vistoFiammella','introSerafina','vistoPesca','sacaccia','lezioneCaccia','tutorialFatto','guidaAperta','guidaNascosta','regaloRicevuto',
                   'mercato','gelo',

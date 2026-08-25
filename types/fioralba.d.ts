@@ -183,6 +183,13 @@ interface FioTalento {
   guadagno?: number;
 }
 
+/** La possibilità unica di rivedere una specializzazione alla Lanterna. */
+interface FioRiconsiderazioneTalento {
+  braci: number;
+  nome: string;
+  descrizione: string;
+}
+
 /** Un grado di un miglioramento addosso: quanto costa e cosa si sente
  *  dire da chi te lo dà. */
 interface FioGradoPersona {
@@ -320,6 +327,7 @@ interface FioData {
   UPG_NOMI: string[];
   SKILLS: Record<string, FioSkill>;
   TALENTI: Record<string, FioTalento[]>;
+  RICONSIDERAZIONE_TALENTO: FioRiconsiderazioneTalento;
   XP_LIV: number[];
   NPCS: Record<string, FioNPC>;
   SANTUARIO: FioBundle[];
@@ -499,6 +507,7 @@ interface FioGame {
   skills: Record<string, number>;
   attrezziLiv: Record<string, number>;
   talenti: Record<string, string>;
+  riconsiderazioneTalentoUsata: boolean;
 
   /* --- relazioni --- */
   amicizia: Record<string, number>;
