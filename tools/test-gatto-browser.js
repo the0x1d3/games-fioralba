@@ -452,6 +452,19 @@ async function verificaEditor(browser, url, vista) {
       `${vista.nome}: uscire dall’editor non ripristina la decorazione ridimensionata.`,
     );
 
+    // Verifica che oggetti scenografici (panchina, lampione) siano selezionabili —
+    // gli oggetti funzionali restano bloccati, quelli scenografici no.
+    await page.evaluate(() => EDITOR_INTERNO.apri());
+    await page.locator('#editor-interno').waitFor({ state: 'visible' });
+    await inquadraCasella(page, 9, 10, 11, 10);
+    await clicCasella(page, 11, 10);
+    const msgPanchina = await page.locator('#editor-istruzioni').textContent();
+    verifica(
+      await page.locator('#editor-sposta').isEnabled(),
+      `${vista.nome}: la panchina risulta protetta invece di essere selezionabile. Messaggio: "${msgPanchina}"`,
+    );
+    await page.locator('#editor-esci').click();
+
     await page.evaluate(() => {
       G.teletrasporta('piazza');
       EDITOR_INTERNO.apri();
