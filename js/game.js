@@ -94,7 +94,8 @@ function statoIniziale(){
     trame:{ torta:{avviata:false, segreto:false, fatta:false},
             pesceluna:{avviata:false, preso:false, fatta:false},
             veglia:{avviata:false, memorie:{}, verita:false, invitati:{}, giorno:null, fatta:false},
-            richiamo:{bacheca:false, marea:{passo:0, risolta:false}, barca:false} },
+            richiamo:{bacheca:false, marea:{passo:0, risolta:false}, barca:false,
+                      posta:false, approdo:false, progetti:{}} },
     tutorialFatto:false,
     animali:[],
     look:{ pelle:'#e8bd8f', capelli:'#6b4423', maglia:'#4f8ab0', pant:'#3d5470', cappello:'#c9a44c' }
@@ -840,8 +841,12 @@ function normalizzaStato(){
     G.trame.richiamo={bacheca:false,marea:{passo:0,risolta:false},barca:false};
   if(!G.trame.richiamo.marea || typeof G.trame.richiamo.marea!=='object')
     G.trame.richiamo.marea={passo:0,risolta:false};
+  if(!G.trame.richiamo.progetti || typeof G.trame.richiamo.progetti!=='object')
+    G.trame.richiamo.progetti={};
   G.trame.richiamo.bacheca=!!G.trame.richiamo.bacheca;
   G.trame.richiamo.barca=!!G.trame.richiamo.barca;
+  G.trame.richiamo.posta=!!G.trame.richiamo.posta;
+  G.trame.richiamo.approdo=!!G.trame.richiamo.approdo;
   G.trame.richiamo.marea.risolta=!!G.trame.richiamo.marea.risolta;
   G.trame.richiamo.marea.passo=Math.max(0,Math.min(2,(G.trame.richiamo.marea.passo|0)));
   for(const k in G.talenti){
@@ -1019,6 +1024,7 @@ function aggiornaGiocatore(dt){
   // warp
   for(const w of m.warps){
     if(w.richiedeBarca && (!G.trame || !G.trame.richiamo || !G.trame.richiamo.barca)) continue;
+    if(w.richiedeApprodo && (!G.trame || !G.trame.richiamo || !G.trame.richiamo.approdo)) continue;
     if(p.px >= w.x*T && p.px < (w.x+w.w)*T && p.py >= w.y*T && p.py < (w.y+w.h)*T){
       cambiaMappa(w.to, w.tx, w.ty);
       break;
@@ -1751,7 +1757,10 @@ function interagisci(){
     const i = WORLD.idx(m, ax, ay);
 
     if(o.t==='porta'){ apriPorta(o.ed); return; }
-    if(o.t==='consegna'){ SOLSTIZIO.apriConsegna(); return; }
+    if(o.t==='consegna'){
+      if(window.RICHIAMO && RICHIAMO.consegnaRotta(o)) return;
+      SOLSTIZIO.apriConsegna(); return;
+    }
     if(o.t==='bottiglia'){ apriBottiglia(m, i); return; }
     if(o.t==='barca'){
       if(window.RICHIAMO && RICHIAMO.interagisciBarca(m,o)) return;

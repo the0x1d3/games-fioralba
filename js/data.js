@@ -1062,9 +1062,91 @@ D.VICENDE = {
         ] }
     ],
     premio:{ oro:1100, item:'pesce_luna', qta:1, amicizia:180 }
+  },
+
+  /* La barca non apre un mare infinito: apre due ragioni concrete per
+     tornarci. Queste vicende si segnano alla Bacheca dei progetti, non
+     compaiono da sole nei dialoghi. */
+  marisol_posta_cala: {
+    npc:'marisol', cuori:0, dopoFinale:true, segue:'marisol_stanza',
+    richiede:['elio_barca'],
+    progettoBarca:true, sblocco:'posta_cala',
+    titolo:'La posta che attraversa',
+    scelta:'✉️ La lettera per la Cala',
+    passi:[
+      { tipo:'parla', npc:'marisol',
+        compito:'Parla con Marisol della lettera per la Cala.',
+        righe:[
+          'Alla locanda arrivano notizie da ogni parte, ma questa è rimasta qui perché nessuno aveva un modo gentile di farla arrivare.',
+          'È per Ada, che tiene le reti nella Cala. Non è urgente. Proprio per questo mi piacerebbe che arrivasse.',
+          'Mettila nella cassetta accanto al molo. Poi torna: voglio sapere se la barca può portare una frase senza farla diventare un affare.'
+        ] },
+      { tipo:'puzzle', puzzle:'posta_cala',
+        compito:'Porta la lettera alla cassetta della Cala delle Reti.',
+        righe:[
+          'La lettera scivola nella cassetta senza rumore. Sul legno c’è un nome consumato dal sale e, sotto, una freccia verso il paese.',
+          'Non è una scoperta grande. È soltanto un posto che adesso sa dove mandare le sue parole.'
+        ] },
+      { tipo:'parla', npc:'marisol',
+        compito:'Torna da Marisol alla Locanda.',
+        righe:[
+          'Allora funziona. Non la posta: quella funzionava anche prima, se uno aveva gambe buone. Funziona la promessa di tornare.',
+          'Metterò un foglio alla bacheca ogni volta che c’è qualcosa per la Cala. Non un lavoro grosso. Una cosa che tiene insieme due rive.'
+        ] }
+    ],
+    premio:{ oro:450, item:'pane_miele', qta:2, amicizia:110 }
+  },
+
+  elio_approdo: {
+    npc:'elio', cuori:0, dopoFinale:true, segue:'elio_barca',
+    richiede:['marisol_posta_cala'],
+    progettoBarca:true, sblocco:'rotta_approdo',
+    titolo:'L’approdo delle erbe',
+    scelta:'🌿 L’approdo oltre la Cala',
+    passi:[
+      { tipo:'parla', npc:'elio',
+        compito:'Parla con Elio dell’approdo oltre la Cala.',
+        righe:[
+          'Ada ha risposto alla lettera. Dice che dietro la Cala c’è un piccolo approdo dove crescono erbe salate, buone per la cucina e per le reti.',
+          'Il passaggio è corto, ma il vecchio palo d’ormeggio non tiene più. Non voglio mandarci nessuno finché non ci si può fermare bene.',
+          'Se gli diamo legno e fibra, Tobia mi aiuta a rifarlo. Poi ci andiamo, senza fare del mare una scorciatoia per sparire.'
+        ] },
+      { tipo:'porta', npc:'elio', ing:{ legna:14, fibra:8 },
+        compito:'Porta a Elio il materiale per l’approdo: {ing}',
+        manca:'Per l’approdo servono ancora: {ing}',
+        righe:[
+          'Questa fibra tiene meglio bagnata di quanto sembri. Il trucco è non tirarla fino a farla arrabbiare.',
+          'Tobia prepara il palo, io porto i remi. Quando è pronto, la rotta resta aperta per chi vuole raccogliere, parlare o guardare l’acqua.'
+        ] },
+      { tipo:'parla', npc:'elio',
+        compito:'Parla con Elio quando i materiali sono pronti.',
+        righe:[
+          'Fatto. Non è un porto e non vuole esserlo: è un punto fermo, due tavole e un palo che non tradisce.',
+          'Da oggi la barca arriva anche all’Approdo delle Erbe. Se ci trovi qualcosa di buono, portane un po’ a Marisol. Lei saprà cosa farne.'
+        ] }
+    ],
+    premio:{ oro:650, item:'erba_dolce', qta:3, amicizia:130 }
   }
 
 };
+
+/* La bacheca mostra questi lavori dopo la prima traversata. La dipendenza
+   è ripetuta qui perché la bacheca deve saper spiegare un progetto ancora
+   chiuso senza anticiparne la vicenda. */
+D.PROGETTI_BARCA = [
+  {
+    vicenda:'marisol_posta_cala',
+    titolo:'La posta che attraversa',
+    descrizione:'Una lettera per la Cala inaugura una cassetta e una piccola abitudine fra le due rive.',
+    dopo:['elio_barca','marisol_stanza']
+  },
+  {
+    vicenda:'elio_approdo',
+    titolo:'L’approdo delle erbe',
+    descrizione:'Rinforza un ormeggio oltre la Cala e apre un luogo minuscolo dove fermarsi e raccogliere.',
+    dopo:['elio_barca','marisol_posta_cala']
+  }
+];
 
 /* ===================================================================
    QUELLO CHE SI MIGLIORA ADDOSSO — non gli attrezzi, la persona.

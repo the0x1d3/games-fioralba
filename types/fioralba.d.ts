@@ -168,7 +168,20 @@ interface FioVicenda {
   premio: { oro?: number; item?: string; qta?: number; amicizia?: number };
   dopoFinale?: boolean;
   segue?: string;
+  /** Altre vicende che devono essere finite, anche di altri abitanti. */
+  richiede?: string[];
   sblocco?: string;
+  /** Le vicende di rotta si avviano dalla Bacheca dei progetti. */
+  progettoBarca?: boolean;
+}
+
+interface FioProgettoBarca {
+  /** Id della vicenda che racconta e porta avanti il progetto. */
+  vicenda: string;
+  titolo: string;
+  descrizione: string;
+  /** Vicenda da concludere prima che il progetto si possa segnare. */
+  dopo?: string | string[];
 }
 
 interface FioTalento {
@@ -348,6 +361,8 @@ interface FioData {
   MEMORIE: FioMemoria[];
   /** Le storie del paese: una per abitante, aperte dai cuori. */
   VICENDE: Record<string, FioVicenda>;
+  /** I piccoli lavori che diventano nuove rotte della barca. */
+  PROGETTI_BARCA: FioProgettoBarca[];
   /** Quello che si migliora addosso: zaino, resistenza, scarpe, cintura. */
   PERSONA: Record<string, FioPersona>;
   /** Dove sta ognuno la sera della veglia: coppie di caselle. */

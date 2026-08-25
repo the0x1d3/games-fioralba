@@ -1395,6 +1395,12 @@ function buildSpiaggia(){
   // solo dopo che Elio ha rimesso in acqua la barca.
   warp(m, 22, 26, 2, 1, 'cala', 14, 16, 'Cala delle Reti');
   m.warps[m.warps.length-1].richiedeBarca = true;
+  /* Non è una seconda distesa di mare: è un secondo pontile della stessa
+     costa. Il varco serve anche a chi arriva a piedi, ma resta chiuso
+     finché il progetto non ha reso sicuro l’ormeggio. */
+  warp(m, 22, 24, 2, 1, 'approdo', 12, 15, 'Approdo delle Erbe');
+  m.warps[m.warps.length-1].richiedeBarca = true;
+  m.warps[m.warps.length-1].richiedeApprodo = true;
 
   // la prima marea: chi ci arriva il primo giorno trova già qualcosa
   W.rigeneraCosta(m, 7777^0x55);
@@ -1420,6 +1426,11 @@ function buildCala(){
   for(let y=11;y<19;y++) for(let x=14;x<16;x++) m.obj[W.idx(m,x,y)]=null;
   setObj(m, 14, 19, {t:'barca', solido:true, ritorno:'spiaggia'});
   setObj(m, 17, 10, {t:'casse', solido:true, v:1});
+  /* La cassetta c'è anche prima del progetto: prima è una cosa di legno
+     accanto al molo, poi diventa il gesto concreto con cui la Cala entra
+     nella rete di persone della valle. */
+  setObj(m, 10, 10, {t:'consegna', solido:true, rotta:'posta'});
+  m.deco.push({t:'cartello', x:9, y:8, testo:'Cassetta per la posta della Cala'});
   setObj(m, 12, 9, {t:'lampione', solido:false});
   for(const [x,y] of [[6,9],[8,10],[21,9],[23,10],[10,7],[19,7]]){
     if(libero(m,x,y)) setObj(m,x,y, R()<0.55 ? {t:'ramo',v:(R()*3)|0} : sasso('pietra'));
@@ -1427,6 +1438,39 @@ function buildCala(){
   m.deco.push({t:'cartello', x:11, y:7,
     testo:'Cala delle Reti — Qui l\'acqua lascia spazio a chi torna.'});
   warp(m, 14,18, 2,1, 'spiaggia', 22,25, 'Ritorno alla Costa');
+  return m;
+}
+
+/* ===================================================================
+   APPRODO DELLE ERBE — seconda rotta, piccola e da abitare
+   =================================================================== */
+function buildApprodo(){
+  const m = mkMap('approdo','Approdo delle Erbe', 26, 22, {
+    musica:'primavera', ambiente:'uccelli', sfondo:'#4a6a78'
+  });
+  const R = rnd(40404);
+  fill(m, 0,0, m.w,m.h, 'sabbia');
+  for(let y=14;y<m.h;y++) for(let x=0;x<m.w;x++){
+    const riva=15+Math.round(Math.sin(x*0.42)*1.2);
+    if(y>riva) m.g[W.idx(m,x,y)]=ti('acqua');
+  }
+  for(let x=0;x<m.w;x++) if(x<7 || x>18) setObj(m,x,0,albero('pino'));
+  for(let y=0;y<9;y++){ setObj(m,0,y,albero('pino')); setObj(m,m.w-1,y,albero('pino')); }
+  fill(m, 12,13, 2,6, 'assi');
+  for(let y=13;y<19;y++) for(let x=12;x<14;x++) m.obj[W.idx(m,x,y)]=null;
+  setObj(m, 12, 18, {t:'barca', solido:true, ritorno:'spiaggia'});
+  setObj(m, 10, 12, {t:'casse', solido:true, v:2});
+  setObj(m, 15, 12, {t:'lampione', solido:false});
+  for(const [x,y] of [[5,10],[7,12],[18,10],[20,12],[9,8],[17,8]]){
+    if(libero(m,x,y)) setObj(m,x,y, R()<0.5 ? {t:'ramo',v:(R()*3)|0} : sasso('pietra'));
+  }
+  for(let i=0;i<20;i++){
+    const x=3+((R()*20)|0), y=4+((R()*8)|0);
+    if(libero(m,x,y) && W.terreno(m,x,y)==='sabbia')
+      m.deco.push({t:'sassolini', x, y, v:(R()*3)|0});
+  }
+  m.deco.push({t:'cartello', x:8, y:6,
+    testo:'Approdo delle Erbe — Fermarsi bene è già un viaggio.'});
   return m;
 }
 
@@ -1740,7 +1784,7 @@ function buildCasa(){
 /* I luoghi della valle. Serve anche a validare un salvataggio importato senza
    dover ricostruire tutte le mappe. Il test di coerenza controlla che questa
    lista e quella davvero costruita da W.crea() restino allineate. */
-W.MAPPE = ['podere','fioralba','bosco','grotta','grotta2','grotta3','montagna','piazza','spiaggia','cala',
+W.MAPPE = ['podere','fioralba','bosco','grotta','grotta2','grotta3','montagna','piazza','spiaggia','cala','approdo',
            'int_casa','int_bottega','int_fucina','int_locanda'];
 
 /* Quali porte portano dentro una stanza vera. Sta qui, e non in game.js,
@@ -1761,6 +1805,7 @@ W.crea = function(){
   maps.piazza   = buildPiazza();
   maps.spiaggia = buildSpiaggia();
   maps.cala     = buildCala();
+  maps.approdo  = buildApprodo();
   maps.int_casa    = buildCasa();
   maps.int_bottega = buildBottega();
   maps.int_fucina  = buildFucina();

@@ -215,6 +215,13 @@ function battutaDelGiorno(id, cuori){
       else if(G.ora > 1020 && C.ora.sera) pool.push(...C.ora.sera);
     }
   }
+  /* Dopo le rotte, le persone che le tengono vive ne parlano davvero:
+     non è una medaglia silenziosa nella bacheca, ma una nuova abitudine
+     che entra nelle conversazioni del paese. */
+  if(window.RICHIAMO && RICHIAMO.battuta){
+    const rotte=RICHIAMO.battuta(id);
+    if(rotte) pool.push(...rotte, ...rotte);
+  }
   // con l'amicizia alta entrano anche le battute confidenziali
   if(cuori>=6 && N.amico) pool.push(...N.amico, ...N.amico);
   // e sempre il fondo generico, così non diventa ripetitivo al contrario

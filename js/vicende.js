@@ -33,9 +33,15 @@ const F = (modello, ...pezzi) => window.LINGUA
 /* --- lettura dello stato, con le difese in mezzo ---------------- */
 
 function tabella(){ return (window.DATA && DATA.VICENDE) || {}; }
-function disponibile(v){
+function progettoSegnato(id){
+  const r=G.trame && G.trame.richiamo;
+  return !!(r && r.progetti && r.progetti[id]);
+}
+function disponibile(id, v){
   if(v.dopoFinale && !(G.trame && G.trame.veglia && G.trame.veglia.fatta)) return false;
-  return !v.segue || !!(stato(v.segue) && stato(v.segue).fatta);
+  if(v.segue && !(stato(v.segue) && stato(v.segue).fatta)) return false;
+  if((v.richiede||[]).some(r=>!(stato(r) && stato(r).fatta))) return false;
+  return !v.progettoBarca || progettoSegnato(id);
 }
 
 function stato(id){
@@ -95,7 +101,7 @@ V.scelte = function(npcId){
 
     // mai cominciata: si offre se i cuori bastano
     if(!s){
-      if(v.npc === npcId && disponibile(v) && V.cuori(npcId) >= (v.cuori||0))
+       if(v.npc === npcId && disponibile(id,v) && V.cuori(npcId) >= (v.cuori||0))
         fuori.push({ testo:v.scelta, azione:()=>V.avanza(id) });
       continue;
     }
@@ -143,6 +149,24 @@ V.avanza = function(id){
   chiudi(id, p);
 };
 
+/* I lavori della barca sono scelti dalla bacheca. Segnarli qui, anziché
+   scrivere direttamente dentro G dalla UI, mantiene identica la regola
+   di disponibilità fra bacheca e dialoghi. */
+V.avviaProgetto = function(id){
+  const v=tabella()[id];
+  if(!v || !v.progettoBarca || stato(id)) return false;
+  if(v.dopoFinale && !(G.trame && G.trame.veglia && G.trame.veglia.fatta)) return false;
+  if(v.segue && !(stato(v.segue) && stato(v.segue).fatta)) return false;
+  if((v.richiede||[]).some(r=>!(stato(r) && stato(r).fatta))) return false;
+  if(!G.trame || typeof G.trame!=='object') G.trame={};
+  if(!G.trame.richiamo || typeof G.trame.richiamo!=='object') G.trame.richiamo={};
+  if(!G.trame.richiamo.progetti || typeof G.trame.richiamo.progetti!=='object')
+    G.trame.richiamo.progetti={};
+  G.trame.richiamo.progetti[id]=true;
+  G.progresso();
+  return true;
+};
+
 /* I rompicapi non avanzano parlando con qualcuno: il luogo interessato
    chiama qui soltanto quando la soluzione è stata trovata. */
 V.completa = function(id, puzzle){
@@ -160,13 +184,14 @@ function chiudi(id, p){
   if(finita) s.fatta = true;
 
   const righe = (p.righe || []).slice();
-  if(p.tipo === 'luogo'){
+  const senzaDialogo = p.tipo === 'luogo' || (p.tipo === 'puzzle' && !p.npc);
+  if(senzaDialogo){
     // nessuno con cui parlare: è un pensiero, e va nei messaggi
     for(const r of righe) UI.toast(r, 'gold');
   } else {
     UI.dialogo(p.npc, righe, finita ? { fine:()=>paga(id) } : undefined);
   }
-  if(finita && p.tipo === 'luogo') paga(id);
+  if(finita && senzaDialogo) paga(id);
   if(!finita) G.progresso();
 }
 
@@ -253,7 +278,8 @@ V.inAttesa = function(){
   for(const id in tab){
     if(stato(id)) continue;
     const v = tab[id];
-    if(disponibile(v) && V.cuori(v.npc) < (v.cuori||0)) fuori.push({ id, npc:v.npc, cuori:v.cuori });
+    if(v.progettoBarca) continue;
+    if(disponibile(id,v) && V.cuori(v.npc) < (v.cuori||0)) fuori.push({ id, npc:v.npc, cuori:v.cuori });
   }
   return fuori;
 };
@@ -264,7 +290,7 @@ V.pronte = function(){
   for(const id in tab){
     if(stato(id)) continue;
     const v = tab[id];
-    if(disponibile(v) && V.cuori(v.npc) >= (v.cuori||0)) fuori.push({ id, npc:v.npc, titolo:v.titolo });
+    if(disponibile(id,v) && V.cuori(v.npc) >= (v.cuori||0)) fuori.push({ id, npc:v.npc, titolo:v.titolo });
   }
   return fuori;
 };
