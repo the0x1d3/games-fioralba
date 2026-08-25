@@ -1798,9 +1798,11 @@ R.disegna = function(G){
       const lati = o.kind==='recinto' || o.kind==='cancelletto'
         ? latiRecinto(m, x, y) : 0;
       const arredo = immagineArredo(o, lati);
-      const etichetta = o.t==='macchina' && o.kind==='cassa' && o.nome
-        ? { testo:o.nome, x:px+T/2, y:py-6 }
-        : null;
+      const etichetta = o.kind==='cartello' && o.testo
+        ? { testo:o.testo, x:px+T/2, y:py+(arredo?-46:-24) }
+        : o.t==='macchina' && o.kind==='cassa' && o.nome
+          ? { testo:o.nome, x:px+T/2, y:py-6 }
+          : null;
       const statoBase = [
         o.t,o.kind||'',o.v||0,o.stage||0,o.bacche?1:0,o.carbone?1:0,
         o.dentro?1:0,o.pronto?1:0,o.out||'',o.testo||'',stag,
