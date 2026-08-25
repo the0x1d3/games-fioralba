@@ -63,6 +63,44 @@ L.progresso = function(k){
 
 L.premioDi = function(k, liv){ return (DATA.PREMI_LIVELLO[k]||[])[liv] || null; };
 
+/* Le scelte al livello 3 non sono un albero da amministrare: un mestiere
+   prende una direzione e il Diario resta sempre il posto da cui leggerla
+   o deciderla più tardi, senza punire chi chiude la carta subito. */
+L.talento = function(k){
+  const id=G.talenti && G.talenti[k];
+  return ((DATA.TALENTI&&DATA.TALENTI[k])||[]).find(t=>t.id===id) || null;
+};
+L.sceltaDisponibile = function(k){
+  return G.livello(k)>=3 && !L.talento(k) && !!((DATA.TALENTI&&DATA.TALENTI[k])||[]).length;
+};
+L.scegliTalento = function(k){
+  const opzioni=(DATA.TALENTI&&DATA.TALENTI[k])||[];
+  if(!L.sceltaDisponibile(k) || !opzioni.length) return;
+  UI.modal('Scegli una specializzazione', body=>{
+    const intro=el('p','muted','Questa scelta aggiunge una piccola direzione al mestiere. Potrai leggerla sempre nel Diario.');
+    body.appendChild(intro);
+    for(const t of opzioni){
+      const c=el('div','liv-scheda');
+      const r=el('div','liv-scheda-testa');
+      r.appendChild(icona(t.icona,30));
+      const tx=el('div','liv-scheda-nomi');
+      tx.appendChild(el('div','liv-scheda-nome',t.nome));
+      tx.appendChild(el('div','liv-scheda-desc',t.descrizione));
+      r.appendChild(tx); c.appendChild(r);
+      const b=el('button','btn gold','Scegli '+t.nome);
+      b.onclick=()=>{
+        if(!G.talenti || typeof G.talenti!=='object') G.talenti={};
+        G.talenti[k]=t.id;
+        G.salva();
+        G.aggiornaHUD();
+        UI.chiudiModal();
+        UI.toast(DATA.SKILLS[k].nome+' — talento scelto: '+t.nome+'.','gold');
+      };
+      c.appendChild(b); body.appendChild(c);
+    }
+  });
+};
+
 /* --------------------------------------------------------------- */
 /* pezzi di disegno riusati                                        */
 /* --------------------------------------------------------------- */
@@ -217,6 +255,16 @@ function mostraCarta(s, finito){
     bx.appendChild(r);
   });
   carta.appendChild(bx);
+
+  if(liv===3 && L.sceltaDisponibile(k)){
+    const talento=el('div','liv-premi chiave');
+    talento.appendChild(el('div','liv-premi-tit','Scegli la tua direzione'));
+    talento.appendChild(el('div','liv-premi-nota','Il livello 3 apre una specializzazione per questa abilità.'));
+    const bTalento=el('button','btn gold','Scegli un talento');
+    bTalento.onclick=()=>{ via(); setTimeout(()=>L.scegliTalento(k),300); };
+    talento.appendChild(bTalento);
+    carta.appendChild(talento);
+  }
 
   /* --- i premi --- */
   if(P){
@@ -390,6 +438,21 @@ L.scheda = function(body){
       bx.appendChild(r);
     }
     c.appendChild(bx);
+
+    const talento=L.talento(k);
+    if(talento){
+      const r=el('div','liv-prossimo chiave');
+      r.appendChild(el('span','liv-prossimo-eti','Talento scelto: '));
+      r.appendChild(el('span','liv-prossimo-val',talento.nome+' — '+talento.descrizione));
+      c.appendChild(r);
+    } else if(L.sceltaDisponibile(k)){
+      const r=el('div','liv-prossimo chiave');
+      r.appendChild(el('span','liv-prossimo-eti','Specializzazione disponibile'));
+      const b=el('button','btn gold','Scegli talento');
+      b.onclick=()=>L.scegliTalento(k);
+      r.appendChild(b);
+      c.appendChild(r);
+    }
 
     /* cosa dà il livello dopo: è la ragione per cui uno continua */
     if(!p.massimo){

@@ -62,6 +62,7 @@ function statoIniziale(){
     ],
     slotSel:0,
     skills:{agricoltura:0, raccolta:0, estrazione:0, pesca:0},
+    talenti:{},
     attrezziLiv:{zappa:0, annaffiatoio:0, ascia:0, piccone:0},
     amicizia:{}, regalatoOggi:{}, parlatoOggi:{},
     costruzioni:{},
@@ -91,7 +92,8 @@ function statoIniziale(){
     vicende:{}, persona:{},
     trame:{ torta:{avviata:false, segreto:false, fatta:false},
             pesceluna:{avviata:false, preso:false, fatta:false},
-            veglia:{avviata:false, memorie:{}, verita:false, invitati:{}, giorno:null, fatta:false} },
+            veglia:{avviata:false, memorie:{}, verita:false, invitati:{}, giorno:null, fatta:false},
+            richiamo:{bacheca:false, marea:{passo:0, risolta:false}, barca:false} },
     tutorialFatto:false,
     animali:[],
     look:{ pelle:'#e8bd8f', capelli:'#6b4423', maglia:'#4f8ab0', pant:'#3d5470', cappello:'#c9a44c' }
@@ -565,15 +567,24 @@ G.registraVendita = function(monete){
   G.progresso();
 };
 
+/* Le specializzazioni restano separate dai livelli: chi applica un
+   effetto riceve sempre zero o un valore valido, anche con save legacy. */
+G.talento = function(abilita, effetto){
+  const id = G.talenti && G.talenti[abilita];
+  const opzioni = (DATA.TALENTI && DATA.TALENTI[abilita]) || [];
+  const talento = opzioni.find(t=>t.id===id);
+  return talento && typeof talento[effetto]==='number' ? talento[effetto] : 0;
+};
+
 G.prezzoVendita = function(id){
   let p = IT.prezzo(id);
   const c = IT.cat(id);
   // i coefficienti stanno in DATA.BONUS: da lì li legge anche la scheda
   const B = DATA.BONUS;
-  if(c==='raccolto') p = Math.round(p * (1 + G.livello('agricoltura')*B.agricoltura.valore));
-  if(c==='foraggio') p = Math.round(p * (1 + G.livello('raccolta')*B.raccolta.valore));
-  if(c==='pesce')    p = Math.round(p * (1 + G.livello('pesca')*B.pesca.valore));
-  if(c==='minerale') p = Math.round(p * (1 + G.livello('estrazione')*B.estrazione.valore));
+  if(c==='raccolto') p = Math.round(p * (1 + G.livello('agricoltura')*B.agricoltura.valore + G.talento('agricoltura','valore')));
+  if(c==='foraggio') p = Math.round(p * (1 + G.livello('raccolta')*B.raccolta.valore + G.talento('raccolta','valore')));
+  if(c==='pesce')    p = Math.round(p * (1 + G.livello('pesca')*B.pesca.valore + G.talento('pesca','valore')));
+  if(c==='minerale') p = Math.round(p * (1 + G.livello('estrazione')*B.estrazione.valore + G.talento('estrazione','valore')));
   // mercato dinamico: oggi un prodotto è più richiesto
   if(G.mercato && G.mercato.item===id) p = Math.round(p * G.mercato.mult);
   return p;
@@ -806,7 +817,7 @@ function normalizzaStato(){
   const A = k => { if(!Array.isArray(G[k])) G[k]=[]; };
   const O = k => { if(!G[k] || typeof G[k]!=='object') G[k]={}; };
   ['inv','richieste','cassaConsegna','animali','premiSospesi'].forEach(A);
-  ['skills','attrezziLiv','amicizia','costruzioni','santuario','santuarioDato',
+  ['skills','attrezziLiv','talenti','amicizia','costruzioni','santuario','santuarioDato',
    'lettere','ricetteNote','stats','obiettiviRiscossi','visitati','collezione','regaloRicevuto',
    'parlatoOggi','regalatoOggi','mercato','gatto','vicende','persona'].forEach(O);
   /* le partite cominciate prima del gatto non hanno i suoi campi: senza
@@ -824,6 +835,18 @@ function normalizzaStato(){
   if(!G.trame.veglia) G.trame.veglia={avviata:false,memorie:{},verita:false,invitati:{},giorno:null,fatta:false};
   if(!G.trame.veglia.memorie)  G.trame.veglia.memorie={};
   if(!G.trame.veglia.invitati) G.trame.veglia.invitati={};
+  if(!G.trame.richiamo || typeof G.trame.richiamo!=='object')
+    G.trame.richiamo={bacheca:false,marea:{passo:0,risolta:false},barca:false};
+  if(!G.trame.richiamo.marea || typeof G.trame.richiamo.marea!=='object')
+    G.trame.richiamo.marea={passo:0,risolta:false};
+  G.trame.richiamo.bacheca=!!G.trame.richiamo.bacheca;
+  G.trame.richiamo.barca=!!G.trame.richiamo.barca;
+  G.trame.richiamo.marea.risolta=!!G.trame.richiamo.marea.risolta;
+  G.trame.richiamo.marea.passo=Math.max(0,Math.min(2,(G.trame.richiamo.marea.passo|0)));
+  for(const k in G.talenti){
+    const id=G.talenti[k], opzioni=(DATA.TALENTI&&DATA.TALENTI[k])||[];
+    if(!opzioni.some(t=>t.id===id)) delete G.talenti[k];
+  }
   if(!G.mercante || typeof G.mercante!=='object') G.mercante={presente:false,giorno:-1,stock:[]};
   if(!Array.isArray(G.mercante.stock)) G.mercante.stock=[];
   if(!G.visitati.podere) G.visitati.podere=true;
@@ -993,6 +1016,7 @@ function aggiornaGiocatore(dt){
 
   // warp
   for(const w of m.warps){
+    if(w.richiedeBarca && (!G.trame || !G.trame.richiamo || !G.trame.richiamo.barca)) continue;
     if(p.px >= w.x*T && p.px < (w.x+w.w)*T && p.py >= w.y*T && p.py < (w.y+w.h)*T){
       cambiaMappa(w.to, w.tx, w.ty);
       break;
@@ -1361,7 +1385,7 @@ function usaOggetto(){
         const BE = DATA.BONUS.estrazione;
         if(o.carbone){ drop='carbone'; q=1+(Math.random()<0.3?1:0); }
         else if(o.kind==='pietra'){ drop='pietra'; q=1+((Math.random()*2)|0)+(lv>=BE.pietraDa?1:0); }
-        else { drop=o.kind; q=1+(Math.random()<BE.extraBase+lv*BE.extra?1:0); }
+        else { drop=o.kind; q=1+(Math.random()<BE.extraBase+lv*BE.extra+G.talento('estrazione','extra')?1:0); }
         G.aggiungi(drop,q);
         UI.toast('+'+q+' '+IT.nome(drop),'good',drop);
         G.xp('estrazione', o.kind==='pietra'?4:12);
@@ -1543,7 +1567,7 @@ function raccogliColtura(tx,ty,suolo){
   let n = 1;
   const lv = G.livello('agricoltura');
   if(suolo.concime==='concime' && Math.random()<0.35) n++;
-  if(Math.random() < lv*DATA.BONUS.agricoltura.doppio) n++;
+  if(Math.random() < lv*DATA.BONUS.agricoltura.doppio + G.talento('agricoltura','doppio')) n++;
   if(C.forma==='bacca'||C.forma==='grappolo') n += (Math.random()<0.4?1:0);
 
   if(!G.puoiAggiungere(suolo.crop.id,n)){ UI.toast('Zaino pieno!','bad'); SND.play('errore'); return; }
@@ -1571,7 +1595,7 @@ function raccogliColtura(tx,ty,suolo){
 function raccogliForaggio(tx,ty,o){
   const m=G.mappa();
   const lv=G.livello('raccolta');
-  let n = 1 + (Math.random()<lv*DATA.BONUS.raccolta.foraggio?1:0);
+  let n = 1 + (Math.random()<lv*DATA.BONUS.raccolta.foraggio + G.talento('raccolta','foraggio')?1:0);
   if(!G.puoiAggiungere(o.item,n)){ UI.toast('Zaino pieno!','bad'); return; }
   m.obj[WORLD.idx(m,tx,ty)]=null;
   G.aggiungi(o.item,n);
@@ -1727,6 +1751,11 @@ function interagisci(){
     if(o.t==='porta'){ apriPorta(o.ed); return; }
     if(o.t==='consegna'){ SOLSTIZIO.apriConsegna(); return; }
     if(o.t==='bottiglia'){ apriBottiglia(m, i); return; }
+    if(o.t==='barca'){
+      if(window.RICHIAMO && RICHIAMO.interagisciBarca(m,o)) return;
+      UI.toast('Una barca legata bene. Per ora guarda la riva e aspetta il suo turno.');
+      return;
+    }
 
     /* Col riordino acceso E prende il mobile invece di usarlo. Le porte
        e i muri restano quello che sono, sopra: una casa senza uscita
@@ -1766,6 +1795,7 @@ function interagisci(){
     if(o.t==='bancarella' && o.kiosk){
       SND.play('menu');
       if(o.kiosk==='bacheca') UI.diario(G, 'richieste');
+      else if(o.kiosk==='progetti' && window.RICHIAMO) RICHIAMO.apriProgetti();
       else if(o.kiosk==='mercante'){
         if(G.mercante && G.mercante.presente) UI.mercante(G);
         else UI.toast('Il banco è chiuso: il mercante non è in paese oggi.','bad');
@@ -1792,6 +1822,7 @@ function interagisci(){
       continue;
     }
     if(o.t==='pietra_rituale'){
+      if(o.puzzle==='marea' && window.RICHIAMO){ RICHIAMO.toccaMarea(o); return; }
       UI.toast('Rune consumate dal tempo. Sembrano aspettare qualcosa.');
       return;
     }
@@ -2829,6 +2860,7 @@ function cambiaMappa(id, tx, ty){
      arrivi: a piedi o col viaggio rapido, che passa di qui anche lui. */
   VICENDE.visita(id);
 }
+G.viaggiaBarca = function(id, tx, ty){ cambiaMappa(id, tx, ty); };
 
 /* punti d'arrivo del viaggio rapido (casella camminabile per ogni luogo) */
 const ARRIVO_RAPIDO = {

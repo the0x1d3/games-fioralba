@@ -381,6 +381,37 @@ D.BONUS = {
   caccia:     { mira:0.035, udito:0.06, uditoMax:0.6 }
 };
 
+/* Le specializzazioni arrivano al livello 3: non sostituiscono i bonus
+   dei livelli, aggiungono un piccolo modo personale di usare un mestiere.
+   I valori restano qui perché il Diario e il gioco devono leggere la
+   stessa scelta. */
+D.TALENTI = {
+  agricoltura: [
+    { id:'coltivatore', nome:'Coltivatore', icona:'zappa',
+      descrizione:'Conosci il valore di ogni raccolto ben riuscito.', valore:0.08 },
+    { id:'custode_terra', nome:'Custode della terra', icona:'concime',
+      descrizione:'Prepari il campo perché restituisca qualcosa in più.', doppio:0.12 }
+  ],
+  raccolta: [
+    { id:'botanico', nome:'Botanico', icona:'viola',
+      descrizione:'Riconosci i punti in cui la fibra e il foraggio tornano a crescere.', foraggio:0.12 },
+    { id:'esploratore', nome:'Esploratore', icona:'falce',
+      descrizione:'Sai trovare ciò che il sentiero lascia ai margini.', valore:0.06 }
+  ],
+  estrazione: [
+    { id:'fabbro', nome:'Fabbro di vena', icona:'piccone',
+      descrizione:'Scegli i minerali migliori, quelli che reggono davvero il lavoro.', valore:0.09 },
+    { id:'cercatore', nome:'Cercatore', icona:'pietra',
+      descrizione:'Leggi le vene nella roccia prima di colpirla.', valore:0.05, extra:0.10 }
+  ],
+  pesca: [
+    { id:'pescatore', nome:'Pescatore', icona:'canna',
+      descrizione:'Sai quando aspettare il pesce giusto.', valore:0.10 },
+    { id:'navigatore', nome:'Navigatore', icona:'canna',
+      descrizione:'Segui correnti e maree senza forzarle.', valore:0.05, guadagno:0.06 }
+  ]
+};
+
 /* Come si legge un bonus, a parole. Una riga per effetto: la scheda le
    mostra tutte, e quelle che a livello 0 non fanno niente le mostra
    spente — vedere cosa *arriverà* è metà del motivo per salire. */
@@ -975,6 +1006,52 @@ D.VICENDE = {
         ] }
     ],
     premio:{ oro:1400, item:'cristallia', qta:2, amicizia:170 }
+  },
+
+  /* Arriva dopo la veglia: la Lanterna è già stata affidata a tutti e
+     questa non è una nuova emergenza, ma un lavoro scelto dal paese. */
+  elio_barca: {
+    npc:'elio', cuori:4, dopoFinale:true, segue:'elio_rete', sblocco:'barca',
+    titolo:'La barca che torna',
+    scelta:'⛵ La barca lasciata a riva',
+    passi:[
+      { tipo:'parla', npc:'elio',
+        compito:'Parla con Elio della barca lasciata alla Costa.',
+        righe:[
+          'Dopo la veglia ho pensato a una cosa che mi fa ancora un po\' paura: mio padre non aveva costruito quella barca per sparire.',
+          'Aveva segnato due cale piccole sulla sua carta. Posti per pescare, portare una lettera, tornare prima che facesse buio.',
+          'La chiglia è buona. La rete pure, adesso. Però una barca non si rimette in acqua perché uno si sente pronto da solo.',
+          'Se Tobia ci prepara i ferri e Serafina trova la carta, io provo a finirla. Tu ci stai?'
+        ] },
+      { tipo:'porta', npc:'tobia', ing:{ legna:18, fibra:12, lingotto_rame:2 },
+        compito:'Porta a Tobia il materiale per la barca: {ing}',
+        manca:'Per i rinforzi della barca servono ancora: {ing}',
+        righe:[
+          'Una barca non è una sedia con il fondo bagnato. Il rame va dove il legno si muove, non dove fa bella figura.',
+          'Faccio i rinforzi io. Elio mette le mani, tu porti il peso. Tre persone: è già un modo migliore di farla.'
+        ] },
+      { tipo:'parla', npc:'serafina',
+        compito:'Parla con Serafina della carta delle cale.',
+        righe:[
+          'La carta era di Ilde, sì. Non ci sono tesori sopra: solo correnti, sassi e una nota per ricordarsi dove non spaccare i remi.',
+          'La Cala delle Reti è piccola. Con la bassa marea lascia vedere tre segni sulla riva. Toccali nell\'ordine in cui l\'acqua li scopre: conchiglia, pietra chiara, rete.',
+          'Non è una prova. È il modo che aveva lei per insegnare a guardare prima di partire.'
+        ] },
+      { tipo:'puzzle', puzzle:'marea',
+        compito:'Alla Costa, osserva i tre segni della bassa marea.',
+        righe:[
+          'Quando l\'ultimo segno riaffiora, una tavoletta incastrata fra i sassi si solleva. Sopra c\'è una rotta breve, tracciata a matita.',
+          'Non porta lontano. Porta abbastanza lontano da tornare con qualcosa da raccontare.'
+        ] },
+      { tipo:'parla', npc:'elio',
+        compito:'Torna da Elio con la rotta della Cala delle Reti.',
+        righe:[
+          'È proprio la sua grafia. Non pensavo di rivederla, e invece era qui, sotto tre pietre e un po\' di sale.',
+          'La barca non sarà sua, e non sarà mia. Se qualcuno deve andare alla cala, ci va. Se qualcuno resta, resta.',
+          'Domattina la mettiamo in acqua insieme. La prima traversata la fai tu: così il paese sa che la strada è aperta.'
+        ] }
+    ],
+    premio:{ oro:1100, item:'pesce_luna', qta:1, amicizia:180 }
   }
 
 };

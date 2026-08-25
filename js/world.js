@@ -1336,9 +1336,14 @@ function buildSpiaggia(){
   /* Una barca tirata in secca vicino al molo, e due ormeggiate. La costa
      era 978 caselle di sabbia con ventun oggetti sopra: da dentro non
      era una spiaggia, era un deserto con un pontile. */
-  setObj(m, 19, 19, {t:'barca', solido:true});
+  setObj(m, 19, 19, {t:'barca', solido:true, viaggio:'cala'});
   setObj(m, 26, 24, {t:'barca', solido:true});
   setObj(m, 29, 22, {t:'barca', solido:true});
+  // I tre segni stanno lì anche prima della storia: a bassa marea
+  // diventano leggibili, non spuntano dal nulla quando serve la quest.
+  setObj(m,  6, 14, {t:'pietra_rituale', solido:true, puzzle:'marea', ordine:1});
+  setObj(m, 12, 16, {t:'pietra_rituale', solido:true, puzzle:'marea', ordine:2});
+  setObj(m, 32, 15, {t:'pietra_rituale', solido:true, puzzle:'marea', ordine:3});
 
   /* --- LE DUNE ---
      L'erba che tiene la sabbia, più fitta sotto la pineta e sempre più
@@ -1386,9 +1391,42 @@ function buildSpiaggia(){
   for(let x=21;x<26;x++){ m.obj[W.idx(m,x,0)]=null; m.g[W.idx(m,x,0)]=ti('sabbia'); m.obj[W.idx(m,x,1)]=null; }
   warp(m, 21, 0, 5, 1, 'piazza', 24, 30, 'Piazza');
   m.deco.push({t:'cartello', x:20, y:2, testo:'↑ Piazza'});
+  // La via esiste nello scenario, ma il gioco la lascia attraversare
+  // solo dopo che Elio ha rimesso in acqua la barca.
+  warp(m, 22, 26, 2, 1, 'cala', 14, 16, 'Cala delle Reti');
+  m.warps[m.warps.length-1].richiedeBarca = true;
 
   // la prima marea: chi ci arriva il primo giorno trova già qualcosa
   W.rigeneraCosta(m, 7777^0x55);
+  return m;
+}
+
+/* ===================================================================
+   CALA DELLE RETI — prima rotta breve della barca
+   =================================================================== */
+function buildCala(){
+  const m = mkMap('cala','Cala delle Reti', 30, 24, {
+    musica:'primavera', ambiente:'uccelli', sfondo:'#4a6a78'
+  });
+  const R = rnd(30303);
+  fill(m, 0,0, m.w,m.h, 'sabbia');
+  for(let y=11;y<m.h;y++) for(let x=0;x<m.w;x++){
+    const riva = 12 + Math.round(Math.sin(x*0.35)*1.4);
+    if(y>riva) m.g[W.idx(m,x,y)]=ti('acqua');
+  }
+  for(let x=0;x<m.w;x++) if(x<8 || x>21) setObj(m,x,0,albero('pino'));
+  for(let y=0;y<8;y++){ setObj(m,0,y,albero('pino')); setObj(m,m.w-1,y,albero('pino')); }
+  fill(m, 14,11, 2,8, 'assi');
+  for(let y=11;y<19;y++) for(let x=14;x<16;x++) m.obj[W.idx(m,x,y)]=null;
+  setObj(m, 14, 19, {t:'barca', solido:true, ritorno:'spiaggia'});
+  setObj(m, 17, 10, {t:'casse', solido:true, v:1});
+  setObj(m, 12, 9, {t:'lampione', solido:false});
+  for(const [x,y] of [[6,9],[8,10],[21,9],[23,10],[10,7],[19,7]]){
+    if(libero(m,x,y)) setObj(m,x,y, R()<0.55 ? {t:'ramo',v:(R()*3)|0} : sasso('pietra'));
+  }
+  m.deco.push({t:'cartello', x:11, y:7,
+    testo:'Cala delle Reti — Qui l\'acqua lascia spazio a chi torna.'});
+  warp(m, 14,18, 2,1, 'spiaggia', 22,25, 'Ritorno alla Costa');
   return m;
 }
 
@@ -1478,6 +1516,8 @@ function buildPiazza(){
   // BACHECA delle richieste e BANCO del mercante (bancarelle interattive)
   setObj(m, 12,15, {t:'bancarella', solido:true, v:0, kiosk:'bacheca'});
   m.deco.push({t:'cartello', x:11, y:13, testo:'Bacheca'});
+  setObj(m, 12,24, {t:'bancarella', solido:true, v:1, kiosk:'progetti'});
+  m.deco.push({t:'cartello', x:11, y:22, testo:'Bacheca dei progetti'});
   setObj(m, 28,15, {t:'bancarella', solido:true, v:1, kiosk:'mercante'});
   m.deco.push({t:'cartello', x:27, y:13, testo:'Banco del mercante'});
 
@@ -1700,7 +1740,7 @@ function buildCasa(){
 /* I luoghi della valle. Serve anche a validare un salvataggio importato senza
    dover ricostruire tutte le mappe. Il test di coerenza controlla che questa
    lista e quella davvero costruita da W.crea() restino allineate. */
-W.MAPPE = ['podere','fioralba','bosco','grotta','grotta2','grotta3','montagna','piazza','spiaggia',
+W.MAPPE = ['podere','fioralba','bosco','grotta','grotta2','grotta3','montagna','piazza','spiaggia','cala',
            'int_casa','int_bottega','int_fucina','int_locanda'];
 
 /* Quali porte portano dentro una stanza vera. Sta qui, e non in game.js,
@@ -1720,6 +1760,7 @@ W.crea = function(){
   maps.montagna = buildMontagna();
   maps.piazza   = buildPiazza();
   maps.spiaggia = buildSpiaggia();
+  maps.cala     = buildCala();
   maps.int_casa    = buildCasa();
   maps.int_bottega = buildBottega();
   maps.int_fucina  = buildFucina();

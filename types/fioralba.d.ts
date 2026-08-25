@@ -138,11 +138,13 @@ interface FioPremioLivello {
 /** Un passo di una vicenda: parlare con qualcuno, portargli della roba,
  *  o farsi vedere in un posto. */
 interface FioPassoVicenda {
-  tipo: 'parla' | 'porta' | 'luogo';
+  tipo: 'parla' | 'porta' | 'luogo' | 'puzzle';
   /** Con chi (per `parla` e `porta`). */
   npc?: string;
   /** Dove (per `luogo`): l'id di una mappa. */
   dove?: string;
+  /** Identificatore del rompicapo che può chiudere il passo. */
+  puzzle?: string;
   /** Cosa portare (per `porta`): id oggetto → quanti. */
   ing?: Record<string, number>;
   /** La riga del Diario finché il passo è aperto. `{ing}` diventa
@@ -164,6 +166,21 @@ interface FioVicenda {
   scelta: string;
   passi: FioPassoVicenda[];
   premio: { oro?: number; item?: string; qta?: number; amicizia?: number };
+  dopoFinale?: boolean;
+  segue?: string;
+  sblocco?: string;
+}
+
+interface FioTalento {
+  id: string;
+  nome: string;
+  icona: string;
+  descrizione: string;
+  valore?: number;
+  doppio?: number;
+  foraggio?: number;
+  extra?: number;
+  guadagno?: number;
 }
 
 /** Un grado di un miglioramento addosso: quanto costa e cosa si sente
@@ -302,6 +319,7 @@ interface FioData {
   UPGRADE: Record<string, FioUpgrade[]>;
   UPG_NOMI: string[];
   SKILLS: Record<string, FioSkill>;
+  TALENTI: Record<string, FioTalento[]>;
   XP_LIV: number[];
   NPCS: Record<string, FioNPC>;
   SANTUARIO: FioBundle[];
@@ -480,6 +498,7 @@ interface FioGame {
   /* --- abilità e attrezzi --- */
   skills: Record<string, number>;
   attrezziLiv: Record<string, number>;
+  talenti: Record<string, string>;
 
   /* --- relazioni --- */
   amicizia: Record<string, number>;
@@ -525,6 +544,7 @@ interface FioGame {
   togliSlot(indice: number, n?: number): void;
   slot(): FioSlot | null;
   prezzoVendita(id: string): number;
+  talento(abilita: string, effetto: string): number;
   aggiornaHUD(): void;
   npcVivi(): any[];
   luci(): any[];

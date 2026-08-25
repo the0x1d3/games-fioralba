@@ -111,7 +111,7 @@ function scegliPesce(){
   const st=G.stagione().id;
   const notte = G.ora>1020 || G.ora<400;
   const m=G.mappa();
-  const luogo = (G.mappaId==='fioralba') ? 'fiume' : (G.mappaId==='spiaggia' ? 'mare' : 'lago');
+  const luogo = (G.mappaId==='fioralba') ? 'fiume' : ((G.mappaId==='spiaggia'||G.mappaId==='cala') ? 'mare' : 'lago');
   /* DAL MOLO si prende altro. Il molo è la striscia di assi che entra in
      mare: chi ci sta sopra ha l'acqua alta sotto i piedi, e i pesci
      d'altura abboccano solo lì. Prima da riva e dal molo venivano su
@@ -208,7 +208,7 @@ function aggiornaPesca(dt){
     const dentro = centro >= pesca.barra - MARGINE &&
                    centro <= pesca.barra + altezzaBarra + MARGINE;
 
-    pesca.prog += dentro ? GUADAGNO*dt*(1+lvl*DATA.BONUS.pesca.guadagno) : -PERDITA*dt;
+    pesca.prog += dentro ? GUADAGNO*dt*(1+lvl*DATA.BONUS.pesca.guadagno+G.talento('pesca','guadagno')) : -PERDITA*dt;
     pesca.prog = Math.max(0, Math.min(100, pesca.prog));
 
     // DOM

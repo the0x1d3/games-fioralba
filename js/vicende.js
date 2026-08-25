@@ -33,6 +33,10 @@ const F = (modello, ...pezzi) => window.LINGUA
 /* --- lettura dello stato, con le difese in mezzo ---------------- */
 
 function tabella(){ return (window.DATA && DATA.VICENDE) || {}; }
+function disponibile(v){
+  if(v.dopoFinale && !(G.trame && G.trame.veglia && G.trame.veglia.fatta)) return false;
+  return !v.segue || !!(stato(v.segue) && stato(v.segue).fatta);
+}
 
 function stato(id){
   if(!G.vicende || typeof G.vicende!=='object') G.vicende = {};
@@ -91,7 +95,7 @@ V.scelte = function(npcId){
 
     // mai cominciata: si offre se i cuori bastano
     if(!s){
-      if(v.npc === npcId && V.cuori(npcId) >= (v.cuori||0))
+      if(v.npc === npcId && disponibile(v) && V.cuori(npcId) >= (v.cuori||0))
         fuori.push({ testo:v.scelta, azione:()=>V.avanza(id) });
       continue;
     }
@@ -139,6 +143,15 @@ V.avanza = function(id){
   chiudi(id, p);
 };
 
+/* I rompicapi non avanzano parlando con qualcuno: il luogo interessato
+   chiama qui soltanto quando la soluzione è stata trovata. */
+V.completa = function(id, puzzle){
+  const p = passoAperto(id);
+  if(!p || p.tipo!=='puzzle' || p.puzzle!==puzzle) return false;
+  chiudi(id, p);
+  return true;
+};
+
 /* Chiude il passo aperto: dice le sue righe, e passa al prossimo. */
 function chiudi(id, p){
   const v = tabella()[id], s = stato(id);
@@ -162,6 +175,7 @@ function chiudi(id, p){
 function paga(id){
   const v = tabella()[id];
   const P = v.premio || {};
+  if(v.sblocco && window.RICHIAMO) RICHIAMO.sblocca(v.sblocco);
   if(P.oro){ G.oro += P.oro; G.stats.guadagno += P.oro; }
   if(P.amicizia) G.amicizia[v.npc] = Math.max(0, (G.amicizia[v.npc]||0) + P.amicizia);
 
@@ -239,7 +253,7 @@ V.inAttesa = function(){
   for(const id in tab){
     if(stato(id)) continue;
     const v = tab[id];
-    if(V.cuori(v.npc) < (v.cuori||0)) fuori.push({ id, npc:v.npc, cuori:v.cuori });
+    if(disponibile(v) && V.cuori(v.npc) < (v.cuori||0)) fuori.push({ id, npc:v.npc, cuori:v.cuori });
   }
   return fuori;
 };
@@ -250,7 +264,7 @@ V.pronte = function(){
   for(const id in tab){
     if(stato(id)) continue;
     const v = tab[id];
-    if(V.cuori(v.npc) >= (v.cuori||0)) fuori.push({ id, npc:v.npc, titolo:v.titolo });
+    if(disponibile(v) && V.cuori(v.npc) >= (v.cuori||0)) fuori.push({ id, npc:v.npc, titolo:v.titolo });
   }
   return fuori;
 };

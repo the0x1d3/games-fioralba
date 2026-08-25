@@ -683,10 +683,12 @@ verifica('le vicende del paese stanno in piedi', () => {
     const v = V[id];
     const q = t => `«${id}»: ${t}`;
     if (!DATA.NPCS[v.npc]) { problemi.push(q(`è di «${v.npc}», che non è un abitante`)); continue; }
-    /* Una persona, una storia: il motore mostra le scelte per abitante e
-       due storie sulla stessa faccia si presenterebbero insieme, senza
-       modo di capire quale sia quale. */
-    if (diChi[v.npc]) problemi.push(q(`è la seconda storia di «${v.npc}» (l'altra è «${diChi[v.npc]}»)`));
+    /* Una persona può avere un seguito, ma solo dichiarando quale storia
+       viene prima: così il dialogo non mostra due aperture insieme. */
+    if (diChi[v.npc] && v.segue !== diChi[v.npc])
+      problemi.push(q(`è la seconda storia di «${v.npc}» senza dichiarare il seguito di «${diChi[v.npc]}»`));
+    if (v.segue && (!V[v.segue] || V[v.segue].npc !== v.npc))
+      problemi.push(q(`segue «${v.segue}», che non è una storia di «${v.npc}»`));
     diChi[v.npc] = id;
     if (!v.titolo || !v.scelta) problemi.push(q('manca il titolo o la voce di dialogo che la apre'));
     if (!(v.cuori >= 0 && v.cuori <= 8)) problemi.push(q(`chiede ${v.cuori} cuori, che non si raggiungono (il massimo è 8)`));
@@ -704,6 +706,8 @@ verifica('le vicende del paese stanno in piedi', () => {
         if (!DATA.NPCS[p.npc]) r(`è con «${p.npc}», che non è un abitante`);
       } else if (p.tipo === 'luogo') {
         if (mappe.indexOf(p.dove) < 0) r(`manda in «${p.dove}», che non è un posto`);
+      } else if (p.tipo === 'puzzle') {
+        if (!p.puzzle || typeof p.puzzle !== 'string') r('è un rompicapo senza identificatore');
       } else r(`è di tipo «${p.tipo}», che il motore non conosce`);
       if (p.tipo === 'porta') {
         if (!p.ing || !Object.keys(p.ing).length) r('è una consegna senza niente da consegnare');
@@ -725,6 +729,52 @@ verifica('le vicende del paese stanno in piedi', () => {
     if (P.item && !(P.qta > 0)) problemi.push(q('paga con un oggetto ma non dice quanti'));
     if (!P.oro && !P.item) problemi.push(q('non paga niente'));
   }
+  return problemi;
+});
+
+/* Il quarto tipo di passo non può chiudersi da solo: una pietra di marea
+   deve arrivare fino al motore vicende, o la barca resta bloccata senza
+   nessun errore di sintassi. */
+verifica('il rompicapo della marea è collegato alla vicenda di Elio', () => {
+  const problemi = [];
+  const game = fs.readFileSync(path.join(RADICE, 'js/game.js'), 'utf8');
+  const richiamo = fs.readFileSync(path.join(RADICE, 'js/richiamo.js'), 'utf8');
+  const v = (DATA.VICENDE || {}).elio_barca;
+  if (!v || !v.passi.some(p => p.tipo === 'puzzle' && p.puzzle === 'marea'))
+    problemi.push('manca il passo di marea nella storia della barca');
+  if (!game.includes("RICHIAMO.toccaMarea(o)"))
+    problemi.push('interagisci non manda le pietre di marea al loro gestore');
+  if (!richiamo.includes("VICENDE.completa('elio_barca','marea')"))
+    problemi.push('il gestore della marea non chiude il passo della vicenda');
+  return problemi;
+});
+
+verifica('i segni di marea non si possono risolvere prima del passo giusto', () => {
+  const vm = require('vm');
+  const src = fs.readFileSync(path.join(RADICE, 'js/richiamo.js'), 'utf8');
+  const problemi = [];
+  let completati = 0;
+  const G = {
+    trame:{ veglia:{fatta:true}, richiamo:{bacheca:false,marea:{passo:0,risolta:false},barca:false} },
+    vicende:{ elio_barca:{passo:0,fatta:false} }, ora:500,
+    progresso(){}, salva(){ return true; }
+  };
+  const UI = { toast(){}, modal(){}, chiudiModal(){} };
+  const VICENDE = {
+    attive(){ return [{id:'elio_barca'}]; },
+    completa(){ completati++; return true; }
+  };
+  const sandbox = { window:{ DATA, VICENDE }, DATA, G, UI, VICENDE, console };
+  vm.createContext(sandbox);
+  vm.runInContext(src, sandbox, {filename:'richiamo.js'});
+  const R = sandbox.window.RICHIAMO;
+  for (const ordine of [1,2,3]) R.toccaMarea({ordine});
+  if (G.trame.richiamo.marea.passo !== 0 || G.trame.richiamo.marea.risolta || completati)
+    problemi.push('i segni cambiano stato prima che il passo puzzle sia aperto');
+  G.vicende.elio_barca.passo = 3;
+  for (const ordine of [1,2,3]) R.toccaMarea({ordine});
+  if (!G.trame.richiamo.marea.risolta || completati !== 1)
+    problemi.push('i tre segni nell\'ordine giusto non chiudono il passo di marea');
   return problemi;
 });
 
