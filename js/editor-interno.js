@@ -16,6 +16,7 @@ const T=64, $=s=>document.querySelector(s);
    anche le bozze JSON scritte a mano e pubblicate dall’editor locale. */
 let aperto=false, basi=null, selezione=null, mira=null, spostamento=false;
 let modifiche=new Map(), cronologia=[], originali=new Map(), toccoNascosto=true;
+let dragInit=null; // {sx,sy,w,h,lockW,lockH} durante il trascinamento di una maniglia
 
 function copia(v,visti){
   if(v===null || typeof v!=='object') return v;
@@ -51,7 +52,10 @@ function spazioRiservato(m,x,y){
   return (m.warps||[]).some(w=>include(w.x,w.y,{w:w.w,h:w.h},x,y));
 }
 function scenograficoOggetto(o){
-  return !!o&&WORLD.oggettoScenarioSicuro(o);
+  /* oggettoEditorSicuro allarga la selezione (barca, consegna, bancarella, baule)
+     senza toccare il validatore/importatore dei bozze JSON, che usa ancora
+     oggettoScenarioSicuro e lascerà queste voci nei «saltati». */
+  return !!o&&(WORLD.oggettoEditorSicuro?WORLD.oggettoEditorSicuro(o):WORLD.oggettoScenarioSicuro(o));
 }
 function scenograficaDeco(d){ return !!d&&WORLD.decorazioneScenarioSicura(d); }
 function ridimensionabile(s){
@@ -333,7 +337,7 @@ function ridimensiona(){
     m.deco.splice(indice,1); const d=copia(s.deco); d.w=misure.w; d.h=misure.h;
     if(validaDeco(m,s.x,s.y,d)) return false;
     m.deco.splice(indice,0,d); registraDeco(m,s.da,d); selezione={...s,deco:d,indice,anteprima:null}; return true;
-  })){ messaggio('Queste dimensioni non entrano qui: riduci l’ingombro o scegli un’area libera.'); return; }
+  })){ messaggio('Queste dimensioni non entrano qui: riduci l’ingombro o scegli un’area libera.'); selezione.anteprima=null; aggiornaPannello(); E.aggiornaOverlay(); return; }
   messaggio('Dimensioni applicate. La bozza conserva anche il nuovo ingombro.'); aggiornaPannello(); E.aggiornaOverlay();
 }
 function annulla(){
@@ -433,7 +437,7 @@ function aggiornaMira(e,cvs){
 }
 E.muoviPuntatore=function(e,cvs){ if(!aperto) return false; aggiornaMira(e,cvs); return true; };
 E.gestisciPuntatore=function(e,cvs){
-  if(!aperto) return false; if(e.button!==undefined&&e.button!==0) return true;
+  if(!aperto||dragInit) return false; if(e.button!==undefined&&e.button!==0) return true;
   aggiornaMira(e,cvs); if(!mira) return true; if(spostamento) sposta(mira.x,mira.y); else seleziona(mira.x,mira.y);
   E.aggiornaOverlay(); return true;
 };
@@ -448,6 +452,7 @@ E.aggiornaOverlay=function(){
   const f=fSelezione(selezione,true);
   posiziona($('#editor-selezione'),selezione,f,!!selezione);
   posiziona($('#editor-destinazione'),mira,f,!!mira&&spostamento);
+  $('#editor-selezione').classList.toggle('ridimensionabile',!!selezione&&ridimensionabile(selezione));
 };
 
 $('#editor-sposta').addEventListener('click',()=>{ if(selezione){ impostaSpostamento(true); messaggio('Tocca l’angolo in alto a sinistra della nuova posizione.'); aggiornaPannello(); }});
@@ -458,4 +463,42 @@ $('#editor-esci').addEventListener('click',esci);
 $('#editor-ridimensiona').addEventListener('click',ridimensiona);
 $('#editor-larghezza').addEventListener('input',anteprimaDimensioni);
 $('#editor-altezza').addEventListener('input',anteprimaDimensioni);
+
+/* ── Maniglie di ridimensionamento drag ──────────────────────────────── */
+function avviaDrag(sx,sy,lockW,lockH){
+  if(!ridimensionabile(selezione)) return;
+  const f=fSelezione(selezione,false);
+  dragInit={sx,sy,w:f.w,h:f.h,lockW,lockH};
+}
+function aggiornaDrag(cx,cy){
+  if(!dragInit||!ridimensionabile(selezione)) return;
+  const info=REND.mondoASchermo(0,0,G.cam), lato=T*info.scala;
+  const dw=dragInit.lockW?0:Math.round((cx-dragInit.sx)/lato);
+  const dh=dragInit.lockH?0:Math.round((cy-dragInit.sy)/lato);
+  const nw=Math.max(1,Math.min(8,dragInit.w+dw)), nh=Math.max(1,Math.min(8,dragInit.h+dh));
+  if(!selezione.anteprima||selezione.anteprima.w!==nw||selezione.anteprima.h!==nh){
+    selezione.anteprima={w:nw,h:nh};
+    $('#editor-larghezza').value=nw; $('#editor-altezza').value=nh;
+    E.aggiornaOverlay();
+  }
+}
+function terminaDrag(){
+  if(!dragInit) return; dragInit=null; ridimensiona();
+}
+document.querySelectorAll('.editor-maniglia').forEach(el=>{
+  const lockW=el.dataset.lockw==='1', lockH=el.dataset.lockh==='1';
+  el.addEventListener('mousedown',e=>{
+    e.stopPropagation(); e.preventDefault(); avviaDrag(e.clientX,e.clientY,lockW,lockH);
+  });
+  el.addEventListener('touchstart',e=>{
+    e.stopPropagation(); e.preventDefault();
+    const t=e.touches[0]; avviaDrag(t.clientX,t.clientY,lockW,lockH);
+  },{passive:false});
+});
+document.addEventListener('mousemove',e=>{ if(dragInit) aggiornaDrag(e.clientX,e.clientY); });
+document.addEventListener('mouseup',()=>{ if(dragInit) terminaDrag(); });
+document.addEventListener('touchmove',e=>{
+  if(dragInit){ e.preventDefault(); const t=e.touches[0]; aggiornaDrag(t.clientX,t.clientY); }
+},{passive:false});
+document.addEventListener('touchend',()=>{ if(dragInit) terminaDrag(); });
 })();

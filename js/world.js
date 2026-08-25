@@ -20,6 +20,12 @@ const OGGETTI_SCENOGRAFICI = new Set([
   'albero','cespuglio','fiori','sasso','fontana','panchina','fioriera','lampione','lume',
   'casse','scaffale'
 ]);
+/* Spostabili nell'editor interattivo ma non importabili automaticamente:
+   le modifiche finiscono nella bozza e vengono saltate dall'importatore
+   (che restituisce un campo `saltati`), così il revisore può applicarle
+   a mano nel sorgente se le approva. */
+const OGGETTI_EDITOR_EXTRA = new Set(['barca','consegna','bancarella','baule']);
+W.oggettoEditorSicuro = o => W.oggettoScenarioSicuro(o) || (!!o && OGGETTI_EDITOR_EXTRA.has(o.t));
 const MOBILI_SCENOGRAFICI = new Set(['recinto','cancelletto','cartello']);
 W.oggettoScenarioSicuro = o=>!!o&&(OGGETTI_SCENOGRAFICI.has(o.t) ||
   (o.t==='mobile' && MOBILI_SCENOGRAFICI.has(o.kind)));

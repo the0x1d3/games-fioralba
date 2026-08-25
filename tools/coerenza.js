@@ -3393,12 +3393,15 @@ verifica('la modalità modifica lascia fermi gli oggetti funzionali', () => {
   const policy={
     oggettoScenarioSicuro:o=>['panchina','lampione'].includes(o&&o.t) ||
       (o&&o.t==='mobile'&&o.kind==='cartello'),
+    oggettoEditorSicuro:o=>
+      ['panchina','lampione','barca','consegna','bancarella','baule'].includes(o&&o.t) ||
+      (o&&o.t==='mobile'&&o.kind==='cartello'),
     decorazioneScenarioSicura:d=>['fontana','bucato','cartello'].includes(d&&d.t),
     oggettoScenarioRidimensionabile:o=>['panchina','lampione'].includes(o&&o.t),
     decorazioneScenarioRidimensionabile:d=>['fontana','bucato'].includes(d&&d.t)
   };
   const sandbox={window:{FIORALBA_MODIFICA_INTERNA:true,WORLD:policy},WORLD:policy,
-    document:{querySelector(){return elemento;}},console};
+    document:{querySelector(){return elemento;},querySelectorAll(){return[];},addEventListener(){}},console};
   vm.createContext(sandbox);
   vm.runInContext(modulo,sandbox,{filename:'editor-interno.js'});
   const puo=sandbox.window.EDITOR_INTERNO&&sandbox.window.EDITOR_INTERNO.puoSpostareOggetto;
@@ -3408,9 +3411,12 @@ verifica('la modalità modifica lascia fermi gli oggetti funzionali', () => {
   const problemi=[];
   for(const o of [{t:'panchina'},{t:'lampione'},{t:'mobile',kind:'cartello'}])
     if(!puo(o)) problemi.push(`${o.kind||o.t} scenografico non è selezionabile`);
+  // editor-extra: spostabili nell'editor ma non importabili automaticamente
+  for(const o of [{t:'barca'},{t:'consegna'},{t:'bancarella'},{t:'baule'}])
+    if(!puo(o)) problemi.push(`${o.t} editor-extra non è selezionabile nell'editor interattivo`);
+  // funzionali puri: devono restare bloccati sia nell'editor sia nell'importatore
   for(const o of [
-    {t:'consegna'},{t:'bottiglia'},{t:'baule'},{t:'barca'},
-    {t:'bancarella',kiosk:'progetti'},{t:'incudine',uso:'fucina'},
+    {t:'bottiglia'},{t:'incudine',uso:'fucina'},
     {t:'bancone',uso:'bottega'},{t:'mobile',kind:'silo'}
   ]) if(puo(o)) problemi.push(`${o.kind||o.t} funzionale può finire nella bozza`);
   for(const d of [{t:'fontana'},{t:'bucato'},{t:'cartello'}])
@@ -3487,7 +3493,9 @@ verifica('l’editor ridimensiona la fontana con collisioni ed export coerenti',
   const document={
     body:{...elemento(),appendChild(){}},
     createElement(){ return {click(){ download.push(this); },remove(){}}; },
-    querySelector(sel){ return elementi[sel]||(elementi[sel]=elemento()); }
+    querySelector(sel){ return elementi[sel]||(elementi[sel]=elemento()); },
+    querySelectorAll(){ return []; },
+    addEventListener(){}
   };
   const maps=WORLD.crea(), G={inGioco:true,maps,costruzioni:{},cam:{},p:{px:0,py:0},
     mappa(){ return maps.podere; },fermaInput(){}};

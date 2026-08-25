@@ -161,12 +161,16 @@
     <div id="editor-dimensioni" class="editor-dimensioni hidden">
       <label>Larghezza <input id="editor-larghezza" type="number" min="1" max="8" inputmode="numeric"></label>
       <label>Altezza <input id="editor-altezza" type="number" min="1" max="8" inputmode="numeric"></label>
-      <button id="editor-ridimensiona" class="btn blue" type="button">Anteprima e applica</button>
+      <button id="editor-ridimensiona" class="btn blue" type="button">Applica</button>
     </div>
     <button id="editor-esporta" class="btn editor-esporta" type="button" disabled>Scarica bozza JSON</button>
     <p class="editor-nota">La partita non viene salvata. Uscendo, la valle torna com'era.</p>
   </section>
-  <div id="editor-selezione" class="editor-marcatore hidden" aria-hidden="true"></div>
+  <div id="editor-selezione" class="editor-marcatore hidden" aria-hidden="true">
+    <div class="editor-maniglia em-se" data-lockw="0" data-lockh="0" title="Ridimensiona"></div>
+    <div class="editor-maniglia em-e"  data-lockw="0" data-lockh="1" title="Larghezza"></div>
+    <div class="editor-maniglia em-s"  data-lockw="1" data-lockh="0" title="Altezza"></div>
+  </div>
   <div id="editor-destinazione" class="editor-marcatore destinazione hidden" aria-hidden="true"></div>
 
   <!-- ============ DIALOGUE ============ -->
