@@ -750,7 +750,7 @@ function loop(ts){
                      !$('#letter').classList.contains('hidden') ||
                      !$('#daycard').classList.contains('hidden') ||
                       G.p.dorme || PESCA.inCorso() ||
-                      !!(window.EDITOR_INTERNO && EDITOR_INTERNO.attivo && EDITOR_INTERNO.attivo());
+                      !!(window.EDITOR_INTERNO && EDITOR_INTERNO.bloccaGioco && EDITOR_INTERNO.bloccaGioco());
 
     // il vento gira sempre: anche a menu aperto l'erba continua a muoversi
     sistema('vento', ()=>FX.aggiornaVento(dt, G.meteo==='vento' ? 2.1 :
@@ -3539,7 +3539,7 @@ function collegaInput(){
 
   window.addEventListener('keyup', e=>{
     const k=e.key.toLowerCase();
-    if(window.EDITOR_INTERNO && EDITOR_INTERNO.attivo && EDITOR_INTERNO.attivo()){
+    if(window.EDITOR_INTERNO && EDITOR_INTERNO.bloccaGioco && EDITOR_INTERNO.bloccaGioco()){
       tasti[k]=false;
       if(k==='shift') tasti['shift']=false;
       return;
@@ -3588,7 +3588,7 @@ function collegaInput(){
     else e.preventDefault();
   });
   cvs.addEventListener('wheel', e=>{
-    if(window.EDITOR_INTERNO && EDITOR_INTERNO.attivo && EDITOR_INTERNO.attivo()){
+    if(window.EDITOR_INTERNO && EDITOR_INTERNO.bloccaGioco && EDITOR_INTERNO.bloccaGioco()){
       e.preventDefault();
       return;
     }

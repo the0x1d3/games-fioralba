@@ -25,6 +25,29 @@ const MOBILI_AMBIENTALI = new Set(['recinto','cancelletto','cartello']);
 let aperto=false, basi=null, selezione=null, mira=null, spostamento=false;
 let modifiche=new Map(), cronologia=[], originali=new Map(), toccoNascosto=true;
 
+/* La modalità resta aperta anche mentre si esplora: il giocatore può
+   attraversare la mappa e accumulare più ritocchi nella stessa bozza.
+   Solo l'istante in cui sceglie una DESTINAZIONE congela il gioco, così
+   una freccia o un tocco non spostano il contadino sotto all'oggetto. */
+function aggiornaInterazione(){
+  const esplora = aperto && !spostamento;
+  document.body.classList.toggle('modalita-modifica-attiva', aperto);
+  document.body.classList.toggle('modalita-modifica-esplora', esplora);
+  const tocco=$('#tocco');
+  if(!tocco) return;
+  if(!aperto){
+    if(!toccoNascosto) tocco.classList.remove('hidden');
+  }else if(spostamento || toccoNascosto){
+    tocco.classList.add('hidden');
+  }else{
+    tocco.classList.remove('hidden');
+  }
+}
+function impostaSpostamento(valore){
+  spostamento=!!valore;
+  aggiornaInterazione();
+}
+
 function copiaSicura(v, visti){
   if(v===null || typeof v!=='object') return v;
   visti=visti||new WeakSet();
@@ -85,7 +108,7 @@ function ripristinaOggetti(){
   originali.clear();
   modifiche.clear();
   cronologia.length=0;
-  selezione=null; mira=null; spostamento=false;
+  selezione=null; mira=null; impostaSpostamento(false);
   if(REND.invalidaTerreno) REND.invalidaTerreno();
 }
 function messaggio(testo){
@@ -101,7 +124,8 @@ function aggiornaPannello(){
       ? 'Selezionato: '+nomeOggetto(selezione.obj)+' · ('+selezione.x+', '+selezione.y+')'
       : (m ? m.nome+' · nessun elemento selezionato' : 'Nessuna mappa aperta');
     const n=modifiche.size;
-    stato.textContent=scelta+(n ? ' · '+n+' spostamento'+(n===1?'':'i')+' in bozza' : '');
+    const fase=spostamento ? ' · scegli la destinazione' : ' · puoi camminare e continuare a ritoccare';
+    stato.textContent=scelta+(n ? ' · '+n+' spostamento'+(n===1?'':'i')+' in bozza' : '')+fase;
   }
   if(bSposta){ bSposta.disabled=!selezione; bSposta.textContent=spostamento?'Scegli destinazione':'Sposta'; }
   if(bAnnulla) bAnnulla.disabled=!cronologia.length;
@@ -118,12 +142,12 @@ function seleziona(x,y){
   const m=attuale();
   if(!m || !WORLD.dentro(m,x,y)){ messaggio('Quella casella non appartiene alla mappa.'); return; }
   const trovato=WORLD.oggetto(m,x,y);
-  if(!trovato){ selezione=null; spostamento=false; messaggio('Qui non c’è un elemento da spostare.'); aggiornaPannello(); return; }
+  if(!trovato){ selezione=null; impostaSpostamento(false); messaggio('Qui non c’è un elemento da spostare. Puoi continuare a camminare.'); aggiornaPannello(); return; }
   const bozza=bozzaIn(m,trovato.x,trovato.y);
   const base=bozza ? null : baseDa(m,trovato.x,trovato.y);
   const da=bozza ? bozza.da : (base && base.obj);
   if(spazioRiservato(m,trovato.x,trovato.y) || !ambientale(trovato.obj) || !da || !uguale(trovato.obj,da)){
-    selezione=null; spostamento=false;
+    selezione=null; impostaSpostamento(false);
     messaggio('Questo elemento è protetto: si spostano solo elementi scenografici della mappa base.');
     aggiornaPannello();
     return;
@@ -133,8 +157,8 @@ function seleziona(x,y){
     origine:bozza ? {x:bozza.x,y:bozza.y} : {x:trovato.x,y:trovato.y},
     da:copiaSicura(da)
   };
-  spostamento=false;
-  messaggio('Elemento selezionato. Premi “Sposta”, poi tocca una casella libera.');
+  impostaSpostamento(false);
+  messaggio('Elemento selezionato. Premi “Sposta”, poi tocca una casella libera. Puoi anche camminare e selezionare altro.');
   aggiornaPannello();
 }
 function destinazioneValida(m,x,y){
@@ -152,7 +176,7 @@ function sposta(x,y){
   if(!selezione) return;
   const m=attuale();
   if(!m || selezione.mappa!==m.id){ messaggio('L’oggetto selezionato non è su questa mappa.'); return; }
-  if(x===selezione.x && y===selezione.y){ spostamento=false; messaggio('L’oggetto è già lì.'); aggiornaPannello(); return; }
+  if(x===selezione.x && y===selezione.y){ impostaSpostamento(false); messaggio('L’oggetto è già lì. Puoi continuare a camminare.'); aggiornaPannello(); return; }
   const errore=destinazioneValida(m,x,y);
   if(errore){ messaggio(errore); return; }
   const prima={x:selezione.x,y:selezione.y};
@@ -169,9 +193,9 @@ function sposta(x,y){
   cronologia.push({mappa:m.id, da:prima, a:{x,y}, origine:selezione.origine,
                    obj:selezione.obj, precedente});
   selezione={...selezione,x,y};
-  spostamento=false;
+  impostaSpostamento(false);
   if(REND.invalidaTerreno) REND.invalidaTerreno();
-  messaggio(nomeOggetto(selezione.obj)+' spostato. Scarica la bozza quando il risultato ti convince.');
+  messaggio(nomeOggetto(selezione.obj)+' spostato. Ora puoi camminare e fare altri ritocchi: la bozza resta aperta.');
   aggiornaPannello();
 }
 function annulla(){
@@ -185,9 +209,9 @@ function annulla(){
   if(ultima.precedente) modifiche.set(k,ultima.precedente); else modifiche.delete(k);
   if(selezione && selezione.mappa===ultima.mappa)
     selezione={...selezione,x:ultima.da.x,y:ultima.da.y};
-  spostamento=false;
+  impostaSpostamento(false);
   if(REND.invalidaTerreno) REND.invalidaTerreno();
-  messaggio('Ultimo spostamento annullato.');
+  messaggio('Ultimo spostamento annullato. Puoi continuare a camminare.');
   aggiornaPannello();
 }
 function scarica(){
@@ -220,14 +244,14 @@ function esci(){
   $('#editor-interno').classList.add('hidden');
   $('#editor-selezione').classList.add('hidden');
   $('#editor-destinazione').classList.add('hidden');
-  document.body.classList.remove('modalita-modifica-attiva');
-  if(!toccoNascosto) $('#tocco').classList.remove('hidden');
+  aggiornaInterazione();
   UI.prompt(null);
   if(G.fermaInput) G.fermaInput();
 }
 
 E.disponibile=()=>true;
 E.attivo=()=>aperto;
+E.bloccaGioco=()=>aperto && spostamento;
 E.apri=function(){
   if(aperto || !G.inGioco) return;
   basi=WORLD.crea();
@@ -236,23 +260,37 @@ E.apri=function(){
   selezione=null; mira=null; spostamento=false;
   modifiche.clear(); cronologia.length=0; originali.clear();
   toccoNascosto=$('#tocco').classList.contains('hidden');
-  $('#tocco').classList.add('hidden');
-  document.body.classList.add('modalita-modifica-attiva');
+  aggiornaInterazione();
   $('#editor-interno').classList.remove('hidden');
   if(G.fermaInput) G.fermaInput();
-  messaggio('Tocca un elemento della scenografia per selezionarlo. Esc esce senza salvare.');
+  messaggio('Cammina dove vuoi, poi tocca un elemento della scenografia per selezionarlo. Esc esce senza salvare.');
   aggiornaPannello();
 };
 E.gestisciTasto=function(e){
   if(!aperto) return false;
   const k=e.key.toLowerCase();
-  if(k==='escape'){ esci(); return true; }
-  if((e.ctrlKey || e.metaKey) && k==='z'){ annulla(); return true; }
-  if(k==='enter' || k==='s'){
-    if(selezione){ spostamento=true; messaggio('Tocca una casella libera come destinazione.'); aggiornaPannello(); }
+  if(k==='escape'){
+    if(spostamento){
+      impostaSpostamento(false);
+      messaggio('Scelta della destinazione annullata. Puoi continuare a camminare.');
+      aggiornaPannello();
+    }else esci();
     return true;
   }
-  return true; // in modalità modifica nessun tasto deve arrivare al gioco
+  if((e.ctrlKey || e.metaKey) && k==='z'){ annulla(); return true; }
+  if(k==='enter'){
+    if(selezione){
+      impostaSpostamento(true);
+      messaggio('Tocca una casella libera come destinazione.');
+      aggiornaPannello();
+    }
+    return true;
+  }
+  if(spostamento) return true;
+  /* Fuori dalla scelta della destinazione passano soltanto i comandi per
+     camminare. Zaino, attrezzi, dialoghi e mappe restano spenti: la bozza
+     deve poter attraversare la valle, non cambiare il progresso normale. */
+  return !['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift'].includes(k);
 };
 E.muoviPuntatore=function(e,cvs){
   if(!aperto) return false;
@@ -287,7 +325,7 @@ E.aggiornaOverlay=function(){
 
 $('#editor-sposta').addEventListener('click',()=>{
   if(!selezione) return;
-  spostamento=true;
+  impostaSpostamento(true);
   messaggio('Tocca una casella libera come destinazione.');
   aggiornaPannello();
 });

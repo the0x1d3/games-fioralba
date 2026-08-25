@@ -17,9 +17,20 @@ può produrre solo una bozza JSON e deve sempre ripristinare il mondo.
 invio in chiusura o menu pubblico deve poter trasformare una bozza in progresso
 del giocatore o in contenuto pubblicato.
 
-**How to apply:** mantenere l’accesso assente nella risposta pubblica, bloccare
-input e serializzazione per tutta la prova e far passare l’approvazione
-definitiva dall’editor locale.
+**How to apply:** mantenere l’accesso assente nella risposta pubblica,
+bloccare ogni input che cambia il progresso e la serializzazione della partita,
+e far passare l’approvazione definitiva dall’editor locale.
+
+Fra un ritocco e l’altro, la modalità prova deve lasciare il giocatore libero
+di attraversare il mondo con tastiera o pad touch. Il gioco va congelato solo
+mentre si indica la casella di destinazione di un oggetto.
+
+**Why:** un test di scenografia richiede di raggiungere molte zone nella stessa
+bozza; costringere a uscire per camminare elimina i ritocchi accumulati.
+
+**How to apply:** lasciare attivi esclusivamente i comandi di movimento fuori
+dalla scelta della destinazione; mantenere disattivati interazioni, strumenti,
+menu e salvataggi fino alla chiusura della modalità.
 
 Quando l’avvio della partita attende dati di scenario, i dati inseriti nella UI (come il nome) devono essere passati all’inizializzazione e applicati dopo l’attesa, prima del primo salvataggio.
 

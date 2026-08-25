@@ -356,6 +356,10 @@ kbd{
    rapido e pulsanti HUD non possono far partire una modale o un salvataggio. */
 body.modalita-modifica-attiva #hud,
 body.modalita-modifica-attiva #hud > *{ pointer-events:none; }
+/* In esplorazione il pad è l'unico pezzo dell'HUD riattivato: emette gli
+   stessi tasti di WASD/frecce, senza rendere cliccabili zaino, menu o mappe. */
+body.modalita-modifica-attiva.modalita-modifica-esplora #tocco,
+body.modalita-modifica-attiva.modalita-modifica-esplora #tocco *{ pointer-events:auto; }
 .editor-interno-testa{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
 .editor-interno-testa > div{ display:flex; flex-direction:column; gap:2px; }
 .editor-interno-testa strong{ font-size:17px; color:var(--wood-1); }
