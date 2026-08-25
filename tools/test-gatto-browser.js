@@ -36,8 +36,12 @@ function verifica(condizione, messaggio) {
 
 function trovaBrowser() {
   const candidati = [process.env.CHROMIUM_PATH, chromium.executablePath()];
+  /* `stderr` zittito: fuori da Linux `which` stampa «no chromium in ...»
+     con tutto il PATH dietro, e in mezzo all'esito del test sembra un
+     errore mentre e solo il terzo candidato che non c'e. */
   try {
-    candidati.push(execFileSync('which', ['chromium'], { encoding: 'utf8' }).trim());
+    candidati.push(execFileSync('which', ['chromium'],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim());
   } catch (_) {}
   return candidati.find(percorso => percorso && fs.existsSync(percorso));
 }

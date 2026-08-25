@@ -142,14 +142,30 @@ const SCENE = [
   }
 ];
 
+/* Cercava SOLO il chromium di sistema, con `which`, e fuori da Replit
+   `which` esce 1: `execFileSync` alza, e il messaggio diceva di andare
+   su Replit anche a chi il browser ce l'aveva installato. Perché ce
+   l'ha: `playwright` è una dipendenza di sviluppo e `npm run
+   test:browser:install` scarica il suo chromium. Adesso i candidati
+   sono gli stessi tre di tools/test-gatto-browser.js — variabile
+   d'ambiente, chromium di Playwright, chromium di sistema — e si tiene
+   il primo che esiste davvero sul disco, invece del primo nominato. */
 function trovaChromium(){
-  if(process.env.FIORALBA_CHROMIUM) return process.env.FIORALBA_CHROMIUM;
-  try { return execFileSync('which', ['chromium'], { encoding:'utf8' }).trim(); }
-  catch(_) {
-    throw new Error(
-      'Chromium non trovato. Su Replit esegui il test nel progetto, che lo fornisce in .replit.'
-    );
-  }
+  const candidati = [process.env.FIORALBA_CHROMIUM, process.env.CHROMIUM_PATH];
+  try { candidati.push(chromium.executablePath()); } catch(_) {}
+  /* `stderr` zittito: fuori da Linux `which` scrive «no chromium in ...»
+     su due righe di PATH, e in mezzo all'esito del test sembra un errore
+     mentre e solo il terzo candidato che non c'e. */
+  try { candidati.push(execFileSync('which', ['chromium'],
+        { encoding:'utf8', stdio:['ignore','pipe','ignore'] }).trim()); }
+  catch(_) {}
+  const trovato = candidati.find(p => p && fs.existsSync(p));
+  if(!trovato) throw new Error(
+    'Chromium non trovato. Installa il browser di Playwright con ' +
+    '`npm run test:browser:install`, oppure indica il binario in CHROMIUM_PATH. ' +
+    'Su Replit lo fornisce .replit.'
+  );
+  return trovato;
 }
 
 function portaLibera(){
@@ -470,15 +486,23 @@ async function main(){
   /* Ogni esecuzione lascia solo le prove dell'errore corrente: immagini
      di un confronto già risolto non devono sembrare un fallimento nuovo. */
   fs.rmSync(OUTPUT, { recursive:true, force:true });
+  /* Il browser si cerca PRIMA di accendere il server: se manca, la corsa
+     finisce senza aver lasciato in giro un processo figlio. */
+  const eseguibile = trovaChromium();
   const { processo, baseUrl } = await avviaServer();
-  const browser = await chromium.launch({
-    headless:true,
-    executablePath:trovaChromium(),
-    args:['--enable-webgl', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']
-  });
-  const comparatore = await browser.newPage();
+  let browser = null, comparatore = null;
   let falliti = 0;
   try {
+    /* Il lancio stava FUORI dal try, e il `finally` che spegne il server
+       non lo copriva: se il browser non partiva, `node` restava appeso
+       per sempre alle pipe del server invece di uscire con l'errore.
+       `npm test` non tornava più, e sembrava un test lentissimo. */
+    browser = await chromium.launch({
+      headless:true,
+      executablePath:eseguibile,
+      args:['--enable-webgl', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']
+    });
+    comparatore = await browser.newPage();
     for(const scena of SCENE){
       const pixi = await preparaPagina(browser, baseUrl, scena, 'pixi');
       const canvas = await preparaPagina(browser, baseUrl, scena, 'canvas');
@@ -496,8 +520,8 @@ async function main(){
       }
     }
   } finally {
-    await comparatore.close().catch(()=>{});
-    await browser.close().catch(()=>{});
+    if(comparatore) await comparatore.close().catch(()=>{});
+    if(browser) await browser.close().catch(()=>{});
     chiudiServer(processo);
   }
   assert.strictEqual(
