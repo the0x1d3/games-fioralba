@@ -429,6 +429,22 @@ U.comeSiGioca = function(){
         Nel bosco, oltre il burrone, c'è un santuario spento da dodici anni.
         Costruisci il <b>ponte</b> dal fabbro, poi porta lì i frutti delle quattro stagioni.
       </div>
+      <div class="sectitle">La crescita del personaggio</div>
+      <div class="muted">
+        Coltivare, raccogliere, estrarre, pescare e cacciare fanno salire cinque
+        <b>abilità</b>. Ogni livello dà un premio e un bonus permanente: apri
+        <b>Diario → Crescita</b> per vedere esperienza, prossimo livello e costi.
+        Al livello 3, <b>coltivazione, raccolta, estrazione e pesca</b>
+        propongono una <b>specializzazione</b> fra due direzioni; caccia
+        continua invece con i suoi premi di livello.
+      </div>
+      <div class="sectitle">Dopo la Lanterna</div>
+      <div class="muted">
+        La veglia non è la fine: dopo aver riacceso la Lanterna, guarda la
+        <b>bacheca dei progetti</b> in piazza. Elio propone di riparare una
+        barca, la costa nasconde un enigma di marea e la prima rotta porta alla
+        <b>Cala delle Reti</b>. Il seguito resta breve, umano e comunitario.
+      </div>
     `;
   });
 };

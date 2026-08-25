@@ -104,7 +104,19 @@ const PASSI = [
   { id:'veglia', icona:'brace_primavera',
     titolo:'La veglia al Santuario',
     come:'Invita tutti e sei alla radura, poi torna al <b>Santuario la sera dopo, dal tramonto</b>. Una lanterna tenuta accesa da una persona sola si spegne la prima notte che quella persona non ce la fa: è successo a Ilde, e non deve succedere a te.',
-    fatto: G => !!(G.trame && G.trame.veglia && G.trame.veglia.fatta) }
+     fatto: G => !!(G.trame && G.trame.veglia && G.trame.veglia.fatta) },
+  { id:'bachecaPostFinale', icona:'medaglione',
+     titolo:'Guarda la bacheca dopo la Lanterna',
+     come:'La storia continua senza un nuovo nemico: dopo la veglia vai in <b>piazza</b> e cerca la <b>bacheca dei progetti</b>. Elio sta pensando a una barca che possa servire alla valle.',
+     fatto: G => !!(G.trame && G.trame.richiamo && G.trame.richiamo.bacheca) },
+  { id:'barcaPostFinale', icona:'canna',
+     titolo:'Rimetti in acqua la barca',
+     come:'Segna il progetto sulla bacheca, parla con <b>Elio</b> e porta avanti la sua vicenda. Quando la marea è pronta, la barca aprirà una rotta breve verso la <b>Cala delle Reti</b>.',
+     fatto: G => !!(G.trame && G.trame.richiamo && G.trame.richiamo.barca) },
+  { id:'calaPostFinale', icona:'canna',
+     titolo:'Scopri la Cala delle Reti',
+     come:'Dal molo della <b>Costa</b> sali sulla barca. È una destinazione piccola, fatta per tornare: pesca, posta e nuovi progetti, non un mare infinito da attraversare.',
+     fatto: G => G.mappaId === 'cala' || !!(G.trame && G.trame.richiamo && G.trame.richiamo.approdo) }
 ];
 
 GU.PASSI = PASSI;

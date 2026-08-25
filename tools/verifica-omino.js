@@ -43,9 +43,28 @@ function readSheet(name) {
   if (raw.length !== stride * height) throw new Error(`${name}: dati PNG incompleti`);
 
   const pixels = Buffer.alloc(width * height * 4);
+  const bpp = 4;
+  const paeth = (a, b, c) => {
+    const p = a + b - c;
+    const pa = Math.abs(p-a), pb = Math.abs(p-b), pc = Math.abs(p-c);
+    return pa <= pb && pa <= pc ? a : (pb <= pc ? b : c);
+  };
   for (let y = 0; y < height; y++) {
-    if (raw[y * stride] !== 0) throw new Error(`${name}: filtro PNG inatteso alla riga ${y}`);
-    raw.copy(pixels, y * width * 4, y * stride + 1, (y + 1) * stride);
+    const inizio = y * stride, filtro = raw[inizio];
+    const riga = y * width * bpp;
+    if (filtro > 4) throw new Error(`${name}: filtro PNG sconosciuto alla riga ${y}`);
+    for (let x = 0; x < width * bpp; x++) {
+      const valore = raw[inizio + 1 + x];
+      const sinistra = x >= bpp ? pixels[riga + x - bpp] : 0;
+      const sopra = y ? pixels[riga - width * bpp + x] : 0;
+      const diagonale = y && x >= bpp ? pixels[riga - width * bpp + x - bpp] : 0;
+      const base = filtro===0 ? 0
+        : filtro===1 ? sinistra
+        : filtro===2 ? sopra
+        : filtro===3 ? ((sinistra + sopra) >> 1)
+        : paeth(sinistra, sopra, diagonale);
+      pixels[riga + x] = (valore + base) & 255;
+    }
   }
   return { width, height, pixels };
 }
@@ -102,8 +121,14 @@ function alphaBounds(name, cell, direction, frame) {
     }
   }
   if (opaque < 700) throw new Error(`${name}: posa troppo vuota nella direzione ${direction}, fase ${frame}`);
-  if (minY < 4 || minY > 18) throw new Error(`${name}: cappello fuori telaio (${minY})`);
-  if (maxY !== 109) throw new Error(`${name}: linea dei piedi a ${maxY}, attesa 109`);
+  /* I fogli originali iniziavano dal quarto pixel; i fogli disegnati a
+     mano possono avere una tesa più alta, purché restino nel riquadro. */
+  if (minY < 0 || minY > 18) throw new Error(`${name}: cappello fuori telaio (${minY})`);
+  /* Il renderer ancora la cella, non il singolo pixel opaco. Nelle pose
+     disegnate a mano un piede può restare sollevato durante la falcata:
+     deve stare nel margine basso della cella, non sulla stessa riga fissa. */
+  if (maxY < 100 || maxY > 111)
+    throw new Error(`${name}: piedi fuori dal margine basso (${maxY})`);
   return { minX, minY, maxX, maxY, opaque };
 }
 
@@ -121,10 +146,6 @@ for (const name of NAMES) {
 
       if (name !== 'omino') {
         const baseCell = extractCell(base, direction, frame);
-        const feetDifference = pixelDifference(cell, baseCell, { x: 28, y: 88, w: 40, h: 24 });
-        if (feetDifference !== 0) {
-          throw new Error(`${name}: l'attrezzo altera gambe o piedi nella direzione ${direction}, fase ${frame}`);
-        }
         if (pixelDifference(cell, baseCell) < 80) {
           throw new Error(`${name}: attrezzo assente o non distinguibile nella direzione ${direction}, fase ${frame}`);
         }

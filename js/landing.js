@@ -38,7 +38,13 @@ const COSE = [
   { ico:'medaglione', tit:'Richieste e sagre',
     txt:'La bacheca del porto, le sagre di stagione, il mercante che passa ogni sette giorni, i traguardi da riscuotere.' },
   { ico:'brace_primavera', tit:'Riaccendi la Lanterna',
-    txt:'Quattro braci da accendere, una per stagione. È la storia che tiene insieme tutto il resto.' }
+     txt:'Quattro braci da accendere, una per stagione. È la storia che tiene insieme tutto il resto.' },
+  { ico:'zappa', tit:'Cresci a modo tuo',
+     txt:'Coltivazione, raccolta, estrazione, pesca e caccia salgono di livello. Ogni livello porta un bonus e un premio; le prime quattro abilità offrono anche una specializzazione al livello 3.' },
+  { ico:'canna', tit:'Dopo la Lanterna',
+     txt:'Quando la veglia finisce, la valle non si ferma: la bacheca apre progetti comunitari, Elio rimette in acqua la barca e una breve rotta porta alla Cala delle Reti.' },
+  { ico:'pietra', tit:'Osserva la marea',
+     txt:'Sulla costa c’è un piccolo enigma ambientale. Guarda l’acqua, segui l’ordine dei segni e fai avanzare la storia senza combattimenti né penalità severe.' }
 ];
 
 /* La stessa icona che disegnano tutte le altre finestre, e non una copia

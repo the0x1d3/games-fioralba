@@ -46,7 +46,7 @@ U.diario = function(G, tabIniziale){
     // il pallino sui Livelli quando c'è un premio da ritirare: senza,
     // un oggetto rimasto fuori dallo zaino resterebbe lì per sempre
     const nPremi = (window.LIV && LIV.sospesi()) || 0;
-    for(const [k,lab] of [['obiettivi','Obiettivi'],['livelli','Livelli'+(nPremi?' •':'')],['richieste','Richieste'+(nRich?' ('+nRich+')':'')],['collezione','Collezione'],['abitanti','Abitanti'],['lettere','Lettere'],['stats','Podere']]){
+    for(const [k,lab] of [['obiettivi','Obiettivi'],['livelli','Crescita'+(nPremi?' •':'')],['richieste','Richieste'+(nRich?' ('+nRich+')':'')],['collezione','Collezione'],['abitanti','Abitanti'],['lettere','Lettere'],['stats','Podere']]){
       const b=document.createElement('button');
       b.className='tab'+(tab===k?' on':'');
       b.textContent=T(lab); b.onclick=()=>{ tab=k; U.aggiorna(); };
@@ -63,6 +63,17 @@ U.diario = function(G, tabIniziale){
         (G.braci>=4 ? 'La valle è sveglia. Resta solo da viverci.'
                     : 'Porta al Santuario i frutti di ogni stagione.');
       body.appendChild(p);
+
+      const crescita=document.createElement('div'); crescita.className='liv-prossimo chiave';
+      crescita.appendChild(document.createElement('b')).textContent='Crescita del personaggio';
+      const crescitaTesto=document.createElement('span'); crescitaTesto.className='liv-prossimo-val';
+      crescitaTesto.textContent='Cinque abilità, dieci livelli ciascuna e premi. Al livello 3, le prime quattro offrono anche una specializzazione.';
+      crescita.appendChild(crescitaTesto);
+      const crescitaBtn=document.createElement('button'); crescitaBtn.className='btn gold';
+      crescitaBtn.textContent='Apri Crescita';
+      crescitaBtn.onclick=()=>U.diario(G,'livelli');
+      crescita.appendChild(crescitaBtn);
+      body.appendChild(crescita);
 
       /* Il ponte è la chiave: senza, al Santuario non ci si arriva, e
          un elenco di cinque offerte per un posto che non esiste ancora
