@@ -1,6 +1,6 @@
 # Confronto visuale Pixi e Canvas
 
-`npm run test:renderer` riproduce quattro scene senza avviare o salvare una
+`npm run test:renderer` riproduce dodici scene senza avviare o salvare una
 partita sul server. Per ogni scena crea uno stato locale con lo stesso seme,
 cattura il canvas WebGL predefinito e quello del fallback
 `?renderer=canvas`, quindi confronta i pixel RGB.
@@ -16,7 +16,14 @@ Le scene coprono:
 - desktop di notte con zoom esplicito;
 - telefono in verticale con pioggia, NPC e animali;
 - telefono che ruota davvero da verticale a orizzontale, utile a
-  intercettare differenze dopo un resize.
+  intercettare differenze dopo un resize;
+- attrezzo in mano e cartello scritto;
+- il porto con la bacheca delle richieste e i progetti prima e dopo;
+- la Costa con la barca in riparazione e poi pronta al molo;
+- la Cala con la cassetta chiusa e attiva.
+
+L'elenco vero sta in `SCENE`, in cima a `tools/confronto-renderer.js`: e' la
+sola copia, questa la racconta.
 
 ## Soglia
 
@@ -35,6 +42,9 @@ la media scopre un filtro o una tinta applicati a tutto il quadro. Quando un
 confronto fallisce, le due immagini vengono lasciate in
 `tmp/renderer-visuale/`, esclusa dal repository, per l'ispezione.
 
-Il test richiede Chromium fornito dalla configurazione Replit; fuori da Replit
-si può indicare un eseguibile compatibile con
-`FIORALBA_CHROMIUM=/percorso/a/chromium npm run test:renderer`.
+Il test cerca Chromium in tre posti, nell'ordine: `FIORALBA_CHROMIUM` o
+`CHROMIUM_PATH` se sono scritte a mano, poi il browser di Playwright — che si
+scarica una volta con `npm run test:browser:install` — e infine il `chromium`
+di sistema, che su Replit lo fornisce `.replit`. Se non ne trova nessuno il
+test si ferma subito dicendolo: prima cercava soltanto il terzo, e fuori da
+Replit `npm test` restava appeso senza mai tornare.

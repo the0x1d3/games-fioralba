@@ -338,12 +338,25 @@ siano in vendita nella stagione giusta, che ogni mappa sia raggiungibile e che
 nessun passaggio porti fuori dal mondo. Serve `npm install` una volta sola, e
 riguarda solo chi sviluppa: per giocare non cambia niente.
 
-**Perché nessuna libreria grafica.** Phaser o PixiJS avrebbero sostituito il
-disegno su canvas, ma qui il collo di bottiglia non era *come* si disegna: era
-*cosa* si disegna. Gli sprite sono tutti generati in codice, quindi il guadagno
-vero stava nel migliorare l'arte e il renderer (raccordi fra terreni, ombre che
-seguono il sole, bloom, vento condiviso), non nel cambiare il motore — che
-avrebbe voluto dire riscrivere tutto senza aggiungere un pixel.
+**Perché una libreria grafica, alla fine.** Per molto tempo qui c'era scritto
+il contrario: Phaser o PixiJS avrebbero sostituito il disegno su canvas, ma il
+collo di bottiglia non era *come* si disegna, era *cosa* si disegna — e
+cambiare motore voleva dire riscrivere tutto senza aggiungere un pixel. Quel
+ragionamento reggeva finché la composizione restava semplice. Non regge più con
+le ombre che seguono il sole, il bloom, la gradazione, i raggi e la vignetta:
+sono passaggi a schermo pieno, e su Canvas 2D si pagano ogni fotogramma.
+
+Adesso il gioco disegna con **PixiJS 8 in WebGL**, e il disegno su canvas è
+rimasto dov'era: le stesse funzioni di sempre riempiono una tela fuori schermo,
+il risultato diventa una texture, e Pixi compone i livelli. Non è stato riscritto
+niente dell'arte — è cambiato solo chi mette insieme i pezzi alla fine.
+
+**Il Canvas 2D non è sparito, è il ripiego.** Se `window.PIXI` non c'è —
+`vendor/pixi.min.js` non caricato, WebGL negato, `?renderer=canvas` chiesto a
+mano — `render.js` torna al compositore storico e il gioco si gioca uguale.
+Che le due strade disegnino la stessa cosa non è una speranza: `npm run
+test:renderer` fotografa dodici scene con tutti e due i renderer e confronta i
+pixel (vedi [docs/confronto-renderer.md](docs/confronto-renderer.md)).
 
 Il terreno viene pre-disegnato a blocchi di 8×8 caselle e riusato: un fotogramma
 costa meno di **1 ms**, quindi resta fluido anche su macchine modeste.

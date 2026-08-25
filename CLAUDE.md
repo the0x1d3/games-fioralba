@@ -53,10 +53,13 @@ tutto, `game.js` per ultimo.
 ```
 data.js  lingua-en.js  lingua.js  palette.js  art.js  immagini.js  fx.js
 audio.js
-world.js  mobs.js  ui.js  demo.js  changelog.js  landing.js  titolo.js
-salvataggio.js  sincronizza.js  pesca.js  storie.js  vicende.js
-persona.js  partite.js  diario.js  botteghe.js  menu.js  solstizio.js  livelli.js  traguardi.js  abitanti.js  paese.js
-tutorial.js  guida.js  tocco.js  render.js  game.js   (in fondo: debug.js)
+world.js  scenari.js  mobs.js
+ui.js  partite.js  diario.js  botteghe.js  menu.js
+demo.js  changelog.js  landing.js  titolo.js
+salvataggio.js  sincronizza.js  pesca.js  storie.js  vicende.js  richiamo.js
+persona.js  solstizio.js  livelli.js  traguardi.js  abitanti.js  paese.js
+tutorial.js  guida.js  tocco.js  render.js  editor-interno.js
+game.js   (in fondo: debug.js)
 ```
 
 Questa lista non va tenuta a mente: un controllo in `tools/coerenza.js`
@@ -114,7 +117,10 @@ viene zero, il corpo della IIFE *è* il caricamento. E `demo.js` ha un
 | `TRAGUARDI`| traguardi.js  | traguardi, Collezione del Naturalista, statistiche      |
 | `ABITANTI` | abitanti.js   | agende, cosa dice oggi, passanti e chiacchiere          |
 | `PAESE`    | paese.js      | mercato del giorno, eventi notturni, bacheca, sagre, mercante |
-| `REND`     | render.js     | il disegno di un fotogramma                             |
+| `SCENARI`  | scenari.js    | le versioni degli scenari, e la migrazione dei vecchi   |
+| `RICHIAMO` | richiamo.js   | atto terzo: la barca di Elio, la marea, le rotte brevi  |
+| `REND`     | render.js     | il disegno di un fotogramma (PixiJS, con ripiego Canvas) |
+| `EDITOR_INTERNO` | editor-interno.js | il banco di prova della scenografia: esce subito se il server non dà il consenso |
 | `G`        | game.js       | stato di gioco, input, sistemi (il file più grosso)     |
 | `DEBUG`    | debug.js      | il pannello di prova (dopo game.js: legge `G` subito)   |
 
