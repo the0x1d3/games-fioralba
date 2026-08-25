@@ -2707,7 +2707,14 @@ function arredoDaImmagine(o, wx, wy, piega, lati){
   const a = DATA.ARREDI[idImmagineArredo(o)];
 
   const f = WORLD.impronta(o);
-  const iw = a.w*T, ih = a.h*T;                 // il PNG, in pixel di mondo
+  /* Se iw/ih sono stati impostati esplicitamente (editor di scenografia)
+     il PNG si scala a coprire l'ingombro invece di restare alle sue misure
+     native: così il bordo dorato dell'editor coincide con lo sprite.
+     Per tutti gli oggetti non ritoccati vale il comportamento originale:
+     centrato sull'impronta e appoggiato al bordo basso. */
+  const scalaIngombro = !!(o.iw || o.ih);
+  const iw = scalaIngombro ? f.w*T : a.w*T;     // PNG nativo, oppure riempie l'ingombro
+  const ih = scalaIngombro ? f.h*T : a.h*T;
   const dx = wx + (f.w*T - iw)/2;               // centrato sull'impronta
   const dy = wy + f.h*T - ih;                   // appoggiato al suo bordo basso
   if(piega){

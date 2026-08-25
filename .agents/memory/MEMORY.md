@@ -8,4 +8,7 @@
 - [Trasparenza delle pose generate](pose-generated-transparency.md) — le pose AI con reticolo richiedono una pulizia alfa controllata prima di entrare nei fogli sprite.
 - [Seguiti delle vicende](narrative-sequels.md) — più archi dello stesso abitante richiedono una dipendenza esplicita e filtri identici in dialoghi e Diario.
 - [Impronte delle decorazioni](decorative-footprints.md) — una collisione più grande dello sprite deve dichiarare esplicitamente il proprio ingombro.
-- [Camera stabile nei test editor](browser-editor-camera.md) — attendere l’inerzia della camera prima di cliccare una casella del mondo con Playwright.
+- [Camera stabile nei test editor](browser-editor-camera.md) — attendere l'inerzia della camera prima di cliccare una casella del mondo con Playwright.
+- [Scala sprite editor iw/ih](sprite-scale-editor.md) — arredoDaImmagine centra il PNG sull'impronta; se iw/ih esplicitamente impostati (editor), scalare a riempire l'ingombro.
+- [Predicati editor vs importatore](editor-vs-importatore-predicati.md) — oggettoEditorSicuro allarga la selezione (barca/consegna/bancarella/baule) senza allargare il validatore JSON.
+- [Mock DOM in coerenza.js](coerenza-dom-mock.md) — il mock document nei test Node necessita di querySelectorAll e addEventListener per l'editor con le maniglie drag.
