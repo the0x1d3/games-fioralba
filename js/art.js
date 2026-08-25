@@ -1027,12 +1027,20 @@ A.charSprite = function(look, dir, frame){
    uno. Quindi il foglio si ritaglia una volta sola, alla prima
    richiesta, e da lì in poi queste otto celle sono sprite come gli altri.
 
-   Torna `null` finché l'immagine non è arrivata, e per le direzioni che
-   il foglio non copre: chi disegna, davanti a un `null`, usa il
-   personaggio disegnato in codice. È lo stesso patto degli arredi.
+   Ogni posa torna dentro lo STESSO riquadro 96×112. Il foglio a mani
+   vuote ha celle 64×96, quindi viene appoggiato in basso e centrato con
+   sedici pixel trasparenti per lato e sopra: cambiare attrezzo non cambia
+   né il centro né la linea dei piedi che il renderer deve seguire.
+
+   Torna `null` soltanto finché non è arrivato neppure il foglio a mani
+   vuote: chi disegna, davanti a un `null`, usa il personaggio in codice.
+   È lo stesso patto degli arredi.
    =================================================================== */
 const ominoCelle = {};
 const ominoDaCui = {};                 // per foglio: da quale immagine sono state ritagliate
+const OMINO_W = 96, OMINO_H = 112;
+A.OMINO_W = OMINO_W;
+A.OMINO_H = OMINO_H;
 /* `attrezzo` sceglie il foglio: c'è la camminata a mani vuote e, per
    qualche attrezzo, quella con l'attrezzo in mano. Un attrezzo senza
    foglio ricade su quella a mani vuote — si cammina, e in mano non si
@@ -1072,8 +1080,10 @@ A.ominoSprite = function(dir, frame, attrezzo){
   const col = ((frame|0) % O.fotogrammi + O.fotogrammi) % O.fotogrammi;
   const key = k+'|'+riga+'|'+col;
   if(ominoCelle[key]) return ominoCelle[key];
-  const c = cv(O.w, O.h), x = c.getContext('2d');
-  x.drawImage(img, col*O.w, riga*O.h, O.w, O.h, 0, 0, O.w, O.h);
+  const c = cv(OMINO_W, OMINO_H), x = c.getContext('2d');
+  const dx = ((OMINO_W - O.w)/2)|0;
+  const dy = OMINO_H - O.h;
+  x.drawImage(img, col*O.w, riga*O.h, O.w, O.h, dx, dy, O.w, O.h);
   ominoCelle[key] = c;
   return c;
 };

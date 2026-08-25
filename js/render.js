@@ -66,6 +66,7 @@ let pixiShadowLayer = null, pixiWorldLayer = null, pixiGradeLayer = null;
 let pixiTerrainSprites = new Map(), pixiTerrainFrame = 0;
 let pixiWorldNodes = new Map(), pixiWorldFrame = 0, pixiWorldSeq = 0;
 let pixiTextureAggiornate = 0, pixiNodiVisibili = 0;
+let pixiTextureByteAggiornate = 0;
 let pixiTipiVisibili = {}, pixiUltimaVista = null;
 let catturaNodoPixi = false;
 const pixiIdentita = new WeakMap();
@@ -75,6 +76,11 @@ let pixiSfondo = '', pixiSfondoW = 0, pixiSfondoH = 0;
    di molti sprite nativi, soprattutto sulle GPU integrate. */
 let pixiFirmaSotto = '';
 let frameRenderMs = 0, frameRenderN = 0, frameRenderPicco = 0;
+let frameComposizioneMs = 0, frameComposizionePicco = 0;
+let frameTotaleMs = 0, frameTotalePicco = 0, frameUploadByteTot = 0;
+let frameUploadMs = 0, frameUploadMsTot = 0, frameUploadMsPicco = 0;
+let frameComposizioneCampioni = [], frameUploadCampioni = [], frameRenderCampioni = [], frameTotaleCampioni = [];
+let pixiSoloComposito = false;
 let motivoFallback = '';
 
 function canvasForzato(){
@@ -129,6 +135,26 @@ function distruggiPixi(){
   pixiTerrainSprites.clear();
   pixiWorldNodes.clear();
   pixiFirmaSotto = '';
+  pixiSoloComposito = false;
+}
+
+function registraUploadPixi(texture, w, h){
+  const inizio = performance.now();
+  texture.source.update();
+  frameUploadMs += performance.now() - inizio;
+  pixiTextureAggiornate++;
+  pixiTextureByteAggiornate += Math.max(0, w|0) * Math.max(0, h|0) * 4;
+}
+
+function mostraSoloCompositoPixi(){
+  if(pixiSoloComposito) return;
+  for(const nodo of [
+    pixiFondo, pixiUnderSprite, pixiTerrainLayer, pixiShadowLayer,
+    pixiWorldLayer, pixiEffectSprite, pixiLightSprite, pixiBloomSprite,
+    pixiGradeLayer, pixiRaysSprite, pixiVignetteSprite, pixiTextSprite
+  ]) nodo.visible = false;
+  pixiSceneSprite.visible = true;
+  pixiSoloComposito = true;
 }
 
 function aggiornaTexturePixi(){
@@ -232,6 +258,10 @@ async function preparaPixi(canvas){
       pixiBloomSprite, pixiGradeLayer, pixiRaysSprite, pixiVignetteSprite,
       pixiTextSprite
     );
+    /* La modalità canonica presenta un solo frame opaco. Impostare la
+       visibilità una volta sola evita tredici scritture nel scene graph a
+       ogni fotogramma senza cambiare un solo pixel. */
+    mostraSoloCompositoPixi();
     backend = 'pixi';
 
     canvas.addEventListener('webglcontextlost', e=>{
@@ -514,12 +544,27 @@ const CH = 8;
    a SCALE 1 sullo schermo ce ne stanno tre per due, contati. */
 const CACHE_MAX = 40;
 let chunkCache = new Map();
+let chunkPreriscaldati = 0;
+let chunkWarmFirma = '', chunkWarmToken = 0, chunkWarmHandle = null;
 
 /* diagnostica: quanti blocchi di terreno sono in cache e quanti ne ha
    costruiti da quando è partito il gioco (utile per capire se la cache
    sta lavorando o se sta ricostruendo sempre le stesse cose) */
 let chunkCostruiti = 0;
-R.statoCache = ()=>({ inCache: chunkCache.size, max: CACHE_MAX, costruitiInTutto: chunkCostruiti });
+R.statoCache = ()=>({
+  inCache:chunkCache.size,
+  max:CACHE_MAX,
+  costruitiInTutto:chunkCostruiti,
+  preriscaldati:chunkPreriscaldati
+});
+
+function annullaPreriscaldamentoChunk(){
+  chunkWarmToken++;
+  chunkWarmFirma = '';
+  if(chunkWarmHandle !== null && typeof window.cancelIdleCallback === 'function')
+    window.cancelIdleCallback(chunkWarmHandle);
+  chunkWarmHandle = null;
+}
 
 function eliminaChunkPixi(k){
   const voce = pixiTerrainSprites.get(k);
@@ -538,6 +583,7 @@ function svuotaChunkPixi(prefisso){
 
 R.invalidaTerreno = function(mapId){
   pixiFirmaSotto = '';
+  annullaPreriscaldamentoChunk();
   if(!mapId){
     chunkCache.clear();
     svuotaChunkPixi();
@@ -549,12 +595,14 @@ R.invalidaTerreno = function(mapId){
 /* i blocchi di terreno sono precotti coi colori della palette:
    se la palette cambia, vanno rifatti */
 if(window.PAL) PAL.suCambio(()=>{
+  annullaPreriscaldamentoChunk();
   chunkCache.clear();
   svuotaChunkPixi();
 });
 
 R.invalidaCasella = function(mapId, x, y){
   pixiFirmaSotto = '';
+  annullaPreriscaldamentoChunk();
   // il raccordo tocca anche i blocchi vicini
   for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
     const cx = ((x+dx)/CH)|0, cy = ((y+dy)/CH)|0;
@@ -737,6 +785,74 @@ function targhetta(testo, cxMondo, cyMondo){
   const t = preparaTarghetta(testo, cxMondo, cyMondo);
   disegnaCorniceTarghetta(t);
   accodaTestoTarghetta(t);
+}
+
+/* Il cartello piantato dal giocatore ha già due listelli chiari dentro al
+   PNG: la scritta appartiene lì, non in una targhetta sospesa. Si misura
+   sul contesto che la riceverà, si tiene una riga quando è leggibile e si
+   divide in due solo quando serve. Il giallo senape ha un'ombra di un
+   pixel per restare leggibile sia sul listello chiaro sia sul legno. */
+const CARTELLO_INCHIOSTRO = '#d5a62f';
+const CARTELLO_OMBRA = '#3b2619';
+const CARTELLO_FONT = 'Nunito, system-ui, sans-serif';
+
+function corpoScrittaCartello(righe, larghezze, massimo, minimo){
+  for(let px=massimo;px>=minimo;px-=0.5){
+    sx.font = 'bold ' + px + 'px ' + CARTELLO_FONT;
+    if(righe.every((r,i)=>sx.measureText(r).width <= larghezze[i])) return px;
+  }
+  return minimo;
+}
+
+function dividiScrittaCartello(s, larghezze){
+  const parole = s.split(/\s+/).filter(Boolean);
+  const candidati = [];
+  if(parole.length > 1) for(let i=1;i<parole.length;i++)
+    candidati.push([parole.slice(0,i).join(' '), parole.slice(i).join(' ')]);
+  if(!candidati.length){
+    const caratteri = Array.from(s);
+    for(let i=2;i<=caratteri.length-2;i++)
+      candidati.push([caratteri.slice(0,i).join(''), caratteri.slice(i).join('')]);
+  }
+  sx.font = 'bold 8px ' + CARTELLO_FONT;
+  let migliore = candidati[0] || [s,''];
+  let punteggio = Infinity;
+  for(const righe of candidati){
+    const p = Math.max(
+      sx.measureText(righe[0]).width/larghezze[0],
+      sx.measureText(righe[1]).width/larghezze[1]
+    );
+    if(p < punteggio){ punteggio = p; migliore = righe; }
+  }
+  return migliore;
+}
+
+function disegnaScrittaCartello(testo, xImmagine, yImmagine, profilo){
+  const s = String(testo||'').replace(/\s+/g,' ').trim().slice(0,18);
+  if(!s) return;
+  const p = profilo === 'codice'
+    ? { larghezze:[50,34], centriX:[48,48], centriY:[44,54], max:7.5, min:4.5 }
+    : { larghezze:[56,38], centriX:[48,47], centriY:[23,36], max:8.5, min:5 };
+  sx.save();
+  sx.textAlign = 'center';
+  sx.textBaseline = 'middle';
+  let righe = [s];
+  let corpo = corpoScrittaCartello(righe, [p.larghezze[0]], p.max, Math.max(6,p.min));
+  sx.font = 'bold ' + corpo + 'px ' + CARTELLO_FONT;
+  if(sx.measureText(s).width > p.larghezze[0] || corpo < 6.5){
+    righe = dividiScrittaCartello(s, p.larghezze);
+    corpo = corpoScrittaCartello(righe, p.larghezze, p.max-0.5, p.min);
+  }
+  sx.font = 'bold ' + corpo + 'px ' + CARTELLO_FONT;
+  for(let i=0;i<righe.length;i++){
+    const x = xImmagine + p.centriX[i];
+    const y = yImmagine + p.centriY[i];
+    sx.fillStyle = CARTELLO_OMBRA;
+    sx.fillText(righe[i], x+1, y+1);
+    sx.fillStyle = CARTELLO_INCHIOSTRO;
+    sx.fillText(righe[i], x, y);
+  }
+  sx.restore();
 }
 
 /* ===================================================================
@@ -1130,6 +1246,48 @@ function chunk(m, cx, cy, season){
   return nuovo;
 }
 
+/* Il primo blocco oltre il bordo della camera non deve nascere nel
+   fotogramma in cui entra a schermo: costruire 512×512 pixel di raccordi
+   tutti insieme è un picco visibile mentre si cammina. Il browser prepara
+   quindi, uno per tempo morto, il solo anello di blocchi confinante con la
+   vista. L'anello più la vista resta sotto i 40 posti della cache. */
+function preriscaldaChunkVicini(m, c0, r0, c1, r1, season){
+  if(typeof window.requestIdleCallback !== 'function') return;
+  const maxC = Math.ceil(m.w/CH)-1, maxR = Math.ceil(m.h/CH)-1;
+  const firma = [m.id,season,c0,r0,c1,r1].join('|');
+  if(firma === chunkWarmFirma) return;
+  annullaPreriscaldamentoChunk();
+  chunkWarmFirma = firma;
+  const token = chunkWarmToken;
+  const coda = [];
+  for(let cy=Math.max(0,r0-1);cy<=Math.min(maxR,r1+1);cy++)
+    for(let cx=Math.max(0,c0-1);cx<=Math.min(maxC,c1+1);cx++){
+      if(cx>=c0 && cx<=c1 && cy>=r0 && cy<=r1) continue;
+      const k = m.id+'|'+cx+'|'+cy+'|'+season;
+      if(!chunkCache.has(k)) coda.push({cx,cy,k});
+    }
+  const passo = scadenza=>{
+    chunkWarmHandle = null;
+    if(token !== chunkWarmToken) return;
+    /* Un blocco per callback: anche un tempo morto breve non diventa una
+       raffica di allocazioni e non sposta il problema dentro il frame dopo. */
+    while(coda.length){
+      const p = coda.shift();
+      if(chunkCache.has(p.k)) continue;
+      if(scadenza.timeRemaining() < 4){
+        coda.unshift(p);
+        break;
+      }
+      chunk(m, p.cx, p.cy, season);
+      chunkPreriscaldati++;
+      break;
+    }
+    if(coda.length && token === chunkWarmToken)
+      chunkWarmHandle = window.requestIdleCallback(passo);
+  };
+  if(coda.length) chunkWarmHandle = window.requestIdleCallback(passo);
+}
+
 function cominciaTerrenoPixi(m){
   if(backend !== 'pixi') return;
   pixiTerrainFrame++;
@@ -1244,9 +1402,8 @@ function catturaParteNodoPixi(parte, bounds, chiave, disegna){
     sx = prima;
     x.restore();
   }
-  parte.texture.source.update();
+  registraUploadPixi(parte.texture, parte.w, parte.h);
   parte.chiave = chiave;
-  pixiTextureAggiornate++;
 }
 
 function boundsPixi(x,y,w,h){
@@ -1270,6 +1427,7 @@ function chiaveSolePixi(sole){
 function sincronizzaNodiPixi(lista){
   pixiWorldFrame++;
   pixiTextureAggiornate = 0;
+  pixiTextureByteAggiornate = 0;
   pixiNodiVisibili = 0;
   pixiTipiVisibili = {};
 
@@ -1370,10 +1528,25 @@ function luceAmbiente(ora, meteo, esterno){
 }
 R.luceAmbiente = luceAmbiente;
 
+function accodaCampioneTempo(lista, valore){
+  lista.push(valore);
+  if(lista.length > 240) lista.shift();
+}
+
+function percentileTempo(lista, quota){
+  if(!lista.length) return 0;
+  const ordinati = lista.slice().sort((a,b)=>a-b);
+  return ordinati[Math.min(ordinati.length-1, Math.floor((ordinati.length-1)*quota))];
+}
+
 /* ===================================================================
    DISEGNO PRINCIPALE
    =================================================================== */
 R.disegna = function(G){
+  const frameInizio = performance.now();
+  pixiTextureAggiornate = 0;
+  pixiTextureByteAggiornate = 0;
+  frameUploadMs = 0;
   const m = G.mappa();
   /* Pixi presenta via WebGL un unico frame opaco. Comporre i layer nella
      tela canonica evita variazioni di premoltiplicazione alfa e di spazio
@@ -1485,6 +1658,7 @@ R.disegna = function(G){
     if(backend === 'pixi') disegnaChunkPixi(m,cx,cy,stag,terreno,px,py);
     else sx.drawImage(terreno, px, py);
   }
+  preriscaldaChunkVicini(m, c0, r0, c1, r1, stag);
 
   /* ---------- 3b. RIFLESSI SULL'ACQUA ----------
      Chi sta sulla riva si specchia nell'acqua sotto di sé: giocatore,
@@ -1613,16 +1787,14 @@ R.disegna = function(G){
         o.t==='lume'||o.t==='pietra_rituale'||(o.t==='sasso'&&o.shake)||
         (o.t==='macchina'&&o.pronto)||(o.t==='mobile'&&o.kind==='spaventapasseri');
       const arredo = immagineArredo(o);
-      const etichetta = o.kind==='cartello' && o.testo
-        ? { testo:o.testo, x:px+T/2, y:py+(arredo?-46:-24) }
-        : o.t==='macchina' && o.kind==='cassa' && o.nome
-          ? { testo:o.nome, x:px+T/2, y:py-6 }
-          : null;
+      const etichetta = o.t==='macchina' && o.kind==='cassa' && o.nome
+        ? { testo:o.nome, x:px+T/2, y:py-6 }
+        : null;
       const lati = o.kind==='recinto' || o.kind==='cancelletto'
         ? latiRecinto(m, x, y) : 0;
       const statoBase = [
         o.t,o.kind||'',o.v||0,o.stage||0,o.bacche?1:0,o.carbone?1:0,
-        o.dentro?1:0,o.pronto?1:0,o.out||'',stag,
+        o.dentro?1:0,o.pronto?1:0,o.out||'',o.testo||'',stag,
         (G.ora>1020||G.ora<420)?1:0,arredo?identitaPixi('sorgente',arredo):'codice',
         lati
       ].join('|');
@@ -1967,49 +2139,70 @@ R.disegna = function(G){
 
   /* ---------- BLIT / COMPOSIZIONE PIXI ---------- */
   const renderInizio = performance.now();
+  let presentazioneMs = 0, ponteComposizioneMs = 0;
   if(backend === 'pixi'){
     sx = scene.getContext('2d');
     sx.imageSmoothingEnabled = false;
     const haTesti = scriviTestiSopra();
     if(aggiornaSotto){
-      pixiUnderTexture.source.update();
+      registraUploadPixi(pixiUnderTexture, underLayer.width, underLayer.height);
       pixiFirmaSotto = firmaSotto;
     }
-    pixiSceneTexture.source.update();
-    if(haEffetti) pixiEffectTexture.source.update();
-    if(amb.a > 0.015) pixiLightTexture.source.update();
-    if(amb.a > 0.04) pixiBloomTexture.source.update();
-    if(haRaggi) pixiRaysTexture.source.update();
-    if(haTesti) pixiTextTexture.source.update();
+    registraUploadPixi(pixiSceneTexture, pixiComposite.width, pixiComposite.height);
+    if(haEffetti) registraUploadPixi(pixiEffectTexture, effectLayer.width, effectLayer.height);
+    if(amb.a > 0.015) registraUploadPixi(pixiLightTexture, light.width, light.height);
+    if(amb.a > 0.04) registraUploadPixi(pixiBloomTexture, bloomLayer.width, bloomLayer.height);
+    if(haRaggi) registraUploadPixi(pixiRaysTexture, raysLayer.width, raysLayer.height);
+    if(haTesti) registraUploadPixi(pixiTextTexture, textLayer.width, textLayer.height);
     pixiEffectSprite.visible = haEffetti;
     pixiLightSprite.visible = amb.a > 0.015;
     pixiBloomSprite.visible = amb.a > 0.04;
     pixiRaysSprite.visible = haRaggi;
     pixiTextSprite.visible = haTesti;
+    const presentazioneInizio = performance.now();
     pixiRenderer.render({ container:pixiStage });
+    presentazioneMs += performance.now() - presentazioneInizio;
   }else{
-    ctx.clearRect(0,0,cvs.width,cvs.height);
+    /* `scene` è opaca e copre tutto il destinatario: pulire prima il
+       buffer fisico scriveva inutilmente ogni pixel una seconda volta. */
+    const presentazioneInizio = performance.now();
     ctx.drawImage(scene, 0,0, VW*SCALE, VH*SCALE);
     /* e sopra, alla risoluzione vera dello schermo, tutto il testo del
        mondo: vedi il cappello di `testoNitido` per il perché */
     scriviTestiSopra();
+    const copiaMs = performance.now() - presentazioneInizio;
+    /* Nel fallback la copia arriva davvero allo schermo; nel percorso
+       Pixi canonico prepara invece il frame opaco sul ponte Canvas e la
+       presentazione resta esclusivamente il render WebGL qui sotto. */
+    if(composizioneFedelta) ponteComposizioneMs += copiaMs;
+    else presentazioneMs += copiaMs;
   }
   if(composizioneFedelta){
     backend = backendReale;
     ctx = ctxReale;
-    pixiSceneTexture.source.update();
-    for(const nodo of [
-      pixiFondo, pixiUnderSprite, pixiTerrainLayer, pixiShadowLayer,
-      pixiWorldLayer, pixiEffectSprite, pixiLightSprite, pixiBloomSprite,
-      pixiGradeLayer, pixiRaysSprite, pixiVignetteSprite, pixiTextSprite
-    ]) nodo.visible = false;
-    pixiSceneSprite.visible = true;
+    registraUploadPixi(pixiSceneTexture, pixiComposite.width, pixiComposite.height);
+    mostraSoloCompositoPixi();
+    const presentazioneInizio = performance.now();
     pixiRenderer.render({ container:pixiStage });
+    presentazioneMs += performance.now() - presentazioneInizio;
   }
-  const renderMs = performance.now() - renderInizio;
+  const renderMs = presentazioneMs;
+  const composizioneMs = renderInizio - frameInizio + ponteComposizioneMs;
+  const totaleMs = performance.now() - frameInizio;
   frameRenderMs += renderMs;
+  frameComposizioneMs += composizioneMs;
+  frameTotaleMs += totaleMs;
+  frameUploadByteTot += pixiTextureByteAggiornate;
+  frameUploadMsTot += frameUploadMs;
   frameRenderN++;
   if(renderMs > frameRenderPicco) frameRenderPicco = renderMs;
+  if(composizioneMs > frameComposizionePicco) frameComposizionePicco = composizioneMs;
+  if(totaleMs > frameTotalePicco) frameTotalePicco = totaleMs;
+  if(frameUploadMs > frameUploadMsPicco) frameUploadMsPicco = frameUploadMs;
+  accodaCampioneTempo(frameRenderCampioni, renderMs);
+  accodaCampioneTempo(frameUploadCampioni, frameUploadMs);
+  accodaCampioneTempo(frameComposizioneCampioni, composizioneMs);
+  accodaCampioneTempo(frameTotaleCampioni, totaleMs);
 };
 
 R.backend = ()=>backend;
@@ -2041,11 +2234,30 @@ R.diagnostica = function(azzera){
     ombrePixiVisibili:backend === 'pixi' ? ombreVisibili : 0,
     texturePixiLocali:backend === 'pixi' ? textureLocali : 0,
     texturePixiAggiornate:backend === 'pixi' ? pixiTextureAggiornate : 0,
+    uploadPixiMiBUltimo:backend === 'pixi' ? pixiTextureByteAggiornate/1048576 : 0,
+    uploadPixiMiBMedio:backend === 'pixi' && frameRenderN
+      ? frameUploadByteTot/frameRenderN/1048576 : 0,
+    uploadMedioMs:backend === 'pixi' && frameRenderN ? frameUploadMsTot/frameRenderN : 0,
+    uploadP95Ms:backend === 'pixi' ? percentileTempo(frameUploadCampioni, 0.95) : 0,
+    uploadPiccoMs:backend === 'pixi' ? frameUploadMsPicco : 0,
     frameCampionati:frameRenderN,
+    composizioneMediaMs:frameRenderN ? frameComposizioneMs/frameRenderN : 0,
+    composizioneP95Ms:percentileTempo(frameComposizioneCampioni, 0.95),
+    composizionePiccoMs:frameComposizionePicco,
     blitMedioMs:frameRenderN ? frameRenderMs/frameRenderN : 0,
-    blitPiccoMs:frameRenderPicco
+    blitP95Ms:percentileTempo(frameRenderCampioni, 0.95),
+    blitPiccoMs:frameRenderPicco,
+    frameMedioMs:frameRenderN ? frameTotaleMs/frameRenderN : 0,
+    frameP95Ms:percentileTempo(frameTotaleCampioni, 0.95),
+    framePiccoMs:frameTotalePicco
   };
-  if(azzera){ frameRenderMs=0; frameRenderN=0; frameRenderPicco=0; }
+  if(azzera){
+    frameRenderMs=0; frameRenderN=0; frameRenderPicco=0;
+    frameComposizioneMs=0; frameComposizionePicco=0;
+    frameTotaleMs=0; frameTotalePicco=0; frameUploadByteTot=0;
+    frameUploadMs=0; frameUploadMsTot=0; frameUploadMsPicco=0;
+    frameComposizioneCampioni=[]; frameUploadCampioni=[]; frameRenderCampioni=[]; frameTotaleCampioni=[];
+  }
   return dati;
 };
 
@@ -2435,7 +2647,7 @@ function arredoDaImmagine(o, wx, wy, piega){
   } else {
     sx.drawImage(img, Math.round(dx), Math.round(dy), iw, ih);
   }
-  return true;
+  return { x:Math.round(dx), y:Math.round(dy), w:iw, h:ih };
 }
 
 /* `wx, wy` sono l'origine della casella in pixel di MONDO, e servono
@@ -2445,27 +2657,19 @@ function arredoDaImmagine(o, wx, wy, piega){
 function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
   // il PNG, se c'è, sostituisce tutto il blocco disegnato a mano
   const piega = o.kind === 'spaventapasseri' ? FX.vento(gx*T, gy*T)*0.05 : 0;
-  if(arredoDaImmagine(o, px, py, piega)){
-    /* Il PNG sostituisce il DISEGNO, non quello che ci va sopra. La
-       targhetta del cartello è una scritta: si stampa dopo
-       l'ingrandimento, alla risoluzione vera dello schermo, e non è mai
-       stata parte dello sprite. Uscendo di qui senza, un cartello
-       piantato dal giocatore resterebbe una tavoletta vuota — e sarebbe
-       proprio quello che ci si è scritti sopra a sparire.
-
-       Sta 46 px sopra alla casella e non 24 come col disegno in codice,
-       ed è il cartello che si è alzato, non la targhetta che si è
-       spostata: il PNG è alto 96 su un'impronta di 64, appoggia sul
-       bordo basso, quindi il bordo alto delle tavole sta a −32 invece
-       che a −11. Col vecchio numero la scritta cadeva IN MEZZO alle due
-       tavole, che è il posto dove il disegno ha già le sue righe chiare:
-       si leggeva una targa sopra a un'altra targa. */
-    if(!catturaNodoPixi && o.kind === 'cartello' && o.testo) targhetta(o.testo, px+T/2, py-46);
+  const arredo = arredoDaImmagine(o, px, py, piega);
+  if(arredo){
+    if(o.kind === 'cartello' && o.testo)
+      disegnaScrittaCartello(o.testo, arredo.x, arredo.y, 'png');
     return;
   }
   raddoppia(sx, px, py);
   disegnaOggettoDentro(o, 0, 0, gx, gy, t, stag, G, px, py);
   sx.restore();
+  /* Il disegno di riserva ha la tavola quattro pixel più in basso del PNG.
+     Anche durante il caricamento la scritta resta quindi sul legno. */
+  if(o.kind === 'cartello' && o.testo)
+    disegnaScrittaCartello(o.testo, px-16, py-28, 'codice');
 }
 function disegnaOggettoDentro(o, px, py, gx, gy, t, stag, G, wx, wy){
   switch(o.t){
@@ -2893,18 +3097,6 @@ function disegnaOggettoDentro(o, px, py, gx, gy, t, stag, G, wx, wy){
       } else {
         spr(img, px-8, py+U-mez(img.height)+2);
       }
-      /* Il cartello scritto dal giocatore. Quelli del paese («↑ Miniera»)
-         il testo ce l'hanno da sempre, ma si legge solo standoci accanto
-         e premendo E: per dire «qui pomodori, là patate» servirebbe fare
-         il giro del campo. Qui il testo sta sopra la tavoletta e si legge
-         da fermi — è la targhetta del nome di una cassa, stessa funzione
-         e stessa fila, perché è la stessa domanda: cosa c'è qui.
-
-         Dopo lo sprite, non prima: la targhetta appoggia sul bordo alto
-         della tavoletta, e disegnata prima ci finirebbe sotto. Un
-         cartello appena piantato non ha ancora testo, e una targhetta
-         vuota sarebbe una toppa di legno sospesa a mezz'aria. */
-      if(!catturaNodoPixi && o.kind==='cartello' && o.testo) targhetta(o.testo, wx+T/2, wy-24);
       break;
     }
   }

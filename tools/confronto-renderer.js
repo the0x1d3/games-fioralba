@@ -72,6 +72,14 @@ const SCENE = [
     mappa: 'spiaggia', posizione:[23,4], ora:960, meteo:'nuvoloso',
     tempo:4580, zoom:null, seme:4104,
     animali: [], fauna: [{ tipo:'uccellino', x:24, y:4, dir:1, frame:2 }]
+  },
+  {
+    id: 'attrezzo-e-cartello',
+    viewport: { width:1280, height:720, dpr:1, mobile:false },
+    mappa: 'podere', posizione:[14,15], ora:760, meteo:'sereno',
+    tempo:3180, zoom:2, seme:4105, attrezzo:'canna',
+    cartello: { x:16, y:15, testo:'Fagioli d’estate' },
+    animali: [], fauna: []
   }
 ];
 
@@ -195,9 +203,15 @@ async function preparaPagina(browser, baseUrl, scena, renderer){
       WORLD.nuovoGiorno(G.maps, G.stagione().id, s.seme);
 
       const m = G.mappa();
+      if(s.cartello){
+        m.obj[WORLD.idx(m,s.cartello.x,s.cartello.y)] = {
+          t:'mobile', kind:'cartello', solido:true, testo:s.cartello.testo
+        };
+      }
       G.p = {
         ...G.p, px:s.posizione[0]*64+32, py:s.posizione[1]*64+40,
-        dir:1, frame:2, animT:320, dorme:false, look:G.look
+        dir:1, frame:2, animT:320, dorme:false, look:G.look,
+        attrezzoVisibile:s.attrezzo || null
       };
       G.animali = s.animali.map(a=>({
         tipo:a.tipo, mappa:s.mappa, px:a.x*64+32, py:a.y*64+40,
@@ -234,9 +248,39 @@ async function preparaPagina(browser, baseUrl, scena, renderer){
       };
       REND.initMeteo();
       REND.disegna(G);
+      let cartelloAggiornato = null;
+      if(s.cartello){
+        const telaGioco = document.querySelector('#game');
+        const prima = REND.backend()==='canvas' ? telaGioco.toDataURL() : null;
+        m.obj[WORLD.idx(m,s.cartello.x,s.cartello.y)].testo = 'Meloni';
+        REND.disegna(G);
+        if(prima) cartelloAggiornato = prima !== telaGioco.toDataURL();
+      }
+      const poseNonCanoniche = [];
+      const poseBordiNonAllineati = [];
+      const fondoVisibile = tela=>{
+        const dati = tela.getContext('2d').getImageData(0,0,tela.width,tela.height).data;
+        let fondo = -1;
+        for(let y=0;y<tela.height;y++) for(let x=0;x<tela.width;x++)
+          if(dati[(y*tela.width+x)*4+3] > 0) fondo = y;
+        return fondo;
+      };
+      for(const attrezzo of [null, ...Object.keys(DATA.OMINO_ATTREZZI||{})])
+        for(let dir=0;dir<4;dir++){
+          const posa = ART.ominoSprite(dir, 0, attrezzo);
+          if(posa && (posa.width !== ART.OMINO_W || posa.height !== ART.OMINO_H))
+            poseNonCanoniche.push({ attrezzo, dir, w:posa.width, h:posa.height });
+          /* Alcuni attrezzi sporgono di un solo pixel sotto la suola:
+             non è un passo sfalsato e non va corretto spostando tutta la
+             posa. Qualunque scarto maggiore romperebbe l'appoggio comune. */
+          if(posa && Math.abs(fondoVisibile(posa) - (ART.OMINO_H-3)) > 1)
+            poseBordiNonAllineati.push({ attrezzo, dir, fondo:fondoVisibile(posa) });
+        }
       return {
         backend:REND.backend(), info:REND.info(), npc:G.npcVivi().length,
-        camera:{ ...G.cam }, output:{ width:document.querySelector('#game').width, height:document.querySelector('#game').height }
+        camera:{ ...G.cam },
+        output:{ width:document.querySelector('#game').width, height:document.querySelector('#game').height },
+        poseNonCanoniche, poseBordiNonAllineati, cartelloAggiornato
       };
     } finally {
       Math.random = randomOriginale;
@@ -279,7 +323,9 @@ async function preparaPagina(browser, baseUrl, scena, renderer){
         REND.disegna(G);
         return {
           backend:REND.backend(), info, npc:G.npcVivi().length,
-          camera:{ ...G.cam }, output:{ width:document.querySelector('#game').width, height:document.querySelector('#game').height }
+          camera:{ ...G.cam },
+          output:{ width:document.querySelector('#game').width, height:document.querySelector('#game').height },
+          poseNonCanoniche:[], poseBordiNonAllineati:[], cartelloAggiornato:null
         };
       } finally {
         Math.random = randomOriginale;
@@ -290,6 +336,12 @@ async function preparaPagina(browser, baseUrl, scena, renderer){
   if(esito.backend !== atteso) throw new Error(`backend ${esito.backend}, atteso ${atteso}`);
   if(scena.npc && esito.npc < 1)
     throw new Error('la scena NPC non ha nessun abitante visibile');
+  if((esito.poseNonCanoniche||[]).length)
+    throw new Error('pose del giocatore non canoniche: ' + JSON.stringify(esito.poseNonCanoniche));
+  if((esito.poseBordiNonAllineati||[]).length)
+    throw new Error('piedi del giocatore non allineati: ' + JSON.stringify(esito.poseBordiNonAllineati));
+  if(esito.cartelloAggiornato === false)
+    throw new Error('il testo del cartello non aggiorna i suoi pixel');
 
   /* Pixi lascia che WebGL scarti il buffer dopo la presentazione, quindi
      toDataURL restituirebbe nero. Nascondiamo invece tutti i livelli DOM

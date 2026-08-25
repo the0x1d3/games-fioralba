@@ -111,7 +111,15 @@ function scriviStato(){
     ? 'renderer: ' + rd.backend + (rd.pixiVersion ? ' ' + rd.pixiVersion : '') +
       (rd.nodiPixiVisibili ? ' · nativi ' + rd.nodiPixiVisibili + '/' + rd.nodiPixiCache : '') +
       (rd.texturePixiAggiornate ? ' · texture ↑' + rd.texturePixiAggiornate : '') +
-      (rd.frameCampionati ? ' · blit ' + rd.blitMedioMs.toFixed(2) + ' ms' : '')
+      (rd.frameCampionati
+        ? ' · frame ' + rd.frameMedioMs.toFixed(2) + ' ms (p95 ' + rd.frameP95Ms.toFixed(2) + ')' +
+          ' · comp ' + rd.composizioneMediaMs.toFixed(2) +
+          ' · presenta ' + rd.blitMedioMs.toFixed(2) +
+          (rd.backend === 'pixi'
+            ? ' · upload ' + rd.uploadMedioMs.toFixed(2) + ' ms/' +
+              rd.uploadPixiMiBMedio.toFixed(2) + ' MiB'
+            : '')
+        : '')
     : 'renderer: non inizializzato';
   if(!G.inGioco){ statoEl.innerHTML = 'fuori partita<br>' + renderer; return; }
   const v = G.trame.veglia;
