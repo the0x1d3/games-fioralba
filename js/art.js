@@ -3305,28 +3305,46 @@ A.gatto = function(skin, frame, dir){
   return c;
 };
 
-/* La tavola mostra una singola staccionata e un singolo cancelletto
-   orizzontali. Soltanto una tratta che continua da entrambe le parti può
-   usare il riquadro senza inventare un palo o una traversa; per angoli,
-   estremità e incroci il chiamante riceve null e conserva l'arte in codice. */
+/* Foglio Set01 (staccionata.png): 4×2 celle, ognuna 362×543 px.
+   Mappa lati (bitmask N=1 E=2 S=4 W=8) → {col, row} nel foglio.
+   lati=9 (NW) è derivato ribaltando orizzontalmente lati=3 (NE).
+   Le configurazioni non elencate (end-cap, NES, NSW…) tornano null
+   e il chiamante conserva il disegno procedurale di sempre.
+   Il cancelletto resta sempre procedurale (null). */
+const STAC_MAPPA = {
+  15:{col:0,row:0},  // NESW croce
+   5:{col:1,row:0},  // NS dritto
+  14:{col:2,row:0},  // SEW T (manca N)
+  11:{col:3,row:0},  // NEW T (manca S)
+  12:{col:0,row:1},  // SW angolo
+  10:{col:1,row:1},  // EW dritto
+   6:{col:2,row:1},  // ES angolo
+   3:{col:3,row:1},  // NE angolo
+   9:null,           // NW — derivato (flip di NE)
+};
 const recintiIllustrati={}, fonteRecinti={};
 A.recintoIllustrato = function(kind, lati){
+  if(kind!=='recinto') return null;   // cancelletto: procedurale
   const L=lati|0;
-  const orizz=L===10, verticale=L===5;
-  if(!orizz && !verticale) return null;
-  const foglio=window.IMG && IMG.prendi('foglio:recinti');
-  const dati=window.DATA && DATA.RECINTI;
+  const sorgL = (L===9) ? 3 : L;     // NW → usa NE come sorgente (poi flip)
+  const pos = STAC_MAPPA[sorgL];
+  if(!pos) return null;               // configurazione non coperta → procedurale
+  const foglio=window.IMG && IMG.prendi('foglio:staccionata');
+  const dati=window.DATA && DATA.STACCIONATA;
   if(!foglio || !dati) return null;
-  const key=kind+'|'+L;
+  const key=L+'|r';
   if(recintiIllustrati[key] && fonteRecinti[key]===foglio) return recintiIllustrati[key];
-  const c=telaNetta(T,T), x=c.getContext('2d');
-  x.imageSmoothingEnabled=false;
-  const sx=kind==='cancelletto' ? dati.cella : 0;
-  if(verticale){
-    x.translate(T/2,T/2); x.rotate(Math.PI/2);
-    x.drawImage(foglio,sx,0,dati.cella,dati.cella,-T/2,-T/2,T,T);
-  }else{
-    x.drawImage(foglio,sx,0,dati.cella,dati.cella,0,0,T,T);
+  const cw=dati.cella, ch=dati.altezza;
+  const c=telaNetta(T,T), cx=c.getContext('2d');
+  cx.imageSmoothingEnabled=false;
+  if(L===9){
+    // NW = NE ribaltato orizzontalmente
+    cx.save();
+    cx.scale(-1,1);
+    cx.drawImage(foglio, STAC_MAPPA[3].col*cw, STAC_MAPPA[3].row*ch, cw, ch, -T, 0, T, T);
+    cx.restore();
+  } else {
+    cx.drawImage(foglio, pos.col*cw, pos.row*ch, cw, ch, 0, 0, T, T);
   }
   recintiIllustrati[key]=c; fonteRecinti[key]=foglio;
   return c;

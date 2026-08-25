@@ -150,6 +150,7 @@ async function init(){
     IMG.precarica(DATA.ANIMALI, 'an:');            // le bestie, con le loro pose
     IMG.precarica({ gatto: DATA.GATTO }, 'foglio:');
     IMG.precarica({ recinti: DATA.RECINTI }, 'foglio:');
+    IMG.precarica({ staccionata: DATA.STACCIONATA }, 'foglio:');
     /* Col prefisso: `cartello` e `spaventapasseri` stanno in tutti e due
        gli elenchi, e le immagini si tengono per id — senza, la seconda
        richiesta si perderebbe e nello zaino resterebbe il disegno in

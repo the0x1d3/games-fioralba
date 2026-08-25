@@ -13,3 +13,4 @@
 - [Predicati editor vs importatore](editor-vs-importatore-predicati.md) — oggettoEditorSicuro allarga la selezione (barca/consegna/bancarella/baule) senza allargare il validatore JSON.
 - [Mock DOM in coerenza.js](coerenza-dom-mock.md) — il mock document nei test Node necessita di querySelectorAll e addEventListener per l'editor con le maniglie drag.
 - [Renderer target: PixiJS WebGL](pixi-renderer-target.md) — tutte le modifiche visive vanno applicate al percorso PixiJS WebGL; il Canvas 2D è solo fallback di sviluppo.
+- [Staccionata sprite mapping](staccionata-sprite-mapping.md) — mappa Set01 (staccionata.png) su lati bitmask + come aggiungere fogli non-arredo a coerenza.js.

@@ -2037,6 +2037,11 @@ D.GATTO = {
 /* Due riquadri quadrati affiancati: staccionata a sinistra e cancelletto
    a destra. Le tratte non dritte restano nell'arte procedurale. */
 D.RECINTI = { file:'recinti-e-cancelletti.png', cella:887 };
+/* Foglio Set01: 4 col × 2 righe, ogni cella 362×543 px.
+   Mappatura lati (bitmask N=1 E=2 S=4 W=8):
+   R0C0=15 R0C1=5 R0C2=14 R0C3=11 / R1C0=12 R1C1=10 R1C2=6 R1C3=3
+   lati=9 (NW) è derivato ribaltando lati=3 (NE). */
+D.STACCIONATA = { file:'staccionata.png', cella:362, altezza:543 };
 
 /* I comandi rapidi non sono oggetti dello zaino: sono cinque pulsanti
    completi per l'HUD e hanno perciò una tabella separata da `D.ICONE`.

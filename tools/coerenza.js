@@ -3196,6 +3196,26 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
     }
   }
 
+  /* Foglio Set01: 4 colonne × 2 righe di pezzi di staccionata, ognuno
+     362×543 px. Geometria: larghezza = cella × 4, altezza = altezza × 2. */
+  const STAC = DATA.STACCIONATA;
+  if (!STAC) problemi.push('manca DATA.STACCIONATA: il foglio staccionata Set01 non viene caricato');
+  else {
+    usati.add(STAC.file);
+    const f = path.join(dir, STAC.file);
+    if (!fs.existsSync(f)) problemi.push(`DATA.STACCIONATA vuole img/${STAC.file}, che non c'è`);
+    else {
+      const b = fs.readFileSync(f);
+      if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) problemi.push(`img/${STAC.file} non è un PNG`);
+      else {
+        const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+        if (w !== STAC.cella * 4 || h !== STAC.altezza * 2)
+          problemi.push(`img/${STAC.file} è ${w}×${h}, ma DATA.STACCIONATA dichiara ` +
+                        `4×${STAC.cella}=${STAC.cella*4} di larghezza e 2×${STAC.altezza}=${STAC.altezza*2} di altezza`);
+      }
+    }
+  }
+
   /* DUE TABELLE NON POSSONO RIVENDICARE LO STESSO FILE.
 
      È successo davvero, e in silenzio: le icone dello zaino si chiamano
@@ -3216,7 +3236,7 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
     for (const id in (DATA[nome] || {})) dichiara(`DATA.${nome}.${id}`, DATA[nome][id].file);
   for (const nome of ['OMINO', 'TERRENI', 'MINERALI'])
     if (DATA[nome]) dichiara(`DATA.${nome}`, DATA[nome].file);
-  for (const nome of ['GATTO', 'RECINTI'])
+  for (const nome of ['GATTO', 'RECINTI', 'STACCIONATA'])
     if (DATA[nome]) dichiara(`DATA.${nome}`, DATA[nome].file);
   for (const f in rivendica)
     if (rivendica[f].length > 1)
