@@ -84,3 +84,17 @@ mtime_ms = 1787232385695
 storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bd429ef4-4551-4c6f-ab93-8ff04de553da/7b963d9a-38a6-4ebc-932a-23bc5f9b85e4/bfaccb0e-c2ce-41c8-a362-a812ba1c81ac"
 storage_version_token = "1787232885474638"
 content_type = "image/png"
+
+[[outputs]]
+id = "uKmCE0rlAgzWLzLCCrrqh"
+uri = "file://img/recinti-e-cancelletti.png"
+type = "image"
+title = "Sprite originale: staccionate e cancelletto"
+description = "PNG trasparente attualmente usato dal gioco. Contiene il tratto orizzontale e il cancelletto; il verticale è una rotazione a runtime e gli angoli sono ancora procedurali."
+logical_id = "05705b28-f0e1-4089-847a-407823300a76"
+content_hash = "sha256:ff9824fdd0bfe3faff7600a225a01f9681457e12fe91e88a5a811d19637b2395"
+size = 716295
+mtime_ms = 1787238383523
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bd429ef4-4551-4c6f-ab93-8ff04de553da/05705b28-f0e1-4089-847a-407823300a76/fd05504b-c032-4c6c-898f-112485d0a49f"
+storage_version_token = "1787242121238496"
+content_type = "image/png"

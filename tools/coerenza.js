@@ -3102,8 +3102,45 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
         const colonne = w / GATTO.cella, righe = Math.floor(h / GATTO.cella);
         if (!Number.isInteger(colonne))
           problemi.push(`img/${GATTO.file} non è largo un numero intero di celle da ${GATTO.cella}px`);
-        if (GATTO.cammino < 0 || GATTO.cammino + 1 >= colonne)
-          problemi.push(`DATA.GATTO.cammino=${GATTO.cammino} non lascia due pose dentro le ${colonne} colonne`);
+        /* Il foglio ha intenzionalmente un margine inattivo sotto l'ultima
+           riga: contano le celle dichiarate dagli aspetti, non l'altezza
+           totale esportata dal generatore. */
+        const direzioni = GATTO.direzioni || {};
+        for (const nome of ['giu','sinistra','destra','su']) {
+          const posa = direzioni[nome];
+          if (!posa) { problemi.push(`DATA.GATTO non dichiara la posa «${nome}»`); continue; }
+          const fotogrammi = posa.fotogrammi || 1;
+          if (!Number.isInteger(posa.colonna) || posa.colonna < 0 ||
+              !Number.isInteger(fotogrammi) || fotogrammi < 1 ||
+              posa.colonna + fotogrammi > colonne)
+            problemi.push(`la posa «${nome}» del gatto esce dalle ${colonne} colonne del foglio`);
+        }
+        if (!(GATTO.scala > 0 && GATTO.scala <= 1))
+          problemi.push(`DATA.GATTO.scala=${GATTO.scala} non è una scala valida`);
+        if (!Number.isInteger(GATTO.margine) || GATTO.margine < 0 || GATTO.margine >= GATTO.cella)
+          problemi.push(`DATA.GATTO.margine=${GATTO.margine} non è un margine valido`);
+        if (!Array.isArray(GATTO.ritagli) || GATTO.ritagli.length < ASPETTI_GATTO.length)
+          problemi.push('DATA.GATTO non dichiara un ritaglio per ogni aspetto');
+        else for (const aspetto of ASPETTI_GATTO) {
+          const rigaRitagli = GATTO.ritagli[aspetto.riga];
+          if (!Array.isArray(rigaRitagli) || rigaRitagli.length < colonne) {
+            problemi.push(`l'aspetto «${aspetto.id}» non ha tutti i ${colonne} ritagli sorgente`);
+            continue;
+          }
+          for (let i=0; i<colonne; i++) {
+            const q = rigaRitagli[i];
+            if (!q || !Number.isInteger(q.x) || !Number.isInteger(q.y) ||
+                !Number.isInteger(q.w) || !Number.isInteger(q.h) ||
+                q.w < 1 || q.h < 1 || q.x < 0 || q.y < 0 || q.x+q.w > w || q.y+q.h > h)
+              problemi.push(`il ritaglio ${i} dell'aspetto «${aspetto.id}» esce da img/${GATTO.file}`);
+          }
+          for (let a=0; a<colonne; a++) for (let b=a+1; b<colonne; b++) {
+            const A=rigaRitagli[a], B=rigaRitagli[b];
+            if (!A || !B) continue;
+            if (A.x < B.x+B.w && A.x+A.w > B.x && A.y < B.y+B.h && A.y+A.h > B.y)
+              problemi.push(`i ritagli ${a} e ${b} dell'aspetto «${aspetto.id}» si sovrappongono`);
+          }
+        }
         const visti = new Set();
         if (ASPETTI_GATTO.length !== 5)
           problemi.push(`DATA.GATTI ha ${ASPETTI_GATTO.length} aspetti: il foglio ne presenta cinque righe`);

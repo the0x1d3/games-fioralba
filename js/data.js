@@ -2009,10 +2009,31 @@ D.GATTI = [
   { id:'siamese', nome:'Siamese crema', riga:3, prezzo:390 },
   { id:'tricolore',nome:'Tricolore',    riga:4, prezzo:460 }
 ];
-/* Il foglio dei gatti è una griglia 8×5 di celle 192×192. Le due pose
-   di cammino che usa il gioco partono dalla colonna 2; la direzione
-   sinistra nasce ribaltando la stessa posa, senza duplicare immagini. */
-D.GATTO = { file:'gatti.png', cella:192, cammino:2 };
+/* Il foglio dei gatti ha otto pose per riga: la prima guarda in basso, la
+   seconda in alto; dalla terza in poi ci sono sei falcate laterali rivolte
+   a destra. Solo il lato sinistro si specchia: su e giù hanno già le loro
+   pose e non devono mai camminare all'indietro.
+
+   Le sagome generate non rispettano perfettamente una griglia quadrata:
+   code e zampe possono oltrepassare la cella teorica. `ritagli` dichiara
+   quindi il rettangolo sorgente completo di ogni posa, con tre pixel di
+   respiro ma senza frammenti dei gatti vicini. */
+D.GATTO = {
+  file:'gatti.png', cella:192, scala:0.28, margine:3,
+  direzioni:{
+    giu:      { colonna:0, fotogrammi:1 },
+    sinistra: { colonna:2, fotogrammi:6, specchia:true },
+    destra:   { colonna:2, fotogrammi:6 },
+    su:       { colonna:1, fotogrammi:1 }
+  },
+  ritagli:[
+    [{x:17,y:39,w:124,h:164},{x:190,y:40,w:147,h:162},{x:349,y:41,w:195,h:161},{x:550,y:38,w:189,h:165},{x:768,y:39,w:184,h:164},{x:1009,y:38,w:175,h:171},{x:1196,y:42,w:144,h:164},{x:1341,y:43,w:185,h:160}],
+    [{x:16,y:222,w:125,h:168},{x:186,y:222,w:156,h:168},{x:349,y:226,w:195,h:164},{x:550,y:221,w:189,h:169},{x:768,y:225,w:193,h:165},{x:1003,y:225,w:180,h:171},{x:1190,y:228,w:149,h:162},{x:1341,y:225,w:180,h:165}],
+    [{x:16,y:409,w:126,h:169},{x:186,y:407,w:156,h:171},{x:351,y:412,w:194,h:166},{x:550,y:407,w:191,h:174},{x:769,y:410,w:193,h:171},{x:992,y:418,w:191,h:163},{x:1189,y:414,w:147,h:167},{x:1341,y:422,w:187,h:156}],
+    [{x:15,y:597,w:127,h:174},{x:185,y:597,w:153,h:174},{x:350,y:605,w:195,h:166},{x:549,y:595,w:200,h:177},{x:769,y:600,w:194,h:174},{x:1000,y:599,w:184,h:178},{x:1185,y:603,w:151,h:172},{x:1341,y:595,w:177,h:178}],
+    [{x:15,y:791,w:128,h:182},{x:183,y:791,w:155,h:181},{x:345,y:799,w:196,h:173},{x:546,y:787,w:200,h:186},{x:768,y:792,w:195,h:183},{x:1000,y:799,w:183,h:180},{x:1185,y:792,w:153,h:181},{x:1344,y:799,w:183,h:174}]
+  ]
+};
 /* Due riquadri quadrati affiancati: staccionata a sinistra e cancelletto
    a destra. Le tratte non dritte restano nell'arte procedurale. */
 D.RECINTI = { file:'recinti-e-cancelletti.png', cella:887 };

@@ -1945,19 +1945,23 @@ R.disegna = function(G){
     if(a.mappa!==m.id) continue;
     const px=Math.round(a.px)+ox, py=Math.round(a.py)+oy;
     if(px<-60*K||px>VW+60*K||py<-70*K||py>VH+60*K) continue;
-    const aframe = a.tipo==='gatto' ? (t/300|0)%2 : (t/260|0)%2;
+    const aframe = a.tipo==='gatto' ? (t/120|0)%6 : (t/260|0)%2;
     const skinGatto = a.tipo==='gatto' && G.gatto ? G.gatto.skin||'arancio' : '';
+    const direzioneGatto = a.dir4===undefined ? (a.dir<0?1:2) : a.dir4;
     lista.push({
       id:identitaPixi('animale',a),
       y:a.py,
       bounds:boundsPixi(px-80,py-96,160,128),
-      chiave:[a.tipo,skinGatto,a.dir,aframe].join('|'),
+      chiave:[a.tipo,skinGatto,a.tipo==='gatto'?direzioneGatto:a.dir,aframe].join('|'),
       chiaveOmbra:'ombra-animale',
       s:()=>{ FX.ombraTerra(sx, px, py-K, 7*K, 2.6*K, 0.22); },
       d:()=>{
-        const img = a.tipo==='gatto' ? ART.gatto(skinGatto,(t/300|0)%2,a.dir) : ART.gallina((t/260|0)%2, a.dir);
-        sx.drawImage(FX.contorno(img), (px-17*K)|0, (py-29*K)|0);
-        sx.drawImage(img, (px-16*K)|0, (py-28*K)|0);
+        const img = a.tipo==='gatto'
+          ? ART.gatto(skinGatto,aframe,direzioneGatto)
+          : ART.gallina((t/260|0)%2, a.dir);
+        const dx=(px-img.width/2)|0, dy=(py-img.height+2*K)|0;
+        sx.drawImage(FX.contorno(img), dx-K, dy-K);
+        sx.drawImage(img, dx, dy);
       }});
   }
 

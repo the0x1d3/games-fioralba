@@ -2118,7 +2118,7 @@ function window4(x, wx, wy, lit, u){
    Gira una volta all'avvio e scrive in console, come
    `W.verificaProporzioni`: un canvas ce l'ha solo il browser. */
 A.verificaDirezioni = function(){
-  if(!window.DATA || !DATA.NPC_FOGLI) return [];
+  if(!window.DATA) return [];
   const scarti = [];
   const dati = (c)=>{ const t = cv(c.width, c.height), tx = t.getContext('2d');
     tx.drawImage(c, 0, 0); return tx.getImageData(0,0,t.width,t.height).data; };
@@ -2141,7 +2141,7 @@ A.verificaDirezioni = function(){
      l'ordine è giusto per costruzione — ma è giusto finché qualcuno non
      lo riesporta, ed è esattamente quello che è successo agli abitanti. */
   const chi = { '(il contadino)': (d)=>A.ominoSprite(d, 0, null) };
-  for(const id in DATA.NPC_FOGLI) chi[id] = (d)=>A.npcSprite(id, d, 0);
+  for(const id in (DATA.NPC_FOGLI||{})) chi[id] = (d)=>A.npcSprite(id, d, 0);
   for(const id in chi){
     const giu = chi[id](0), sin = chi[id](1), des = chi[id](2), su = chi[id](3);
     if(!giu || !sin || !des || !su) continue;      // foglio non ancora arrivato
@@ -2258,6 +2258,68 @@ A.verificaDirezioni = function(){
         if(colpevole === null || suo - meglio < 0.05) continue;
         scarti.push('omino con ' + att + ': la riga di ' + NOMI[d] + ' non è quella (' +
                     suo.toFixed(2) + ') — sembra ' + NOMI[colpevole] + ' (' + meglio.toFixed(2) + ')');
+      }
+    }
+  }
+
+  /* Il gatto ha un contratto diverso dagli altri fogli: quattro direzioni
+     dichiarate, ma solo i profili hanno una falcata. Qui non si tenta di
+     indovinare se un disegno "sembra" davanti: si verifica invece la cosa
+     che il renderer deve garantire per tutte e cinque le skin, cioè una
+     tela comune, una sagoma non tagliata e un fondo condiviso. Pixi riceve
+     questa stessa tela da `ART.gatto`, quindi il controllo copre entrambi
+     i backend senza introdurre una seconda via di ritaglio. */
+  const datiGatto=DATA.GATTO;
+  const foglioGatto=window.IMG && IMG.prendi && IMG.prendi('foglio:gatto');
+  if(datiGatto && foglioGatto && datiGatto.direzioni){
+    const bordoAlfa=(canv)=>{
+      const z=cv(canv.width,canv.height), zx=z.getContext('2d');
+      zx.drawImage(canv,0,0);
+      const a=zx.getImageData(0,0,z.width,z.height).data;
+      let sx=z.width, sy=z.height, dx=-1, dy=-1;
+      for(let y=0;y<z.height;y++) for(let x=0;x<z.width;x++){
+        if(a[(y*z.width+x)*4+3] <= 20) continue;
+        sx=Math.min(sx,x); sy=Math.min(sy,y); dx=Math.max(dx,x); dy=Math.max(dy,y);
+      }
+      return dx<0 ? null : {x:sx,y:sy,w:dx-sx+1,h:dy-sy+1};
+    };
+    const versi=[['giu','giù',0],['sinistra','sinistra',1],['destra','destra',2],['su','su',3]];
+    const ritagliVerificati=new Set();
+    const fonteIsolata=(q)=>{
+      const bordo=2, z=cv(q.w+bordo*2,q.h+bordo*2), zx=z.getContext('2d');
+      zx.drawImage(foglioGatto,q.x-bordo,q.y-bordo,q.w+bordo*2,q.h+bordo*2,0,0,z.width,z.height);
+      const alfa=zx.getImageData(0,0,z.width,z.height).data;
+      for(let y=0;y<z.height;y++) for(let x=0;x<z.width;x++){
+        if(x>=bordo && x<z.width-bordo && y>=bordo && y<z.height-bordo) continue;
+        if(alfa[(y*z.width+x)*4+3] > 20) return false;
+      }
+      return true;
+    };
+    let appoggio=null;
+    for(const aspetto of (DATA.GATTI||[])){
+      for(const [id,nome,dir] of versi){
+        const n=Math.max(1,datiGatto.direzioni[id].fotogrammi|0);
+        for(let frame=0;frame<n;frame++){
+          const dettagli=posaGatto(datiGatto,dir,frame);
+          const q=ritaglioGatto(datiGatto,aspetto.riga,dettagli.colonna);
+          const chiave=aspetto.riga+'|'+dettagli.colonna;
+          if(!ritagliVerificati.has(chiave)){
+            ritagliVerificati.add(chiave);
+            if(!fonteIsolata(q))
+              scarti.push('gatto ' + aspetto.id + ', ' + nome + ': il ritaglio sorgente tocca un’altra posa');
+          }
+          const posa=A.gatto(aspetto.id,frame,dir), bordo=bordoAlfa(posa);
+          if(!bordo){ scarti.push('gatto ' + aspetto.id + ', ' + nome + ': posa vuota'); continue; }
+          if(posa.width!==T || posa.height!==T)
+            scarti.push('gatto ' + aspetto.id + ', ' + nome + ': la tela non è ' + T + '×' + T);
+          if(bordo.x===0 || bordo.y===0 || bordo.x+bordo.w===T)
+            scarti.push('gatto ' + aspetto.id + ', ' + nome + ': la sagoma tocca il bordo del ritaglio');
+          const fondo=bordo.y+bordo.h;
+          if(appoggio===null) appoggio=fondo;
+          else if(Math.abs(fondo-appoggio)>1)
+            scarti.push('gatto ' + aspetto.id + ', ' + nome + ': appoggio ' + fondo +
+              ' diverso da ' + appoggio + ' delle altre pose');
+        }
       }
     }
   }
@@ -3186,25 +3248,59 @@ function gattoProcedurale(frame){
   objCache[key]=c; return c;
 }
 
-/* Il foglio esterno tiene gatti a 3× della casella del mondo. Lo si
-   riduce in una tela 64×64 e la tela, non il PNG intero, passa al renderer:
-   Canvas e Pixi vedono quindi esattamente lo stesso sprite composto. */
+/* Il foglio esterno tiene gatti a 3× della casella del mondo. La sagoma
+   non riempie ogni cella nello stesso modo: ritagliare sempre il quadrato
+   intero la rendeva troppo grande e, nei frame con la coda larga, la
+   appoggiava in modo diverso. Si trova il bordo alfa di ogni posa, lo si
+   scala con un unico fattore dichiarato e lo si appoggia al fondo. La tela
+   composta resta comune a Canvas e Pixi, che quindi vedono lo stesso frame. */
 const gattiIllustrati={}, fonteGatti={};
+function ritaglioGatto(dati, riga, colonna){
+  const dichiarato=dati.ritagli && dati.ritagli[riga] && dati.ritagli[riga][colonna];
+  /* Il ripiego protegge fogli personalizzati più vecchi: il foglio di
+     Fioralba dichiara sempre i rettangoli completi, ma senza di essi
+     l'asset continua a mostrarsi invece di sparire. */
+  return dichiarato || {
+    x:colonna*dati.cella, y:riga*dati.cella, w:dati.cella, h:dati.cella
+  };
+}
+function posaGatto(dati, dir, frame){
+  const nomi=['giu','sinistra','destra','su'];
+  /* I salvataggi vecchi tenevano soltanto -1/1: restano pose laterali
+     sensate finché il gatto non si rimette in movimento e riceve `dir4`. */
+  const verso=(Number.isInteger(dir) && dir>=0 && dir<4)
+    ? nomi[dir] : (dir<0 ? 'sinistra' : 'destra');
+  const posa=dati.direzioni && dati.direzioni[verso];
+  if(!posa) return null;
+  const n=Math.max(1,posa.fotogrammi|0);
+  return { verso, colonna:posa.colonna+(n>1 ? (frame%n+n)%n : 0),
+    specchia:!!posa.specchia, frame:n>1 ? (frame%n+n)%n : 0 };
+}
 A.gatto = function(skin, frame, dir){
   /* Compatibilità con il vecchio contratto ART.gatto(frame). */
-  if(typeof skin==='number'){ dir=frame; frame=skin; skin='arancio'; }
-  skin=skin||'arancio'; frame=(frame||0)&1; dir=dir||1;
+  let contrattoVecchio=false;
+  if(typeof skin==='number'){
+    contrattoVecchio=true; dir=frame; frame=skin; skin='arancio';
+  }
+  skin=skin||'arancio'; frame=frame||0; dir=dir===undefined?2:dir;
+  if(contrattoVecchio) dir=dir<0?1:2;
   const foglio=window.IMG && IMG.prendi('foglio:gatto');
   const dati=window.DATA && DATA.GATTO;
   const aspetto=window.DATA && (DATA.GATTI||[]).find(p=>p.id===skin);
   if(!foglio || !dati || !aspetto) return gattoProcedurale(frame);
-  const key=skin+'|'+frame+'|'+(dir<0?-1:1);
+  const posa=posaGatto(dati,dir,frame);
+  if(!posa) return gattoProcedurale(frame);
+  const key=[skin,aspetto.riga,posa.verso,posa.colonna,posa.frame,
+    posa.specchia?1:0,dati.scala,dati.margine].join('|');
   if(gattiIllustrati[key] && fonteGatti[key]===foglio) return gattiIllustrati[key];
+  const taglio=ritaglioGatto(dati,aspetto.riga,posa.colonna);
   const c=telaNetta(T,T), x=c.getContext('2d');
   x.imageSmoothingEnabled=false;
-  if(dir<0){ x.translate(T,0); x.scale(-1,1); }
-  x.drawImage(foglio, (dati.cammino+frame)*dati.cella, aspetto.riga*dati.cella,
-    dati.cella,dati.cella,0,0,T,T);
+  const scala=dati.scala||T/dati.cella, w=Math.round(taglio.w*scala), h=Math.round(taglio.h*scala);
+  const px=((T-w)/2)|0, py=T-(dati.margine||0)-h;
+  if(posa.specchia){ x.translate(T,0); x.scale(-1,1); }
+  x.drawImage(foglio,taglio.x,taglio.y,
+    taglio.w,taglio.h,px,py,w,h);
   gattiIllustrati[key]=c; fonteGatti[key]=foglio;
   return c;
 };

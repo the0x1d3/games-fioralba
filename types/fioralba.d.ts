@@ -326,6 +326,17 @@ interface FioGattoAspetto {
   id: string; nome: string; riga: number; prezzo: number;
 }
 
+/** Una posa del gatto nel foglio: una cella ferma o una sequenza laterale. */
+interface FioGattoDirezione {
+  colonna: number;
+  fotogrammi: number;
+  /** Il lato sinistro riusa e ribalta le pose laterali rivolte a destra. */
+  specchia?: boolean;
+}
+
+/** Rettangolo sorgente di una posa nel foglio degli aspetti del gatto. */
+interface FioRitaglioGatto { x: number; y: number; w: number; h: number; }
+
 /** Struttura completa di window.DATA (js/data.js). */
 interface FioData {
   SEASONS: FioSeason[];
@@ -390,8 +401,10 @@ interface FioData {
   ARREDI_IN_ATTESA: Record<string, string>;
   /** I cinque aspetti cosmetici del gatto e la riga di ciascuno nel foglio. */
   GATTI: FioGattoAspetto[];
-  /** Foglio dei gatti: celle quadrate e prima colonna della camminata. */
-  GATTO: { file: string; cella: number; cammino: number };
+   /** Foglio dei gatti: celle, scala, appoggio e pose per le quattro direzioni. */
+   GATTO: { file: string; cella: number; scala: number; margine: number;
+            direzioni: Record<'giu' | 'sinistra' | 'destra' | 'su', FioGattoDirezione>;
+            ritagli: FioRitaglioGatto[][] };
   /** Tavola con una staccionata e un cancelletto quadrati affiancati. */
   RECINTI: { file: string; cella: number };
   /**

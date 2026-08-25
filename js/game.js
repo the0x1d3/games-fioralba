@@ -324,7 +324,7 @@ async function nuovaPartita(nome, skinGatto){
   if(window.SCENARI) SCENARI.applica(G.maps);
   G.p.look = G.look;
   G.p.px = 8*T+T/2; G.p.py = 10*T+T/2;
-  G.animali = [{tipo:'gatto', mappa:'podere', px:10*T, py:9*T, dir:1, tx:10, ty:9, wait:0}];
+  G.animali = [{tipo:'gatto', mappa:'podere', px:10*T, py:9*T, dir:1, dir4:2, tx:10, ty:9, wait:0}];
   WORLD.nuovoGiorno(G.maps, G.stagione().id, 12345);
   G.richieste = [];
   G.aggiornaRichieste();          // qualche richiesta già dal primo giorno
@@ -2513,6 +2513,14 @@ function aggiornaAnimali(dt){
     const spd=(a.tipo==='gatto'?0.42:0.3)*K*dt/16;
     a.px+=dx/d*spd; a.py+=dy/d*spd;
     a.dir = dx<0?-1:1;
+    /* Il vecchio verso ±1 serve ancora a galline e fallback procedurali.
+       Il gatto illustrato ha invece fronte, schiena e profili distinti:
+       qui conserva l'ultima delle quattro pose mentre cammina o si ferma. */
+    if(a.tipo==='gatto'){
+      a.dir4=Math.abs(dx)>=Math.abs(dy)
+        ? (dx<0 ? 1 : 2)
+        : (dy<0 ? 3 : 0);
+    }
   }
 }
 
