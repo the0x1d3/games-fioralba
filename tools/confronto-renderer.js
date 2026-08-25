@@ -80,6 +80,65 @@ const SCENE = [
     tempo:3180, zoom:2, seme:4105, attrezzo:'canna',
     cartello: { x:16, y:15, testo:'Fagioli d’estate' },
     animali: [], fauna: []
+  },
+  /* Le strutture delle rotte non stanno tutte nella stessa inquadratura.
+     Sono scene distinte apposta: il test deve davvero fotografare ciascun
+     oggetto e non limitarsi a cambiare uno stato lontano dalla camera. */
+  {
+    id: 'porto-bacheca-richieste',
+    viewport: { width:1280, height:720, dpr:1, mobile:false },
+    mappa: 'piazza', posizione:[10,15], ora:720, meteo:'sereno',
+    tempo:3660, zoom:2, seme:4106,
+    richiamo: { bacheca:false, barca:false, posta:false, approdo:false },
+    animali: [], fauna: []
+  },
+  {
+    id: 'porto-progetti-prima',
+    viewport: { width:1280, height:720, dpr:1, mobile:false },
+    mappa: 'piazza', posizione:[10,24], ora:720, meteo:'sereno',
+    tempo:3740, zoom:2, seme:4107,
+    richiamo: { bacheca:false, barca:false, posta:false, approdo:false },
+    animali: [], fauna: []
+  },
+  {
+    id: 'porto-progetti-completati',
+    viewport: { width:1280, height:720, dpr:1, mobile:false },
+    mappa: 'piazza', posizione:[10,24], ora:720, meteo:'sereno',
+    tempo:3820, zoom:2, seme:4108,
+    richiamo: { bacheca:true, barca:true, posta:true, approdo:true },
+    animali: [], fauna: []
+  },
+  {
+    id: 'costa-barca-in-riparazione',
+    viewport: { width:1280, height:720, dpr:1, mobile:false },
+    mappa: 'spiaggia', posizione:[17,19], ora:820, meteo:'sereno',
+    tempo:4040, zoom:2, seme:4109,
+    richiamo: { bacheca:false, barca:false, posta:false, approdo:false },
+    animali: [], fauna: []
+  },
+  {
+    id: 'costa-barca-pronta-e-molo',
+    viewport: { width:1280, height:720, dpr:1, mobile:false },
+    mappa: 'spiaggia', posizione:[18,23], ora:820, meteo:'sereno',
+    tempo:4120, zoom:1, seme:4110,
+    richiamo: { bacheca:true, barca:true, posta:true, approdo:true },
+    animali: [], fauna: []
+  },
+  {
+    id: 'cala-cassetta-chiusa',
+    viewport: { width:1280, height:720, dpr:1, mobile:false },
+    mappa: 'cala', posizione:[8,10], ora:760, meteo:'sereno',
+    tempo:4200, zoom:2, seme:4111,
+    richiamo: { bacheca:true, barca:true, posta:false, approdo:false },
+    animali: [], fauna: []
+  },
+  {
+    id: 'cala-cassetta-attiva',
+    viewport: { width:1280, height:720, dpr:1, mobile:false },
+    mappa: 'cala', posizione:[8,10], ora:760, meteo:'sereno',
+    tempo:4280, zoom:2, seme:4112,
+    richiamo: { bacheca:true, barca:true, posta:true, approdo:false },
+    animali: [], fauna: []
   }
 ];
 
@@ -190,6 +249,8 @@ async function preparaPagina(browser, baseUrl, scena, renderer){
     };
     try {
       Object.assign(G, G.statoIniziale());
+      if(s.richiamo)
+        G.trame.richiamo={ ...G.trame.richiamo, ...s.richiamo };
       G.maps = WORLD.crea();
       if(window.SCENARI) SCENARI.applica(G.maps);
       G.mappaId = s.mappa;

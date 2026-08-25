@@ -4026,6 +4026,137 @@ A.schiuma = function(dir, v, frame){
 };
 
 /* ===================================================================
+   14. ROTTE DEL RICHIAMO
+
+   Barca, bacheche e cassetta non sono arredi del giocatore: usano gli
+   stessi oggetti del mondo e la stessa logica delle vicende di prima.
+   Queste tele danno loro un'identità riconoscibile senza aggiungere
+   campi al salvataggio. Le varianti arrivano dal progresso già esistente
+   e restano quindi uguali in Canvas e nel frame canonico di Pixi.
+   =================================================================== */
+A.rotta = function(kind, opt){
+  opt=opt||{};
+  const stato=opt.stato||'base';
+  const key='rotta|'+kind+'|'+stato;
+  if(objCache[key]) return objCache[key];
+
+  let W=96, H=112;
+  if(kind==='barca') { W=112; H=76; }
+  if(kind==='cassetta') { W=72; H=88; }
+  const c=telaNetta(W,H), x=c.getContext('2d');
+  const rect=(a,b,w,h,col)=>px(x,a,b,w,h,col);
+  const bordo=(a,b,w,h,scuro,chiaro)=>{
+    rect(a,b,w,h,scuro); rect(a+3,b+3,w-6,h-6,chiaro);
+  };
+
+  if(kind==='barca'){
+    const ripara=stato==='riparazione';
+    const remota=stato==='rientro';
+    /* scafo largo e basso: la forma, le fasce e il bordo chiaro lo
+       distinguono da una cassa anche quando la barca è vista di lato. */
+    rect(18,54,76,8,'#3e2a1c');
+    rect(11,48,90,8,'#644022');
+    rect(6,42,100,8,'#80502a');
+    rect(11,36,90,7,'#9c6638');
+    rect(20,30,72,7,'#b47a42');
+    rect(32,25,48,5,'#d4a469');
+    rect(20,30,72,2,'#ecd19a');
+    rect(11,36,7,7,'#d6a06b'); rect(94,36,7,7,'#5b361f');
+    rect(18,43,76,3,'#5a351d');
+    rect(25,34,62,8,'#2d302b');
+    rect(31,35,50,2,'#675034');
+    rect(31,40,50,2,'#79603b');
+    rect(33,46,46,2,'#bf8749');
+    /* punta e poppa: due accenti diversi rompono la simmetria del
+       placeholder precedente e fanno leggere il verso dell'imbarcazione. */
+    rect(4,40,8,7,'#d4a469'); rect(100,40,8,7,'#56351f');
+    rect(47,7,5,28,'#5a3820'); rect(45,5,9,4,'#d4a469');
+    if(ripara){
+      /* Prima del progetto è davvero un lavoro in corso, non una barca
+         già pronta con una frase che ne nega l'uso. */
+      rect(31,12,35,17,'#6f8291');
+      rect(34,14,28,12,'#92a6ac');
+      rect(39,17,18,7,'#b9c8c7');
+      rect(73,10,4,20,'#734827'); rect(68,11,15,3,'#9c6638');
+      rect(11,57,26,4,'#a86d37'); rect(16,61,20,3,'#724521');
+      rect(83,21,7,5,'#c78d4b'); rect(88,18,3,10,'#704321');
+    } else {
+      const vela=remota?'#6b9daf':'#e5d18e';
+      const velaL=remota?'#a2c7ca':'#fff0b6';
+      rect(52,8,4,22,'#50321e');
+      x.fillStyle=vela; x.beginPath();
+      x.moveTo(57,10); x.lineTo(83,27); x.lineTo(57,27); x.closePath(); x.fill();
+      rect(59,13,19,2,velaL); rect(59,17,16,1,velaL);
+      rect(67,5,2,7,'#c84f40');
+      rect(92,23,3,17,'#d6a06b');
+      rect(94,22,8,4,remota?'#6f9eb2':'#d34f43');
+    }
+  } else if(kind==='cassetta'){
+    const attiva=stato==='attiva';
+    /* una cassetta postale su paletto, non la generica cassa di vendita */
+    rect(31,49,10,32,'#6b4428'); rect(34,49,3,32,'#ba8550');
+    bordo(8,20,58,37,'#4f392a',attiva?'#4e7590':'#75533b');
+    rect(11,23,52,5,attiva?'#81b0c1':'#a87850');
+    rect(14,32,42,7,'#272822');
+    rect(17,33,36,2,attiva?'#dcebdc':'#bd9a70');
+    rect(13,52,48,3,'#35261d');
+    rect(61,25,4,18,'#503522');
+    if(attiva){
+      rect(65,24,7,5,'#c9473d'); rect(68,27,3,15,'#d85745');
+      rect(19,40,30,8,'#e9dfb9'); rect(22,42,21,2,'#7d9aac');
+      rect(18,14,36,5,'#e3d1a0'); rect(22,15,28,2,'#6e4c31');
+    } else {
+      rect(20,40,28,6,'#5c4230'); rect(24,42,20,2,'#98704d');
+      rect(19,14,34,5,'#c4a774'); rect(23,15,26,2,'#6e4c31');
+    }
+  } else {
+    const progetti=kind==='progetti';
+    const pronto=stato==='pronto';
+    const attivo=stato==='attivo';
+    const finito=stato==='finito';
+    /* i pali proseguono sotto la tavola: sono il dettaglio che trasforma
+       l'oggetto interattivo da bancarella in bacheca stabile del porto. */
+    rect(17,45,10,60,'#5c3921'); rect(20,45,3,60,'#b37a43');
+    rect(69,45,10,60,'#5c3921'); rect(72,45,3,60,'#b37a43');
+    rect(10,22,76,62,'#4b3020');
+    rect(13,25,70,56,progetti?'#7a5b37':'#795936');
+    rect(17,29,62,48,progetti?'#c8b98b':'#c6b47b');
+    rect(10,22,76,4,'#d3a166'); rect(14,79,68,5,'#3c281c');
+    rect(7,16,82,9,'#684324'); rect(10,16,76,3,'#d6a66a');
+    if(progetti){
+      if(finito){
+        rect(22,34,50,35,'#dce8d2');
+        rect(26,40,36,3,'#5b85a6'); rect(54,43,4,14,'#5b85a6');
+        rect(34,56,24,3,'#d55a43'); rect(59,53,7,7,'#d55a43');
+        rect(24,32,5,5,'#db5142'); rect(67,63,5,5,'#db5142');
+      } else if(attivo){
+        rect(21,33,27,34,'#eee2b8'); rect(51,36,22,29,'#d9d8c7');
+        rect(24,39,19,2,'#6e7890'); rect(24,45,16,2,'#9e543e');
+        rect(56,41,12,2,'#6e7890'); rect(56,47,10,2,'#6e7890');
+        rect(22,30,5,5,'#dc5144'); rect(68,61,5,5,'#dc5144');
+      } else {
+        rect(22,34,50,32,'#e8dcb5');
+        rect(27,41,32,3,'#617b88'); rect(27,48,25,2,'#a96b3d');
+        rect(54,48,9,9,'#7691a0'); rect(22,31,5,5,'#dc5144');
+        if(pronto) { rect(65,31,5,5,'#dc5144'); rect(64,62,8,3,'#d6a044'); }
+      }
+      rect(28,9,40,7,'#3e2a1d'); rect(31,11,34,2,'#ead08c');
+    } else {
+      for(let i=0;i<3;i++){
+        const bx=21+(i%2)*29, by=34+((i/2)|0)*20;
+        rect(bx,by,23,14,i===1?'#dbe4d4':'#f0e1b8');
+        rect(bx+3,by+4,16,2,i===1?'#64879d':'#8e5e39');
+        rect(bx+3,by+8,12,1,'#9f8054');
+        rect(bx-2,by-2,5,5,'#dc5144');
+      }
+      rect(29,9,38,7,'#3e2a1d'); rect(33,11,30,2,'#ead08c');
+    }
+  }
+  objCache[key]=c;
+  return c;
+};
+
+/* ===================================================================
    SVUOTAMENTO DELLE CACHE
    Tutto qui dentro è disegnato una volta e conservato. Se cambiano i
    colori della palette, i disegni conservati sono vecchi: vanno buttati

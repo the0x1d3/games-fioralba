@@ -1324,6 +1324,7 @@ function buildSpiaggia(){
   // molo di legno che entra nel mare
   fill(m, 22,17, 2,11, 'assi');
   for(let y=17;y<28;y++) for(let x=22;x<24;x++) m.obj[W.idx(m,x,y)]=null;
+  m.deco.push({t:'molo', x:22, y:17, w:2, h:11});
   m.deco.push({t:'cartello', x:25, y:18, testo:'Molo'});
 
   /* Il molo si legge come molo solo se ha dei pali: le sole assi, viste
@@ -1424,6 +1425,7 @@ function buildCala(){
   for(let y=0;y<8;y++){ setObj(m,0,y,albero('pino')); setObj(m,m.w-1,y,albero('pino')); }
   fill(m, 14,11, 2,8, 'assi');
   for(let y=11;y<19;y++) for(let x=14;x<16;x++) m.obj[W.idx(m,x,y)]=null;
+  m.deco.push({t:'molo', x:14, y:11, w:2, h:8});
   setObj(m, 14, 19, {t:'barca', solido:true, ritorno:'spiaggia'});
   setObj(m, 17, 10, {t:'casse', solido:true, v:1});
   /* La cassetta c'è anche prima del progetto: prima è una cosa di legno
@@ -1458,6 +1460,7 @@ function buildApprodo(){
   for(let y=0;y<9;y++){ setObj(m,0,y,albero('pino')); setObj(m,m.w-1,y,albero('pino')); }
   fill(m, 12,13, 2,6, 'assi');
   for(let y=13;y<19;y++) for(let x=12;x<14;x++) m.obj[W.idx(m,x,y)]=null;
+  m.deco.push({t:'molo', x:12, y:13, w:2, h:6});
   setObj(m, 12, 18, {t:'barca', solido:true, ritorno:'spiaggia'});
   setObj(m, 10, 12, {t:'casse', solido:true, v:2});
   setObj(m, 15, 12, {t:'lampione', solido:false});

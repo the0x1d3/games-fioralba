@@ -1796,7 +1796,7 @@ R.disegna = function(G){
         o.t,o.kind||'',o.v||0,o.stage||0,o.bacche?1:0,o.carbone?1:0,
         o.dentro?1:0,o.pronto?1:0,o.out||'',o.testo||'',stag,
         (G.ora>1020||G.ora<420)?1:0,arredo?identitaPixi('sorgente',arredo):'codice',
-        lati
+          lati,immagineRotte(o,G)?'rotte-finali-1:'+firmaRichiamo(G):''
       ].join('|');
       const stato = [statoBase,animato?passoAnimazione:0].join('|');
       /* Solo la silhouette dell'albero ondeggia davvero: per cespugli,
@@ -2391,6 +2391,11 @@ function ombraOggettoDentro(o, px, py, gx, gy, t, stag, sole){
     if(o.t==='albero'&&o.stage===2) FX.ombraTerra(sx, px+16, py+30, 13, 4, 0.16);
     return;
   }
+  const rotte=immagineRotte(o, G);
+  if(rotte){
+    FX.ombraSprite(sx, rotte, px+16, py+U, sole, mez(rotte.width), mez(rotte.height), 0);
+    return;
+  }
   switch(o.t){
     case 'albero': {
       // stessa variante del disegno, altrimenti l'ombra non è la sua
@@ -2623,6 +2628,36 @@ function immagineArredo(o){
   return DATA.ARREDI[id] ? IMG.prendi(id) : null;
 }
 
+/* Le strutture delle rotte leggono esclusivamente lo stato già usato da
+   richiamo.js. In questo modo la grafica resta retrocompatibile: nessuna
+   partita richiede una migrazione o conserva una versione visiva. */
+function statoRichiamo(G){
+  const r=G && G.trame && G.trame.richiamo || {};
+  return { bacheca:!!r.bacheca, barca:!!r.barca, posta:!!r.posta, approdo:!!r.approdo };
+}
+function firmaRichiamo(G){
+  const r=statoRichiamo(G);
+  return [r.bacheca?1:0,r.barca?1:0,r.posta?1:0,r.approdo?1:0].join('');
+}
+function immagineRotte(o, G){
+  if(!window.ART || !ART.rotta) return null;
+  const r=statoRichiamo(G);
+  if(o.t==='barca'){
+    const stato=o.viaggio==='cala' && !r.barca ? 'riparazione'
+      : o.ritorno ? 'rientro' : 'pronta';
+    return ART.rotta('barca',{stato});
+  }
+  if(o.t==='bancarella' && o.kiosk==='bacheca')
+    return ART.rotta('bacheca',{stato:'avvisi'});
+  if(o.t==='bancarella' && o.kiosk==='progetti'){
+    const stato=r.barca ? 'finito' : (r.bacheca ? 'attivo' : 'pronto');
+    return ART.rotta('progetti',{stato});
+  }
+  if(o.t==='consegna' && o.rotta==='posta')
+    return ART.rotta('cassetta',{stato:r.posta?'attiva':'chiusa'});
+  return null;
+}
+
 /* `piega` è l'inclinazione al vento dello spaventapasseri, e sta qui
    invece che nel punto di chiamata perché il PNG non entra nel blocco
    raddoppiato: l'inclinazione va applicata in pixel di mondo, o esce
@@ -2672,6 +2707,12 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
     disegnaScrittaCartello(o.testo, px-16, py-28, 'codice');
 }
 function disegnaOggettoDentro(o, px, py, gx, gy, t, stag, G, wx, wy){
+  const rotte=immagineRotte(o, G);
+  if(rotte){
+    const bob=o.t==='barca' ? Math.round(Math.sin(t*0.0011 + gx*1.7 + gy)*1.4) : 0;
+    spr(rotte, px+16-mez(rotte.width)/2, py+U-mez(rotte.height)+bob);
+    return;
+  }
   switch(o.t){
     case 'albero': {
       const img = ART.tree(o.kind, stag, o.stage, varianteDi(gx,gy));
@@ -2797,42 +2838,6 @@ function disegnaOggettoDentro(o, px, py, gx, gy, t, stag, G, wx, wy){
       sx.globalAlpha = Math.max(0, lume);
       ART.px(sx, px+12, y0+1, 2, 2, '#ffffff');
       sx.globalAlpha = 1;
-      break;
-    }
-    /* Una barca ormeggiata. Serviva perché la Piazza del Porto un porto
-       non ce l'aveva: lastricato, fontana e basta, e il nome prometteva
-       una cosa che non si vedeva da nessuna parte.
-
-       Dondola piano. Non è un vezzo: l'acqua sotto è animata, e uno
-       scafo perfettamente fermo su un'onda che si muove si legge come un
-       disegno incollato sopra. Il dondolio è lentissimo — un pixel su e
-       giù ogni paio di secondi — e sfasato per casella, così tre barche
-       ormeggiate vicine non fanno il coro. */
-    case 'barca': {
-      /* SBORDA DALLA CASELLA, come gli alberi. Il primo tentativo stava
-         dentro ai 32 px e a schermo si leggeva come un tronco
-         galleggiante: una barca vista dall'alto ha bisogno della punta,
-         e una punta in sedici pixel non si vede. */
-      const bob = Math.round(Math.sin(t*0.0011 + gx*1.7 + gy)*1.4);
-      const y0 = py + 7 + bob, x0 = px - 6;
-      const scuro='#5e3d20', legno='#8a5a32', chiaro='#c99a5e', dentro='#41301c';
-      // lo scafo visto dall'alto è una mandorla: cinque fasce
-      ART.px(sx, x0+12, y0+1,  20, 3, legno);
-      ART.px(sx, x0+7,  y0+4,  30, 3, legno);
-      ART.px(sx, x0+3,  y0+7,  38, 6, legno);
-      ART.px(sx, x0+7,  y0+13, 30, 3, legno);
-      ART.px(sx, x0+12, y0+16, 20, 3, legno);
-      // il bordo alto prende luce, la chiglia va in ombra
-      ART.px(sx, x0+12, y0+1,  20, 1, chiaro);
-      ART.px(sx, x0+3,  y0+7,  2,  6, chiaro);
-      ART.px(sx, x0+39, y0+7,  2,  6, chiaro);
-      ART.px(sx, x0+12, y0+18, 20, 1, scuro);
-      // la pancia, con le due panche e il remo appoggiato di traverso
-      ART.px(sx, x0+9,  y0+5,  26, 10, dentro);
-      ART.px(sx, x0+14, y0+6,  16, 2,  '#a8763c');
-      ART.px(sx, x0+14, y0+12, 16, 2,  '#a8763c');
-      ART.px(sx, x0+11, y0+9,  22, 2,  '#9c7a4a');
-      ART.px(sx, x0+31, y0+8,  5,  4,  '#8a6a3e');
       break;
     }
     /* `sedia` e `baule` esistono solo dentro casa e il loro disegno
@@ -3184,10 +3189,20 @@ function disegnaDecoPiattaDentro(d, px, py, t, stag){
       break;
     }
     case 'molo': {
-      for(let i=0;i<d.w;i++){
-        ART.px(sx,px+i*U,py+4,U,2,'#7a5432');
-        ART.px(sx,px+i*U,py+U*2-8,U,2,'#7a5432');
-        if(i%2===0){ ART.px(sx,px+i*U+4,py+U*2-4,5,10,'#5f4028'); }
+      /* Il pavimento di assi è già nel terreno: qui si disegnano i
+         sostegni e le giunte che gli danno profondità. `h` permette alle
+         tre banchine di costa di restare una struttura sola anche quando
+         un salvataggio più vecchio conosce solo il corto molo del podere. */
+      const w=d.w||1, h=d.h||2;
+      for(let k=0;k<h;k++) for(let i=0;i<w;i++){
+        const bx=px+i*U, by=py+k*U;
+        ART.px(sx,bx+2,by+4,U-4,2,'#7a5432');
+        ART.px(sx,bx+2,by+U-7,U-4,2,'#5a3922');
+        ART.px(sx,bx+U-4,by+3,2,U-6,'#b07b43');
+      }
+      for(const bx of [px+2,px+w*U-6]){
+        ART.px(sx,bx,py+2,4,7,'#c0925a');
+        ART.px(sx,bx,py+h*U-4,5,10,'#5f4028');
       }
       break;
     }
