@@ -1445,6 +1445,31 @@ verifica('PixiJS è locale, predefinito e conserva il fallback Canvas', () => {
   return problemi;
 });
 
+/* Il lockfile è già tornato indietro una volta, e la seconda l'ha
+   scoperta un `npm install` a mano invece del deploy: dentro a Replit
+   npm riscrive i campi `resolved` verso `package-firewall.replit.local`,
+   che è un nome che esiste SOLO nella rete di Replit. Fuori di lì —
+   Railway, un clone qualsiasi, questa macchina — `npm ci` muore con
+   ENOTFOUND e non installa più niente, checksum corretti o no.
+   Era già stato corretto a mano una volta (commit «Fix Railway npm
+   install registry URLs»), poi tre pacchetti sono rientrati col vecchio
+   indirizzo perché nessuno teneva ferma la cosa. Adesso la tiene questo. */
+verifica('il lockfile punta al registry pubblico, non a quello di Replit', () => {
+  const problemi = [];
+  const lock = JSON.parse(fs.readFileSync(path.join(RADICE, 'package-lock.json'), 'utf8'));
+  const pacchetti = Object.entries(lock.packages || {}).filter(([, v]) => v && v.resolved);
+  /* prova di taratura: se il formato del lockfile cambiasse e qui non
+     arrivasse più niente, un controllo vuoto direbbe «tutto a posto» */
+  if (pacchetti.length < 10)
+    return [`nel lockfile ho trovato ${pacchetti.length} pacchetti con «resolved»: ` +
+            'questo controllo non sta guardando quello che dovrebbe'];
+  for (const [nome, v] of pacchetti)
+    if (!/^https:\/\/registry\.npmjs\.org\//.test(v.resolved))
+      problemi.push(`${nome || '(radice)'} si scarica da ${v.resolved}: ` +
+                    'fuori da Replit quell’indirizzo non risolve e `npm ci` fallisce con ENOTFOUND');
+  return problemi;
+});
+
 verifica('il confronto visuale Pixi e Canvas resta una verifica eseguibile', () => {
   const problemi = [];
   const pkg = JSON.parse(fs.readFileSync(path.join(RADICE, 'package.json'), 'utf8'));
