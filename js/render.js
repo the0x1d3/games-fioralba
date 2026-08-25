@@ -1805,7 +1805,8 @@ R.disegna = function(G){
         o.t,o.kind||'',o.v||0,o.stage||0,o.bacche?1:0,o.carbone?1:0,
         o.dentro?1:0,o.pronto?1:0,o.out||'',o.testo||'',stag,
         (G.ora>1020||G.ora<420)?1:0,arredo?identitaPixi('sorgente',arredo):'codice',
-          lati,immagineRotte(o,G)?'rotte-finali-1:'+firmaRichiamo(G):''
+        lati,immagineRotte(o,G)?'rotte-finali-1:'+firmaRichiamo(G):'',
+        o.iw||0,o.ih||0
       ].join('|');
       const stato = [statoBase,animato?passoAnimazione:0].join('|');
       /* Solo la silhouette dell'albero ondeggia davvero: per cespugli,

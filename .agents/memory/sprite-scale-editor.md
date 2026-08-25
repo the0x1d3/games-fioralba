@@ -6,6 +6,8 @@ description: arredoDaImmagine centra il PNG sull'impronta — quando iw/ih cambi
 ## Regola
 In `arredoDaImmagine` (render.js), la formula standard centra il PNG (`a.w*T × a.h*T`) nell'impronta `f.w*T × f.h*T`. Quando l'editor cambia `iw/ih` dell'oggetto, `f` cambia ma il sprite resta fisso → appare che l'elemento "si sposta".
 
+Nella cache-key Pixi (`statoBase`), `o.iw` e `o.ih` devono essere inclusi. Se l'oggetto non è rimpiazzato con un nuovo reference (e.g. futuri refactor), senza queste due voci la texture non viene invalidata al cambio di dimensioni.
+
 **Fix applicato:**
 ```javascript
 const scalaIngombro = !!(o.iw || o.ih);
