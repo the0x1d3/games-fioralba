@@ -2693,6 +2693,12 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
     for (const d in A.righe)
       if (!'0123'.includes(d))
         problemi.push(`il foglio di «${id}» parla della direzione «${d}», che non esiste`);
+    const direzioni = Object.keys(A.righe).sort().join('');
+    if (direzioni !== '0123')
+      problemi.push(`il foglio di «${id}» deve coprire fronte, sinistra, destra e retro (direzioni 0,1,2,3)`);
+    const righeUsate = [...new Set(Object.values(A.righe))].sort((a,b)=>a-b).join(',');
+    if (righeUsate !== '0,1,2,3')
+      problemi.push(`il foglio di «${id}» deve usare tutte e quattro le righe una volta ciascuna, ma usa ${righeUsate}`);
   }
 
   /* Il foglio dei minerali: una colonna per stagione, una riga per tipo

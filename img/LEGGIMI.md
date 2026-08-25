@@ -40,7 +40,7 @@ Sono l'impronta in caselle moltiplicata per la casella. Con la casella a
 | cartello.png | 1,5×1,5 | 96×96 |
 | spaventapasseri.png | 1,5×1,5 | 96×96 |
 | scrivania.png | 1,5×1,5 | 96×96 |
-| omino.png    | 1×1,5  | 64×96 a cella, 256×384 il foglio |
+| omino.png    | 1,5×1,75 | 96×112 a cella, 384×448 il foglio |
 
 Gli ultimi tre stanno FUORI dalle stanze e appoggiano su un'impronta di
 **una** casella: il disegno sborda in su, come la sedia. Un cartello
@@ -104,7 +104,7 @@ l'icona in pagina lo distingue con `ART.iconaAMano(id)` e le mette la
 classe `.ico-mano`, che rimette il filtro liscio.
 
 `omino.png` è l'unico che non è un'immagine sola: è un FOGLIO di celle
-64×96, quattro fotogrammi per riga e una riga per direzione — giù,
+96×112, quattro fotogrammi per riga e una riga per direzione — giù,
 sinistra, destra, su. Chi lo legge è `DATA.OMINO`, e l'altezza del file
 deve corrispondere ESATTAMENTE alle righe che dichiara.
 

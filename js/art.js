@@ -1027,10 +1027,10 @@ A.charSprite = function(look, dir, frame){
    uno. Quindi il foglio si ritaglia una volta sola, alla prima
    richiesta, e da lì in poi queste otto celle sono sprite come gli altri.
 
-   Ogni posa torna dentro lo STESSO riquadro 96×112. Il foglio a mani
-   vuote ha celle 64×96, quindi viene appoggiato in basso e centrato con
-   sedici pixel trasparenti per lato e sopra: cambiare attrezzo non cambia
-   né il centro né la linea dei piedi che il renderer deve seguire.
+   Ogni posa torna dentro lo STESSO riquadro 96×112. Sia il foglio a mani
+   vuote sia quelli con attrezzo usano già questa cella canonica: cambiare
+   attrezzo non cambia né il centro né la linea dei piedi che il renderer
+   deve seguire.
 
    Torna `null` soltanto finché non è arrivato neppure il foglio a mani
    vuote: chi disegna, davanti a un `null`, usa il personaggio in codice.

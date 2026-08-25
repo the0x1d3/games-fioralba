@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Fioralba — animazioni del protagonista</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #26170f;
+      --paper: #fff8e9;
+      --line: #694027;
+      --blue: #246bc3;
+      --gold: #dfa34e;
+      --green-a: #7ca65f;
+      --green-b: #729b58;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      margin: 0;
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at 15% 0%, rgba(255,255,255,.8), transparent 28rem),
+        repeating-linear-gradient(0deg, rgba(74,44,26,.035) 0 1px, transparent 1px 5px),
+        #d9c69c;
+    }
+    main { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 34px 0 52px; }
+    header { display: flex; justify-content: space-between; gap: 28px; align-items: end; margin-bottom: 22px; }
+    .eyebrow { margin: 0 0 7px; color: #825429; font: 700 11px Arial, sans-serif; letter-spacing: .13em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(30px, 5vw, 48px); line-height: 1; letter-spacing: -.04em; }
+    .intro { max-width: 580px; margin: 11px 0 0; font-size: 17px; line-height: 1.45; }
+    .legend { max-width: 300px; padding: 12px 14px; border: 2px solid var(--line); background: rgba(255,248,233,.82); font-size: 14px; line-height: 1.35; }
+    .studio {
+      display: grid;
+      grid-template-columns: minmax(360px, .88fr) minmax(340px, 1.12fr);
+      overflow: hidden;
+      border: 4px solid var(--line);
+      border-radius: 14px;
+      background: var(--paper);
+      box-shadow: 0 7px 0 rgba(72,42,22,.2);
+    }
+    .hero { display: grid; place-items: center; min-height: 590px; padding: 26px; border-right: 3px solid var(--line); }
+    .stage {
+      display: grid;
+      place-items: center;
+      width: min(100%, 430px);
+      aspect-ratio: 1 / 1.12;
+      border: 3px solid var(--line);
+      background-color: var(--green-a);
+      background-image:
+        linear-gradient(45deg, rgba(43,83,36,.18) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(43,83,36,.18) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(43,83,36,.18) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(43,83,36,.18) 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+    }
+    canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+    #hero { width: 384px; max-width: 92%; height: auto; }
+    .controls { align-self: stretch; padding: 26px; }
+    .controls h2 { margin: 0 0 14px; font-size: 23px; }
+    .control { margin-bottom: 18px; }
+    .control > span { display: block; margin-bottom: 7px; color: #71431f; font: 700 11px Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+    .buttons { display: flex; flex-wrap: wrap; gap: 7px; }
+    button {
+      appearance: none;
+      border: 2px solid var(--line);
+      border-radius: 4px;
+      padding: 9px 12px;
+      color: var(--ink);
+      background: #fffaf0;
+      font: 700 13px Arial, sans-serif;
+      cursor: pointer;
+    }
+    button:hover { background: #f1dfbc; }
+    button[aria-pressed="true"] { color: white; background: var(--blue); border-color: #17467e; box-shadow: inset 0 -3px rgba(0,0,0,.18); }
+    .all-tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 22px; }
+    .tool-card { display: grid; grid-template-columns: 82px 1fr; align-items: center; min-height: 98px; padding: 7px; border: 1px solid #c6a87a; background: #fffaf0; }
+    .tool-card canvas { width: 78px; height: 91px; background: linear-gradient(135deg, var(--green-a), var(--green-b)); }
+    .tool-card strong { display: block; font-size: 14px; }
+    .tool-card small { color: #795538; font: 12px Arial, sans-serif; }
+    .status { margin-top: 20px; padding: 12px 14px; border-left: 5px solid var(--gold); background: #f5e8cf; font-size: 14px; line-height: 1.4; }
+    @media (max-width: 850px) {
+      header { display: block; }
+      .legend { max-width: none; margin-top: 16px; }
+      .studio { grid-template-columns: 1fr; }
+      .hero { min-height: 480px; border-right: 0; border-bottom: 3px solid var(--line); }
+    }
+    @media (max-width: 520px) {
+      main { width: min(100% - 16px, 470px); padding-top: 22px; }
+      .hero, .controls { padding: 16px; }
+      .hero { min-height: 390px; }
+      .all-tools { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <p class="eyebrow">Fioralba · controllo animazioni</p>
+        <h1>Passo, corsa e attrezzi.</h1>
+        <p class="intro">Il protagonista approvato usa quattro fasi per ogni direzione. La corsa mantiene le stesse pose ma le presenta con il ritmo più rapido del gioco, evitando un cambio improvviso di stile.</p>
+      </div>
+      <div class="legend">Ogni fotogramma vive nello stesso riquadro <strong>96×112</strong>. Piedi e centro restano fermi quando si cambia attrezzo.</div>
+    </header>
+
+    <section class="studio">
+      <div class="hero">
+        <div class="stage"><canvas id="hero" width="96" height="112" aria-label="Animazione ingrandita del protagonista"></canvas></div>
+      </div>
+      <div class="controls">
+        <h2>Prova l’animazione</h2>
+        <div class="control">
+          <span>Movimento</span>
+          <div class="buttons" data-control="speed">
+            <button data-value="idle" aria-pressed="false">Fermo</button>
+            <button data-value="walk" aria-pressed="true">Cammina</button>
+            <button data-value="run" aria-pressed="false">Corre</button>
+          </div>
+        </div>
+        <div class="control">
+          <span>Direzione</span>
+          <div class="buttons" data-control="direction">
+            <button data-value="0" aria-pressed="true">Fronte</button>
+            <button data-value="1" aria-pressed="false">Sinistra</button>
+            <button data-value="2" aria-pressed="false">Destra</button>
+            <button data-value="3" aria-pressed="false">Retro</button>
+          </div>
+        </div>
+        <div class="control">
+          <span>In mano</span>
+          <div class="buttons" data-control="tool" id="tool-buttons"></div>
+        </div>
+        <div class="all-tools" id="all-tools"></div>
+        <div class="status" id="status">Camminata frontale a mani libere · 4 fotogrammi · 130 ms per fase.</div>
+      </div>
+    </section>
+  </main>
+  <script>
+    const assets = [
+      { id: "none", label: "Mani libere", file: "omino.png" },
+      { id: "annaffiatoio", label: "Annaffiatoio", file: "omino-annaffiatoio.png" },
+      { id: "ascia", label: "Ascia", file: "omino-ascia.png" },
+      { id: "arco", label: "Arco", file: "omino-arco.png", rows: [0, 2, 1, 3] },
+      { id: "piccone", label: "Piccone", file: "omino-piccone.png" },
+      { id: "falce", label: "Falce", file: "omino-falce.png" },
+      { id: "zappa", label: "Zappa", file: "omino-zappa.png" },
+      { id: "canna", label: "Canna", file: "omino-canna.png" }
+    ];
+    const state = { speed: "walk", direction: 0, tool: "none", frame: 0, elapsed: 0, last: performance.now() };
+    const images = new Map();
+    const directionNames = ["frontale", "verso sinistra", "verso destra", "posteriore"];
+    const speedNames = { idle: "Fermo", walk: "Camminata", run: "Corsa" };
+
+    function load(asset) {
+      const image = new Image();
+      image.src = `/img/${asset.file}`;
+      images.set(asset.id, image);
+    }
+
+    function draw(canvas, asset, direction, frame) {
+      const image = images.get(asset.id);
+      if (!image || !image.complete || !image.naturalWidth) return;
+      const row = asset.rows ? asset.rows[direction] : direction;
+      const context = canvas.getContext("2d");
+      context.imageSmoothingEnabled = false;
+      context.clearRect(0, 0, 96, 112);
+      context.drawImage(image, frame * 96, row * 112, 96, 112, 0, 0, 96, 112);
+    }
+
+    function select(control, value) {
+      state[control] = control === "direction" ? Number(value) : value;
+      document.querySelectorAll(`[data-control="${control}"] button`).forEach(button => {
+        button.setAttribute("aria-pressed", button.dataset.value === String(value));
+      });
+      if (state.speed === "idle") state.frame = 0;
+      updateStatus();
+    }
+
+    function updateStatus() {
+      const asset = assets.find(item => item.id === state.tool);
+      const timing = state.speed === "idle" ? "posa ferma" : `${state.speed === "run" ? 84 : 130} ms per fase`;
+      document.querySelector("#status").textContent =
+        `${speedNames[state.speed]} ${directionNames[state.direction]} ${asset.id === "none" ? "a mani libere" : `con ${asset.label.toLowerCase()}`} · 4 fotogrammi · ${timing}.`;
+    }
+
+    const toolButtons = document.querySelector("#tool-buttons");
+    const allTools = document.querySelector("#all-tools");
+    for (const asset of assets) {
+      load(asset);
+      const button = document.createElement("button");
+      button.dataset.value = asset.id;
+      button.textContent = asset.label;
+      button.setAttribute("aria-pressed", asset.id === "none");
+      toolButtons.append(button);
+
+      const card = document.createElement("div");
+      card.className = "tool-card";
+      const canvas = document.createElement("canvas");
+      canvas.width = 96;
+      canvas.height = 112;
+      canvas.dataset.asset = asset.id;
+      const copy = document.createElement("div");
+      copy.innerHTML = `<strong>${asset.label}</strong><small>tutte le direzioni</small>`;
+      card.append(canvas, copy);
+      allTools.append(card);
+    }
+
+    document.querySelectorAll("[data-control]").forEach(group => {
+      group.addEventListener("click", event => {
+        const button = event.target.closest("button");
+        if (button) select(group.dataset.control, button.dataset.value);
+      });
+    });
+
+    function animate(now) {
+      const interval = state.speed === "run" ? 84 : 130;
+      const delta = now - state.last;
+      state.last = now;
+      if (state.speed !== "idle") {
+        state.elapsed += delta;
+        while (state.elapsed >= interval) {
+          state.elapsed -= interval;
+          state.frame = (state.frame + 1) % 4;
+        }
+      }
+      const selected = assets.find(asset => asset.id === state.tool);
+      draw(document.querySelector("#hero"), selected, state.direction, state.frame);
+      document.querySelectorAll(".tool-card canvas").forEach(canvas => {
+        const asset = assets.find(item => item.id === canvas.dataset.asset);
+        draw(canvas, asset, state.direction, state.speed === "idle" ? 0 : state.frame);
+      });
+      requestAnimationFrame(animate);
+    }
+
+    updateStatus();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

@@ -2283,7 +2283,7 @@ D.NPC_FOGLI = {
 /* ===================================================================
    IL PERSONAGGIO DISEGNATO A MANO
 
-   `img/omino.png` è un FOGLIO: celle da 64×96, quattro fotogrammi per
+   `img/omino.png` è un FOGLIO: celle da 96×112, quattro fotogrammi per
    riga, una riga per direzione. Le celle si ritagliano una volta sola
    (`ART.ominoSprite`) e da lì in poi si comportano come qualunque altro
    sprite del gioco, contorno compreso.
@@ -2301,7 +2301,7 @@ D.NPC_FOGLI = {
    `look`, e un foglio solo li renderebbe tutti la stessa persona. */
 D.OMINO = {
   file: 'omino.png',
-  w: 64, h: 96, fotogrammi: 4,
+  w: 96, h: 112, fotogrammi: 4,
   righe: { 0: 0, 1: 1, 2: 2, 3: 3 }
 };
 
@@ -2313,11 +2313,9 @@ D.OMINO = {
    niente in mano. Questi fogli rimettono l'attrezzo dov'era, disegnato
    invece che appiccicato.
 
-   LA CELLA È 96×112 E NON 64×96, e la ragione è misurata: con
-   l'attrezzo la figura esce dai bordi. Servivano 6 px a sinistra, 11 a
-   destra e 5 sopra — un'ascia tenuta alta, un annaffiatoio che sporge.
-   In una cella da 64 i fotogrammi si sarebbero pestati fra loro, che è
-   un difetto che si vede come un pezzo di ascia attaccato alla schiena.
+   LA CELLA È 96×112 PER TUTTI I FOGLI. L'attrezzo può uscire ai lati
+   della figura senza invadere il fotogramma accanto, e prendere o posare
+   qualcosa non cambia né il centro del corpo né la linea dei piedi.
 
    Il renderer non cambia: centra sulla larghezza e appoggia in fondo,
    quindi basta che nel foglio la testa stia in mezzo e i piedi sul
@@ -2325,9 +2323,8 @@ D.OMINO = {
    riportati alla cella nuova — se no il contadino salterebbe di un
    pixel ogni volta che prende o posa un attrezzo.
 
-   Chi non è in elenco non si vede in mano, ed è lo stesso patto delle
-   direzioni: quando arriva il foglio si aggiunge una riga qui, e non
-   cambia altro. */
+   Chi non è in elenco non si vede in mano. Ogni foglio dichiarato qui
+   copre invece tutte le direzioni, compresa la schiena. */
 D.OMINO_ATTREZZI = {
   annaffiatoio: { file:'omino-annaffiatoio.png', w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
   ascia:        { file:'omino-ascia.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
@@ -2342,32 +2339,10 @@ D.OMINO_ATTREZZI = {
      dichiarata destra copriva sinistra per il 98%. Annaffiatoio e
      ascia, misurati allo stesso modo, sono giusti. */
   arco:         { file:'omino-arco.png',         w:96, h:112, fotogrammi:4, righe:{0:0,1:2,2:1,3:3} },
-  /* PICCONE, FALCE, ZAPPA E CANNA HANNO TRE DIREZIONI, non quattro:
-     di fronte, a sinistra, a destra. La schiena non è disegnata, e `righe` lo dice
-     semplicemente non nominandola.
-
-     Non è un buco: chi cammina all'insù col piccone in mano si vede a
-     mani vuote, perché `ART.ominoSprite` davanti a una direzione che il
-     foglio non ha ripiega sul foglio della camminata normale. Meglio il
-     contadino senza attrezzo per una direzione che il contadino
-     disegnato in codice, che sarebbe un altro personaggio.
-
-     CHE SINISTRA E DESTRA NON SIANO SCAMBIATE, qui, l'ho verificato
-     GUARDANDO le teste ingrandite, non misurando — e va detto perché
-     è l'unico caso in tutto il repo in cui una prova automatica non
-     regge. `ART.verificaDirezioni` non ce la fa: queste quattro pose
-     sono di TRE QUARTI e non di profilo, quindi non si sovrappongono
-     bene a nessuna riga del foglio a mani vuote, nemmeno alla propria,
-     e la direzione giusta vince per due centesimi. Provate altre due
-     misure e buttate tutte e due: la pelle del viso visibile sono da
-     DUE a QUATTORDICI pixel, cioè rumore, e la sagoma del viso su un
-     tre quarti sporge dal cappello cinque volte meno che su un profilo.
-     Ingrandite, invece, si vede subito: il viso sta dalla stessa parte
-     del riferimento a mani vuote in tutte e quattro. */
-  piccone:      { file:'omino-piccone.png',      w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2} },
-  falce:        { file:'omino-falce.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2} },
-  zappa:        { file:'omino-zappa.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2} },
-  canna:        { file:'omino-canna.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2} }
+  piccone:      { file:'omino-piccone.png',      w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  falce:        { file:'omino-falce.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  zappa:        { file:'omino-zappa.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  canna:        { file:'omino-canna.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} }
 };
 
 D.CONSIGLI = [

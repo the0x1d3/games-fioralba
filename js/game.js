@@ -971,7 +971,11 @@ function aggiornaGiocatore(dt){
     // animazione
     p.animT += dt*(correndo?1.55:1);
     const soglia = 130;
-    if(p.animT>soglia){ p.animT=0; p.frame=(p.frame+1)%4; passo(); }
+    /* Conservare il resto evita che il ritmo dipenda dal refresh:
+       azzerando tutto, a 60 Hz la corsa perdeva circa 16 ms a ogni passo
+       e la preview risultava più fluida del gioco vero. Il ciclo copre
+       anche un fotogramma eccezionalmente lungo senza rallentare la posa. */
+    while(p.animT>=soglia){ p.animT-=soglia; p.frame=(p.frame+1)%4; passo(); }
 
     if(correndo){
       G.energia -= dt*0.0012;
