@@ -242,6 +242,10 @@ function costruisciDati(){
 S.testo = function(){
   /* Serializza a parte e non tocca niente se fallisce: un salvataggio
      mezzo scritto è peggio di uno vecchio. */
+  /* Anche i salvataggi di emergenza (pagehide e visibilitychange) passano
+     da qui. Bloccare il testo alla fonte impedisce che una bozza temporanea
+     della modalità modifica entri nel cassetto di sincronizzazione. */
+  if(window.EDITOR_INTERNO && EDITOR_INTERNO.attivo && EDITOR_INTERNO.attivo()) return null;
   try{ return JSON.stringify(costruisciDati()); }
   catch(e){ console.warn('Serializzazione salvataggio fallita', e); return null; }
 };
@@ -261,6 +265,10 @@ S.testo = function(){
    successo: `programmaInvio` è rimasta senza chiamanti per un anno, e
    le partite collegate salivano sul server una volta sola. */
 S.salva = function(){
+  /* Una bozza di scenario modifica il mondo solo per l'anteprima. Durante
+     la modalità interna non può passare per progresso del giocatore né
+     finire nell'autosave, qualunque sia il punto che tenta di salvarla. */
+  if(window.EDITOR_INTERNO && EDITOR_INTERNO.attivo && EDITOR_INTERNO.attivo()) return false;
   if(!S.testo()) return false;
   if(!window.SINC || !SINC.collegato()) return false;
   SINC.programmaInvio();

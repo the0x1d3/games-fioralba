@@ -131,6 +131,30 @@
     </div>
   </div>
 
+  <!-- ============ MODALITÀ MODIFICA INTERNA ============
+       Questo pannello resta vuoto e nascosto nella build pubblica: il modulo
+       che lo attiva viene inserito dal server soltanto negli ambienti di test. -->
+  <section id="editor-interno" class="hidden" aria-live="polite" aria-label="Modalità modifica interna">
+    <div class="editor-interno-testa">
+      <div>
+        <span class="editor-interno-badge">STRUMENTO DI TEST</span>
+        <strong>Modalità modifica</strong>
+      </div>
+      <button id="editor-esci" class="editor-x" type="button" aria-label="Esci dalla modalità modifica">✕</button>
+    </div>
+    <p id="editor-istruzioni">Tocca un elemento della scenografia per selezionarlo.</p>
+    <div id="editor-stato" class="editor-stato">Mappa attuale</div>
+    <div class="editor-azioni">
+      <button id="editor-sposta" class="btn gold" type="button" disabled>Sposta</button>
+      <button id="editor-annulla" class="btn blue" type="button" disabled>Annulla</button>
+      <button id="editor-azzera" class="btn" type="button" disabled>Azzera bozza</button>
+    </div>
+    <button id="editor-esporta" class="btn editor-esporta" type="button" disabled>Scarica bozza JSON</button>
+    <p class="editor-nota">La partita non viene salvata. Uscendo, la valle torna com'era.</p>
+  </section>
+  <div id="editor-selezione" class="editor-marcatore hidden" aria-hidden="true"></div>
+  <div id="editor-destinazione" class="editor-marcatore destinazione hidden" aria-hidden="true"></div>
+
   <!-- ============ DIALOGUE ============ -->
   <div id="dialogue" class="hidden">
     <div class="dlg-portrait"><canvas id="dlg-face" width="96" height="96"></canvas></div>
@@ -419,6 +443,10 @@
 <!-- Bundle ufficiale locale: servito da un alias stretto, mai da node_modules/. -->
 <script src="vendor/pixi.min.js"></script>
 <script src="js/render.js"></script>
+<!-- Il server inserisce qui il consenso della modalità interna soltanto
+     nell'anteprima di sviluppo/test. Senza consenso il modulo resta inerte. -->
+<!-- FIORALBA_EDITOR_INTERNO -->
+<script src="js/editor-interno.js"></script>
 <script src="js/game.js"></script>
 
 <!-- Ultimo di tutti, e non è un caso: il pannello di prova legge G appena

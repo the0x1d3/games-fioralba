@@ -342,7 +342,19 @@ U.menu = function(G){
       s5.appendChild(bg);
     }
 
-    /* ---- 6. in fondo ---- */
+    /* ---- 6. RITOCCHI INTERNI (solo ambiente di prova) ---- */
+    if(window.EDITOR_INTERNO && EDITOR_INTERNO.disponibile && EDITOR_INTERNO.disponibile()){
+      const sd = sezione(wrap, 'Sviluppo');
+      const be=document.createElement('button'); be.className='btn gold';
+      be.textContent = T('🛠 Modalità modifica');
+      be.onclick=()=>{ U.chiudiModal(); EDITOR_INTERNO.apri(); };
+      sd.appendChild(be);
+      const nota=document.createElement('div'); nota.className='muted imp-nota';
+      nota.innerHTML = T('Strumento di test: sposta la scenografia, verifica l\'effetto e scarica una bozza. <b>Non salva né pubblica la partita.</b>');
+      sd.appendChild(nota);
+    }
+
+    /* ---- 7. in fondo ---- */
     const fondo = document.createElement('div'); fondo.className='imp-fondo';
     const bh=document.createElement('button'); bh.className='btn blue'; bh.textContent=T('Come si gioca');
     bh.onclick=()=>{ U.chiudiModal(); U.comeSiGioca(); };

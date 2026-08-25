@@ -9,6 +9,18 @@ Durante la fase privata il pannello debug può restare attivo. L’editor degli 
 
 **How to apply:** mantenere l’editor in una cartella locale separata, preferibilmente con output in JSON versionato; non modificare direttamente world.js come flusso normale e non cambiare il debug finché il progetto resta privato.
 
+La modalità modifica dentro al gioco è ammessa soltanto come banco di prova
+temporaneo: richiede il consenso inserito dal server nell’ambiente di sviluppo,
+può produrre solo una bozza JSON e deve sempre ripristinare il mondo.
+
+**Why:** è utile provare il ritocco nel contesto reale, ma nessun salvataggio,
+invio in chiusura o menu pubblico deve poter trasformare una bozza in progresso
+del giocatore o in contenuto pubblicato.
+
+**How to apply:** mantenere l’accesso assente nella risposta pubblica, bloccare
+input e serializzazione per tutta la prova e far passare l’approvazione
+definitiva dall’editor locale.
+
 Quando l’avvio della partita attende dati di scenario, i dati inseriti nella UI (come il nome) devono essere passati all’inizializzazione e applicati dopo l’attesa, prima del primo salvataggio.
 
 **Why:** una callback UI che continua subito può altrimenti salvare lo stato precedente oppure farsi sovrascrivere dallo stato iniziale.

@@ -30,6 +30,12 @@ const RADICE = __dirname;
 const PIXI_BROWSER = path.join(RADICE, 'node_modules', 'pixi.js', 'dist', 'pixi.min.js');
 const PORTA = Number(process.env.PORT) || 8123;
 const SVILUPPO = process.argv.includes('--sviluppo') || process.env.FIORALBA_SVILUPPO === '1';
+/* Lo strumento di ritocco dentro al gioco richiede un consenso del server:
+   il suo modulo esce subito senza registrare API né menu se questo segnale
+   manca. Replit espone REPLIT_DEV_DOMAIN soltanto nell'anteprima di sviluppo;
+   fuori da lì resta disponibile con `--sviluppo` o un flag esplicito locale. */
+const MODIFICA_INTERNA = SVILUPPO || process.env.FIORALBA_MODIFICA_INTERNA === '1' ||
+  !!process.env.REPLIT_DEV_DOMAIN;
 
 /* Le cartelle che non si servono: non c'è niente di segreto, ma non c'è
    nemmeno motivo di esporre i sorgenti degli strumenti e le dipendenze
@@ -115,7 +121,28 @@ function statico(req, res, rel){
   const primo = rel.split('/')[1] || '';
   if(VIETATE.includes(primo)){ res.writeHead(404); return res.end('404'); }
 
-  leggi(file, rel).then(v=>{
+  leggi(file, rel).then(letto=>{
+    /* Il segnaposto è intenzionale: la pagina pubblica non riceve il consenso
+       necessario a inizializzare l'editor. Si parte dai byte letti (anche
+       quando sono in cache) e si ricostruisce gzip/ETag per questa sola
+       risposta variabile. */
+    let v = letto;
+    if(rel === '/index.html'){
+      const innesto = MODIFICA_INTERNA
+        ? '<script>window.FIORALBA_MODIFICA_INTERNA=true;</script>'
+        : '';
+      const dati = Buffer.from(letto.dati.toString('utf8')
+        .replace('<!-- FIORALBA_EDITOR_INTERNO -->', innesto), 'utf8');
+      v = {
+        ...letto,
+        dati,
+        gz: null,
+        etag: letto.etag.slice(0, -1) + (MODIFICA_INTERNA ? '-editor"' : '-pubblico"')
+      };
+      if(dati.length > 1024){
+        try{ v.gz = zlib.gzipSync(dati, { level:9 }); }catch(_){}
+      }
+    }
     /* Il 304: il browser ci manda l'etag che ha, e se combacia gli
        rispondiamo «tienti quello che hai» in poche centinaia di byte. */
     if(req.headers['if-none-match'] === v.etag){
@@ -176,5 +203,5 @@ const server = http.createServer((req, res)=>{
 
 server.listen(PORTA, ()=>{
   console.log('\n  🏮 Fioralba su http://localhost:' + PORTA +
-              (SVILUPPO ? '   (sviluppo: niente cache)' : '   (produzione)') + '\n');
+              (MODIFICA_INTERNA ? '   (sviluppo/test)' : '   (produzione)') + '\n');
 });

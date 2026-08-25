@@ -749,7 +749,8 @@ function loop(ts){
     const bloccato = UI.modalAperta() || UI.dialogoAttivo() ||
                      !$('#letter').classList.contains('hidden') ||
                      !$('#daycard').classList.contains('hidden') ||
-                     G.p.dorme || PESCA.inCorso();
+                      G.p.dorme || PESCA.inCorso() ||
+                      !!(window.EDITOR_INTERNO && EDITOR_INTERNO.attivo && EDITOR_INTERNO.attivo());
 
     // il vento gira sempre: anche a menu aperto l'erba continua a muoversi
     sistema('vento', ()=>FX.aggiornaVento(dt, G.meteo==='vento' ? 2.1 :
@@ -794,6 +795,8 @@ function loop(ts){
     sistema('bersaglio',  calcolaBersaglio);
     if(!bloccato) sistema('prompt', promptContestuale);
     sistema('render',     ()=>REND.disegna(G));
+    if(window.EDITOR_INTERNO && EDITOR_INTERNO.aggiornaOverlay)
+      sistema('editor interno', ()=>EDITOR_INTERNO.aggiornaOverlay());
   }catch(e){
     console.warn('[motore] errore nel loop', e);
   }
@@ -3477,10 +3480,19 @@ G.avvia = avviaGioco;
 /* ===================================================================
    INPUT
    =================================================================== */
+G.fermaInput = function(){
+  for(const k in tasti) tasti[k]=false;
+};
+
 function collegaInput(){
   window.addEventListener('keydown', e=>{
     const k = e.key.toLowerCase();
     if(['arrowup','arrowdown','arrowleft','arrowright',' '].indexOf(k)>=0) e.preventDefault();
+    if(window.EDITOR_INTERNO && EDITOR_INTERNO.gestisciTasto &&
+       EDITOR_INTERNO.gestisciTasto(e)){
+      e.preventDefault();
+      return;
+    }
     if(k==='shift'){ tasti['shift']=true; }
     tasti[k]=true;
     SND.resume();
@@ -3527,6 +3539,11 @@ function collegaInput(){
 
   window.addEventListener('keyup', e=>{
     const k=e.key.toLowerCase();
+    if(window.EDITOR_INTERNO && EDITOR_INTERNO.attivo && EDITOR_INTERNO.attivo()){
+      tasti[k]=false;
+      if(k==='shift') tasti['shift']=false;
+      return;
+    }
     tasti[k]=false;
     if(k==='shift') tasti['shift']=false;
     if(k===' ' && PESCA.inCorso()) PESCA.rilasciato();
@@ -3535,12 +3552,19 @@ function collegaInput(){
   // mouse
   cvs.addEventListener('mousemove', e=>{
     if(!G.inGioco) return;
+    if(window.EDITOR_INTERNO && EDITOR_INTERNO.muoviPuntatore &&
+       EDITOR_INTERNO.muoviPuntatore(e, cvs)) return;
     const r=cvs.getBoundingClientRect();
     mouseWorld = REND.schermoAMondo(e.clientX-r.left, e.clientY-r.top, G.cam);
   });
   cvs.addEventListener('mouseleave', ()=>{ mouseWorld=null; });
   cvs.addEventListener('mousedown', e=>{
     if(!G.inGioco) return;
+    if(window.EDITOR_INTERNO && EDITOR_INTERNO.gestisciPuntatore &&
+       EDITOR_INTERNO.gestisciPuntatore(e, cvs)){
+      e.preventDefault();
+      return;
+    }
     SND.resume();
     attivita();
     if(UI.modalAperta()||UI.dialogoAttivo()) return;
@@ -3551,8 +3575,23 @@ function collegaInput(){
     else if(e.button===2){ interagisci(); }
   });
   cvs.addEventListener('mouseup', ()=>{ if(PESCA.inCorso()) PESCA.rilasciato(); });
-  cvs.addEventListener('contextmenu', e=>e.preventDefault());
+  cvs.addEventListener('pointermove', e=>{
+    if(e.pointerType === 'mouse' || !window.EDITOR_INTERNO || !EDITOR_INTERNO.muoviPuntatore) return;
+    if(EDITOR_INTERNO.muoviPuntatore(e, cvs)) e.preventDefault();
+  });
+  cvs.addEventListener('pointerdown', e=>{
+    if(e.pointerType === 'mouse' || !window.EDITOR_INTERNO || !EDITOR_INTERNO.gestisciPuntatore) return;
+    if(EDITOR_INTERNO.gestisciPuntatore(e, cvs)) e.preventDefault();
+  });
+  cvs.addEventListener('contextmenu', e=>{
+    if(window.EDITOR_INTERNO && EDITOR_INTERNO.attivo && EDITOR_INTERNO.attivo()) e.preventDefault();
+    else e.preventDefault();
+  });
   cvs.addEventListener('wheel', e=>{
+    if(window.EDITOR_INTERNO && EDITOR_INTERNO.attivo && EDITOR_INTERNO.attivo()){
+      e.preventDefault();
+      return;
+    }
     if(!G.inGioco || UI.modalAperta()) return;
     e.preventDefault();
     attivita();

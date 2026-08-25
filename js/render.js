@@ -484,6 +484,15 @@ R.schermoAMondo = function(px, py, cam){
   return { x:(px*DPR/SCALE + Math.round(cam.x)), y:(py*DPR/SCALE + Math.round(cam.y)) };
 };
 
+/* Il selettore della modalità modifica vive nel DOM, sopra al canvas: per
+   restare agganciato allo stesso pixel del mondo anche con DPR e zoom diversi
+   gli serve l'inverso esatto di `schermoAMondo`, espresso in pixel CSS. */
+R.mondoASchermo = function(x, y, cam){
+  const fattore = SCALE/DPR;
+  return { x:(x-Math.round(cam.x))*fattore, y:(y-Math.round(cam.y))*fattore,
+           scala:fattore };
+};
+
 /* ===================================================================
    I BLOCCHI RADDOPPIATI
 

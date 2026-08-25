@@ -58,6 +58,29 @@ Il file avvia il server locale e apre automaticamente l'editor nel browser.
 Serve Node.js con `npm` disponibile; per chi preferisce il terminale resta
 disponibile `npm run editor`.
 
+### Modalità modifica durante i test
+
+Nell'anteprima di sviluppo compare anche **Menu → Sviluppo → Modalità
+modifica**. È un banco di prova rapido, pensato per rifinire la scenografia
+mentre si gioca:
+
+1. apri la voce dal menu e tocca un albero, una panchina, una fioriera,
+   un lampione o un altro arredo ambientale;
+2. premi **Sposta**, poi tocca una casella libera; muri, porte, passaggi,
+   acqua, campi e oggetti narrativi restano intenzionalmente protetti;
+3. usa **Annulla** per l'ultima prova oppure **Azzera bozza** per ripartire;
+4. scegli **Scarica bozza JSON** e apri il file nell'editor locale per la
+   validazione e l'approvazione definitiva.
+
+La modalità blocca i comandi normali e il salvataggio della partita. Alla
+chiusura ripristina sempre la mappa: non pubblica scenari e non conserva
+ritocchi nel salvataggio del giocatore. Funziona con mouse e tocco.
+
+Il server la abilita automaticamente nell'anteprima Replit; in locale si può
+avviare con `node server.js --sviluppo` oppure con
+`FIORALBA_MODIFICA_INTERNA=1 npm start`. Una pagina aperta come semplice file
+o un server statico generico non la abilita.
+
 ---
 
 ## 🎮 Comandi
@@ -334,6 +357,10 @@ trova il `package.json`, esegue `npm start` e serve il gioco. La porta la passa
 lui nella variabile `PORT`, che `server.js` legge da sé.
 
 **Altrove:** basta un Node qualsiasi. `npm start` e il gioco è servito.
+
+> **Prima della pubblicazione:** avvia il server senza `--sviluppo` e senza
+> `FIORALBA_MODIFICA_INTERNA=1`. In questo modo la Modalità modifica non viene
+> autorizzata dal server, non compare nel menu e il suo pannello resta inerte.
 
 In produzione `server.js` comprime i file, manda un `ETag` e lascia rivalidare
 tutto: il browser tiene i file in cache e riceve un `304` finché non cambiano
