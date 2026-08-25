@@ -1,5 +1,6 @@
 /*
- * Verifica nel browser il percorso completo degli aspetti del gatto.
+ * Verifica nel browser i percorsi completi degli aspetti del gatto e
+ * dell'editor interno di scenografia.
  *
  * Uso:
  *   npm run test:browser
@@ -7,7 +8,8 @@
  * Per usare un Chromium di sistema, dichiararlo così:
  *   CHROMIUM_PATH=/percorso/a/chromium npm run test:browser
  *
- * Senza TEST_BASE_URL il test avvia server.js su una porta temporanea.
+ * Senza TEST_BASE_URL il test avvia server.js in sviluppo su una porta
+ * temporanea.
  * Le API delle partite sono intercettate dentro un contesto Playwright
  * privato: nessuna partita di prova raggiunge il server o resta nel
  * browser dopo il test.
@@ -84,7 +86,7 @@ async function avviaServerSeServe() {
 
   const port = await portaLibera();
   const url = `http://127.0.0.1:${port}`;
-  const processo = spawn(process.execPath, ['server.js'], {
+  const processo = spawn(process.execPath, ['server.js', '--sviluppo'], {
     cwd: ROOT,
     env: { ...process.env, PORT: String(port) },
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -111,7 +113,7 @@ async function avviaServerSeServe() {
 }
 
 async function fingiPartite(context) {
-  const stato = { versione: 0, dati: null, salvataggi: [] };
+  const stato = { versione: 0, dati: null, salvataggi: [], put: 0 };
 
   await context.route('**/api/**', async route => {
     const richiesta = route.request();
@@ -140,6 +142,7 @@ async function fingiPartite(context) {
     }
 
     if (metodo === 'PUT') {
+      stato.put += 1;
       const corpo = richiesta.postDataJSON();
       stato.dati = corpo.dati;
       stato.salvataggi.push(JSON.parse(corpo.dati));
@@ -309,6 +312,222 @@ async function verificaVista(browser, url, vista) {
   }
 }
 
+async function nuovaPartitaEditor(page) {
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await page.locator('#landing').waitFor({ state: 'visible' });
+  await page.locator('.lp-new').first().click();
+  const modal = page.locator('#modal-wrap');
+  await modal.locator('.imp-nome-inp').waitFor({ state: 'visible' });
+  await modal.locator('.imp-nome-inp').fill('Prova editor');
+  await modal.getByRole('button', { name: 'Ho segnato il codice, si comincia', exact: true }).click();
+  await page.waitForFunction(() => window.G && G.inGioco && window.EDITOR_INTERNO);
+  await page.evaluate(() => {
+    G.tutorialFatto = true;
+    G.serie.daPrendere = 0;
+  });
+  await page.waitForTimeout(1_000);
+  await page.evaluate(() => {
+    UI.chiudiModal(true);
+    const lettera = document.querySelector('#letter');
+    if (!lettera.classList.contains('hidden')) lettera.querySelector('.letter-btn').click();
+  });
+}
+
+async function clicCasella(page, x, y) {
+  const punto = await page.evaluate(({ x, y }) => {
+    const canvas = document.querySelector('#game');
+    const r = canvas.getBoundingClientRect();
+    const p = REND.mondoASchermo((x + 0.5) * 64, (y + 0.5) * 64, G.cam);
+    return { x: p.x, y: p.y, larghezza: r.width, altezza: r.height };
+  }, { x, y });
+  verifica(
+    punto.x >= 0 && punto.y >= 0 && punto.x < punto.larghezza && punto.y < punto.altezza,
+    `La casella (${x}, ${y}) non è visibile nel canvas.`,
+  );
+  await page.locator('#game').click({ position: { x: punto.x, y: punto.y } });
+}
+
+async function inquadraCasella(page, giocatoreX, giocatoreY, x, y) {
+  await page.evaluate(({ giocatoreX, giocatoreY }) => {
+    G.p.px = (giocatoreX + 0.5) * 64;
+    G.p.py = (giocatoreY + 0.5) * 64;
+  }, { giocatoreX, giocatoreY });
+  await page.waitForTimeout(850);
+  await page.waitForFunction(({ x, y }) => {
+    const canvas = document.querySelector('#game').getBoundingClientRect();
+    const pannello = document.querySelector('#editor-interno').getBoundingClientRect();
+    const p = REND.mondoASchermo((x + 0.5) * 64, (y + 0.5) * 64, G.cam);
+    const sx = canvas.left + p.x, sy = canvas.top + p.y;
+    const sopraPannello = sx >= pannello.left && sx <= pannello.right
+      && sy >= pannello.top && sy <= pannello.bottom;
+    return p.x >= 0 && p.x < canvas.width && p.y >= 0 && p.y < canvas.height && !sopraPannello;
+  }, { x, y });
+}
+
+async function verificaEditor(browser, url) {
+  const context = await browser.newContext({
+    baseURL: url,
+    viewport: VISTE[0].viewport,
+    acceptDownloads: true,
+  });
+  await context.addInitScript(() => localStorage.setItem('fioralba_lingua', 'it'));
+  const salvataggio = await fingiPartite(context);
+  const page = await context.newPage();
+  const errori = [];
+  page.on('pageerror', errore => errori.push(errore.message));
+
+  try {
+    await nuovaPartitaEditor(page);
+    verifica(
+      await page.evaluate(() => window.FIORALBA_MODIFICA_INTERNA === true && !!window.EDITOR_INTERNO),
+      'Editor interno non disponibile: il server di prova deve essere in modalità sviluppo.',
+    );
+    const putPrima = salvataggio.put;
+
+    await page.evaluate(() => EDITOR_INTERNO.apri());
+    await page.locator('#editor-interno').waitFor({ state: 'visible' });
+    await clicCasella(page, 3, 10);
+    await page.locator('#editor-dimensioni').waitFor({ state: 'visible' });
+    verifica(
+      await page.locator('#editor-stato').textContent().then(testo => testo.includes('Selezionato: Bucato')),
+      'La decorazione regolare non viene selezionata nel canvas.',
+    );
+
+    await page.locator('#editor-larghezza').fill('2');
+    await page.locator('#editor-altezza').fill('1');
+    verifica(
+      await page.evaluate(() => {
+        const bordo = document.querySelector('#editor-selezione');
+        const scala = REND.mondoASchermo(0, 0, G.cam).scala;
+        return Math.round(parseFloat(bordo.style.width) / (64 * scala)) === 2
+          && Math.round(parseFloat(bordo.style.height) / (64 * scala)) === 1;
+      }),
+      'La modifica delle misure non mostra l’anteprima della decorazione.',
+    );
+    await page.locator('#editor-ridimensiona').click();
+    verifica(
+      await page.evaluate(() => G.mappa().deco.some(d => d.t === 'bucato' && d.x === 3 && d.y === 10 && d.w === 2)),
+      'L’applicazione delle dimensioni della decorazione non aggiorna la bozza.',
+    );
+    const downloadPronto = page.waitForEvent('download');
+    await page.locator('#editor-esporta').click();
+    const download = await downloadPronto;
+    const file = await download.path();
+    verifica(file, 'L’esportazione della bozza non ha prodotto un file.');
+    const bozza = JSON.parse(fs.readFileSync(file, 'utf8'));
+    verifica(
+      bozza.mappa === 'podere'
+        && bozza.ritocchi.decorazioni.some(d => d.azione === 'rimuovi' && d.da?.t === 'bucato' && d.da.w === 3)
+        && bozza.ritocchi.decorazioni.some(d => d.azione === 'aggiungi' && d.decorazione?.t === 'bucato'
+          && d.decorazione.w === 2 && d.decorazione.h === 1),
+      'La bozza esportata non descrive la decorazione ridimensionata.',
+    );
+    await page.locator('#editor-esci').click();
+    verifica(
+      await page.evaluate(() => !EDITOR_INTERNO.attivo()
+        && G.maps.podere.deco.some(d => d.t === 'bucato' && d.x === 3 && d.y === 10 && d.w === 3)),
+      'Uscire dall’editor non ripristina la decorazione ridimensionata.',
+    );
+
+    await page.evaluate(() => {
+      G.teletrasporta('piazza');
+      EDITOR_INTERNO.apri();
+    });
+    await page.locator('#editor-interno').waitFor({ state: 'visible' });
+    const fontana = await page.evaluate(() => {
+      const m = G.mappa();
+      const d = m.deco.find(deco => deco.t === 'fontana');
+      return {
+        x: d?.x,
+        y: d?.y,
+        w: d?.iw,
+        h: d?.ih,
+        acqua: d && Array.from({ length: d.ih }, (_, j) =>
+          Array.from({ length: d.iw }, (_, i) => WORLD.terreno(m, d.x + i, d.y + j) === 'acqua')).flat().every(Boolean),
+      };
+    });
+    verifica(
+      fontana.x === 18 && fontana.y === 14 && fontana.w === 4 && fontana.h === 4 && fontana.acqua,
+      'La mappa di prova deve contenere una fontana 4×4 sull’acqua.',
+    );
+    await inquadraCasella(page, 18, 14, fontana.x, fontana.y);
+    await clicCasella(page, fontana.x, fontana.y);
+    const diagnosiFontana = await page.evaluate(() => {
+      const p = REND.mondoASchermo(18.5 * 64, 14.5 * 64, G.cam);
+      return {
+        fontana: G.mappa().deco.find(d => d.t === 'fontana'),
+        mira: REND.schermoAMondo(p.x, p.y, G.cam),
+        camera: G.cam,
+        renderer: REND.info(),
+      };
+    });
+    verifica(
+      await page.locator('#editor-sposta').isEnabled(),
+      `La selezione della fontana non è riuscita: ${await page.locator('#editor-istruzioni').textContent()} (${JSON.stringify(diagnosiFontana)})`,
+    );
+    await page.getByRole('button', { name: 'Sposta', exact: true }).click();
+    await inquadraCasella(page, 32, 9, 35, 7);
+    await clicCasella(page, 35, 7);
+    const fontanaSpostata = await page.evaluate(() => {
+      const m = G.mappa();
+      const fontana = m.deco.find(d => d.t === 'fontana');
+      const tutte = (x, y, tipo) => Array.from({ length: 4 }, (_, j) =>
+          Array.from({ length: 4 }, (_, i) => m.obj[WORLD.idx(m, x + i, y + j)]?.t === tipo)
+            .every(Boolean)).every(Boolean);
+      const acqua = fontana && Array.from({ length: 4 }, (_, j) =>
+        Array.from({ length: 4 }, (_, i) => WORLD.terreno(m, fontana.x + i, fontana.y + j) === 'acqua')
+          .every(Boolean)).every(Boolean);
+      const origineLibera = Array.from({ length: 4 }, (_, j) =>
+        Array.from({ length: 4 }, (_, i) => !m.obj[WORLD.idx(m, 18 + i, 14 + j)]).every(Boolean)).every(Boolean);
+      return {
+        x: fontana?.x,
+        y: fontana?.y,
+        collisioni: fontana && tutte(fontana.x, fontana.y, 'fontana'),
+        acqua,
+        origineLibera,
+      };
+    });
+    verifica(
+      (fontanaSpostata.x !== 18 || fontanaSpostata.y !== 14)
+        && fontanaSpostata.collisioni && fontanaSpostata.acqua && fontanaSpostata.origineLibera,
+      'La fontana non sposta insieme tutte le 16 collisioni su una zona d’acqua libera.',
+    );
+
+    await page.locator('#editor-annulla').click();
+    verifica(
+      await page.evaluate(() => {
+        const m = G.mappa();
+        const fontana = m.deco.find(d => d.t === 'fontana');
+        return fontana?.x === 18 && fontana?.y === 14
+          && Array.from({ length: 4 }, (_, j) =>
+            Array.from({ length: 4 }, (_, i) => m.obj[WORLD.idx(m, 18 + i, 14 + j)]?.t === 'fontana')
+              .every(Boolean)).every(Boolean);
+      }),
+      'Annulla non ripristina la fontana e le sue collisioni.',
+    );
+
+    await page.locator('#editor-esci').click();
+    verifica(
+      await page.evaluate(() => {
+        const m = G.maps.piazza;
+        const fontana = m.deco.find(d => d.t === 'fontana');
+        return !EDITOR_INTERNO.attivo()
+          && fontana?.x === 18 && fontana?.y === 14;
+      }),
+      'Uscire dall’editor lascia modifiche nella mappa di gioco.',
+    );
+    await page.waitForTimeout(100);
+    verifica(
+      salvataggio.put === putPrima,
+      `L’editor ha emesso ${salvataggio.put - putPrima} salvataggi PUT mentre era aperto.`,
+    );
+    errorePagina('editor interno', errori);
+    console.log('✓ editor interno: selezione, anteprima, fontana, annulla, export e nessun salvataggio');
+  } finally {
+    await context.close();
+  }
+}
+
 async function principale() {
   const percorsoBrowser = trovaBrowser();
   verifica(
@@ -325,6 +544,7 @@ async function principale() {
 
   try {
     for (const vista of VISTE) await verificaVista(browser, server.url, vista);
+    await verificaEditor(browser, server.url);
   } finally {
     await browser.close();
     await server.ferma();

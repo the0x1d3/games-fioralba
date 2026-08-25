@@ -8,3 +8,4 @@
 - [Trasparenza delle pose generate](pose-generated-transparency.md) — le pose AI con reticolo richiedono una pulizia alfa controllata prima di entrare nei fogli sprite.
 - [Seguiti delle vicende](narrative-sequels.md) — più archi dello stesso abitante richiedono una dipendenza esplicita e filtri identici in dialoghi e Diario.
 - [Impronte delle decorazioni](decorative-footprints.md) — una collisione più grande dello sprite deve dichiarare esplicitamente il proprio ingombro.
+- [Camera stabile nei test editor](browser-editor-camera.md) — attendere l’inerzia della camera prima di cliccare una casella del mondo con Playwright.

@@ -7,7 +7,7 @@
   "//": "Il gioco NON ha bisogno di npm per girare: si apre index.html e funziona. Questo file esiste solo per gli strumenti di sviluppo (type-check e test di coerenza dei dati).",
   "scripts": {
     "check": "tsc --noEmit",
-    "test": "node tools/coerenza.js && node tools/verifica-omino.js && node tools/scenari-migrazione.js && npm run test:renderer",
+    "test": "node tools/coerenza.js && node tools/verifica-omino.js && node tools/scenari-migrazione.js && npm run test:renderer && npm run test:browser",
     "test:renderer": "node tools/confronto-renderer.js",
     "test:browser": "node tools/test-gatto-browser.js",
     "test:browser:install": "playwright install chromium",
