@@ -82,7 +82,7 @@ function statoIniziale(){
        al camino per sempre — quindi si tiene solo «questo letto l'ho
        messo là», e uno spostamento che non torna più si salta da sé. */
     arrediSpostati: [],
-    gatto:{ affetto:0, giorno:-1, nome:null },
+    gatto:{ affetto:0, giorno:-1, nome:null, skin:'arancio', aspetti:['arancio'] },
     obiettiviRiscossi:{}, sagra:null, mercante:{presente:false, giorno:-1, stock:[]},
     visitati:{podere:true}, collezione:{}, bottiglieLette:[],
     /* La serie dei giorni VERI in cui hai aperto il gioco. `ultimo` è una
@@ -133,22 +133,27 @@ async function init(){
      data.js: toccare `DATA` mentre si carica sarebbe un tredicesimo
      vincolo d'ordine preso per niente. */
   if(window.IMG){
+    /* La landing è la prima cosa che si vede. Le sue mappe, ritratti e
+       icone vanno chiesti prima del resto, così non restano dietro a
+       arredi e fogli che serviranno soltanto una volta avviata la partita. */
+    IMG.precarica({ terreni: DATA.TERRENI });
+    IMG.precarica(DATA.VEGETAZIONE, 'veg:');        // alberi, erbaccia, ceppo
+    IMG.precarica(DATA.NPC_FOGLI, 'npc:');          // gli abitanti disegnati a mano
+    IMG.precarica(DATA.EDIFICI, 'ed:');            // le nove facciate
+    IMG.precarica(DATA.ICONE, 'icona:');           // le icone nelle finestre
+
     IMG.precarica(DATA.ARREDI);
     IMG.precarica(DATA.PANNELLO, 'pannello:'); // le cinque icone dell'HUD
     IMG.precarica({ omino: DATA.OMINO });   // il foglio della camminata
     IMG.precarica(DATA.OMINO_ATTREZZI, 'omino:');   // e uno per attrezzo in mano
-    IMG.precarica(DATA.VEGETAZIONE, 'veg:');        // alberi, erbaccia, ceppo
-    IMG.precarica(DATA.NPC_FOGLI, 'npc:');          // gli abitanti disegnati a mano
-    IMG.precarica({ terreni: DATA.TERRENI });      // il foglio dei terreni
     IMG.precarica({ minerali: DATA.MINERALI });    // e quello dei minerali
-    IMG.precarica(DATA.EDIFICI, 'ed:');            // le nove facciate
     IMG.precarica(DATA.ANIMALI, 'an:');            // le bestie, con le loro pose
+    IMG.precarica({ gatto: DATA.GATTO }, 'foglio:');
+    IMG.precarica({ recinti: DATA.RECINTI }, 'foglio:');
     /* Col prefisso: `cartello` e `spaventapasseri` stanno in tutti e due
        gli elenchi, e le immagini si tengono per id — senza, la seconda
        richiesta si perderebbe e nello zaino resterebbe il disegno in
        codice mentre il file si scarica lo stesso. */
-    IMG.precarica(DATA.ICONE, 'icona:');    // le icone nelle finestre
-
     /* I PNG del pannello sono pulsanti completi. Finché non sono davvero
        decodificati resta visibile l'emoji già scritta nell'HTML: è più
        utile di un quadrato vuoto se la rete tarda o un file manca. */
@@ -200,6 +205,7 @@ async function init(){
    =================================================================== */
 function collegaLanding(){
   // la landing usa lo sfondo animato del titolo: nascondi il vecchio menu del titolo
+  document.body.classList.add('landing-attiva');
   const ti = $('#title-inner'); if(ti) ti.style.display='none';
   /* Il telefono non si rifiuta più.
 
@@ -262,7 +268,7 @@ function cominciaNuova(){
      del codice chiamano tutte e due `campoNome` — perché due campi che
      si comportano quasi uguale sono peggio di uno. */
   if(!window.SINC){
-    UI.chiediNome(n=>nuovaPartita(n));
+    UI.chiediNome((n, skin)=>nuovaPartita(n, skin));
     return;
   }
   UI.attesaServer('Preparo la valle…');
@@ -276,7 +282,7 @@ function cominciaNuova(){
        chiudere una finestra senza leggerla. Qui invece la finestra del
        codice è l'ultima cosa che si vede prima della valle, non ha
        crocetta, e il suo unico pulsante fa cominciare. */
-    UI.mostraCodice(r.codice, true, n=>nuovaPartita(n));
+    UI.mostraCodice(r.codice, true, (n, skin)=>nuovaPartita(n, skin));
   });
 }
 
@@ -299,7 +305,7 @@ function collegaTitolo(){
   $('#btn-howto').onclick    = ()=>{ SND.resume(); UI.comeSiGioca(); };
 }
 
-async function nuovaPartita(nome){
+async function nuovaPartita(nome, skinGatto){
   /* Il manifesto arriva da un JSON pubblico: si aspetta qui, prima di
      creare la valle, così la prima partita non vede per un fotogramma la
      mappa vecchia e poi quella approvata. */
@@ -310,6 +316,10 @@ async function nuovaPartita(nome){
      riscriverebbe con «Contadino» proprio quando si parte con una rete
      lenta. */
   if(nome) G.nomeGiocatore = nome;
+  const pelli = Array.isArray(DATA.GATTI) ? DATA.GATTI : [];
+  const scelta = pelli.some(p=>p.id===skinGatto) ? skinGatto : 'arancio';
+  G.gatto.skin = scelta;
+  G.gatto.aspetti = [scelta];
   G.maps = WORLD.crea();
   if(window.SCENARI) SCENARI.applica(G.maps);
   G.p.look = G.look;
@@ -326,6 +336,7 @@ async function nuovaPartita(nome){
 function avviaGioco(conIntro){
   $('#title').classList.add('hidden');
   const lp=$('#landing'); if(lp) lp.classList.add('hidden');
+  document.body.classList.remove('landing-attiva');
   if(window.LANDING) LANDING.ferma();     // niente animazioni a vuoto sotto la partita
   TITOLO.ferma();
   $('#hud').classList.remove('hidden');
@@ -859,6 +870,18 @@ function normalizzaStato(){
   if(typeof G.gatto.affetto !== 'number') G.gatto.affetto = 0;
   if(typeof G.gatto.giorno  !== 'number') G.gatto.giorno  = -1;
   if(G.gatto.nome === undefined) G.gatto.nome = null;
+  const pelliGatto = Array.isArray(DATA.GATTI) ? DATA.GATTI : [];
+  const pelleValida = id => pelliGatto.some(p=>p.id===id);
+  const avevaAspetti = Array.isArray(G.gatto.aspetti);
+  const aspetti = avevaAspetti ? G.gatto.aspetti : ['arancio'];
+  const posseduti = [...new Set(aspetti.filter(pelleValida))];
+  /* L'arancio è il gatto dei salvataggi prima degli aspetti. Una nuova
+     partita con un'altra scelta gratuita non riceve in regalo anche gli
+     altri colori: possiede solo ciò che ha scelto o comprato. */
+  if(!posseduti.length) posseduti.push('arancio');
+  if(!pelleValida(G.gatto.skin) || !posseduti.includes(G.gatto.skin))
+    G.gatto.skin = posseduti[0];
+  G.gatto.aspetti = posseduti;
   if(!G.trame || typeof G.trame!=='object') G.trame={};
   if(!G.trame.torta)     G.trame.torta={avviata:false,segreto:false,fatta:false};
   if(!G.trame.pesceluna) G.trame.pesceluna={avviata:false,preso:false,fatta:false};

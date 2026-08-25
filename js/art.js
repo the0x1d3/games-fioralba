@@ -3165,8 +3165,8 @@ A.gallina = function(frame, dir){
   objCache[key]=c; return c;
 };
 
-A.gatto = function(frame){
-  const key='gatto|'+frame;
+function gattoProcedurale(frame){
+  const key='gatto-procedurale|'+frame;
   if(objCache[key]) return objCache[key];
   const c=tela(32,32), x=c.getContext('2d');
   const bob=frame%2;
@@ -3184,6 +3184,56 @@ A.gatto = function(frame){
   px(x,9,16-bob,3,1,'#8a5230');
   for(let i=0;i<3;i++) px(x,4,14-bob+i*2,4,1,'#f0d8b0');
   objCache[key]=c; return c;
+}
+
+/* Il foglio esterno tiene gatti a 3× della casella del mondo. Lo si
+   riduce in una tela 64×64 e la tela, non il PNG intero, passa al renderer:
+   Canvas e Pixi vedono quindi esattamente lo stesso sprite composto. */
+const gattiIllustrati={}, fonteGatti={};
+A.gatto = function(skin, frame, dir){
+  /* Compatibilità con il vecchio contratto ART.gatto(frame). */
+  if(typeof skin==='number'){ dir=frame; frame=skin; skin='arancio'; }
+  skin=skin||'arancio'; frame=(frame||0)&1; dir=dir||1;
+  const foglio=window.IMG && IMG.prendi('foglio:gatto');
+  const dati=window.DATA && DATA.GATTO;
+  const aspetto=window.DATA && (DATA.GATTI||[]).find(p=>p.id===skin);
+  if(!foglio || !dati || !aspetto) return gattoProcedurale(frame);
+  const key=skin+'|'+frame+'|'+(dir<0?-1:1);
+  if(gattiIllustrati[key] && fonteGatti[key]===foglio) return gattiIllustrati[key];
+  const c=telaNetta(T,T), x=c.getContext('2d');
+  x.imageSmoothingEnabled=false;
+  if(dir<0){ x.translate(T,0); x.scale(-1,1); }
+  x.drawImage(foglio, (dati.cammino+frame)*dati.cella, aspetto.riga*dati.cella,
+    dati.cella,dati.cella,0,0,T,T);
+  gattiIllustrati[key]=c; fonteGatti[key]=foglio;
+  return c;
+};
+
+/* La tavola mostra una singola staccionata e un singolo cancelletto
+   orizzontali. Soltanto una tratta che continua da entrambe le parti può
+   usare il riquadro senza inventare un palo o una traversa; per angoli,
+   estremità e incroci il chiamante riceve null e conserva l'arte in codice. */
+const recintiIllustrati={}, fonteRecinti={};
+A.recintoIllustrato = function(kind, lati){
+  const L=lati|0;
+  const orizz=L===10, verticale=L===5;
+  if(!orizz && !verticale) return null;
+  const foglio=window.IMG && IMG.prendi('foglio:recinti');
+  const dati=window.DATA && DATA.RECINTI;
+  if(!foglio || !dati) return null;
+  const key=kind+'|'+L;
+  if(recintiIllustrati[key] && fonteRecinti[key]===foglio) return recintiIllustrati[key];
+  const c=telaNetta(T,T), x=c.getContext('2d');
+  x.imageSmoothingEnabled=false;
+  const sx=kind==='cancelletto' ? dati.cella : 0;
+  if(verticale){
+    x.translate(T/2,T/2); x.rotate(Math.PI/2);
+    x.drawImage(foglio,sx,0,dati.cella,dati.cella,-T/2,-T/2,T,T);
+  }else{
+    x.drawImage(foglio,sx,0,dati.cella,dati.cella,0,0,T,T);
+  }
+  recintiIllustrati[key]=c; fonteRecinti[key]=foglio;
+  return c;
 };
 
 /* ===================================================================

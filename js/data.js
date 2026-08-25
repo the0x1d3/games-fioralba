@@ -1998,6 +1998,25 @@ D.ARREDI = {
    la riga si sposta di sopra e sparisce da qui. */
 D.ARREDI_IN_ATTESA = {};
 
+/* I fogli qui sotto non sono arredi interi: ciascuno contiene più pose o
+   varianti, perciò ART ne ritaglia una cella prima di consegnarla al
+   renderer. Tenerne coordinate e nomi nei dati evita di trasformare i
+   numeri dell'illustrazione in costanti nascoste nel disegno. */
+D.GATTI = [
+  { id:'arancio', nome:'Arancio',       riga:0, prezzo:0   },
+  { id:'grigio',  nome:'Grigio tigrato',riga:1, prezzo:280 },
+  { id:'nero',    nome:'Nero di luna',  riga:2, prezzo:340 },
+  { id:'siamese', nome:'Siamese crema', riga:3, prezzo:390 },
+  { id:'tricolore',nome:'Tricolore',    riga:4, prezzo:460 }
+];
+/* Il foglio dei gatti è una griglia 8×5 di celle 192×192. Le due pose
+   di cammino che usa il gioco partono dalla colonna 2; la direzione
+   sinistra nasce ribaltando la stessa posa, senza duplicare immagini. */
+D.GATTO = { file:'gatti.png', cella:192, cammino:2 };
+/* Due riquadri quadrati affiancati: staccionata a sinistra e cancelletto
+   a destra. Le tratte non dritte restano nell'arte procedurale. */
+D.RECINTI = { file:'recinti-e-cancelletti.png', cella:887 };
+
 /* I comandi rapidi non sono oggetti dello zaino: sono cinque pulsanti
    completi per l'HUD e hanno perciò una tabella separata da `D.ICONE`.
    Il caricatore li anticipa all'avvio e il controllo di coerenza ne

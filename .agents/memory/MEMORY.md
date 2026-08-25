@@ -7,3 +7,4 @@
 - [Stile del protagonista approvato](protagonista-style.md) — mantenere la pixel-art densa con cappello ampio, volto grande, tunica blu e stivali; evitare versioni procedurali semplificate.
 - [Trasparenza delle pose generate](pose-generated-transparency.md) — le pose AI con reticolo richiedono una pulizia alfa controllata prima di entrare nei fogli sprite.
 - [Seguiti delle vicende](narrative-sequels.md) — più archi dello stesso abitante richiedono una dipendenza esplicita e filtri identici in dialoghi e Diario.
+- [Fogli grafici del gatto](cat-sprite-sheets.md) — il foglio degli aspetti ha un margine basso inattivo; validare le celle usate, non l’altezza totale.

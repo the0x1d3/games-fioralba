@@ -150,13 +150,13 @@ U.mostraCodice = function(codice, appenaNato, poi){
                     '<b>Chi ha il codice ha la partita</b>: non darlo in giro.');
     body.appendChild(n);
 
-    if(appenaNato) campoNome(body, T('Ho segnato il codice, si comincia'), n=>{
+    if(appenaNato) campoNome(body, T('Ho segnato il codice, si comincia'), (n, skin)=>{
       U.chiudiModal();
       /* `poi` può dover aspettare il manifesto degli scenari prima di
          creare G. Il nome e il primo salvataggio arrivano solo dopo:
          prima si rischiava di scrivere la partita vecchia e poi far
          sovrascrivere il nome dallo stato iniziale. */
-      const avvio = poi ? poi(n) : null;
+      const avvio = poi ? poi(n, skin) : null;
       Promise.resolve(avvio).then(()=>{
         if(window.G){ G.nomeGiocatore = n; G.aggiornaHUD(); G.salva(); }
       }).catch(e=>console.warn('Avvio della nuova partita fallito', e));
@@ -210,6 +210,56 @@ function campoNome(body, testoPulsante, avvia){
   riga.appendChild(inp);
   body.appendChild(riga);
 
+  /* La prima famiglia del gatto è una scelta gratuita: viene prima della
+     valle e quindi non può essere confusa con un acquisto della bottega. */
+  const aspetti = (window.DATA && Array.isArray(DATA.GATTI)) ? DATA.GATTI : [];
+  let skin = (aspetti[0] && aspetti[0].id) || 'arancio';
+  if(aspetti.length){
+    const titolo = document.createElement('div'); titolo.className='sectitle gatto-scelta-titolo';
+    titolo.textContent = T('Scegli il tuo gatto');
+    body.appendChild(titolo);
+    const nota = document.createElement('div'); nota.className='muted gatto-scelta-nota';
+    nota.textContent = T('È gratis ora. Più avanti potrai cambiare aspetto da Bruno.');
+    body.appendChild(nota);
+    const scelte = document.createElement('div'); scelte.className='gatto-scelte';
+    scelte.setAttribute('role','radiogroup');
+    scelte.setAttribute('aria-label',T('Aspetto iniziale del gatto'));
+    const carte = [];
+    const aggiorna = ()=>{
+      for(const c of carte){
+        const attiva=c.id===skin;
+        c.el.classList.toggle('scelta',attiva);
+        c.el.setAttribute('aria-checked',String(attiva));
+      }
+    };
+    for(const aspetto of aspetti){
+      const carta=document.createElement('button');
+      carta.type='button'; carta.className='gatto-scelta';
+      carta.setAttribute('role','radio');
+      const preview=document.createElement('canvas');
+      preview.width=64; preview.height=64; preview.className='gatto-scelta-preview';
+      const sprite=window.ART && ART.gatto ? ART.gatto(aspetto.id,0,1) : null;
+      if(sprite) preview.getContext('2d').drawImage(sprite,0,0,64,64);
+      const nome=document.createElement('span'); nome.textContent=T(aspetto.nome);
+      carta.append(preview,nome);
+      carta.onclick=()=>{ skin=aspetto.id; aggiorna(); };
+      carta.addEventListener('keydown',e=>{
+        const i=aspetti.indexOf(aspetto);
+        if(e.key==='ArrowRight'||e.key==='ArrowDown'){
+          e.preventDefault(); const dopo=aspetti[(i+1)%aspetti.length];
+          skin=dopo.id; aggiorna(); carte[(i+1)%aspetti.length].el.focus();
+        }else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){
+          e.preventDefault(); const prima=aspetti[(i+aspetti.length-1)%aspetti.length];
+          skin=prima.id; aggiorna(); carte[(i+aspetti.length-1)%aspetti.length].el.focus();
+        }
+      });
+      carte.push({id:aspetto.id,el:carta});
+      scelte.appendChild(carta);
+    }
+    aggiorna();
+    body.appendChild(scelte);
+  }
+
   const b = document.createElement('button'); b.className='btn gold';
   b.style.cssText='width:100%;margin-top:14px';
   b.textContent = testoPulsante;
@@ -218,7 +268,7 @@ function campoNome(body, testoPulsante, avvia){
   const pulito = ()=> inp.value.trim().replace(/\s+/g,' ');
   inp.addEventListener('input', ()=>{ b.disabled = !pulito(); });
   inp.addEventListener('keydown', e=>{ if(e.key==='Enter' && !b.disabled) b.click(); });
-  b.onclick = ()=>{ const n = pulito(); if(n) avvia(n); };
+  b.onclick = ()=>{ const n = pulito(); if(n) avvia(n, skin); };
   body.appendChild(b);
   setTimeout(()=>{ try{ inp.focus(); }catch(e){} }, 60);
 }
@@ -227,7 +277,7 @@ function campoNome(body, testoPulsante, avvia){
    c'è nessun codice da mostrare, ma il nome si chiede lo stesso. */
 U.chiediNome = function(avvia){
   U.modal(T('Prima di cominciare'), body=>{
-    campoNome(body, T('Si comincia'), n=>{ U.chiudiModal(); avvia(n); });
+    campoNome(body, T('Si comincia'), (n, skin)=>{ U.chiudiModal(); avvia(n, skin); });
   }, { senzaChiusura:true });
 };
 

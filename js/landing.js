@@ -18,6 +18,21 @@ const $ = s=>document.querySelector(s);
 
 let raf = null;
 let vivo = false;
+let graficaPronta = false;
+
+function chiaviGraficaLanding(){
+  const chiavi = ['terreni'];
+  const aggiungi = (elenco,prefisso)=>{
+    for(const id of Object.keys(elenco||{})) chiavi.push((prefisso||'')+id);
+  };
+  aggiungi(DATA.VEGETAZIONE,'veg:');
+  aggiungi(DATA.NPC_FOGLI,'npc:');
+  aggiungi(DATA.EDIFICI,'ed:');
+  /* Servono solo le icone effettivamente presenti nelle card, non tutta la
+     libreria degli oggetti di gioco. */
+  for(const id of new Set(COSE.map(c=>c.ico))) chiavi.push('icona:'+id);
+  return chiavi;
+}
 
 /* ------------------------------------------------------------------
    1. LE COSE CHE SI FANNO — icone vere, non emoji
@@ -255,17 +270,22 @@ function costruisciValle(){
 }
 
 /* Le immagini della grafica aggiornata arrivano in modo asincrono. La
-   landing nasce subito, ma senza questo secondo passaggio manterrebbe per
-   tutta la visita gli sprite di riserva che erano disponibili nel primo
-   istante. Aspettiamo che il precaricamento si stabilizzi e ricostruiamo
-   soltanto queste due vetrine, che non toccano né salvataggi né partita. */
+   landing aspetta esclusivamente ciò che mostra, non l'intero catalogo
+   scaricato per la partita: in questo modo le sue sezioni compaiono insieme
+   senza attendere arredi, animali o pannelli ancora invisibili. */
 function aggiornaGraficaQuandoPronta(tentativo){
   if(!vivo || !window.IMG || !IMG.stato) return;
-  const stato = IMG.stato();
+  const stato = IMG.stato(chiaviGraficaLanding());
   if(stato.inVolo && tentativo < 30){
     aggiornaGraficaTimer = setTimeout(()=>aggiornaGraficaQuandoPronta(tentativo+1), 180);
     return;
   }
+  /* Le icone e i ritagli non devono mostrare prima la versione procedurale
+     per poi cambiare sotto gli occhi di chi legge. Si ricostruiscono una
+     sola volta, quando il precaricamento ha finito: durante l'attesa la
+     sezione resta vuota, non vecchia. */
+  graficaPronta = true;
+  costruisciCose();
   costruisciGente();
   costruisciValle();
 }
@@ -428,7 +448,8 @@ function collegaLingua(){
     LINGUA.set(altra.id);
     disegna();
     // la valle, le schede e il changelog sono già impaginati in italiano
-    costruisciCose(); costruisciGente(); costruisciChangelog();
+    if(graficaPronta) costruisciCose();
+    costruisciGente(); costruisciChangelog();
   };
   LINGUA.suCambio(disegna);
   disegna();
@@ -437,9 +458,9 @@ function collegaLingua(){
 L.init = function(){
   const lp = $('#landing');
   if(!lp || lp.classList.contains('hidden')) return;
-  costruisciCose();
   costruisciGente();
-  costruisciValle();
+  /* La valle viene montata dal primo passaggio completato di
+     `aggiornaGraficaQuandoPronta`, non con i fallback del primo fotogramma. */
   collegaLingua();
   collegaChangelog();
   collegaComparsa();

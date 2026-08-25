@@ -1795,12 +1795,12 @@ R.disegna = function(G){
         o.t==='barca'||o.t==='fioriera'||o.t==='bancarella'||o.t==='camino'||
         o.t==='lume'||o.t==='pietra_rituale'||(o.t==='sasso'&&o.shake)||
         (o.t==='macchina'&&o.pronto)||(o.t==='mobile'&&o.kind==='spaventapasseri');
-      const arredo = immagineArredo(o);
+      const lati = o.kind==='recinto' || o.kind==='cancelletto'
+        ? latiRecinto(m, x, y) : 0;
+      const arredo = immagineArredo(o, lati);
       const etichetta = o.t==='macchina' && o.kind==='cassa' && o.nome
         ? { testo:o.nome, x:px+T/2, y:py-6 }
         : null;
-      const lati = o.kind==='recinto' || o.kind==='cancelletto'
-        ? latiRecinto(m, x, y) : 0;
       const statoBase = [
         o.t,o.kind||'',o.v||0,o.stage||0,o.bacche?1:0,o.carbone?1:0,
         o.dentro?1:0,o.pronto?1:0,o.out||'',o.testo||'',stag,
@@ -1946,15 +1946,16 @@ R.disegna = function(G){
     const px=Math.round(a.px)+ox, py=Math.round(a.py)+oy;
     if(px<-60*K||px>VW+60*K||py<-70*K||py>VH+60*K) continue;
     const aframe = a.tipo==='gatto' ? (t/300|0)%2 : (t/260|0)%2;
+    const skinGatto = a.tipo==='gatto' && G.gatto ? G.gatto.skin||'arancio' : '';
     lista.push({
       id:identitaPixi('animale',a),
       y:a.py,
       bounds:boundsPixi(px-80,py-96,160,128),
-      chiave:[a.tipo,a.dir,aframe].join('|'),
+      chiave:[a.tipo,skinGatto,a.dir,aframe].join('|'),
       chiaveOmbra:'ombra-animale',
       s:()=>{ FX.ombraTerra(sx, px, py-K, 7*K, 2.6*K, 0.22); },
       d:()=>{
-        const img = a.tipo==='gatto' ? ART.gatto((t/300|0)%2) : ART.gallina((t/260|0)%2, a.dir);
+        const img = a.tipo==='gatto' ? ART.gatto(skinGatto,(t/300|0)%2,a.dir) : ART.gallina((t/260|0)%2, a.dir);
         sx.drawImage(FX.contorno(img), (px-17*K)|0, (py-29*K)|0);
         sx.drawImage(img, (px-16*K)|0, (py-28*K)|0);
       }});
@@ -2429,7 +2430,7 @@ function ombraOggettoDentro(o, px, py, gx, gy, t, stag, sole){
          presa dal vecchio sarebbe stata l'ombra di un altro. `mez` porta
          qualunque sprite dai pixel di mondo a quelli del blocco
          raddoppiato, quindi la misura torna con tutti e due. */
-      const img = immagineArredo(o) || ART.placeable(o.kind, opt);
+      const img = immagineArredo(o, opt.lati) || ART.placeable(o.kind, opt);
       FX.ombraSprite(sx, img, px+16, py+U, sole, mez(img.width), mez(img.height), 0);
       break;
     }
@@ -2644,7 +2645,11 @@ function idImmagineArredo(o){
   return id;
 }
 
-function immagineArredo(o){
+function immagineArredo(o, lati){
+  if((o.kind==='recinto' || o.kind==='cancelletto') && window.ART && ART.recintoIllustrato){
+    const recinzione=ART.recintoIllustrato(o.kind,lati|0);
+    if(recinzione) return recinzione;
+  }
   if(!window.IMG || !window.DATA || !DATA.ARREDI) return null;
   /* La fontana viene disegnata una volta dalla decorazione che la
      accompagna; nella griglia esistono dodici oggetti-fantasma soltanto
@@ -2688,9 +2693,13 @@ function immagineRotte(o, G){
    invece che nel punto di chiamata perché il PNG non entra nel blocco
    raddoppiato: l'inclinazione va applicata in pixel di mondo, o esce
    grande il doppio come tutto il resto. Zero per tutti gli altri. */
-function arredoDaImmagine(o, wx, wy, piega){
-  const img = immagineArredo(o);
+function arredoDaImmagine(o, wx, wy, piega, lati){
+  const img = immagineArredo(o, lati);
   if(!img) return false;
+  if(o.kind==='recinto' || o.kind==='cancelletto'){
+    sx.drawImage(img, Math.round(wx), Math.round(wy), T, T);
+    return { x:Math.round(wx), y:Math.round(wy), w:T, h:T };
+  }
   const a = DATA.ARREDI[idImmagineArredo(o)];
 
   const f = WORLD.impronta(o);
@@ -2720,7 +2729,9 @@ function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
   const piega = o.kind === 'spaventapasseri' ? FX.vento(gx*T, gy*T)*0.05 : 0;
   /* Bacheche e cassetta postale hanno stati narrativi propri: il nuovo
      arredo di base non deve nascondere il loro avanzamento. */
-  const arredo = immagineRotte(o, G) ? false : arredoDaImmagine(o, px, py, piega);
+  const lati = o.kind==='recinto' || o.kind==='cancelletto'
+    ? latiRecinto(G.mappa(), gx, gy) : 0;
+  const arredo = immagineRotte(o, G) ? false : arredoDaImmagine(o, px, py, piega, lati);
   if(arredo){
     if(o.kind === 'cartello' && o.testo)
       disegnaScrittaCartello(o.testo, arredo.x, arredo.y, 'png');

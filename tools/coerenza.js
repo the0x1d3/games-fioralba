@@ -3083,6 +3083,59 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
     }
   }
 
+  /* IL GATTO E LE RECINZIONI non sono arredi di una misura in caselle:
+     sono fogli che ART ritaglia in tele 64×64. Anche qui la geometria
+     deve restare dichiarata, altrimenti un'esportazione con una colonna
+     in più sposta tutti i gatti senza produrre errori di JavaScript. */
+  const GATTO = DATA.GATTO;
+  const ASPETTI_GATTO = DATA.GATTI || [];
+  if (!GATTO) problemi.push('manca DATA.GATTO: il foglio degli aspetti non viene caricato');
+  else {
+    usati.add(GATTO.file);
+    const f = path.join(dir, GATTO.file);
+    if (!fs.existsSync(f)) problemi.push(`DATA.GATTO vuole img/${GATTO.file}, che non c'è`);
+    else {
+      const b = fs.readFileSync(f);
+      if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) problemi.push(`img/${GATTO.file} non è un PNG`);
+      else {
+        const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+        const colonne = w / GATTO.cella, righe = Math.floor(h / GATTO.cella);
+        if (!Number.isInteger(colonne))
+          problemi.push(`img/${GATTO.file} non è largo un numero intero di celle da ${GATTO.cella}px`);
+        if (GATTO.cammino < 0 || GATTO.cammino + 1 >= colonne)
+          problemi.push(`DATA.GATTO.cammino=${GATTO.cammino} non lascia due pose dentro le ${colonne} colonne`);
+        const visti = new Set();
+        if (ASPETTI_GATTO.length !== 5)
+          problemi.push(`DATA.GATTI ha ${ASPETTI_GATTO.length} aspetti: il foglio ne presenta cinque righe`);
+        for (const a of ASPETTI_GATTO) {
+          if (!a.id || visti.has(a.id)) problemi.push(`DATA.GATTI ha un id vuoto o duplicato («${a.id}»)`);
+          visti.add(a.id);
+          if (!Number.isInteger(a.riga) || a.riga < 0 || (a.riga+1)*GATTO.cella > h)
+            problemi.push(`l'aspetto «${a.id}» punta alla riga ${a.riga}, fuori dalle ${righe} del foglio`);
+          if (!(a.prezzo >= 0)) problemi.push(`l'aspetto «${a.id}» ha un prezzo non valido`);
+        }
+        if (!visti.has('arancio')) problemi.push('DATA.GATTI deve avere «arancio»: è il ripiego dei vecchi salvataggi');
+      }
+    }
+  }
+
+  const RECINTI = DATA.RECINTI;
+  if (!RECINTI) problemi.push('manca DATA.RECINTI: la tavola di staccionate non viene caricata');
+  else {
+    usati.add(RECINTI.file);
+    const f = path.join(dir, RECINTI.file);
+    if (!fs.existsSync(f)) problemi.push(`DATA.RECINTI vuole img/${RECINTI.file}, che non c'è`);
+    else {
+      const b = fs.readFileSync(f);
+      if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) problemi.push(`img/${RECINTI.file} non è un PNG`);
+      else {
+        const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+        if (w !== RECINTI.cella * 2 || h !== RECINTI.cella)
+          problemi.push(`img/${RECINTI.file} è ${w}×${h}, ma vuole due riquadri ${RECINTI.cella}×${RECINTI.cella} affiancati`);
+      }
+    }
+  }
+
   /* DUE TABELLE NON POSSONO RIVENDICARE LO STESSO FILE.
 
      È successo davvero, e in silenzio: le icone dello zaino si chiamano
@@ -3102,6 +3155,8 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
   for (const nome of ['ARREDI', 'ICONE', 'PANNELLO', 'EDIFICI', 'VEGETAZIONE', 'NPC_FOGLI', 'OMINO_ATTREZZI'])
     for (const id in (DATA[nome] || {})) dichiara(`DATA.${nome}.${id}`, DATA[nome][id].file);
   for (const nome of ['OMINO', 'TERRENI', 'MINERALI'])
+    if (DATA[nome]) dichiara(`DATA.${nome}`, DATA[nome].file);
+  for (const nome of ['GATTO', 'RECINTI'])
     if (DATA[nome]) dichiara(`DATA.${nome}`, DATA[nome].file);
   for (const f in rivendica)
     if (rivendica[f].length > 1)

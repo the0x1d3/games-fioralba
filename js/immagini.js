@@ -53,14 +53,20 @@ const stato = {};
 /* Quante ne abbiamo chieste e come sono andate. Serve al pannello di
    prova e al controllo nel browser: «le immagini sono arrivate?» è la
    prima domanda quando qualcosa si vede con l'arte vecchia. */
-IM.stato = function(){
+IM.stato = function(chiavi){
   let pronte = 0, mancate = 0, inVolo = 0;
-  for(const k in stato){
+  /* Una vetrina come la landing non deve restare vuota finché arrivano
+     anche asset che non mostra. Se riceve una lista, conta solo quelle
+     richieste; il contratto storico senza argomenti continua a descrivere
+     l'intero precaricamento del gioco. */
+  const elenco = Array.isArray(chiavi) ? chiavi : Object.keys(stato);
+  for(const k of elenco){
+    if(!stato[k]) continue;
     if(stato[k].pronta) pronte++;
     else if(stato[k].mancata) mancate++;
     else inVolo++;
   }
-  return { chieste: Object.keys(stato).length, pronte, mancate, inVolo };
+  return { chieste: elenco.filter(k=>!!stato[k]).length, pronte, mancate, inVolo };
 };
 
 /* Chiede un'immagine sola. Non torna niente: chi disegna la ripesca da

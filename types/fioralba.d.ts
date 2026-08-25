@@ -321,6 +321,11 @@ interface FioPassante {
   quando?: (G: FioGame) => boolean;
 }
 
+/** Un aspetto selezionabile del gatto: la riga corrispondente nel foglio. */
+interface FioGattoAspetto {
+  id: string; nome: string; riga: number; prezzo: number;
+}
+
 /** Struttura completa di window.DATA (js/data.js). */
 interface FioData {
   SEASONS: FioSeason[];
@@ -383,6 +388,12 @@ interface FioData {
   ARREDI: Record<string, { file: string; w: number; h: number }>;
   /** File in `img/` disegnati ma non ancora collegati, col perché. */
   ARREDI_IN_ATTESA: Record<string, string>;
+  /** I cinque aspetti cosmetici del gatto e la riga di ciascuno nel foglio. */
+  GATTI: FioGattoAspetto[];
+  /** Foglio dei gatti: celle quadrate e prima colonna della camminata. */
+  GATTO: { file: string; cella: number; cammino: number };
+  /** Tavola con una staccionata e un cancelletto quadrati affiancati. */
+  RECINTI: { file: string; cella: number };
   /**
    * Le icone disegnate a mano, in PIXEL e non in caselle: stanno nelle
    * finestre, non nel mondo. La chiave è l'id dell'oggetto, quello che

@@ -224,7 +224,10 @@ U.negozio = function(G, tipo){
 
   U.modal(titoli[tipo]||'Bottega', body=>{
     const tabs=document.createElement('div'); tabs.className='tabs';
-    for(const [k,lab] of [['compra','Compra'],['vendi','Vendi']]){
+    const schede = tipo==='bruno'
+      ? [['compra','Compra'],['vendi','Vendi'],['gatto','Gatto']]
+      : [['compra','Compra'],['vendi','Vendi']];
+    for(const [k,lab] of schede){
       const b=document.createElement('button');
       b.className='tab'+(tab===k?' on':'');
       b.textContent=T(lab);
@@ -237,7 +240,13 @@ U.negozio = function(G, tipo){
     tabs.appendChild(oro);
     body.appendChild(tabs);
 
-    if(tab==='compra'){
+    if(tab==='gatto'){
+      const intro=document.createElement('div'); intro.className='muted';
+      intro.style.margin='2px 0 10px';
+      intro.textContent='Un aspetto nuovo per il tuo gatto. L’aspetto scelto viene applicato subito.';
+      body.appendChild(intro);
+      for(const aspetto of (DATA.GATTI||[])) body.appendChild(rigaAspettoGatto(G, aspetto));
+    } else if(tab==='compra'){
       let lista;
       if(tipo==='marisol'){
         lista = DATA.CUCINA.map(r=>({id:r.id, prezzo:Math.round(IT.prezzo(r.id)*1.6)}));
@@ -312,6 +321,48 @@ U.mercante = function(G){
     for(const it of stock) body.appendChild(rigaCompra(G, it.id, it.prezzo));
   });
 };
+
+function rigaAspettoGatto(G, aspetto){
+  const r=document.createElement('div'); r.className='row gatto-riga';
+  const anteprima=document.createElement('canvas');
+  anteprima.width=64; anteprima.height=64; anteprima.className='gatto-riga-preview';
+  const sprite=window.ART && ART.gatto ? ART.gatto(aspetto.id,0,1) : null;
+  if(sprite) anteprima.getContext('2d').drawImage(sprite,0,0,64,64);
+  r.appendChild(anteprima);
+  const info=document.createElement('div'); info.className='rinfo';
+  const nome=document.createElement('div'); nome.className='rname'; nome.textContent=aspetto.nome;
+  const desc=document.createElement('div'); desc.className='rdesc';
+  const posseduti=Array.isArray(G.gatto && G.gatto.aspetti) ? G.gatto.aspetti : ['arancio'];
+  const possiede=posseduti.includes(aspetto.id);
+  const attivo=G.gatto && G.gatto.skin===aspetto.id;
+  desc.textContent=attivo ? 'Aspetto attuale.' : (possiede ? 'Già adottato.' : 'Da adottare una volta sola.');
+  info.append(nome,desc); r.appendChild(info);
+  const b=document.createElement('button'); b.className='btn'+(attivo?'':' gold');
+  if(attivo){
+    b.textContent='In uso'; b.disabled=true;
+  }else if(possiede){
+    b.textContent='Applica';
+    b.onclick=()=>{
+      G.gatto.skin=aspetto.id;
+      G.salva(); SND.play('menu'); U.toast(aspetto.nome+' è il nuovo aspetto del gatto.','good');
+      U.aggiorna(); G.aggiornaHUD();
+    };
+  }else{
+    b.textContent='Adotta · '+aspetto.prezzo+' ✦';
+    b.disabled=G.oro<aspetto.prezzo;
+    b.title=b.disabled ? 'Servono '+aspetto.prezzo+' monete.' : '';
+    b.onclick=()=>{
+      if(G.oro<aspetto.prezzo) return;
+      G.oro-=aspetto.prezzo;
+      G.gatto.aspetti=[...new Set([...(G.gatto.aspetti||[]),aspetto.id])];
+      G.gatto.skin=aspetto.id;
+      G.salva(); SND.play('moneta'); U.toast(aspetto.nome+' ora ti segue per la valle.','good');
+      U.aggiorna(); G.aggiornaHUD();
+    };
+  }
+  r.appendChild(b);
+  return r;
+}
 
 function rigaCompra(G, id, prezzo){
   const r=document.createElement('div'); r.className='row';
