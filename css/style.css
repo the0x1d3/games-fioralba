@@ -888,16 +888,34 @@ body.modalita-modifica-attiva.modalita-modifica-esplora #tocco *{ pointer-events
 }
 .lp-sub{ color:var(--gold-d); font-weight:800; letter-spacing:3.5px; font-size:13px; text-transform:uppercase; }
 .lp-logo h1{
+  position:relative; display:inline-block; isolation:isolate;
   font-size:clamp(54px,12vw,108px); font-weight:800; letter-spacing:9px; line-height:1;
-  color:var(--gold); margin:6px 0 2px;
-  text-shadow:0 3px 0 rgba(0,0,0,.5), 0 0 52px rgba(242,193,78,.28);
-  animation:lpLogoEnter .38s cubic-bezier(.22,.82,.28,1) both;
-  will-change:opacity,transform;
+  color:#755022; margin:6px 0 2px;
+  text-shadow:0 2px 0 #241609, 0 4px 15px rgba(0,0,0,.48);
+  animation:lpLogoBase .22s ease-out both;
 }
-@keyframes lpLogoEnter{
-  from{ opacity:0; transform:translateY(14px); }
-  72%{ opacity:1; transform:translateY(-2px); }
+/* Il titolo esiste prima come rilievo nel legno, poi la foglia d'oro
+   affiora sopra di lui. Non c'è rimbalzo: la rivelazione è una sola,
+   continua e termina prima che l'occhio abbia il tempo di aspettarla. */
+.lp-logo h1::after{
+  content:attr(data-logo); position:absolute; inset:0; z-index:1;
+  color:transparent;
+  background:linear-gradient(105deg,#9a6426 0%,#dca84a 28%,#fff1b1 47%,#f6c94f 54%,#ba7229 68%,#f2c14e 100%);
+  background-size:230% 100%; background-position:100% 0;
+  -webkit-background-clip:text; background-clip:text;
+  clip-path:inset(0 100% 0 0);
+  text-shadow:0 3px 0 rgba(0,0,0,.38),0 0 30px rgba(242,193,78,.24);
+  animation:lpTitleIncision .62s cubic-bezier(.22,.78,.24,1) .08s both;
+  will-change:clip-path,background-position;
+}
+@keyframes lpLogoBase{
+  from{ opacity:0; transform:translateY(6px); }
   to{ opacity:1; transform:translateY(0); }
+}
+@keyframes lpTitleIncision{
+  0%{ clip-path:inset(0 100% 0 0); background-position:100% 0; }
+  64%{ clip-path:inset(0 0 0 0); background-position:42% 0; }
+  100%{ clip-path:inset(0 0 0 0); background-position:0 0; }
 }
 .lp-tag{ color:var(--paper-2); font-style:italic; font-size:clamp(14px,2vw,17px); opacity:.92; }
 .lp-intro{
@@ -1009,7 +1027,8 @@ body.modalita-modifica-attiva.modalita-modifica-esplora #tocco *{ pointer-events
 @media (prefers-reduced-motion:reduce){
   .lp-riv{ opacity:1; transform:none; transition:none; }
   .lp-scrolldown i{ animation:none; }
-  .lp-logo h1{ animation:none; will-change:auto; }
+  .lp-logo h1,.lp-logo h1::after{ animation:none; will-change:auto; }
+  .lp-logo h1::after{ clip-path:none; background-position:0 0; }
 }
 
 /* Le scenette animate della landing sono state tolte: restavano quattro
@@ -1457,10 +1476,10 @@ body.modalita-modifica-attiva.modalita-modifica-esplora #tocco *{ pointer-events
 }
 .lp-posto:hover{ transform:translateY(-3px); box-shadow:0 12px 30px rgba(0,0,0,.36); }
 .lp-posto-vista{
-  position:relative; line-height:0;
+  position:relative; line-height:0; aspect-ratio:302/202;
   border-bottom:2px solid var(--wood-1); background:#1a140e;
 }
-.lp-posto-vista canvas{
+.lp-posto-vista canvas,.lp-posto-vista img{
   width:100%; height:auto; display:block;
   image-rendering:pixelated;
 }

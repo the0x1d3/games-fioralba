@@ -215,6 +215,9 @@ function scenarioValido(scenario){
     if(voce.azione === 'sposta' &&
        (!oggettoValido(voce.da) || !voce.a || !eInteroDentro(voce.a.x,m.w) || !eInteroDentro(voce.a.y,m.h)))
       return 'Lo spostamento di un oggetto non è valido.';
+    const oggetto = voce.azione === 'aggiungi' ? voce.oggetto : voce.da;
+    if(!motore.oggettoScenarioSicuro(oggetto))
+      return 'Uno scenario può ritoccare soltanto oggetti scenografici.';
     if(spazioRiservato(m,voce.x,voce.y) ||
        (voce.azione==='sposta' && spazioRiservato(m,voce.a.x,voce.a.y)))
       return 'Uno scenario non può occupare lo spazio riservato a una costruzione.';
@@ -364,8 +367,12 @@ const server = http.createServer(async (req,res)=>{
   }
 });
 
-server.listen(PORTA, '127.0.0.1', ()=>{
-  console.log('\n  Editor scenari Fioralba: http://127.0.0.1:' + PORTA);
-  console.log('  Solo locale — le bozze vanno in scenarios/drafts/\n');
-  apriBrowser();
-});
+if(require.main === module){
+  server.listen(PORTA, '127.0.0.1', ()=>{
+    console.log('\n  Editor scenari Fioralba: http://127.0.0.1:' + PORTA);
+    console.log('  Solo locale — le bozze vanno in scenarios/drafts/\n');
+    apriBrowser();
+  });
+}
+
+module.exports = { scenarioValido };

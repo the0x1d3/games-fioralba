@@ -12,10 +12,8 @@ if(!window.FIORALBA_MODIFICA_INTERNA) return;
 const E={}; window.EDITOR_INTERNO=E;
 const T=64, $=s=>document.querySelector(s);
 /* Il banco di prova sposta solo arredo certamente scenografico. Una
-   blacklist non basta: molte interazioni dipendono dal tipo (casse,
-   bottiglie, consegne) o da un campo non uniforme (chioschi e fucine). */
-const OGGETTI_SCENOGRAFICI=new Set(['albero','cespuglio','fiori','sasso','panchina','fioriera','lampione','lume']);
-const MOBILI_SCENOGRAFICI=new Set(['recinto','cancelletto','cartello']);
+   blacklist non basta: usa la stessa allowlist del motore, che protegge
+   anche le bozze JSON scritte a mano e pubblicate dall’editor locale. */
 let aperto=false, basi=null, selezione=null, mira=null, spostamento=false;
 let modifiche=new Map(), cronologia=[], originali=new Map(), toccoNascosto=true;
 
@@ -53,15 +51,14 @@ function spazioRiservato(m,x,y){
   return (m.warps||[]).some(w=>include(w.x,w.y,{w:w.w,h:w.h},x,y));
 }
 function scenograficoOggetto(o){
-  return !!o&&(OGGETTI_SCENOGRAFICI.has(o.t)||
-    (o.t==='mobile'&&MOBILI_SCENOGRAFICI.has(o.kind)));
+  return !!o&&WORLD.oggettoScenarioSicuro(o);
 }
 function scenograficaDeco(d){ return !!d&&WORLD.decorazioneScenarioSicura(d); }
 function ridimensionabile(s){
   if(!s) return false;
   return s.tipo==='oggetto'
-    ? Object.prototype.hasOwnProperty.call(s.obj,'iw')||Object.prototype.hasOwnProperty.call(s.obj,'ih')
-    : Object.prototype.hasOwnProperty.call(s.deco,'w')||Object.prototype.hasOwnProperty.call(s.deco,'h');
+    ? WORLD.oggettoScenarioRidimensionabile(s.obj)
+    : WORLD.decorazioneScenarioRidimensionabile(s.deco);
 }
 function fSelezione(s,anteprima){
   if(!s) return {w:1,h:1};
@@ -71,7 +68,10 @@ function fSelezione(s,anteprima){
     return impronta(o);
   }
   const d=copia(s.deco);
-  if(anteprima&&s.anteprima){ d.w=s.anteprima.w; d.h=s.anteprima.h; }
+  if(anteprima&&s.anteprima){
+    if(d.t==='fontana'){ d.iw=s.anteprima.w; d.ih=s.anteprima.h; }
+    else { d.w=s.anteprima.w; d.h=s.anteprima.h; }
+  }
   return improntaDeco(d);
 }
 function baseMappa(m){ return basi&&basi[m.id]; }
@@ -178,6 +178,14 @@ function blocchiDeco(m,d){
   }
   return r;
 }
+function blocchiFontana(m,d){
+  const f=improntaDeco(d), r=[];
+  for(let j=0;j<f.h;j++) for(let i=0;i<f.w;i++){
+    const x=d.x+i,y=d.y+j,t=WORLD.oggetto(m,x,y);
+    if(t&&t.x===x&&t.y===y&&t.obj.t==='fontana') r.push({x,y,obj:t.obj});
+  }
+  return r;
+}
 function seleziona(x,y){
   const m=mappa();
   if(!m||!WORLD.dentro(m,x,y)){ messaggio('Quella casella non appartiene alla mappa.'); return; }
@@ -190,7 +198,9 @@ function seleziona(x,y){
     }else{
       selezione={tipo:'decorazione',mappa:m.id,x:deco.deco.x,y:deco.deco.y,deco:deco.deco,
         indice:deco.indice,origine:{x:base.x,y:base.y},da:copia(base),anteprima:null};
-      messaggio('Decorazione selezionata. Puoi spostarla; se mostra le misure, prova l’ingombro prima di applicarlo.');
+      messaggio(ridimensionabile(selezione)
+        ? 'Decorazione selezionata. Puoi spostarla e ridimensionarla: l’anteprima prova l’ingombro completo.'
+        : 'Decorazione selezionata. Puoi spostarla senza toccare gli elementi protetti.');
     }
     impostaSpostamento(false); aggiornaPannello(); E.aggiornaOverlay(); return;
   }
@@ -208,7 +218,9 @@ function seleziona(x,y){
   }else{
     selezione={tipo:'oggetto',mappa:m.id,x:t.x,y:t.y,obj:t.obj,origine,da:copia(base),anteprima:null};
     impostaSpostamento(false);
-    messaggio('Oggetto selezionato. L’intera impronta si sposta insieme, collisioni comprese.');
+    messaggio(ridimensionabile(selezione)
+      ? 'Oggetto selezionato. Puoi spostarlo o ridimensionarlo: impronta e collisioni restano unite.'
+      : 'Oggetto selezionato. L’intera impronta si sposta insieme, collisioni comprese.');
   }
   aggiornaPannello(); E.aggiornaOverlay();
 }
@@ -261,7 +273,9 @@ function spostaDeco(x,y){
   const s=selezione,m=mappa(); if(!s||s.tipo!=='decorazione'||!m) return;
   if(x===s.x&&y===s.y){ impostaSpostamento(false); messaggio('La decorazione è già lì.'); aggiornaPannello(); return; }
   if(!esegui(m,()=>{
-    const blocchi=blocchiDeco(m,s.deco), indice=m.deco.indexOf(s.deco);
+    const fontana=s.deco.t==='fontana', f=improntaDeco(s.deco);
+    const blocchi=fontana?blocchiFontana(m,s.deco):blocchiDeco(m,s.deco), indice=m.deco.indexOf(s.deco);
+    if(fontana&&blocchi.length!==f.w*f.h) return false;
     if(indice<0) return false;
     m.deco.splice(indice,1);
     for(const b of blocchi) WORLD.togliArredo(m,b.x,b.y);
@@ -270,7 +284,7 @@ function spostaDeco(x,y){
     for(const b of blocchi){
       const nx=x+(b.x-s.x),ny=y+(b.y-s.y);
       if(!posaOggetto(m,nx,ny,b.obj)) return false;
-      registraOggetto(m,b.origine,b.da,nx,ny,b.obj);
+      if(!fontana) registraOggetto(m,b.origine,b.da,nx,ny,b.obj);
     }
     m.deco.splice(indice,0,d); registraDeco(m,s.da,d);
     selezione={...s,x,y,deco:d,indice,anteprima:null}; return true;
@@ -303,6 +317,19 @@ function ridimensiona(){
       registraOggetto(m,s.origine,s.da,s.x,s.y,o); selezione={...s,obj:o,anteprima:null}; return true;
     }
     const indice=m.deco.indexOf(s.deco); if(indice<0) return false;
+    if(s.deco.t==='fontana'){
+      const vecchia=improntaDeco(s.deco), blocchi=blocchiFontana(m,s.deco);
+      if(blocchi.length!==vecchia.w*vecchia.h) return false;
+      m.deco.splice(indice,1);
+      for(const b of blocchi) WORLD.togliArredo(m,b.x,b.y);
+      const d=copia(s.deco); d.iw=misure.w; d.ih=misure.h;
+      if(validaDeco(m,s.x,s.y,d)) return false;
+      const f=improntaDeco(d);
+      for(let j=0;j<f.h;j++) for(let i=0;i<f.w;i++)
+        if(!posaOggetto(m,s.x+i,s.y+j,{t:'fontana',solido:true})) return false;
+      m.deco.splice(indice,0,d); registraDeco(m,s.da,d);
+      selezione={...s,deco:d,indice,anteprima:null}; return true;
+    }
     m.deco.splice(indice,1); const d=copia(s.deco); d.w=misure.w; d.h=misure.h;
     if(validaDeco(m,s.x,s.y,d)) return false;
     m.deco.splice(indice,0,d); registraDeco(m,s.da,d); selezione={...s,deco:d,indice,anteprima:null}; return true;
@@ -316,10 +343,10 @@ function annulla(){
   invalida(); messaggio('Ultima trasformazione annullata.'); aggiornaPannello(); E.aggiornaOverlay();
 }
 
-function scarica(){
-  if(!modifiche.size) return;
+function bozzaScenario(){
+  if(!modifiche.size) return null;
   const tutte=[...modifiche.values()], prima=tutte[0];
-  if(tutte.some(v=>v.mappa!==prima.mappa)){ messaggio('Scarica una bozza per mappa: chiudi, cambia mappa e riapri.'); return; }
+  if(tutte.some(v=>v.mappa!==prima.mappa)) return null;
   const m=G.maps[prima.mappa], ritocchi={terreno:[],oggetti:[],decorazioni:[]};
   for(const v of tutte){
     if(v.tipo==='oggetto'){
@@ -329,13 +356,28 @@ function scarica(){
         ritocchi.oggetti.push({azione:'aggiungi',x:v.a.x,y:v.a.y,oggetto:v.a.oggetto});
       }
     }else{
+      /* La fontana è decorazione + collisioni. L'export riscrive tutto il
+         reticolo da quella sola dichiarazione, così spostamento e misura
+         restano sempre identici quando la bozza viene riaperta. */
+      if(v.da.t==='fontana'){
+        const prima=improntaDeco(v.da), dopo=improntaDeco(v.a);
+        for(let j=0;j<prima.h;j++) for(let i=0;i<prima.w;i++)
+          ritocchi.oggetti.push({azione:'rimuovi',x:v.da.x+i,y:v.da.y+j,da:{t:'fontana',solido:true}});
+        for(let j=0;j<dopo.h;j++) for(let i=0;i<dopo.w;i++)
+          ritocchi.oggetti.push({azione:'aggiungi',x:v.a.x+i,y:v.a.y+j,oggetto:{t:'fontana',solido:true}});
+      }
       ritocchi.decorazioni.push({azione:'rimuovi',da:v.da});
       ritocchi.decorazioni.push({azione:'aggiungi',decorazione:v.a});
     }
   }
-  const scenario={formato:'fioralba-scenario',versione:1,mappa:m.id,nome:m.nome,w:m.w,h:m.h,ritocchi};
+  return {formato:'fioralba-scenario',versione:1,mappa:m.id,nome:m.nome,w:m.w,h:m.h,ritocchi};
+}
+function scarica(){
+  if(!modifiche.size) return;
+  const scenario=bozzaScenario();
+  if(!scenario){ messaggio('Scarica una bozza per mappa: chiudi, cambia mappa e riapri.'); return; }
   const file=new Blob([JSON.stringify(scenario,null,2)+'\n'],{type:'application/json'}),a=document.createElement('a');
-  a.href=URL.createObjectURL(file); a.download=m.id+'-bozza-modifica.json'; document.body.appendChild(a); a.click(); a.remove();
+  a.href=URL.createObjectURL(file); a.download=scenario.mappa+'-bozza-modifica.json'; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),0);
   messaggio('Bozza scaricata: spostamenti, dimensioni e decorazioni sono pronti per l’editor locale.');
 }
@@ -351,6 +393,24 @@ E.disponibile=()=>true; E.attivo=()=>aperto; E.bloccaGioco=()=>aperto&&spostamen
    verificare che un oggetto funzionale non possa mai entrare nella bozza. */
 E.puoSpostareOggetto=scenograficoOggetto;
 E.puoSpostareDecorazione=scenograficaDeco;
+E.testSeleziona=(x,y)=>{
+  seleziona(x,y);
+  return selezione&&{tipo:selezione.tipo,decorazione:selezione.deco&&selezione.deco.t,
+    ridimensionabile:ridimensionabile(selezione),impronta:fSelezione(selezione,false)};
+};
+E.testAnteprima=(w,h)=>{
+  if(!selezione) return false;
+  $('#editor-larghezza').value=w; $('#editor-altezza').value=h; anteprimaDimensioni();
+  return {impronta:fSelezione(selezione,true),anteprima:selezione.anteprima};
+};
+E.testRidimensiona=(w,h)=>{
+  if(!selezione) return false;
+  $('#editor-larghezza').value=w; $('#editor-altezza').value=h; selezione.anteprima={w,h};
+  ridimensiona();
+  return selezione&&{impronta:fSelezione(selezione,false),anteprima:selezione.anteprima};
+};
+E.testBozza=bozzaScenario;
+E.testScarica=scarica;
 E.apri=function(){
   if(aperto||!G.inGioco) return;
   basi=WORLD.crea(); if(window.SCENARI) SCENARI.applica(basi,false);

@@ -2431,7 +2431,7 @@ verifica('ogni bottiglia del mare si legge, una volta e in due lingue', () => {
 
 /* --- LA DENSITÀ, CHE NON PUÒ ESSERE DUE ---
 
-   La casella del mondo vale 64 e sta dichiarata in nove file, perché
+   La casella del mondo vale 64 e sta dichiarata nei renderer che la usano, perché
    questo repo non ha un modulo di costanti e non ne vuole uno: si
    ridichiara e si controlla. Un file rimasto a 32 non è un errore di
    sintassi e non fa fallire niente — fa camminare il giocatore a metà
@@ -2443,22 +2443,20 @@ verifica('ogni bottiglia del mare si legge, una volta e in due lingue', () => {
      `T`  la casella del mondo: 64
      `K`  quanto il mondo è più fitto di quando la casella era 32: 2
      `U`  l'unità in cui restano scritti i disegni a mano: 32
-   In `landing.js` la casella si chiama `TT` per non pestare altro.
-
    E il controllo pretende di TROVARLE, non solo di trovarle giuste: se
    un giorno smettesse di vedere le dichiarazioni direbbe «tutto a
    posto» su un repo che potrebbe essere tornato a 32 dappertutto. */
-const DENSITA_ATTESA = { T: 64, TT: 64, K: 2, U: 32 };
-const QUANTE_ALMENO = { T: 6, TT: 1, K: 10, U: 2 };
+const DENSITA_ATTESA = { T: 64, K: 2, U: 32 };
+const QUANTE_ALMENO = { T: 6, K: 10, U: 2 };
 verifica('la casella del mondo vale 64 dappertutto, e l\'unità di disegno 32', () => {
   const problemi = [];
-  const conte = { T: 0, TT: 0, K: 0, U: 0 };
+  const conte = { T: 0, K: 0, U: 0 };
   for (const f of fs.readdirSync(path.join(RADICE, 'js')).filter(n => n.endsWith('.js'))) {
     const src = fs.readFileSync(path.join(RADICE, 'js', f), 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
     // solo le dichiarazioni con un NUMERO a destra: `const T = s => …` in
     // mezza interfaccia è la scorciatoia della traduzione, non la casella
-    for (const m of src.matchAll(/\bconst (T|TT|K|U) *= *(\d+)/g)) {
+    for (const m of src.matchAll(/\bconst (T|K|U) *= *(\d+)/g)) {
       const nome = m[1], valore = +m[2];
       conte[nome]++;
       if (valore !== DENSITA_ATTESA[nome])
@@ -2469,6 +2467,31 @@ verifica('la casella del mondo vale 64 dappertutto, e l\'unità di disegno 32', 
     if (conte[nome] < QUANTE_ALMENO[nome])
       problemi.push(`trovate solo ${conte[nome]} dichiarazioni di \`${nome}\` invece di almeno ` +
                     `${QUANTE_ALMENO[nome]}: o il controllo non le vede più, e allora non protegge niente`);
+  return problemi;
+});
+
+/* Le sei vedute della Landing non aspettano più il caricamento degli
+   sprite di gioco: sono catture aggiornate e precaricate. Controlliamo
+   sia il documento sia i file, altrimenti un'immagine rinominata lascia
+   un rettangolo nero soltanto al primo accesso. */
+verifica('la Landing precarica tutte le vedute aggiornate della valle', () => {
+  const problemi = [];
+  const html = fs.readFileSync(path.join(RADICE, 'index.html'), 'utf8');
+  const landing = fs.readFileSync(path.join(RADICE, 'js/landing.js'), 'utf8');
+  for (const id of ['podere','paese','bosco','miniera','passo','costa']) {
+    const relativo = `img/landing/${id}.png`;
+    const file = path.join(RADICE, relativo);
+    if (!fs.existsSync(file)) { problemi.push(`${relativo} non esiste`); continue; }
+    const png = fs.readFileSync(file);
+    if (png.length < 24 || png.readUInt32BE(0) !== 0x89504e47)
+      problemi.push(`${relativo} non è un PNG valido`);
+    else if (png.readUInt32BE(16) !== 302 || png.readUInt32BE(20) !== 202)
+      problemi.push(`${relativo} non misura 302×202`);
+    if (!html.includes(`rel="preload" href="${relativo}" as="image"`))
+      problemi.push(`${relativo} non viene precaricato dalla Landing`);
+    if (!landing.includes(`immagine:'${id}'`))
+      problemi.push(`${relativo} non è collegato alla sua card`);
+  }
   return problemi;
 });
 
@@ -3298,11 +3321,11 @@ verifica('i mobili grandi ci stanno, non si pestano, e non chiudono la stanza', 
   return problemi;
 });
 
-/* Le bozze di scenografia possono traslocare o ridimensionare un arredo
-   grande. Spostarne solo l'ancora lascia rimandi solidi invisibili; questa
-   prova esercita il percorso che usa anche l'editor interno e controlla che
-   il formato JSON v1 resti importabile senza spezzare l'impronta. */
-verifica('uno scenario conserva intera l’impronta degli arredi trasformati', () => {
+/* Spostare internamente un arredo grande non può lasciare rimandi solidi
+   invisibili. Le bozze pubblicabili ora ammettono soltanto scenografia
+   leggera; qui si conserva la prova atomica del motore, indipendente dal
+   confine editoriale che rifiuta arredi funzionali o strutturali. */
+verifica('lo spostamento interno conserva intera l’impronta degli arredi', () => {
   const problemi=[], maps=WORLD.crea();
   let scelto=null, m=null;
   for(const id of WORLD.MAPPE){
@@ -3319,13 +3342,10 @@ verifica('uno scenario conserva intera l’impronta degli arredi trasformati', (
   const tolto=WORLD.togliArredo(m,scelto.x,scelto.y);
   let arrivo=null;
   for(let y=0;y<m.h&&!arrivo;y++) for(let x=0;x<m.w;x++)
-    if(WORLD.ciStaArredo(m,x,y,tolto.obj)){ arrivo={x,y}; break; }
-  WORLD.arredo(m,tolto.x,tolto.y,tolto.obj);
+    if((x!==scelto.x||y!==scelto.y)&&WORLD.ciStaArredo(m,x,y,tolto.obj)){ arrivo={x,y}; break; }
   if(!arrivo) return ['non trovo spazio libero per provare uno spostamento'];
-  const scenario={formato:'fioralba-scenario',versione:1,mappa:m.id,w:m.w,h:m.h,
-    ritocchi:{terreno:[],decorazioni:[],oggetti:[{azione:'sposta',x:scelto.x,y:scelto.y,a:arrivo,da:JSON.parse(JSON.stringify(scelto.o))}]}};
-  const esito=WORLD.applicaScenario(m,scenario,false);
-  if(esito.saltati) problemi.push('lo spostamento di un arredo multiplo è stato rifiutato');
+  if(!WORLD.arredo(m,arrivo.x,arrivo.y,tolto.obj))
+    problemi.push('non riesco a riposare l’arredo multiplo nella destinazione libera');
   const f=WORLD.impronta(scelto.o);
   for(let j=0;j<f.h;j++) for(let i=0;i<f.w;i++){
     const a=WORLD.oggetto(m,arrivo.x+i,arrivo.y+j);
@@ -3370,7 +3390,13 @@ verifica('ogni fontana dichiara e occupa tutta la sua impronta solida', () => {
 verifica('la modalità modifica lascia fermi gli oggetti funzionali', () => {
   const vm=require('vm'), modulo=fs.readFileSync(path.join(RADICE,'js/editor-interno.js'),'utf8');
   const elemento={addEventListener(){},classList:{contains(){return true;},add(){},remove(){},toggle(){}},disabled:false};
-  const policy={decorazioneScenarioSicura:d=>['fontana','bucato','cartello'].includes(d&&d.t)};
+  const policy={
+    oggettoScenarioSicuro:o=>['panchina','lampione'].includes(o&&o.t) ||
+      (o&&o.t==='mobile'&&o.kind==='cartello'),
+    decorazioneScenarioSicura:d=>['fontana','bucato','cartello'].includes(d&&d.t),
+    oggettoScenarioRidimensionabile:o=>['panchina','lampione'].includes(o&&o.t),
+    decorazioneScenarioRidimensionabile:d=>['fontana','bucato'].includes(d&&d.t)
+  };
   const sandbox={window:{FIORALBA_MODIFICA_INTERNA:true,WORLD:policy},WORLD:policy,
     document:{querySelector(){return elemento;}},console};
   vm.createContext(sandbox);
@@ -3396,6 +3422,116 @@ verifica('la modalità modifica lascia fermi gli oggetti funzionali', () => {
     ritocchi:{terreno:[],oggetti:[],decorazioni:[{azione:'aggiungi',decorazione:ponte}]}},false);
   if(!esito.saltati||m.deco.some(d=>d.t==='ponte_grande'))
     problemi.push('l’importatore accetta un ponte grande scritto a mano');
+
+  const {scenarioValido}=require(path.join(RADICE,'tools/scenario-editor.js'));
+  const bozza=(m,voce)=>({formato:'fioralba-scenario',versione:1,mappa:m.id,w:m.w,h:m.h,
+    ritocchi:{terreno:[],decorazioni:[],oggetti:[voce]}});
+  const base=WORLD.crea().podere;
+  let spazioScenografia=null;
+  for(let y=0;y<base.h&&!spazioScenografia;y++) for(let x=0;x<base.w;x++)
+    if(!base.obj[WORLD.idx(base,x,y)]&&!WORLD.riservata(base,x,y,{})){
+      spazioScenografia={x,y}; break;
+    }
+  if(!spazioScenografia) problemi.push('non trovo una casella libera per provare gli arredi scenografici');
+  for(const o of [
+    {t:'consegna'},{t:'bottiglia'},{t:'baule'},{t:'barca'},
+    {t:'bancarella',kiosk:'progetti'},{t:'bancone',uso:'bottega'},
+    {t:'incudine',uso:'fucina'},{t:'cucina'},{t:'camino'},
+    {t:'silo'},{t:'foraggio'},{t:'pietra_rituale'}
+  ]) if(scenarioValido(bozza(base,{azione:'aggiungi',x:1,y:1,oggetto:o}))===null)
+    problemi.push(`il validatore accetta ${o.t} scritto a mano`);
+  for(const o of [{t:'casse'},{t:'scaffale'}])
+    if(!spazioScenografia||scenarioValido(bozza(base,{azione:'aggiungi',...spazioScenografia,oggetto:o}))!==null)
+      problemi.push(`il validatore rifiuta l’arredo scenografico ${o.t}`);
+  for(const o of [{t:'panchina'},{t:'lampione'},{t:'lume'}])
+    if(!WORLD.oggettoScenarioRidimensionabile(o))
+      problemi.push(`${o.t} dovrebbe essere ridimensionabile nell’editor`);
+  if(!WORLD.decorazioneScenarioRidimensionabile({t:'fontana'}))
+    problemi.push('la fontana dovrebbe essere ridimensionabile come decorazione collegata alle collisioni');
+
+  let consegna=null;
+  for(let y=0;y<base.h&&!consegna;y++) for(let x=0;x<base.w;x++){
+    const trovato=WORLD.oggetto(base,x,y);
+    if(trovato&&trovato.obj.t==='consegna'){ consegna={x:trovato.x,y:trovato.y,obj:trovato.obj}; break; }
+  }
+  if(!consegna) problemi.push('non trovo la consegna per provare le operazioni manuali');
+  else {
+    for(const voce of [
+      {azione:'rimuovi',x:consegna.x,y:consegna.y,da:JSON.parse(JSON.stringify(consegna.obj))},
+      {azione:'sposta',x:consegna.x,y:consegna.y,a:{x:1,y:1},da:JSON.parse(JSON.stringify(consegna.obj))}
+    ]){
+      const valida=scenarioValido(bozza(base,voce));
+      if(!valida) problemi.push(`il validatore accetta ${voce.azione} della consegna`);
+      const mappa=WORLD.crea().podere;
+      const esitoManuale=WORLD.applicaScenario(mappa,bozza(mappa,voce),false);
+      const rimasta=WORLD.oggetto(mappa,consegna.x,consegna.y);
+      if(!esitoManuale.saltati||!rimasta||rimasta.obj.t!=='consegna')
+        problemi.push(`l’importatore permette ${voce.azione} della consegna`);
+    }
+  }
+  return problemi;
+});
+
+/* Una fontana è disegnata come decorazione ma possiede una griglia di
+   collisioni: il click incontra per prima la decorazione. Questa prova
+   esercita proprio quel percorso dell’editor, fino alla bozza importata
+   in una mappa nuova, per non scambiare un predicato corretto per una UI
+   realmente utilizzabile. */
+verifica('l’editor ridimensiona la fontana con collisioni ed export coerenti', () => {
+  const vm=require('vm'), modulo=fs.readFileSync(path.join(RADICE,'js/editor-interno.js'),'utf8');
+  const elementi={}, download=[];
+  function elemento(){
+    return {value:'',style:{},disabled:false,addEventListener(){},
+      classList:{contains(){return false;},add(){},remove(){},toggle(){}}};
+  }
+  const document={
+    body:{...elemento(),appendChild(){}},
+    createElement(){ return {click(){ download.push(this); },remove(){}}; },
+    querySelector(sel){ return elementi[sel]||(elementi[sel]=elemento()); }
+  };
+  const maps=WORLD.crea(), G={inGioco:true,maps,costruzioni:{},cam:{},p:{px:0,py:0},
+    mappa(){ return maps.podere; },fermaInput(){}};
+  const REND={invalidaTerreno(){},mondoASchermo(){ return {x:0,y:0,scala:1}; }};
+  const UI={prompt(){}};
+  const URL={createObjectURL(){ return 'blob:test-fontana'; },revokeObjectURL(){}};
+  const Blob=class { constructor(parti){ this.testo=parti.join(''); } };
+  const sandbox={window:{FIORALBA_MODIFICA_INTERNA:true,WORLD,G,REND,UI},WORLD,G,REND,UI,document,URL,Blob,
+    setTimeout(fn){ fn(); },console};
+  vm.createContext(sandbox);
+  vm.runInContext(modulo,sandbox,{filename:'editor-interno.js'});
+  const E=sandbox.window.EDITOR_INTERNO, problemi=[];
+  if(!E||typeof E.testSeleziona!=='function'||typeof E.testBozza!=='function'||typeof E.testScarica!=='function')
+    return ['l’editor non espone il percorso di prova per una fontana'];
+  E.apri();
+  const scelto=E.testSeleziona(12,3);
+  if(!scelto||scelto.tipo!=='decorazione'||scelto.decorazione!=='fontana'||!scelto.ridimensionabile)
+    problemi.push('il click sulla fontana non espone le dimensioni della decorazione collegata');
+  const anteprima=E.testAnteprima(3,3);
+  if(!anteprima||anteprima.impronta.w!==3||anteprima.impronta.h!==3)
+    problemi.push('l’anteprima della fontana non mostra l’ingombro 3×3');
+  const applicata=E.testRidimensiona(3,3);
+  if(!applicata||applicata.impronta.w!==3||applicata.impronta.h!==3)
+    problemi.push('l’editor non applica il ridimensionamento della fontana');
+  const locale=maps.podere, fontana=locale.deco.find(d=>d.t==='fontana'&&d.x===12&&d.y===3);
+  if(!fontana||fontana.iw!==3||fontana.ih!==3)
+    problemi.push('la decorazione fontana non conserva le nuove dimensioni');
+  const localeSolide=locale.obj.filter(o=>o&&o.t==='fontana').length;
+  if(localeSolide!==9) problemi.push(`la fontana locale ha ${localeSolide} collisioni invece di 9`);
+  const bozza=E.testBozza();
+  if(!bozza||bozza.ritocchi.oggetti.length!==21||bozza.ritocchi.decorazioni.length!==2)
+    problemi.push('l’export della fontana non contiene il reticolo completo di collisioni');
+  else {
+    const importata=WORLD.crea().podere, esito=WORLD.applicaScenario(importata,bozza,false);
+    const destinazione=importata.deco.find(d=>d.t==='fontana'&&d.x===12&&d.y===3);
+    const solide=importata.obj.filter(o=>o&&o.t==='fontana').length;
+    if(esito.saltati) problemi.push('la bozza della fontana non si reimporta senza scarti');
+    if(!destinazione||destinazione.iw!==3||destinazione.ih!==3||solide!==9)
+      problemi.push('la fontana reimportata non conserva decorazione e collisioni 3×3');
+  }
+  try { E.testScarica(); }
+  catch(e){ problemi.push(`il download della bozza fontana fallisce: ${e.message}`); }
+  if(download.length!==1||download[0].download!=='podere-bozza-modifica.json')
+    problemi.push('il download della bozza fontana non riceve un nome file valido');
   return problemi;
 });
 

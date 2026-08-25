@@ -33,6 +33,15 @@
      `crossorigin` è obbligatorio per i font anche sulla stessa origine,
      altrimenti il browser scarica il file due volte. -->
 <link rel="preload" href="css/font/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+<!-- Le vedute della valle sono il primo contenuto sotto la piega: le
+     chiediamo subito, non quando il relativo script ha già finito i suoi
+     sprite, per evitare sei riquadri vuoti al primo accesso. -->
+<link rel="preload" href="img/landing/podere.png" as="image" type="image/png">
+<link rel="preload" href="img/landing/paese.png" as="image" type="image/png">
+<link rel="preload" href="img/landing/bosco.png" as="image" type="image/png">
+<link rel="preload" href="img/landing/miniera.png" as="image" type="image/png">
+<link rel="preload" href="img/landing/passo.png" as="image" type="image/png">
+<link rel="preload" href="img/landing/costa.png" as="image" type="image/png">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -241,7 +250,7 @@
       <header class="lp-hero">
         <div class="lp-logo">
           <div class="lp-sub" data-t>La Lanterna del Solstizio</div>
-          <h1>FIORALBA</h1>
+          <h1 data-logo="FIORALBA">FIORALBA</h1>
           <div class="lp-tag" data-t>un piccolo podere, una valle da risvegliare</div>
         </div>
         <p class="lp-intro" data-t>
@@ -288,12 +297,11 @@
 
       <div class="lp-belowfold">
 
-      <!-- ---------- le scenette animate, disegnate dal gioco ---------- -->
       <!-- ---------- la valle ----------
-           Al posto delle scenette animate a schede, che chiedevano di
-           scegliere, aspettare e ricominciare per capire quattro cose.
-           Qui i posti si vedono tutti insieme, fermi: sono ritagli veri
-           delle mappe del gioco, disegnati adesso dal motore. -->
+            Al posto delle scenette animate a schede, sei vedute statiche
+            catturate dal renderer reale e rigenerate con gli asset correnti.
+            Sono precaricate nel documento: tutte visibili insieme, senza
+            attendere sprite o canvas dopo la prima piega. -->
        <section class="lp-sez lp-riv" id="lp-places">
         <h2 class="lp-h2" data-t>Sei posti, una valle sola</h2>
         <p class="lp-occhiello">

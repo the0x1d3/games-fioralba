@@ -2,11 +2,9 @@
    FIORALBA — landing.js
    La pagina di presentazione.
 
-   Regola che ci siamo dati: niente immagini finte e niente screenshot.
-   Tutto quello che si vede qui — le scenette animate, le icone degli
-   oggetti, gli abitanti che camminano — è disegnato dal gioco stesso,
-   con le stesse funzioni che disegnano la partita. Costa zero byte di
-   download, e non può mai mostrare una versione vecchia del gioco.
+   Le vedute della valle sono catture rigenerate dal renderer reale:
+   caricano subito insieme alla pagina, ma non introducono un'illustrazione
+   estranea al gioco. Icone e abitanti restano disegnati dal gioco stesso.
    =================================================================== */
 (function(){
 'use strict';
@@ -21,13 +19,11 @@ let vivo = false;
 let graficaPronta = false;
 
 function chiaviGraficaLanding(){
-  const chiavi = ['terreni'];
+  const chiavi = [];
   const aggiungi = (elenco,prefisso)=>{
     for(const id of Object.keys(elenco||{})) chiavi.push((prefisso||'')+id);
   };
-  aggiungi(DATA.VEGETAZIONE,'veg:');
   aggiungi(DATA.NPC_FOGLI,'npc:');
-  aggiungi(DATA.EDIFICI,'ed:');
   /* Servono solo le icone effettivamente presenti nelle card, non tutta la
      libreria degli oggetti di gioco. */
   for(const id of new Set(COSE.map(c=>c.ico))) chiavi.push('icona:'+id);
@@ -150,19 +146,12 @@ function animaGente(t){
 }
 
 /* ------------------------------------------------------------------
-   3. LA VALLE
+    3. LA VALLE
 
-   Qui c'erano quattro scenette animate a schede: sceglievi «Coltivare»,
-   guardavi un'animazione di quattro fotogrammi, sceglievi la scheda
-   dopo, ricominciavi. Per capire quattro cose dovevi fare quattro
-   scelte e aspettare quattro volte — e nel frattempo il resto della
-   pagina stava fermo ad aspettare te.
-
-   Adesso i posti si vedono tutti insieme e non si muove niente: sei
-   ritagli delle mappe vere, presi da `WORLD.crea()` e disegnati con le
-   stesse funzioni che disegnano la partita. Regola della pagina
-   rispettata — niente immagini finte — ma senza chiedere niente a chi
-   guarda.
+    Le sei vedute sono ritagli catturati dal renderer reale dopo ogni
+    aggiornamento visivo della valle. Sono file piccoli e precaricati:
+    non attendono i molti sprite asincroni del gioco e non lasciano mai
+    una griglia vuota al primo accesso.
    ------------------------------------------------------------------ */
 /* Le inquadrature non sono a occhio: ho fatto scorrere tutte le finestre
    possibili di ogni mappa e preso quella che pesa di più — varietà di
@@ -172,98 +161,38 @@ function animaGente(t){
    venuto un muro al posto del podere, il prato fuori al posto della
    miniera e un angolo di sabbia vuota al posto del mare. */
 const POSTI = [
-  { mappa:'podere',   x:5,  y:1,  st:'primavera', nome:'Il podere',
+  { immagine:'podere', nome:'Il podere',
     txt:'Quello di tua nonna. Campo, frutteto, stagno e un angolo lasciato al suo destino.' },
-  { mappa:'fioralba', x:28, y:22, st:'primavera', nome:'Il paese',
+  { immagine:'paese', nome:'Il paese',
     txt:'Bottega, fucina, locanda. Ci si entra davvero, e dentro c\'è gente che ha i suoi orari.' },
-  { mappa:'bosco',    x:19, y:0,  st:'estate',    nome:'Il bosco',
+  { immagine:'bosco', nome:'Il bosco',
     txt:'Alberi, funghi e il lago. Da qualche parte, in fondo, un santuario spento.' },
-  { mappa:'grotta',   x:19, y:3,  st:'estate',    nome:'La miniera',
+  { immagine:'miniera', nome:'La miniera',
     txt:'Tre livelli che scendono. Più vai giù, più le pietre diventano interessanti.' },
-  { mappa:'montagna', x:11, y:32, st:'inverno',   nome:'Il Passo',
+  { immagine:'passo', nome:'Il Passo',
     txt:'Neve tutto l\'anno, e un vecchio che ci vive apposta. È lui che insegna la caccia.' },
-  { mappa:'spiaggia', x:31, y:17, st:'estate',    nome:'La Costa',
+  { immagine:'costa', nome:'La Costa',
     txt:'Mare aperto e un molo. I pesci grossi stanno qui, e certi escono solo di notte.' }
 ];
 
-const LARGO = 9, ALTO = 6;        // caselle del ritaglio
-const TT = 64;                    // la casella del mondo
-const K = 2;                      // quanto il mondo è più fitto della casella da 32
-
-/* Disegna un ritaglio di mappa vera: il terreno, e sopra le cose che
-   danno il carattere a un posto — alberi, sassi, cespugli, edifici. */
-function ritaglio(m, x0, y0, stag){
-  const c = document.createElement('canvas');
-  c.width = LARGO*TT; c.height = ALTO*TT;
-  const x = c.getContext('2d');
-  x.imageSmoothingEnabled = false;
-
-  for(let j=0;j<ALTO;j++) for(let i=0;i<LARGO;i++){
-    const gx = x0+i, gy = y0+j;
-    if(!WORLD.dentro(m,gx,gy)) continue;
-    const t = WORLD.terreno(m,gx,gy);
-    if(t === 'vuoto') continue;
-    /* La roccia della miniera non è un pavimento: nel gioco la disegna
-       il muro, non `ART.ground` — che infatti non la conosce e ripiega
-       sull'erba. Nel ritaglio della miniera spuntava un prato dentro la
-       montagna. */
-    if(t === 'roccia'){
-      const R = PAL.c.roccia;
-      ART.px(x, i*TT, j*TT, TT, TT, R.corpo);
-      ART.px(x, i*TT, j*TT, TT, 3*K, R.corpoChiaro);
-      for(let k=0;k<5;k++){
-        const bx = i*TT + ((ART.hsh(gx,gy+k,71)*TT)|0);
-        const by = j*TT + ((ART.hsh(gx+k,gy,72)*TT)|0);
-        ART.px(x, bx, by, 3*K, 2*K, ART.hsh(k,gx+gy,73)>0.5 ? R.strato : R.faccia);
-      }
-      continue;
-    }
-    const img = t==='acqua' ? ART.water(stag, 0)
-                            : ART.ground(t, (gx*7+gy*13)&3, stag);
-    x.drawImage(img, i*TT, j*TT);
-  }
-  // gli edifici per primi: stanno dietro a tutto il resto
-  for(const e of (m.edifici||[])){
-    if(e.x+e.w < x0 || e.x > x0+LARGO || e.y+e.h < y0 || e.y > y0+ALTO) continue;
-    /* Stessa priorità del renderer: la facciata disegnata a mano, se
-       disponibile, e la versione procedurale solo come rete di sicurezza. */
-    const img = ART.edificio(e.kind, e.liv||0, stag==='inverno') ||
-                ART.building(e.kind, { season:stag, liv:e.liv||0 });
-    const w = e.w*TT, sc = w/img.width;
-    x.drawImage(img, (e.x-x0)*TT, (e.y+e.h-y0)*TT - img.height*sc, w, img.height*sc);
-  }
-  for(let j=0;j<ALTO;j++) for(let i=0;i<LARGO;i++){
-    const gx = x0+i, gy = y0+j;
-    if(!WORLD.dentro(m,gx,gy)) continue;
-    const o = m.obj[WORLD.idx(m,gx,gy)];
-    if(!o) continue;
-    const v = (gx*7+gy*13)&3;
-    let img = null, dy = 0;
-    if(o.t==='albero'){ img = ART.tree(o.kind, stag, o.stage, v); dy = -img.height+TT+2*K; }
-    else if(o.t==='ceppo'){ img = ART.stump(v); dy = -img.height+TT+2*K; }
-    else if(o.t==='sasso'){ img = ART.rock(o.kind, v); dy = -img.height+TT+2*K; }
-    else if(o.t==='cespuglio'){ img = ART.bush(stag, v, o.bacche); dy = -img.height+TT+2*K; }
-    if(img) x.drawImage(img, (i*TT)-((img.width-TT)>>1), j*TT+dy);
-  }
-  return c;
-}
-
 function costruisciValle(){
   const host = $('#landing .lp-valle');
-  if(!host || !window.WORLD || !window.ART) return;
+  if(!host) return;
   host.innerHTML = '';
-  let maps;
-  try{ maps = WORLD.crea(); }catch(e){ return; }
-
   for(const p of POSTI){
-    const m = maps[p.mappa];
-    if(!m) continue;
     const card = document.createElement('div'); card.className = 'lp-posto';
     const cornice = document.createElement('div'); cornice.className = 'lp-posto-vista';
-    try{ cornice.appendChild(ritaglio(m, p.x, p.y, p.st)); }catch(e){ continue; }
+    const vista = document.createElement('img');
+    vista.src = 'img/landing/' + p.immagine + '.png';
+    vista.alt = p.nome + ' — veduta di Fioralba';
+    vista.width = 302; vista.height = 202;
+    vista.loading = 'eager'; vista.decoding = 'async'; vista.fetchPriority = 'high';
+    cornice.appendChild(vista);
     card.appendChild(cornice);
     const testo = document.createElement('div'); testo.className = 'lp-posto-testo';
-    testo.innerHTML = '<h3>'+p.nome+'</h3><p>'+p.txt+'</p>';
+    const titolo = document.createElement('h3'); titolo.textContent = p.nome;
+    const descrizione = document.createElement('p'); descrizione.textContent = p.txt;
+    testo.append(titolo, descrizione);
     card.appendChild(testo);
     host.appendChild(card);
   }
@@ -287,7 +216,6 @@ function aggiornaGraficaQuandoPronta(tentativo){
   graficaPronta = true;
   costruisciCose();
   costruisciGente();
-  costruisciValle();
 }
 
 /* ------------------------------------------------------------------
@@ -458,6 +386,7 @@ function collegaLingua(){
 L.init = function(){
   const lp = $('#landing');
   if(!lp || lp.classList.contains('hidden')) return;
+  costruisciValle();
   costruisciGente();
   /* La valle viene montata dal primo passaggio completato di
      `aggiornaGraficaQuandoPronta`, non con i fallback del primo fotogramma. */

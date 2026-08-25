@@ -16,6 +16,26 @@ const DECORAZIONI_SCENOGRAFICHE = new Set([
   'sassolini','ciuffo','ortaggio','lucciola','fungo_luce','tappeto','zerbino'
 ]);
 W.decorazioneScenarioSicura = d=>!!d&&DECORAZIONI_SCENOGRAFICHE.has(d.t);
+const OGGETTI_SCENOGRAFICI = new Set([
+  'albero','cespuglio','fiori','sasso','fontana','panchina','fioriera','lampione','lume',
+  'casse','scaffale'
+]);
+const MOBILI_SCENOGRAFICI = new Set(['recinto','cancelletto','cartello']);
+W.oggettoScenarioSicuro = o=>!!o&&(OGGETTI_SCENOGRAFICI.has(o.t) ||
+  (o.t==='mobile' && MOBILI_SCENOGRAFICI.has(o.kind)));
+/* Solo questi arredi hanno già un disegno che occupa più di una casella:
+   rendere modificabile il loro ingombro resta quindi leggibile sullo
+   schermo, oltre a essere solido e coerente nei dati esportati. */
+const OGGETTI_SCENOGRAFICI_RIDIMENSIONABILI = new Set([
+  'panchina','lampione','lume'
+]);
+W.oggettoScenarioRidimensionabile = o=>W.oggettoScenarioSicuro(o) &&
+  OGGETTI_SCENOGRAFICI_RIDIMENSIONABILI.has(o.t);
+/* La fontana è selezionata come decorazione: il suo reticolo di oggetti
+   solidi è una collisione collegata e non un secondo bersaglio da scalare. */
+const DECORAZIONI_SCENOGRAFICHE_RIDIMENSIONABILI = new Set(['fontana','bucato','tappeto']);
+W.decorazioneScenarioRidimensionabile = d=>W.decorazioneScenarioSicura(d) &&
+  DECORAZIONI_SCENOGRAFICHE_RIDIMENSIONABILI.has(d.t);
 
 /* rng deterministico per la generazione */
 function rnd(seed){
@@ -2310,12 +2330,14 @@ W.vicinoLibero = function(m, x, y){
     const trovato=W.oggetto(m,voce.x,voce.y);
     const attuale=trovato && trovato.obj;
    if(voce.azione === 'rimuovi'){
+      if(!W.oggettoScenarioSicuro(voce.da)) return false;
      if(voce.da && !stessoOggetto(attuale, voce.da)) return false;
      if(conservaGiocatore && oggettoGiocatore(attuale)) return false;
       return !!W.togliArredo(m,voce.x,voce.y);
    }
    if(voce.azione === 'sposta'){
      const da = voce.da || {};
+      if(!W.oggettoScenarioSicuro(da)) return false;
      if(!stessoOggetto(attuale, da) || (conservaGiocatore && oggettoGiocatore(attuale))) return false;
      if(!W.dentro(m, voce.a.x, voce.a.y)) return false;
       const rimosso=W.togliArredo(m,voce.x,voce.y);
@@ -2325,6 +2347,7 @@ W.vicinoLibero = function(m, x, y){
       return false;
    }
    if(voce.azione === 'aggiungi'){
+      if(!W.oggettoScenarioSicuro(voce.oggetto)) return false;
      /* Un elemento di scenario nuovo non può comparire sopra una coltura
         di una partita già avviata: quel suolo è del giocatore, non della
         scenografia. */
