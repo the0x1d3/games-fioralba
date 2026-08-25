@@ -39,8 +39,11 @@ const MODIFICA_INTERNA = SVILUPPO || process.env.FIORALBA_MODIFICA_INTERNA === '
 
 /* Le cartelle che non si servono: non c'è niente di segreto, ma non c'è
    nemmeno motivo di esporre i sorgenti degli strumenti e le dipendenze
-   di sviluppo. Il gioco è tutto in js/, css/ e index.html. */
-const VIETATE = ['node_modules', 'tools', 'types', '.git', '.claude'];
+   di sviluppo. Il gioco è tutto in js/, css/ e index.html.
+   `.agents` è arrivata dopo e nessuno l'aveva aggiunta: misurato, in
+   produzione `/.agents/memory/MEMORY.md` rispondeva 200 con gli appunti
+   di lavoro dentro. Stessa ragione di `.claude`, stesso posto. */
+const VIETATE = ['node_modules', 'tools', 'types', '.git', '.claude', '.agents'];
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
