@@ -1962,7 +1962,31 @@ D.ARREDI = {
      alla stessa scala l'uno con l'altro. */
   cartello:        { file:'cartello.png',        w:1.5, h:1.5 },
   spaventapasseri: { file:'spaventapasseri.png', w:1.5, h:1.5 },
-  scrivania:       { file:'scrivania.png',       w:1.5, h:1.5 }
+  scrivania:       { file:'scrivania.png',       w:1.5, h:1.5 },
+
+  /* Arredo esterno illustrato dall'utente. Le chiavi con suffisso sono
+     le varianti che il mondo sceglie già con `v`; ogni PNG mantiene una
+     tela comune, così una cassa bassa non si trasforma in una colonna
+     soltanto perché è la variante zero. */
+  'bancarella-0': { file:'esterno-bancarella-0.png', w:2, h:2 },
+  'bancarella-1': { file:'esterno-bancarella-1.png', w:2, h:2 },
+  'bancarella-2': { file:'esterno-bancarella-2.png', w:2, h:2 },
+  'casse-0':      { file:'esterno-casse-0.png',      w:2, h:2 },
+  'casse-1':      { file:'esterno-casse-1.png',      w:2, h:2 },
+  'casse-2':      { file:'esterno-casse-2.png',      w:2, h:2 },
+  'fioriera-0':   { file:'esterno-fioriera-0.png',   w:2, h:2 },
+  'fioriera-1':   { file:'esterno-fioriera-1.png',   w:2, h:2 },
+  'fioriera-2':   { file:'esterno-fioriera-2.png',   w:2, h:2 },
+  'fioriera-3':   { file:'esterno-fioriera-3.png',   w:2, h:2 },
+  panchina:       { file:'esterno-panchina.png',     w:2, h:2 },
+  lampione:       { file:'esterno-lampione.png',     w:1, h:2 },
+  consegna:       { file:'esterno-consegna.png',     w:2, h:2 },
+  silo:           { file:'esterno-silo.png',         w:2, h:3 },
+  pietra_rituale: { file:'esterno-pietra-rituale.png', w:1.5, h:1.5 },
+  bottiglia:      { file:'esterno-bottiglia.png',    w:1.5, h:1 },
+  fontana:        { file:'esterno-fontana.png',      w:4, h:3 },
+  'bucato-3':     { file:'esterno-bucato-3.png',     w:3, h:1.125 },
+  'bucato-4':     { file:'esterno-bucato-4.png',     w:4, h:1.25 }
 };
 
 /* Disegnati, committati, e non ancora collegati a niente — col perché.
@@ -1973,6 +1997,19 @@ D.ARREDI = {
    cosa manca perché il file entri in gioco. Il giorno che manca niente,
    la riga si sposta di sopra e sparisce da qui. */
 D.ARREDI_IN_ATTESA = {};
+
+/* I comandi rapidi non sono oggetti dello zaino: sono cinque pulsanti
+   completi per l'HUD e hanno perciò una tabella separata da `D.ICONE`.
+   Il caricatore li anticipa all'avvio e il controllo di coerenza ne
+   verifica le dimensioni, mentre il CSS conserva le emoji come ultima
+   riserva se un PNG non potesse essere caricato. */
+D.PANNELLO = {
+  zaino:        { file:'pannello-zaino.png',        w:128, h:128 },
+  artigianato:  { file:'pannello-artigianato.png',  w:128, h:128 },
+  diario:       { file:'pannello-diario.png',       w:128, h:128 },
+  mappa:        { file:'pannello-mappa.png',        w:128, h:128 },
+  menu:         { file:'pannello-menu.png',         w:128, h:128 }
+};
 
 /* ===================================================================
    LE ICONE DISEGNATE A MANO

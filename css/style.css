@@ -326,6 +326,20 @@ kbd{
 }
 #quickbtns button:hover{transform:translateY(-2px); filter:brightness(1.12);}
 #quickbtns button:active{transform:translateY(2px); box-shadow:inset 0 2px 0 rgba(255,255,255,.15), 0 1px 0 rgba(0,0,0,.3);}
+/* I cinque file sono pulsanti completi, inclusa la loro cornice. Il
+   carattere resta nel DOM come riserva accessibile, ma quando il PNG è
+   disponibile non viene sovrapposto alla pixel-art. */
+#quickbtns button.quick-art.pronta{
+  padding:0; border:0; border-radius:0; box-shadow:none;
+  color:transparent; text-shadow:none; background-color:transparent;
+  background-repeat:no-repeat; background-position:center; background-size:100% 100%;
+}
+#quickbtns button.quick-art.pronta:active{ box-shadow:none; }
+#quickbtns .quick-zaino.pronta{ background-image:url('../img/pannello-zaino.png'); }
+#quickbtns .quick-artigianato.pronta{ background-image:url('../img/pannello-artigianato.png'); }
+#quickbtns .quick-diario.pronta{ background-image:url('../img/pannello-diario.png'); }
+#quickbtns .quick-mappa.pronta{ background-image:url('../img/pannello-mappa.png'); }
+#quickbtns .quick-menu.pronta{ background-image:url('../img/pannello-menu.png'); }
 
 /* ---------- toast ---------- */
 /* Sopra la barra c'è anche il nome dell'attrezzo scelto: la barra sta a

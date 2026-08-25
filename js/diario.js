@@ -285,7 +285,11 @@ U.diario = function(G, tabIniziale){
             finite = VICENDE.finite(), attesa = VICENDE.inAttesa();
       if(atti.length || pronte.length || finite.length || attesa.length){
         const st=document.createElement('div'); st.className='sectitle';
-        st.textContent=T('Storie del paese'); body.appendChild(st);
+        st.textContent=T('Voci del paese'); body.appendChild(st);
+        const guida=document.createElement('div'); guida.className='muted';
+        guida.style.margin='-4px 0 10px';
+        guida.textContent=T('Qui restano le piste da seguire. Il ! indica una nuova storia; il ? una persona che aspetta il tuo prossimo passo.');
+        body.appendChild(guida);
       }
       const facciaDi = (npcId)=>{
         const N=DATA.NPCS[npcId]; if(!N) return null;
@@ -296,9 +300,10 @@ U.diario = function(G, tabIniziale){
       };
       for(const v of atti){
         const row=document.createElement('div'); row.className='row';
-        const f=facciaDi(v.npc); if(f) row.appendChild(f);
+        const contatto=v.contatto||v.npc;
+        const f=facciaDi(contatto); if(f) row.appendChild(f);
         const info=document.createElement('div'); info.className='rinfo';
-        const N=DATA.NPCS[v.npc];
+        const N=DATA.NPCS[contatto];
         info.innerHTML =
           `<div class="rname">${v.titolo}</div>`+
           `<div class="rdesc">${v.compito}</div>`+
@@ -314,7 +319,7 @@ U.diario = function(G, tabIniziale){
         const info=document.createElement('div'); info.className='rinfo';
         info.innerHTML =
           `<div class="rname">${v.titolo}</div>`+
-          `<div class="rdesc">${F('{0} ha qualcosa da dirti. Vai a parlarci.', N.nome)}</div>`;
+          `<div class="rdesc">${v.compito || F('{0} ha qualcosa da dirti. Vai a parlarci.', N.nome)}</div>`;
         row.appendChild(info);
         body.appendChild(row);
       }

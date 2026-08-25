@@ -2622,9 +2622,26 @@ function idArredo(o){
   return (o.t === 'mobile' && o.kind) ? o.kind : o.t;
 }
 
+/* Il mondo conosce già le varianti con `v`, ma prima la grafica
+   procedurale le sceglieva dentro al suo blocco. I nuovi PNG le tengono
+   nel nome: qui si fa la stessa scelta, senza cambiare mappe o salvataggi. */
+function idImmagineArredo(o){
+  const id=idArredo(o);
+  const varianti={ bancarella:3, casse:3, fioriera:4 };
+  if(varianti[id]){
+    const v=Math.abs((o.v||0)|0)%varianti[id];
+    return id+'-'+v;
+  }
+  return id;
+}
+
 function immagineArredo(o){
   if(!window.IMG || !window.DATA || !DATA.ARREDI) return null;
-  const id = idArredo(o);
+  /* La fontana viene disegnata una volta dalla decorazione che la
+     accompagna; nella griglia esistono dodici oggetti-fantasma soltanto
+     per rendere solida la vasca e non devono stamparla dodici volte. */
+  if(o.t==='fontana') return null;
+  const id = idImmagineArredo(o);
   return DATA.ARREDI[id] ? IMG.prendi(id) : null;
 }
 
@@ -2665,7 +2682,7 @@ function immagineRotte(o, G){
 function arredoDaImmagine(o, wx, wy, piega){
   const img = immagineArredo(o);
   if(!img) return false;
-  const a = DATA.ARREDI[idArredo(o)];
+  const a = DATA.ARREDI[idImmagineArredo(o)];
 
   const f = WORLD.impronta(o);
   const iw = a.w*T, ih = a.h*T;                 // il PNG, in pixel di mondo
@@ -2692,7 +2709,9 @@ function arredoDaImmagine(o, wx, wy, piega){
 function disegnaOggetto(o, px, py, gx, gy, t, stag, G){
   // il PNG, se c'è, sostituisce tutto il blocco disegnato a mano
   const piega = o.kind === 'spaventapasseri' ? FX.vento(gx*T, gy*T)*0.05 : 0;
-  const arredo = arredoDaImmagine(o, px, py, piega);
+  /* Bacheche e cassetta postale hanno stati narrativi propri: il nuovo
+     arredo di base non deve nascondere il loro avanzamento. */
+  const arredo = immagineRotte(o, G) ? false : arredoDaImmagine(o, px, py, piega);
   if(arredo){
     if(o.kind === 'cartello' && o.testo)
       disegnaScrittaCartello(o.testo, arredo.x, arredo.y, 'png');
@@ -3131,6 +3150,23 @@ function disegnaColturaDentro(s, px, py, gx, gy, t){
    DECORAZIONI
    =================================================================== */
 function disegnaDecoPiatta(d, ox, oy, t, stag){
+  /* Fontana e bucato vivono in `deco`, non nella griglia degli oggetti.
+     Vengono disegnati direttamente in pixel di mondo per non ridurre un
+     PNG di alta densità al canvas procedurale da 32 px. */
+  const id = d.t==='bucato' ? 'bucato-'+d.w : d.t;
+  const img = window.IMG && window.DATA && DATA.ARREDI && DATA.ARREDI[id]
+    ? IMG.prendi(id) : null;
+  if(img){
+    const x=(d.x*T+ox)|0, y=(d.y*T+oy)|0;
+    if(d.t==='fontana'){
+      sx.drawImage(img, x, y);
+      return;
+    }
+    if(d.t==='bucato'){
+      sx.drawImage(img, x, y-img.naturalHeight+8);
+      return;
+    }
+  }
   raddoppia(sx, (d.x*T+ox)|0, (d.y*T+oy)|0);
   disegnaDecoPiattaDentro(d, 0, 0, t, stag);
   sx.restore();

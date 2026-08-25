@@ -2673,6 +2673,25 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
       problemi.push(`img/${a.file} è ${w}×${h} ma «${id}» lo dichiara ${a.w}×${a.h}`);
   }
 
+  /* I cinque comandi rapidi sono immagini dell'interfaccia, non oggetti
+     raccoglibili: hanno una tabella distinta perché non passano mai da
+     ART.icon. Anche loro devono però contare come file usati e avere la
+     misura dichiarata, altrimenti un ritaglio sbagliato allarga il pannello
+     senza che la partita smetta di funzionare. */
+  for (const id in (DATA.PANNELLO || {})) {
+    const a = DATA.PANNELLO[id];
+    const f = path.join(dir, a.file);
+    usati.add(a.file);
+    if (!fs.existsSync(f)) { problemi.push(`«pannello.${id}» vuole img/${a.file}, che non c'è`); continue; }
+    const b = fs.readFileSync(f);
+    if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) {
+      problemi.push(`img/${a.file} non è un PNG`); continue;
+    }
+    const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+    if (w !== a.w || h !== a.h)
+      problemi.push(`img/${a.file} è ${w}×${h} ma «pannello.${id}» lo dichiara ${a.w}×${a.h}`);
+  }
+
   /* Il foglio del personaggio è un caso a sé: non è un arredo, è una
      griglia di celle. Si controlla che i pixel veri siano esattamente
      `w × fotogrammi` per `h × righe` — se un domani si riesporta con una
@@ -3080,7 +3099,7 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
      diverso, come `cartello.png` e `cartello-icona.png`. */
   const rivendica = {};
   const dichiara = (chi, file) => { if (file) (rivendica[file] = rivendica[file] || []).push(chi); };
-  for (const nome of ['ARREDI', 'ICONE', 'EDIFICI', 'VEGETAZIONE', 'NPC_FOGLI', 'OMINO_ATTREZZI'])
+  for (const nome of ['ARREDI', 'ICONE', 'PANNELLO', 'EDIFICI', 'VEGETAZIONE', 'NPC_FOGLI', 'OMINO_ATTREZZI'])
     for (const id in (DATA[nome] || {})) dichiara(`DATA.${nome}.${id}`, DATA[nome][id].file);
   for (const nome of ['OMINO', 'TERRENI', 'MINERALI'])
     if (DATA[nome]) dichiara(`DATA.${nome}`, DATA[nome].file);

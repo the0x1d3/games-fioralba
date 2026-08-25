@@ -147,9 +147,14 @@ function aggiornaNPC(dt){
     if(n.px===undefined){ n.px = n.x*T+T/2; n.py = n.y*T+24*K; n.dir=0; n.frame=0; n.animT=0; n.wait=Math.random()*3000; }
 
     const fascia = G.fasciaAgenda(n.id);
+    const pista = window.VICENDE && VICENDE.indicatore ? VICENDE.indicatore(n.id) : null;
+    /* Anche un abitante fermo fra due giri o appena arrivato deve restare
+       riconoscibile: i `continue` qui sotto non possono conservare un
+       fumetto vecchio, né cancellare quello della pista. */
+    n.emote = pista;
     if(n.fisso || (fascia && fascia.fisso)){
       n.frame=0;
-      n.emote = (G.braci<4 && n.id==='fiammella') ? '!' : null;
+      n.emote = (G.braci<4 && n.id==='fiammella') ? '!' : pista;
       continue;
     }
     /* Al chiuso continua a esistere, ma lo teniamo davanti a casa sua:
@@ -181,8 +186,10 @@ function aggiornaNPC(dt){
     if(Math.abs(dx)>Math.abs(dy)) n.dir = dx<0?1:2; else n.dir = dy<0?3:0;
     n.animT += dt;
     if(n.animT>170){ n.animT=0; n.frame=(n.frame+1)%4; }
-    // emote se non gli hai ancora parlato oggi
-    n.emote = (!G.parlatoOggi[n.id] && Math.hypot(n.px-G.p.px,n.py-G.p.py)<160*K) ? '!' : null;
+    /* La pista narrativa batte il saluto del giorno: il giocatore deve
+       riconoscere anche dall'altro lato della piazza chi può farlo
+       avanzare. Se non c'è una pista, resta l'invito ravvicinato di prima. */
+    n.emote = pista || ((!G.parlatoOggi[n.id] && Math.hypot(n.px-G.p.px,n.py-G.p.py)<160*K) ? '!' : null);
   }
 }
 

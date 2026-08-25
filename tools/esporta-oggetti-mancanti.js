@@ -38,7 +38,7 @@ const browserPath = process.env.CHROMIUM_PATH ||
 const baseUrl = process.env.REPLIT_DEV_DOMAIN
   ? `https://${process.env.REPLIT_DEV_DOMAIN}`
   : 'http://127.0.0.1:5000';
-const outPath = path.join(root, 'attached_assets/generated_images/fioralba-oggetti-mancanti.png');
+const outPath = path.join(root, 'attached_assets/generated_images/fioralba-oggetti-da-illustrare.png');
 
 (async () => {
   const browser = await chromium.launch({
@@ -103,65 +103,56 @@ const outPath = path.join(root, 'attached_assets/generated_images/fioralba-ogget
         });
       }
 
+      /* I recinti e le macchine posabili non hanno un `t` proprio:
+         fanno già parte del renderer in ART.placeable. Estrarli qui
+         evita di reinterpretarne il disegno e consente alla tavola di
+         mostrare le sedici giunte realmente usate dalla mappa. */
+      function placeable(kind, opt = {}) {
+        return isolated((ctx) => {
+          const sprite = window.ART.placeable(kind, { attivo: true, ...opt });
+          ctx.drawImage(sprite, 16 - sprite.width / 2, 48 - sprite.height);
+        });
+      }
+
       /*
-       * Ordine di lettura:
-       * 1) bancarelle, 2) casse, 3) fioriere, 4) fiori spontanei,
-       * 5) arredo urbano, 6) fontana/bucato, 7) ortaggi.
-       * Le celle grandi sono volutamente lasciate senza testo e senza
-       * fondo: la tavola rimane utilizzabile come sorgente trasparente.
+       * Il foglio dell'utente copre bancarelle, casse, fioriere,
+       * panchine, lampioni, consegna, fontana e bucato. Qui restano
+       * soltanto le cose ancora procedurali: prima le 16 giunte del
+       * recinto (bit N/E/S/O da 0 a 15), poi i due versi del cancelletto
+       * e gli arredi ancora senza una grafica esterna definitiva.
        */
-      const items = [
-        object({ t: 'bancarella', v: 0 }, 30, 36),
-        object({ t: 'bancarella', v: 1 }, 30, 36),
-        object({ t: 'bancarella', v: 2 }, 30, 36),
-        object({ t: 'casse', v: 0 }, 34, 38),
-        object({ t: 'casse', v: 1 }, 34, 38),
-        object({ t: 'casse', v: 2 }, 34, 38),
-
-        object({ t: 'fioriera', v: 0 }, 34, 38),
-        object({ t: 'fioriera', v: 1 }, 34, 38),
-        object({ t: 'fioriera', v: 2 }, 34, 38),
-        object({ t: 'fioriera', v: 3 }, 34, 38),
-        object({ t: 'fiori', v: 0 }, 34, 38),
-        object({ t: 'fiori', v: 1 }, 34, 38),
-
-        object({ t: 'fiori', v: 2 }, 34, 38),
-        object({ t: 'fiori', v: 3 }, 34, 38),
-        object({ t: 'panchina', v: 0 }, 34, 34),
-        object({ t: 'lampione', v: 0 }, 34, 42),
-        object({ t: 'consegna', v: 0 }, 34, 38),
-        object({ t: 'silo', v: 0 }, 34, 54),
-
-        object({ t: 'pietra_rituale', v: 0 }, 34, 54),
-        object({ t: 'bottiglia', v: 0 }, 34, 38),
-        tall({ t: 'ortaggio', v: 0 }, 34, 38),
-        tall({ t: 'ortaggio', v: 1 }, 34, 38),
-        tall({ t: 'ortaggio', v: 2 }, 34, 38),
-        tall({ t: 'ortaggio', v: 3 }, 34, 38),
-      ];
+      const items = [];
+      for (let lati = 0; lati < 16; lati += 1) items.push(placeable('recinto', { lati }));
+      items.push(
+        placeable('cancelletto', { lati: 10 }),
+        placeable('cancelletto', { lati: 5 }),
+        placeable('barattoliera'),
+        placeable('botte'),
+        placeable('fornace'),
+        placeable('arnia'),
+        placeable('lanterna'),
+        placeable('lume'),
+        flat({ t: 'ninfea', v: 0 }, 34, 38),
+        flat({ t: 'ciuffo', v: 0 }, 34, 38),
+        flat({ t: 'petali_terra', v: 0 }, 34, 38),
+        flat({ t: 'sassolini', v: 0 }, 34, 38),
+      );
 
       const sheet = document.createElement('canvas');
       sheet.width = 960;
-      sheet.height = 960;
+      sheet.height = 800;
       const ctx = sheet.getContext('2d');
       ctx.imageSmoothingEnabled = false;
 
       items.forEach((sprite, index) => {
         const col = index % 6;
         const row = Math.floor(index / 6);
-        ctx.drawImage(sprite, col * 160, row * 160);
+        /* `ART.tela` conserva la tavola sorgente alla metà dei pixel
+           finali del mondo. Qui la tavola è un asset da consultare, non
+           una miniatura del gioco: la si porta quindi alla cella intera,
+           senza interpolazione, così giunte e cardini restano leggibili. */
+        ctx.drawImage(sprite, col * 160, row * 160, 160, 160);
       });
-
-      // Fontana: l'oggetto occupa quattro caselle di mappa, perciò conserva
-      // il suo spazio 2×2 senza essere miniaturizzato.
-      const fountain = flat({ t: 'fontana', v: 0 }, 0, 64, 320, 320);
-      ctx.drawImage(fountain, 0, 640);
-
-      // Bucato: le due lunghezze che il mondo usa davvero (3 e 4 caselle).
-      const laundry3 = flat({ t: 'bucato', x: 0, y: 0, w: 3 }, 8, 64, 320, 160);
-      const laundry4 = flat({ t: 'bucato', x: 0, y: 0, w: 4 }, 8, 64, 320, 160);
-      ctx.drawImage(laundry3, 320, 640);
-      ctx.drawImage(laundry4, 640, 640);
 
       return sheet.toDataURL('image/png');
     }, sources);

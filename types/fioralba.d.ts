@@ -389,6 +389,8 @@ interface FioData {
    * chiede `ART.icon(id)`. Chi non è in elenco resta disegnato in codice.
    */
   ICONE: Record<string, { file: string; w: number; h: number }>;
+  /** I cinque pulsanti illustrati del pannello laterale dell'HUD. */
+  PANNELLO: Record<string, { file: string; w: number; h: number }>;
   /**
    * Il foglio del personaggio disegnato a mano: celle `w`×`h`,
    * `fotogrammi` per riga, e `righe` mappa la direzione di gioco

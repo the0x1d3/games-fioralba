@@ -185,13 +185,17 @@ function chiudi(id, p){
 
   const righe = (p.righe || []).slice();
   const senzaDialogo = p.tipo === 'luogo' || (p.tipo === 'puzzle' && !p.npc);
+  /* La nuova direzione va detta solo dopo che chi parla ha finito. Un
+     toast sopra l'ultima riga del dialogo farebbe sembrare che l'NPC stia
+     già mandando via il giocatore prima di aver concluso il pensiero. */
+  const dopo = finita ? ()=>paga(id) : ()=>V.segnalaPasso(id);
   if(senzaDialogo){
     // nessuno con cui parlare: è un pensiero, e va nei messaggi
     for(const r of righe) UI.toast(r, 'gold');
+    dopo();
   } else {
-    UI.dialogo(p.npc, righe, finita ? { fine:()=>paga(id) } : undefined);
+    UI.dialogo(p.npc, righe, { fine:dopo });
   }
-  if(finita && senzaDialogo) paga(id);
   if(!finita) G.progresso();
 }
 
@@ -257,7 +261,7 @@ V.attive = function(){
       compito = conIngredienti(compito, p.ing, true);
       pronto = Object.keys(p.ing).every(k => G.conta(k) >= p.ing[k]);
     }
-    fuori.push({ id, titolo:v.titolo, npc:v.npc, compito, pronto,
+    fuori.push({ id, titolo:v.titolo, npc:v.npc, contatto:p.npc || v.npc, compito, pronto,
                  passo:stato(id).passo + 1, quanti:v.passi.length });
   }
   return fuori;
@@ -290,9 +294,128 @@ V.pronte = function(){
   for(const id in tab){
     if(stato(id)) continue;
     const v = tab[id];
-    if(disponibile(id,v) && V.cuori(v.npc) >= (v.cuori||0)) fuori.push({ id, npc:v.npc, titolo:v.titolo });
+    if(disponibile(id,v) && V.cuori(v.npc) >= (v.cuori||0)){
+      const primo=v.passi && v.passi[0];
+      fuori.push({ id, npc:v.npc, titolo:v.titolo, compito:primo && primo.compito });
+    }
   }
   return fuori;
+};
+
+/* ===================================================================
+   PISTE — il passaggio fra «la storia esiste nei dati» e «il giocatore
+   sa da chi andare». Il Diario, il fumetto sull'NPC e i promemoria
+   leggono tutti qui: una sola regola evita che uno indichi Bruno mentre
+   l'altro manda da Tobia.
+   =================================================================== */
+function compitoDi(p){
+  if(!p) return '';
+  return p.tipo==='porta' ? conIngredienti(p.compito || '', p.ing, true) : (p.compito || '');
+}
+function giorno(){ return Number.isFinite(G.giornoTot) ? G.giornoTot : 0; }
+function pisteSegnalate(){
+  if(!G.vicendePiste || typeof G.vicendePiste!=='object') G.vicendePiste={};
+  return G.vicendePiste;
+}
+function promemoriaSegnati(){
+  if(!G.vicendePromemoria || typeof G.vicendePromemoria!=='object') G.vicendePromemoria={};
+  return G.vicendePromemoria;
+}
+function salvaPiste(){
+  /* Il normale autosave è volutamente tranquillo, ma qui l'assenza di un
+     salvataggio farebbe riapparire un avviso già letto al prossimo avvio.
+     `G.salva` accoda l'invio al server: non apre né rallenta la partita. */
+  if(G.inGioco && typeof G.salva==='function') G.salva();
+}
+
+/* Restituisce la storia che rende un abitante importante ADESSO. Una
+   storia già iniziata ha la precedenza su una appena pronta: Elio che
+   aspetta la rete non deve sparire dietro alla sua storia successiva. */
+V.pistaPer = function(npcId){
+  const tab=tabella();
+  /* Questa funzione gira nel ciclo di animazione, una volta per ogni
+     abitante visibile. Non passa da `attive()`: quella prepara le frasi
+     del Diario e conta anche ogni ingrediente, lavoro utile lì ma troppo
+     costoso sessanta volte al secondo. */
+  for(const id in tab){
+    const p=passoAperto(id);
+    if(p && (p.tipo==='parla' || p.tipo==='porta') && p.npc===npcId)
+      return { id, titolo:tab[id].titolo, compito:compitoDi(p), nuova:false };
+  }
+  for(const id in tab){
+    if(stato(id)) continue;
+    const v=tab[id];
+    if(v.npc===npcId && disponibile(id,v) && V.cuori(npcId)>=(v.cuori||0)){
+      const primo=v.passi && v.passi[0];
+      return { id, titolo:v.titolo, compito:primo ? compitoDi(primo) : '', nuova:true };
+    }
+  }
+  return null;
+};
+
+/* `!` invita ad aprire una storia; `?` dice che una storia già aperta
+   aspetta un passo da quella persona. Rimane visibile anche da lontano,
+   mentre il normale `!` giornaliero appare solo quando ci si avvicina. */
+V.indicatore = function(npcId){
+  const pista=V.pistaPer(npcId);
+  return pista ? (pista.nuova ? '!' : '?') : null;
+};
+
+/* Il primo avviso arriva quando una soglia di cuori viene superata (o al
+   risveglio per una partita precedente). Il testo contiene anche il
+   prossimo gesto, non solo il titolo della vicenda. */
+V.annunciaPronte = function(){
+  const segnate=pisteSegnalate(), nuove=[];
+  for(const v of V.pronte()){
+    if(Object.prototype.hasOwnProperty.call(segnate,v.id)) continue;
+    segnate[v.id]=giorno();
+    nuove.push(v);
+    const N=DATA.NPCS[v.npc];
+    const dove=v.compito ? ' '+v.compito : '';
+    UI.toast(F('✦ Nuova pista: <b>{0}</b> ha qualcosa da dirti.{1} Guarda il Diario (J).',
+      N ? N.nome : v.npc, dove), 'gold');
+  }
+  if(nuove.length) salvaPiste();
+  return nuove.length;
+};
+
+/* Dopo ogni dialogo, luogo o rompicapo chiuso il Diario si aggiorna già
+   da solo: qui lo rendiamo esplicito, con la stessa frase che il giocatore
+   ritroverà nella sezione Voci del paese. */
+V.segnalaPasso = function(id){
+  const v=tabella()[id], s=stato(id);
+  if(!v || !s || s.fatta) return;
+  s.ultimoPassoGiorno=giorno();
+  const p=passoAperto(id);
+  if(!p) return;
+  UI.toast(F('✦ Pista aggiornata — <b>{0}</b>: {1} Guarda il Diario (J).',
+    v.titolo, compitoDi(p)), 'gold');
+  salvaPiste();
+};
+
+/* Se una pista resta aperta per tre giorni, il paese la richiama una
+   volta e poi lascia di nuovo spazio. Non ripete il promemoria ogni
+   mattina: il contatore riparte dall'ultimo avanzamento o richiamo. */
+V.promemoria = function(){
+  const attiva=V.attive()[0];
+  const pronta=attiva ? null : V.pronte()[0];
+  const pista=attiva || pronta;
+  if(!pista) return false;
+  const id=pista.id, oggi=giorno();
+  const s=stato(id);
+  const segnate=pisteSegnalate(), ricordi=promemoriaSegnati();
+  const ultimo=Math.max(
+    s && Number.isFinite(s.ultimoPassoGiorno) ? s.ultimoPassoGiorno : -Infinity,
+    Number.isFinite(segnate[id]) ? segnate[id] : -Infinity,
+    Number.isFinite(ricordi[id]) ? ricordi[id] : -Infinity
+  );
+  if(!Number.isFinite(ultimo) || oggi-ultimo<3) return false;
+  ricordi[id]=oggi;
+  const N=DATA.NPCS[attiva ? attiva.contatto : pronta.npc];
+  UI.toast(F('💬 Promemoria — {0}: {1} Guarda il Diario (J).',
+    N ? N.nome : '', attiva ? attiva.compito : (pronta.compito||'')), 'gold');
+  salvaPiste();
+  return true;
 };
 
 window.VICENDE = V;

@@ -90,7 +90,7 @@ function statoIniziale(){
        00:10 sono due giorni per chi gioca, e devono essere due anche
        qui. `daPrendere` è il pacco che ti aspetta sull'aia. */
     serie:{ ultimo:null, giorni:0, daPrendere:0 },
-    vicende:{}, persona:{},
+    vicende:{}, vicendePiste:{}, vicendePromemoria:{}, persona:{},
     trame:{ torta:{avviata:false, segreto:false, fatta:false},
             pesceluna:{avviata:false, preso:false, fatta:false},
             veglia:{avviata:false, memorie:{}, verita:false, invitati:{}, giorno:null, fatta:false},
@@ -134,6 +134,7 @@ async function init(){
      vincolo d'ordine preso per niente. */
   if(window.IMG){
     IMG.precarica(DATA.ARREDI);
+    IMG.precarica(DATA.PANNELLO, 'pannello:'); // le cinque icone dell'HUD
     IMG.precarica({ omino: DATA.OMINO });   // il foglio della camminata
     IMG.precarica(DATA.OMINO_ATTREZZI, 'omino:');   // e uno per attrezzo in mano
     IMG.precarica(DATA.VEGETAZIONE, 'veg:');        // alberi, erbaccia, ceppo
@@ -147,6 +148,25 @@ async function init(){
        richiesta si perderebbe e nello zaino resterebbe il disegno in
        codice mentre il file si scarica lo stesso. */
     IMG.precarica(DATA.ICONE, 'icona:');    // le icone nelle finestre
+
+    /* I PNG del pannello sono pulsanti completi. Finché non sono davvero
+       decodificati resta visibile l'emoji già scritta nell'HTML: è più
+       utile di un quadrato vuoto se la rete tarda o un file manca. */
+    const aggiornaPannello = ()=>{
+      const tasti = {
+        zaino:'btn-inv', artigianato:'btn-craft', diario:'btn-quest',
+        mappa:'btn-map', menu:'btn-menu'
+      };
+      let inAttesa=false;
+      for(const id in tasti){
+        const b=$(('#'+tasti[id]));
+        if(!b) continue;
+        if(IMG.prendi('pannello:'+id)) b.classList.add('pronta');
+        else inAttesa=true;
+      }
+      if(inAttesa && IMG.stato().inVolo) setTimeout(aggiornaPannello, 120);
+    };
+    aggiornaPannello();
 
     /* I DUE CONTROLLI CHE VOGLIONO UN CANVAS E LE IMMAGINI ARRIVATE.
 
@@ -337,6 +357,15 @@ function avviaGioco(conIntro){
   G.controllaSerie();
   if(G.serie.daPrendere)
     setTimeout(()=>{ if(G.inGioco && !UI.modalAperta()) UI.pacco(G); }, conIntro ? 2600 : 900);
+  /* Una valle ripresa può avere già raggiunto una soglia d'amicizia. Le
+     sue piste devono comparire anche senza aspettare un regalo o la notte
+     successiva; se c'è un'altra finestra (lettera, pacco, guida), aspetta
+     educatamente che il giocatore possa leggerle. */
+  (function annunciaPisteQuandoLibero(){
+    if(!G.inGioco) return;
+    if(UI.modalAperta()){ setTimeout(annunciaPisteQuandoLibero, 700); return; }
+    VICENDE.annunciaPronte();
+  })();
   ultimo = performance.now();
   /* Un loop solo, sempre. «Cambia partita» dal menu arriva qui con la
      partita vecchia ancora in corsa (`G.inGioco` non è mai tornato
@@ -2318,7 +2347,12 @@ G.regala = function(npcId, idx){
       vx:((Math.random()-0.5)*0.35)*K, vy:(-0.55-Math.random()*0.2)*K, g:0,
       vita:1100, vitaMax:1100, c:reaz==='ama'?'#e04a63':'#f08a9a'});
   }
-  UI.dialogo(npcId, [risposte[(Math.random()*risposte.length)|0]]);
+  /* Se il regalo supera una soglia d'amicizia, l'abitante non deve
+     limitarsi a mostrare un cuore in più: dopo il suo grazie fa arrivare
+     una pista concreta, con il Diario che la conserva. */
+  UI.dialogo(npcId, [risposte[(Math.random()*risposte.length)|0]], {
+    fine:()=>VICENDE.annunciaPronte()
+  });
 };
 
 /* ===================================================================
@@ -3170,6 +3204,12 @@ function nuovoGiorno(svenuto, multa){
       // sagra e mercante
       if(nuovaSagra) setTimeout(()=>UI.toast(fraseF('🎪 È tempo della {0}: consegna i prodotti di stagione dal Diario!', G.sagra.nome),'gold'), 2400);
       if(G.mercante && G.mercante.presente) setTimeout(()=>UI.toast('🛒 Il mercante ambulante è in paese, oggi alla Locanda.','gold'), 2700);
+       // Le storie già pronte nelle partite precedenti hanno lo stesso
+       // avviso di quelle sbloccate da un regalo; dopo qualche giorno
+       // senza passi, un solo richiamo evita che restino dimenticate.
+       setTimeout(()=>{
+         if(!VICENDE.annunciaPronte()) VICENDE.promemoria();
+       }, 3600);
       // la posta arriva col mattino, una lettera per volta
       consegnaPosta(3300);
       // compleanni: una casella del calendario che prima era vuota

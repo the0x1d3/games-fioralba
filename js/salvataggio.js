@@ -229,7 +229,7 @@ function costruisciDati(){
     regaloRicevuto:G.regaloRicevuto,
     mercato:G.mercato, gelo:G.gelo,
     richieste:G.richieste, richiestaSeq:G.richiestaSeq, premiSospesi:G.premiSospesi, arrediSpostati:G.arrediSpostati, bottiglieLette:G.bottiglieLette, serie:G.serie, gatto:G.gatto,
-    obiettiviRiscossi:G.obiettiviRiscossi, sagra:G.sagra, mercante:G.mercante, trame:G.trame, vicende:G.vicende, persona:G.persona, visitati:G.visitati, collezione:G.collezione,
+    obiettiviRiscossi:G.obiettiviRiscossi, sagra:G.sagra, mercante:G.mercante, trame:G.trame, vicende:G.vicende, vicendePiste:G.vicendePiste, vicendePromemoria:G.vicendePromemoria, persona:G.persona, visitati:G.visitati, collezione:G.collezione,
     px:G.p.px, py:G.p.py,
     /* Non è la versione del FORMATO dei file: è l'edizione del contenuto
        approvato per ogni mappa, inclusi gli zeri. Serve a spiegare e
@@ -369,7 +369,7 @@ function applicaSalvataggio(raw){
                   'braci','lettere','ricetteNote','cassaConsegna','stats','animali','look',
                   'vistoFiammella','introSerafina','vistoPesca','sacaccia','lezioneCaccia','tutorialFatto','guidaAperta','guidaNascosta','regaloRicevuto',
                   'mercato','gelo',
-                  'richieste','richiestaSeq','premiSospesi','arrediSpostati','bottiglieLette','serie','gatto','obiettiviRiscossi','sagra','mercante','trame','vicende','persona','visitati','collezione']){
+                   'richieste','richiestaSeq','premiSospesi','arrediSpostati','bottiglieLette','serie','gatto','obiettiviRiscossi','sagra','mercante','trame','vicende','vicendePiste','vicendePromemoria','persona','visitati','collezione']){
     if(d[k]!==undefined) G[k]=d[k];
   }
   /* Salvataggi fatti quando la giornata era 180: i punti guadagnati coi
