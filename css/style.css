@@ -403,9 +403,12 @@ body.modalita-modifica-attiva.modalita-modifica-esplora #tocco *{ pointer-events
 @media(max-width:620px){
   #editor-interno{ top:8px; width:calc(100vw - 16px); padding:9px 10px; }
   .editor-interno-testa strong{ font-size:15px; }
+  #editor-interno .btn{ min-height:44px; }
+  .editor-x{ width:44px; height:44px; }
   #editor-istruzioni{ font-size:12px; margin:6px 0; }
   .editor-stato{ min-height:31px; margin-bottom:6px; padding:6px 8px; }
   .editor-dimensioni{ grid-template-columns:1fr 1fr; }
+  .editor-dimensioni input{ min-height:44px; }
   .editor-dimensioni .btn{ grid-column:1 / -1; }
   .editor-nota{ font-size:10.5px; margin-top:6px; }
 }

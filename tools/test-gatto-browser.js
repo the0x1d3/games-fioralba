@@ -364,10 +364,27 @@ async function inquadraCasella(page, giocatoreX, giocatoreY, x, y) {
   }, { x, y });
 }
 
-async function verificaEditor(browser, url) {
+async function verificaControlloMobile(page, selettore, nome) {
+  const controllo = page.locator(selettore);
+  verifica(await controllo.isVisible(), `mobile: ${nome} non è visibile.`);
+  verifica(await controllo.isEnabled(), `mobile: ${nome} non è utilizzabile.`);
+  const riquadro = await controllo.boundingBox();
+  verifica(
+    riquadro
+      && riquadro.width >= 44
+      && riquadro.height >= 44
+      && riquadro.x >= 0
+      && riquadro.y >= 0
+      && riquadro.x + riquadro.width <= page.viewportSize().width
+      && riquadro.y + riquadro.height <= page.viewportSize().height,
+    `mobile: ${nome} non ha un’area touch visibile (${JSON.stringify(riquadro)}).`,
+  );
+}
+
+async function verificaEditor(browser, url, vista) {
   const context = await browser.newContext({
     baseURL: url,
-    viewport: VISTE[0].viewport,
+    viewport: vista.viewport,
     acceptDownloads: true,
   });
   await context.addInitScript(() => localStorage.setItem('fioralba_lingua', 'it'));
@@ -386,15 +403,21 @@ async function verificaEditor(browser, url) {
 
     await page.evaluate(() => EDITOR_INTERNO.apri());
     await page.locator('#editor-interno').waitFor({ state: 'visible' });
+    await inquadraCasella(page, 2, 10, 3, 10);
     await clicCasella(page, 3, 10);
     await page.locator('#editor-dimensioni').waitFor({ state: 'visible' });
     verifica(
       await page.locator('#editor-stato').textContent().then(testo => testo.includes('Selezionato: Bucato')),
-      'La decorazione regolare non viene selezionata nel canvas.',
+      `${vista.nome}: la decorazione regolare non viene selezionata nel canvas.`,
     );
 
     await page.locator('#editor-larghezza').fill('2');
     await page.locator('#editor-altezza').fill('1');
+    if (vista.nome === 'mobile') {
+      await verificaControlloMobile(page, '#editor-larghezza', 'larghezza');
+      await verificaControlloMobile(page, '#editor-altezza', 'altezza');
+      await verificaControlloMobile(page, '#editor-ridimensiona', 'anteprima e applica');
+    }
     verifica(
       await page.evaluate(() => {
         const bordo = document.querySelector('#editor-selezione');
@@ -420,13 +443,13 @@ async function verificaEditor(browser, url) {
         && bozza.ritocchi.decorazioni.some(d => d.azione === 'rimuovi' && d.da?.t === 'bucato' && d.da.w === 3)
         && bozza.ritocchi.decorazioni.some(d => d.azione === 'aggiungi' && d.decorazione?.t === 'bucato'
           && d.decorazione.w === 2 && d.decorazione.h === 1),
-      'La bozza esportata non descrive la decorazione ridimensionata.',
+      `${vista.nome}: la bozza esportata non descrive la decorazione ridimensionata.`,
     );
     await page.locator('#editor-esci').click();
     verifica(
       await page.evaluate(() => !EDITOR_INTERNO.attivo()
         && G.maps.podere.deco.some(d => d.t === 'bucato' && d.x === 3 && d.y === 10 && d.w === 3)),
-      'Uscire dall’editor non ripristina la decorazione ridimensionata.',
+      `${vista.nome}: uscire dall’editor non ripristina la decorazione ridimensionata.`,
     );
 
     await page.evaluate(() => {
@@ -448,7 +471,7 @@ async function verificaEditor(browser, url) {
     });
     verifica(
       fontana.x === 18 && fontana.y === 14 && fontana.w === 4 && fontana.h === 4 && fontana.acqua,
-      'La mappa di prova deve contenere una fontana 4×4 sull’acqua.',
+      `${vista.nome}: la mappa di prova deve contenere una fontana 4×4 sull’acqua.`,
     );
     await inquadraCasella(page, 18, 14, fontana.x, fontana.y);
     await clicCasella(page, fontana.x, fontana.y);
@@ -463,8 +486,10 @@ async function verificaEditor(browser, url) {
     });
     verifica(
       await page.locator('#editor-sposta').isEnabled(),
-      `La selezione della fontana non è riuscita: ${await page.locator('#editor-istruzioni').textContent()} (${JSON.stringify(diagnosiFontana)})`,
+      `${vista.nome}: la selezione della fontana non è riuscita: ${await page.locator('#editor-istruzioni').textContent()} (${JSON.stringify(diagnosiFontana)})`,
     );
+    if (vista.nome === 'mobile')
+      await verificaControlloMobile(page, '#editor-sposta', 'sposta');
     await page.getByRole('button', { name: 'Sposta', exact: true }).click();
     await inquadraCasella(page, 32, 9, 35, 7);
     await clicCasella(page, 35, 7);
@@ -490,7 +515,7 @@ async function verificaEditor(browser, url) {
     verifica(
       (fontanaSpostata.x !== 18 || fontanaSpostata.y !== 14)
         && fontanaSpostata.collisioni && fontanaSpostata.acqua && fontanaSpostata.origineLibera,
-      'La fontana non sposta insieme tutte le 16 collisioni su una zona d’acqua libera.',
+      `${vista.nome}: la fontana non sposta insieme tutte le 16 collisioni su una zona d’acqua libera.`,
     );
 
     await page.locator('#editor-annulla').click();
@@ -503,7 +528,7 @@ async function verificaEditor(browser, url) {
             Array.from({ length: 4 }, (_, i) => m.obj[WORLD.idx(m, 18 + i, 14 + j)]?.t === 'fontana')
               .every(Boolean)).every(Boolean);
       }),
-      'Annulla non ripristina la fontana e le sue collisioni.',
+      `${vista.nome}: annulla non ripristina la fontana e le sue collisioni.`,
     );
 
     await page.locator('#editor-esci').click();
@@ -514,15 +539,15 @@ async function verificaEditor(browser, url) {
         return !EDITOR_INTERNO.attivo()
           && fontana?.x === 18 && fontana?.y === 14;
       }),
-      'Uscire dall’editor lascia modifiche nella mappa di gioco.',
+      `${vista.nome}: uscire dall’editor lascia modifiche nella mappa di gioco.`,
     );
     await page.waitForTimeout(100);
     verifica(
       salvataggio.put === putPrima,
-      `L’editor ha emesso ${salvataggio.put - putPrima} salvataggi PUT mentre era aperto.`,
+      `${vista.nome}: l’editor ha emesso ${salvataggio.put - putPrima} salvataggi PUT mentre era aperto.`,
     );
-    errorePagina('editor interno', errori);
-    console.log('✓ editor interno: selezione, anteprima, fontana, annulla, export e nessun salvataggio');
+    errorePagina(`editor interno ${vista.nome}`, errori);
+    console.log(`✓ editor interno ${vista.nome}: selezione, anteprima, fontana, annulla, export e nessun salvataggio`);
   } finally {
     await context.close();
   }
@@ -544,7 +569,7 @@ async function principale() {
 
   try {
     for (const vista of VISTE) await verificaVista(browser, server.url, vista);
-    await verificaEditor(browser, server.url);
+    for (const vista of VISTE) await verificaEditor(browser, server.url, vista);
   } finally {
     await browser.close();
     await server.ferma();
