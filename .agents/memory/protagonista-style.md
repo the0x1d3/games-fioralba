@@ -12,9 +12,11 @@ contorno bruno molto scuro.
 direzione, dopo aver rifiutato una variante procedurale molto più semplice
 perché troppo lontana dal riferimento.
 
-**How to apply:** usare questa identità per ogni nuova direzione, fase di
-movimento, attrezzo e ritratto. Non proporre di nuovo un omino geometrico o
+**How to apply:** usare i fogli PNG originali dell'utente per ogni direzione,
+fase di movimento e attrezzo; non sostituirli con un omino geometrico o
 procedurale semplificato senza una richiesta esplicita. Prima di approvare un
 rig, mostrare insieme tutte le direzioni e le fasi su un fondale colorato:
 profili e retro devono avere anatomie proprie, e ogni manico deve attraversare
-visibilmente una mano chiusa invece di fluttuare accanto al personaggio.
+visibilmente una mano chiusa invece di fluttuare accanto al personaggio. Gli
+strumenti di laboratorio possono produrre solo anteprime temporanee: non devono
+mai scrivere sopra i PNG runtime in `img/`.

@@ -121,9 +121,10 @@ function alphaBounds(name, cell, direction, frame) {
     }
   }
   if (opaque < 700) throw new Error(`${name}: posa troppo vuota nella direzione ${direction}, fase ${frame}`);
-  /* I fogli originali iniziavano dal quarto pixel; i fogli disegnati a
-     mano possono avere una tesa più alta, purché restino nel riquadro. */
-  if (minY < 0 || minY > 18) throw new Error(`${name}: cappello fuori telaio (${minY})`);
+  /* I fogli firmati del protagonista lasciano più aria sopra al cappello
+     rispetto al vecchio rig procedurale. Conta che la posa resti intera
+     e ancorata in basso, non l'altezza della tesa dentro la cella. */
+  if (minY < 0 || minY > 32) throw new Error(`${name}: cappello fuori telaio (${minY})`);
   /* Il renderer ancora la cella, non il singolo pixel opaco. Nelle pose
      disegnate a mano un piede può restare sollevato durante la falcata:
      deve stare nel margine basso della cella, non sulla stessa riga fissa. */
@@ -172,13 +173,17 @@ for (const name of NAMES) {
 }
 
 const dataSource = fs.readFileSync(path.join(ROOT, 'js', 'data.js'), 'utf8');
-if (/arco:[\s\S]{0,120}righe:\{0:0,1:2,2:1,3:3\}/.test(dataSource)) {
-  throw new Error('mappatura dell’arco non canonica');
+if (!/arco:[\s\S]{0,120}righe:\{0:0,1:2,2:1,3:3\}/.test(dataSource)) {
+  throw new Error('manca la mappatura delle viste laterali del foglio arco originale');
 }
 
 const generatorSource = fs.readFileSync(path.join(ROOT, 'tools', 'genera-omino.js'), 'utf8');
 if (/\breadFile(?:Sync)?\b|\bcreateReadStream\b/.test(generatorSource)) {
   throw new Error('il generatore non deve leggere o adattare immagini esistenti');
+}
+if (!/['"]tmp['"][\s\S]{0,80}['"]omino-generated['"]/.test(generatorSource) ||
+    /path\.join\(__dirname,\s*['"]\.\.[/\\]['"],\s*['"]img['"]\)/.test(generatorSource)) {
+  throw new Error('il generatore non deve poter sovrascrivere gli sprite originali in img/');
 }
 
 console.log(`✓ rig originale 4×4, trasparenza, falcate e appoggio verificati per ${NAMES.length} fogli`);

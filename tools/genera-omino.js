@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 /*
- * Fioralba — sorgente originale del protagonista.
+ * Fioralba — laboratorio della vecchia bozza procedurale del protagonista.
  *
  * Il disegno nasce su una griglia logica 48×56 e viene ingrandito 2× senza
  * interpolazione. Non legge, ritaglia o trasforma nessuna immagine esistente.
+ * Non è la sorgente degli sprite del gioco: scrive solo nella cartella
+ * temporanea `tmp/omino-generated`, così non può sostituire i PNG originali
+ * dell'utente presenti in `img/`.
  */
 'use strict';
 
@@ -18,7 +21,8 @@ const CELL_W = LW * SCALE;
 const CELL_H = LH * SCALE;
 const COLS = 4;
 const ROWS = 4;
-const OUT = path.join(__dirname, '..', 'img');
+const OUT = path.join(__dirname, '..', 'tmp', 'omino-generated');
+fs.mkdirSync(OUT, { recursive: true });
 
 const P = {
   ink: '#21130f',
@@ -567,4 +571,4 @@ for (const [name, tool] of assets) {
   fs.writeFileSync(path.join(OUT, `${name}.png`), makeSheet(tool));
 }
 
-console.log(`Generati ${assets.length} fogli originali 384×448 da griglia logica 48×56.`);
+console.log(`Generati ${assets.length} fogli di laboratorio in tmp/omino-generated; img/omino*.png non è stato toccato.`);

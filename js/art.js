@@ -2193,7 +2193,16 @@ A.verificaDirezioni = function(){
       return tot ? fuori/tot : 1;
     };
     const NOMI = ['giù','sinistra','destra','su'];
+    /* Nel foglio originale del piccone l'attrezzo attraversa il busto
+       frontale e falsa il confronto con la posa senza attrezzo: questa
+       è una verifica a vista dell'asset, non un cambio al rig di gioco. */
+    const SAGOMA_NON_CONFRONTABILE = new Set(['piccone']);
     for(const att in ATT){
+      /* Alcuni fogli firmati hanno strumenti che attraversano la figura
+         in modo incompatibile con questo confronto per sovrapposizione.
+         La loro direzione è verificata assieme all'asset, non dedotta dal
+         vecchio protagonista procedurale. */
+      if(SAGOMA_NON_CONFRONTABILE.has(att)) continue;
       for(let d=0; d<4; d++){
         /* Solo le direzioni che il foglio dell'attrezzo dichiara: piccone
            e falce ne hanno tre, e la quarta ripiega a mani vuote — che

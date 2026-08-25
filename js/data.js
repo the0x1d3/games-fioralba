@@ -2497,7 +2497,10 @@ D.OMINO = {
 D.OMINO_ATTREZZI = {
   annaffiatoio: { file:'omino-annaffiatoio.png', w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
   ascia:        { file:'omino-ascia.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
-  arco:         { file:'omino-arco.png',         w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
+  /* Nel foglio originale dell'arco le due viste laterali sono esportate
+     nell'ordine destro/sinistro: la mappa le rimette nel verso del mondo,
+     senza alterare il PNG firmato. */
+  arco:         { file:'omino-arco.png',         w:96, h:112, fotogrammi:4, righe:{0:0,1:2,2:1,3:3} },
   piccone:      { file:'omino-piccone.png',      w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
   falce:        { file:'omino-falce.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
   zappa:        { file:'omino-zappa.png',        w:96, h:112, fotogrammi:4, righe:{0:0,1:1,2:2,3:3} },
