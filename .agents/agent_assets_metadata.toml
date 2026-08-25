@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "s7fgN4cmNrp63kZHGEvA8"
+uri = "file://previews/personaggio-anteprima.html"
+type = "text"
+title = "Anteprima grafica del protagonista"
+description = "Confronto non invasivo fra foglio attuale e proposta procedurale in quattro pose: fermo, passo, profilo e retro."
+logical_id = "208210af-e199-402c-a0d3-d08dbbeda52a"
+content_hash = "sha256:fdc87a158c8e46bf1a5c6a3a2627f675d2f99c1c9fed82223b04dbf166acd54e"
+size = 89931
+mtime_ms = 1787148922990
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bd429ef4-4551-4c6f-ab93-8ff04de553da/208210af-e199-402c-a0d3-d08dbbeda52a/25ae7789-15e4-4715-a655-0229f6344426"
+storage_version_token = "1787148937395646"
+content_type = "text/html"
