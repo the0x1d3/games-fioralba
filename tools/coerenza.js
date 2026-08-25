@@ -1303,7 +1303,11 @@ verifica('i tag nei testi dei dialoghi sono semplici e chiusi', () => {
      con un tag da dialogo (<b>, <i>, <kbd>…), e si saltano quelle di
      markup — span, div, attributi, anche in chiusura: «</b></div>» è un
      frammento di finestra concatenata, non una battuta monca. */
-  for (const f of ['js/storie.js', 'js/solstizio.js', 'js/pesca.js', 'js/game.js']) {
+  /* changelog.js e nell'elenco perche la pagina di presentazione lo stampa
+     con innerHTML: un <b> non chiuso li non e una parola storta, e mezza
+     pagina che si scompagina. */
+  for (const f of ['js/storie.js', 'js/solstizio.js', 'js/pesca.js', 'js/game.js',
+                   'js/changelog.js']) {
     const src = fs.readFileSync(path.join(RADICE, f), 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/^\s*\/\/.*$/gm, '')

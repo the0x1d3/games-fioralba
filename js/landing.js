@@ -309,8 +309,16 @@ function costruisciChangelog(){
       const riga = document.createElement('div'); riga.className = 'ch-voce';
       riga.appendChild(pallino(v.tipo));
       const testo = document.createElement('div');
-      const t = document.createElement('div'); t.className = 'ch-voce-t'; t.textContent = tr(v.t);
-      const dd = document.createElement('div'); dd.className = 'ch-voce-d'; dd.textContent = tr(v.d);
+      /* `innerHTML` e non `textContent`, come toast, lettere e dialoghi.
+         Le voci del changelog sono scritte col <b> da sempre — è la
+         convenzione dei testi del gioco — e qui uscivano crude: sulla
+         pagina di presentazione si leggevano 54 «<b>» e «</b>» a schermo,
+         in mezzo alle frasi. Nessuno se n'era accorto perché l'anteprima
+         in fondo mostra tre voci e il grosso sta dietro a un pulsante.
+         Che i tag siano semplici e chiusi lo pretende un controllo di
+         coerenza, che adesso legge anche js/changelog.js. */
+      const t = document.createElement('div'); t.className = 'ch-voce-t'; t.innerHTML = tr(v.t);
+      const dd = document.createElement('div'); dd.className = 'ch-voce-d'; dd.innerHTML = tr(v.d);
       testo.appendChild(t); testo.appendChild(dd);
       riga.appendChild(testo);
       sez.appendChild(riga);
