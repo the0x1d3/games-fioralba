@@ -5,3 +5,4 @@
 - [Ridimensionamento delle texture Pixi](pixi-texture-resize.md) — le texture Canvas che cambiano misura devono essere dinamiche prima di creare lo Sprite.
 - [Composizione canonica Pixi](pixi-canonical-composition.md) — per l'equivalenza pixel-perfect, Pixi presenta un frame opaco già composto anziché fondere layer trasparenti separati.
 - [Stile del protagonista approvato](protagonista-style.md) — mantenere la pixel-art densa con cappello ampio, volto grande, tunica blu e stivali; evitare versioni procedurali semplificate.
+- [Trasparenza delle pose generate](pose-generated-transparency.md) — le pose AI con reticolo richiedono una pulizia alfa controllata prima di entrare nei fogli sprite.
