@@ -149,7 +149,12 @@ async function init(){
     IMG.precarica({ minerali: DATA.MINERALI });    // e quello dei minerali
     IMG.precarica(DATA.ANIMALI, 'an:');            // le bestie, con le loro pose
     IMG.precarica({ gatto: DATA.GATTO }, 'foglio:');
-    IMG.precarica({ recinti: DATA.RECINTI }, 'foglio:');
+    /* Qui c'era anche `{ recinti: DATA.RECINTI }`, e nessuno lo chiedeva:
+       misurato, `img/recinti-e-cancelletti.png` arrivava con 200 OK a ogni
+       partita — 700 KB scaricati e decodificati — mentre le staccionate le
+       disegna tutte `foglio:staccionata`. Un precarico non fa rumore quando
+       avanza: l'immagine si carica, resta in memoria, e non si vede niente
+       di diverso a schermo. Il PNG è in `DATA.ARREDI_IN_ATTESA`. */
     IMG.precarica({ staccionata: DATA.STACCIONATA }, 'foglio:');
     /* Col prefisso: `cartello` e `spaventapasseri` stanno in tutti e due
        gli elenchi, e le immagini si tengono per id — senza, la seconda

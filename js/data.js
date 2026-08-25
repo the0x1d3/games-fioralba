@@ -1996,7 +1996,20 @@ D.ARREDI = {
    al controllo: è la risposta, scritta dove la si legge, con dentro
    cosa manca perché il file entri in gioco. Il giorno che manca niente,
    la riga si sposta di sopra e sparisce da qui. */
-D.ARREDI_IN_ATTESA = {};
+D.ARREDI_IN_ATTESA = {
+  /* Il primo tentativo di staccionata disegnata: due riquadri da 887
+     affiancati, staccionata a sinistra e cancelletto a destra. L'ha
+     superato `D.STACCIONATA` (il foglio Set01), che copre otto
+     configurazioni di lati invece di una sola. La dichiarazione e il
+     precarico erano rimasti: misurato, ogni partita scaricava e
+     decodificava 700 KB — `img/recinti-e-cancelletti.png` arrivava con
+     200 OK, e `IMG.prendi('foglio:recinti')` non esiste in nessun file.
+     Il PNG resta perché il cancelletto è ancora disegnato in codice, e
+     la sua metà destra è l'unico disegno che ce l'ha. */
+  'recinti-e-cancelletti.png':
+    'superato da staccionata.png per le tratte; manca il codice che ne ' +
+    'ritagli la metà destra per il cancelletto, che è ancora procedurale'
+};
 
 /* I fogli qui sotto non sono arredi interi: ciascuno contiene più pose o
    varianti, perciò ART ne ritaglia una cella prima di consegnarla al
@@ -2034,9 +2047,10 @@ D.GATTO = {
     [{x:15,y:791,w:128,h:182},{x:183,y:791,w:155,h:181},{x:345,y:799,w:196,h:173},{x:546,y:787,w:200,h:186},{x:768,y:792,w:195,h:183},{x:1000,y:799,w:183,h:180},{x:1185,y:792,w:153,h:181},{x:1344,y:799,w:183,h:174}]
   ]
 };
-/* Due riquadri quadrati affiancati: staccionata a sinistra e cancelletto
-   a destra. Le tratte non dritte restano nell'arte procedurale. */
-D.RECINTI = { file:'recinti-e-cancelletti.png', cella:887 };
+/* `D.RECINTI` stava qui, e puntava a recinti-e-cancelletti.png. Non c'è
+   più: nessuno lo disegnava e lo scaricavano tutti. Il file è passato in
+   `D.ARREDI_IN_ATTESA`, che è il posto giusto per un disegno che c'è ma
+   non è collegato — lì sopra c'è scritto cosa gli manca. */
 /* Foglio Set01: 4 col × 2 righe, ogni cella 362×543 px.
    Mappatura lati (bitmask N=1 E=2 S=4 W=8):
    R0C0=15 R0C1=5 R0C2=14 R0C3=11 / R1C0=12 R1C1=10 R1C2=6 R1C3=3

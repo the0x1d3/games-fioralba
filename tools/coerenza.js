@@ -3204,23 +3204,6 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
     }
   }
 
-  const RECINTI = DATA.RECINTI;
-  if (!RECINTI) problemi.push('manca DATA.RECINTI: la tavola di staccionate non viene caricata');
-  else {
-    usati.add(RECINTI.file);
-    const f = path.join(dir, RECINTI.file);
-    if (!fs.existsSync(f)) problemi.push(`DATA.RECINTI vuole img/${RECINTI.file}, che non c'è`);
-    else {
-      const b = fs.readFileSync(f);
-      if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) problemi.push(`img/${RECINTI.file} non è un PNG`);
-      else {
-        const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
-        if (w !== RECINTI.cella * 2 || h !== RECINTI.cella)
-          problemi.push(`img/${RECINTI.file} è ${w}×${h}, ma vuole due riquadri ${RECINTI.cella}×${RECINTI.cella} affiancati`);
-      }
-    }
-  }
-
   /* Foglio Set01: 4 colonne × 2 righe di pezzi di staccionata, ognuno
      362×543 px. Geometria: larghezza = cella × 4, altezza = altezza × 2. */
   const STAC = DATA.STACCIONATA;
@@ -3261,7 +3244,7 @@ verifica('gli arredi disegnati a mano esistono e sono della misura dichiarata', 
     for (const id in (DATA[nome] || {})) dichiara(`DATA.${nome}.${id}`, DATA[nome][id].file);
   for (const nome of ['OMINO', 'TERRENI', 'MINERALI'])
     if (DATA[nome]) dichiara(`DATA.${nome}`, DATA[nome].file);
-  for (const nome of ['GATTO', 'RECINTI', 'STACCIONATA'])
+  for (const nome of ['GATTO', 'STACCIONATA'])
     if (DATA[nome]) dichiara(`DATA.${nome}`, DATA[nome].file);
   for (const f in rivendica)
     if (rivendica[f].length > 1)

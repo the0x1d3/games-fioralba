@@ -405,8 +405,12 @@ interface FioData {
    GATTO: { file: string; cella: number; scala: number; margine: number;
             direzioni: Record<'giu' | 'sinistra' | 'destra' | 'su', FioGattoDirezione>;
             ritagli: FioRitaglioGatto[][] };
-  /** Tavola con una staccionata e un cancelletto quadrati affiancati. */
-  RECINTI: { file: string; cella: number };
+  /**
+   * Foglio Set01 della staccionata: 4 colonne x 2 righe di celle
+   * `cella` larghe e `altezza` alte. Le celle NON sono quadrate, per
+   * questo l'altezza e dichiarata a parte invece di riusare `cella`.
+   */
+  STACCIONATA: { file: string; cella: number; altezza: number };
   /**
    * Le icone disegnate a mano, in PIXEL e non in caselle: stanno nelle
    * finestre, non nel mondo. La chiave è l'id dell'oggetto, quello che
